@@ -12175,3 +12175,5 @@ django.template.exceptions.TemplateSyntaxError: Template: /Users/chandraghimire/
 ERROR 2026-06-29 08:19:26,873 log 83385 6200012800 "GET /store/ HTTP/1.1" 500 352578
 WARNING 2026-06-29 09:36:32,029 log 83385 6250491904 Not Found: /favicon.ico
 WARNING 2026-06-29 09:36:32,031 log 83385 6250491904 "GET /favicon.ico HTTP/1.1" 404 7623
+WARNING 2026-06-29 10:31:23,471 log 76058 6191771648 Not Found: /favicon.ico
+WARNING 2026-06-29 10:31:23,472 log 76058 6191771648 "GET /favicon.ico HTTP/1.1" 404 7623
