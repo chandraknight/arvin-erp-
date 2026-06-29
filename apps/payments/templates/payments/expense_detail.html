@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Expense — {{ expense.title }}{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-3">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+    {# ── Detail (3/4) ── #}
+    <div class="lg:col-span-3 bg-white border border-gray-200 shadow-sm p-5">
+
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b border-gray-100 gap-3">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800 tracking-tight">{{ expense.title }}</h2>
+          <p class="text-sm text-gray-500 mt-0.5">
+            {{ expense.date|date:"Y-m-d" }}
+            {% if expense.reference_number %}· Ref: {{ expense.reference_number }}{% endif %}
+          </p>
+        </div>
+        <div class="flex gap-2">
+          {% if expense.status == 'RECORDED' %}
+            <a href="{% url 'payments:expense_cancel' expense.pk %}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition">
+              <i class="fas fa-times text-xs"></i> Cancel Expense
+            </a>
+          {% else %}
+            <span class="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-semibold">Cancelled</span>
+          {% endif %}
+          <a href="{% url 'payments:expense_list' %}"
+             class="inline-flex items-center gap-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-semibold transition">
+            <i class="fas fa-arrow-left text-xs"></i> Back
+          </a>
+        </div>
+      </div>
+
+      <!-- Expense details -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Expense Account (DR)</p>
+          <p class="text-sm font-semibold text-gray-800">{{ expense.expense_account.name }}</p>
+          <p class="text-xs text-gray-400">{{ expense.expense_account.code|default:"-" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Payment Account (CR)</p>
+          <p class="text-sm font-semibold text-gray-800">{{ expense.payment_account.name }}</p>
+          <p class="text-xs text-gray-400">{{ expense.payment_account.code|default:"-" }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Amount</p>
+          <p class="text-2xl font-bold text-green-800 font-mono">₹ {{ expense.amount|floatformat:2|intcomma }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Payment Method</p>
+          <p class="text-sm text-gray-800">{{ expense.get_payment_method_display }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</p>
+          {% if expense.status == 'RECORDED' %}
+            <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium">Recorded</span>
+          {% else %}
+            <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium">Cancelled</span>
+          {% endif %}
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Recorded On</p>
+          <p class="text-sm text-gray-800">{{ expense.created_at|date:"Y-m-d H:i" }}</p>
+        </div>
+      </div>
+
+      {% if expense.description %}
+      <div class="mb-6">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Description</p>
+        <p class="text-sm text-gray-700 bg-gray-50 border border-gray-200 px-3 py-2">{{ expense.description }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Journal entry lines -->
+      <div>
+        <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">
+          <i class="fas fa-book text-green-600 mr-1"></i> Journal Entry
+          {% if expense.journal_entry %}
+            <span class="ml-2 text-xs font-normal text-gray-400">{{ expense.journal_entry.date|date:"Y-m-d" }}</span>
+          {% endif %}
+        </h3>
+        {% if journal_lines %}
+        <div class="border border-gray-200">
+          <table class="min-w-full text-sm">
+            <thead class="bg-green-700 text-white text-xs uppercase">
+              <tr>
+                <th class="px-4 py-2.5 text-left border-r border-green-800">Account</th>
+                <th class="px-4 py-2.5 text-left border-r border-green-800">Narration</th>
+                <th class="px-4 py-2.5 text-center border-r border-green-800 w-20">Type</th>
+                <th class="px-4 py-2.5 text-right w-32">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for line in journal_lines %}
+              <tr class="border-b border-gray-100 {% cycle 'bg-white' 'bg-gray-50' %}">
+                <td class="px-4 py-2.5 font-medium text-gray-800">{{ line.account.name }}</td>
+                <td class="px-4 py-2.5 text-gray-600">{{ line.narration|default:"-" }}</td>
+                <td class="px-4 py-2.5 text-center">
+                  {% if line.entry_type == 'DEBIT' %}
+                    <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold">DR</span>
+                  {% else %}
+                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold">CR</span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-2.5 text-right font-mono font-semibold text-gray-800">
+                  ₹ {{ line.amount|floatformat:2|intcomma }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400 italic">No journal entry attached.</p>
+        {% endif %}
+      </div>
+
+    </div>
+
+    {# ── Sidebar (1/4) ── #}
+    <div class="lg:col-span-1 space-y-4">
+      <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-receipt text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Summary</h3>
+        </div>
+        <div class="p-5 space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500 font-medium">Amount</span>
+            <span class="font-mono font-bold text-green-800">₹ {{ expense.amount|floatformat:2|intcomma }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500 font-medium">Method</span>
+            <span class="text-gray-800">{{ expense.get_payment_method_display }}</span>
+          </div>
+          <div class="flex justify-between border-t border-gray-100 pt-2">
+            <span class="text-gray-500 font-medium">Journal</span>
+            {% if expense.journal_entry %}
+              <span class="text-green-700 font-semibold">✓ Posted</span>
+            {% else %}
+              <span class="text-red-500">Not posted</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {% if expense.status == 'RECORDED' %}
+      <a href="{% url 'payments:expense_cancel' expense.pk %}"
+         class="block w-full text-center px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition">
+        <i class="fas fa-times mr-1"></i> Cancel & Reverse Journal
+      </a>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

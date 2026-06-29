@@ -1,0 +1,62 @@
+{% load crispy_forms_tags %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ERP Billing Engine{% endblock %}</title>
+    <link href="https://fonts.cdnfonts.com/css/ogirema" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="{% static 'css/no-rounded.css' %}" rel="stylesheet">
+    <!-- Alpine.js — pinned to exact version -->
+    <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            --primary-50: #ecf8f1;
+            --primary-100: #d4f0e1;
+            --primary-200: #a9e1c3;
+            --primary-500: #2e8b57;
+            --primary-600: #277a4c;
+            --primary-700: #206a41;
+            --primary-800: #1a5936;
+            --primary-900: #134229;
+        }
+
+        html, body {
+            font-family: 'Ogirema', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        input[type="checkbox"] {
+            accent-color: #16a34a;
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+
+        /* Focus state for inputs */
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-600);
+            box-shadow: 0 0 0 2px rgba(39, 122, 76, 0.25);
+        }
+
+        @media print {
+            aside, .no-print { display: none !important; }
+            body, html { margin: 0 !important; padding: 0 !important; }
+            a[href]:after { content: ""; }
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen flex font-sans bg-gradient-to-r from-green-50 to-green-100">
+{% include 'includes/toast.html' %}
+{% block content %}
+
+{% endblock %}
+</body>
+
+</html>

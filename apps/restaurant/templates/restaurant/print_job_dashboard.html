@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Print Job Dashboard{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+  <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Print Job Dashboard</h1>
+      <p class="text-sm text-gray-500 mt-1">Last 200 print jobs — failed jobs highlighted</p>
+    </div>
+    <div class="flex gap-3 text-sm">
+      {% if failed_count %}
+      <span class="px-3 py-1 bg-red-100 text-red-700 font-semibold rounded-full">
+        {{ failed_count }} FAILED
+      </span>
+      {% endif %}
+      {% if queued_count %}
+      <span class="px-3 py-1 bg-yellow-100 text-yellow-700 font-semibold rounded-full">
+        {{ queued_count }} QUEUED
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="bg-white border border-gray-200 shadow-sm overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-3 py-2 text-left font-semibold text-gray-600">Time</th>
+          <th class="px-3 py-2 text-left font-semibold text-gray-600">Type</th>
+          <th class="px-3 py-2 text-left font-semibold text-gray-600">Order</th>
+          <th class="px-3 py-2 text-left font-semibold text-gray-600">Table</th>
+          <th class="px-3 py-2 text-left font-semibold text-gray-600">Printer</th>
+          <th class="px-3 py-2 text-center font-semibold text-gray-600">Status</th>
+          <th class="px-3 py-2 text-left font-semibold text-gray-600">Error</th>
+          <th class="px-3 py-2 text-center font-semibold text-gray-600">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for job in jobs %}
+        <tr class="{% if job.status == 'FAILED' %}bg-red-50{% elif job.status == 'QUEUED' %}bg-yellow-50{% endif %}">
+          <td class="px-3 py-2 text-gray-500 whitespace-nowrap text-xs">{{ job.created_at|date:"Y-m-d H:i:s" }}</td>
+          <td class="px-3 py-2">
+            <span class="px-2 py-0.5 text-xs font-bold rounded
+              {% if job.job_type == 'KOT' %}bg-orange-100 text-orange-700
+              {% elif job.job_type == 'BOT' %}bg-blue-100 text-blue-700
+              {% else %}bg-green-100 text-green-700{% endif %}">
+              {{ job.job_type }}
+            </span>
+          </td>
+          <td class="px-3 py-2 text-gray-700">{{ job.dining_order.order_number }}</td>
+          <td class="px-3 py-2 text-gray-600">{{ job.dining_order.table.label }}</td>
+          <td class="px-3 py-2 text-gray-500 text-xs">{{ job.printer.name|default:"—" }}</td>
+          <td class="px-3 py-2 text-center">
+            <span class="px-2 py-0.5 text-xs font-semibold rounded
+              {% if job.status == 'SENT' %}bg-green-100 text-green-700
+              {% elif job.status == 'QUEUED' %}bg-yellow-100 text-yellow-700
+              {% else %}bg-red-100 text-red-700{% endif %}">
+              {{ job.status }}
+            </span>
+          </td>
+          <td class="px-3 py-2 text-red-600 text-xs max-w-xs truncate" title="{{ job.error_message }}">
+            {{ job.error_message|default:"" }}
+          </td>
+          <td class="px-3 py-2 text-center">
+            {% if job.status == 'FAILED' %}
+            <form method="post" action="{% url 'restaurant:retry_print_job' job.pk %}" class="inline">
+              {% csrf_token %}
+              <button type="submit"
+                      class="px-3 py-1 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white">
+                Retry
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">No print jobs yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

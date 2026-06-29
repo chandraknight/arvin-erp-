@@ -1,0 +1,36 @@
+{% load global_filter %}
+<div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 border-b border-gray-200 pb-6">
+
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 bg-green-50 flex items-center justify-center text-green-600 shadow-sm border border-green-100">
+      <i class="fas fa-file-excel text-2xl"></i>
+    </div>
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight">{{ title }}</h1>
+      <p class="text-sm text-gray-500 font-medium mt-1">{{ descriptions }}</p>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-2">
+    <a href="{% if var_1 %}{% url btn_link_1 var_1 %}{% else %}{% url btn_link_1 %}{% endif %}"
+       class="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold shadow bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-1 transition duration-150">
+      <i class="{{ icon_1 }}"></i>
+      <span>{{ btn_name_1 }}</span>
+    </a>
+    <a href="{% if var_2 %}{% url btn_link_2 var_2 %}{% else %}{% url btn_link_2 %}{% endif %}"
+       class="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold shadow bg-green-700 text-white hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-1 transition duration-150">
+      <i class="{{ icon_2 }}"></i>
+      <span>{{ btn_name_2 }}</span>
+    </a>
+    <a href="{% if var_3 %}{% url btn_link_3 var_3 %}{% else %}{% url btn_link_3 %}{% endif %}"
+       class="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold shadow bg-green-800 text-white hover:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-1 transition duration-150">
+      <i class="{{ icon_3 }}"></i>
+      <span>{{ btn_name_3 }}</span>
+    </a>
+    <a href="{% if var_4 %}{% url btn_link_4 var_4 %}{% else %}{% url btn_link_4 %}{% endif %}"
+       class="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold shadow bg-gray-700 text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition duration-150">
+      <i class="{{ icon_4 }}"></i>
+      <span>{{ btn_name_4 }}</span>
+    </a>
+  </div>
+</div>

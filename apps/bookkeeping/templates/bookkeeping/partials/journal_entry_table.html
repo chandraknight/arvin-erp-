@@ -1,0 +1,89 @@
+{% load humanize global_filter %}
+{# HTMX partial — swapped into #journal-list-container #}
+
+<div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+        <thead class="bg-green-600 text-white text-xs uppercase">
+            <tr>
+                <th class="px-4 py-3 text-left border border-green-700">#</th>
+                <th class="px-4 py-3 text-left border border-green-700">Date</th>
+                <th class="px-4 py-3 text-left border border-green-700">Description</th>
+                <th class="px-4 py-3 text-right border border-green-700">Debits</th>
+                <th class="px-4 py-3 text-right border border-green-700">Credits</th>
+                <th class="px-4 py-3 text-center border border-green-700">Balanced</th>
+                <th class="px-4 py-3 text-center border border-green-700">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in journal_entries %}
+            <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50 transition-colors cursor-pointer"
+                onclick="window.location='{% url 'bookkeeping:journal_entry_detail' entry.id %}'">
+                <td class="px-4 py-2 border border-gray-200 whitespace-nowrap text-xs text-gray-400 font-mono">
+                    {{ forloop.counter|add:page_obj.start_index|add:"-1" }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 whitespace-nowrap font-medium">
+                    {{ entry.date|bs_date }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 max-w-xs truncate" title="{{ entry.description }}">
+                    {{ entry.description|truncatechars:60 }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-right font-mono">
+                    {{ entry.debit_total|floatformat:2|intcomma }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-right font-mono">
+                    {{ entry.credit_total|floatformat:2|intcomma }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-center">
+                    {% if entry.is_balanced %}
+                        <span class="px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-800">✓</span>
+                    {% else %}
+                        <span class="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-800">✗</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-center" onclick="event.stopPropagation()">
+                    <a href="{% url 'bookkeeping:journal_entry_pdf' entry.id %}"
+                       target="_blank"
+                       class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-green-700 hover:bg-green-800 transition mr-1"
+                       title="Download PDF">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </a>
+                    <a href="{% url 'bookkeeping:journal_entry_pdf' entry.id %}?print=1"
+                       target="_blank"
+                       class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition"
+                       title="Print">
+                        <i class="fas fa-print"></i> Print
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="px-4 py-12 text-center text-gray-400">
+                    <i class="fas fa-book-open text-3xl mb-2 block"></i>
+                    No journal entries found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-between px-1">
+    <p class="text-sm text-gray-500">
+        {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+    </p>
+    <nav class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+            <a hx-get="?page={{ page_obj.previous_page_number }}&q={{ q }}"
+               hx-target="#journal-list-container" hx-swap="innerHTML" hx-push-url="true"
+               class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">‹ Prev</a>
+        {% endif %}
+        <span class="px-3 py-1 text-sm bg-green-600 text-white font-bold">{{ page_obj.number }}</span>
+        {% if page_obj.has_next %}
+            <a hx-get="?page={{ page_obj.next_page_number }}&q={{ q }}"
+               hx-target="#journal-list-container" hx-swap="innerHTML" hx-push-url="true"
+               class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">Next ›</a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}

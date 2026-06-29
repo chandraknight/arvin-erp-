@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Ratio Analysis{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-3 border-b border-gray-200 pb-2">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Financial Ratio Analysis</h1>
+            <p class="text-sm text-gray-500 mt-1">
+                {{ company.name }}{% if fiscal_year %} — FY {{ fiscal_year.name }}{% endif %}
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'reports:export_ratio_analysis_excel' %}"
+               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition shadow">
+                <i class="fas fa-file-excel"></i> Export
+            </a>
+            <button onclick="window.print()"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition shadow">
+                <i class="fas fa-print"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Base figures -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Total Assets</p>
+            <p class="text-lg font-bold text-gray-800">{{ total_assets|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Total Liabilities</p>
+            <p class="text-lg font-bold text-red-700">{{ total_liabilities|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Total Equity</p>
+            <p class="text-lg font-bold text-green-700">{{ total_equity|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Net Income</p>
+            <p class="text-lg font-bold {% if net_income >= 0 %}text-green-700{% else %}text-red-700{% endif %}">
+                {{ net_income|floatformat:2|intcomma }}
+            </p>
+        </div>
+    </div>
+
+
+
+    <!-- Liquidity Ratios -->
+    <div class="bg-white border border-gray-200 shadow-sm mb-6">
+        <div class="px-6 py-3 bg-blue-50 border-b border-gray-200">
+            <h2 class="text-sm font-bold text-blue-800 uppercase tracking-wide">
+                <i class="fas fa-tint mr-2"></i>Liquidity Ratios
+            </h2>
+        </div>
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                <tr>
+                    <th class="px-6 py-3 text-left">Ratio</th>
+                    <th class="px-6 py-3 text-right">Value</th>
+                    <th class="px-6 py-3 text-left">Benchmark</th>
+                    <th class="px-6 py-3 text-left">Interpretation</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Current Ratio</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.current_ratio and ratios.current_ratio >= 1.5 %}text-green-700
+                        {% elif ratios.current_ratio and ratios.current_ratio >= 1 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">
+                        {{ ratios.current_ratio|default:"N/A" }}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≥ 1.5 (ideal: 2.0)</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Current Assets ÷ Current Liabilities. Measures short-term solvency.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Quick Ratio</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.quick_ratio and ratios.quick_ratio >= 1 %}text-green-700
+                        {% elif ratios.quick_ratio and ratios.quick_ratio >= 0.5 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">
+                        {{ ratios.quick_ratio|default:"N/A" }}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≥ 1.0</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">(Cash + AR) ÷ Current Liabilities. Excludes inventory.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Cash Ratio</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.cash_ratio and ratios.cash_ratio >= 0.5 %}text-green-700
+                        {% else %}text-amber-600{% endif %}">
+                        {{ ratios.cash_ratio|default:"N/A" }}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≥ 0.5</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Cash & Bank ÷ Current Liabilities. Most conservative liquidity measure.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Profitability Ratios -->
+    <div class="bg-white border border-gray-200 shadow-sm mb-6">
+        <div class="px-6 py-3 bg-green-50 border-b border-gray-200">
+            <h2 class="text-sm font-bold text-green-800 uppercase tracking-wide">
+                <i class="fas fa-chart-line mr-2"></i>Profitability Ratios
+            </h2>
+        </div>
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                <tr>
+                    <th class="px-6 py-3 text-left">Ratio</th>
+                    <th class="px-6 py-3 text-right">Value</th>
+                    <th class="px-6 py-3 text-left">Benchmark</th>
+                    <th class="px-6 py-3 text-left">Interpretation</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Gross Margin</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.gross_margin_pct and ratios.gross_margin_pct >= 30 %}text-green-700
+                        {% elif ratios.gross_margin_pct and ratios.gross_margin_pct >= 15 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">
+                        {% if ratios.gross_margin_pct %}{{ ratios.gross_margin_pct }}%{% else %}N/A{% endif %}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≥ 30%</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Gross Profit ÷ Revenue. Efficiency of core operations.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Net Profit Margin</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.net_margin_pct and ratios.net_margin_pct >= 10 %}text-green-700
+                        {% elif ratios.net_margin_pct and ratios.net_margin_pct >= 5 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">
+                        {% if ratios.net_margin_pct %}{{ ratios.net_margin_pct }}%{% else %}N/A{% endif %}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≥ 10%</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Net Income ÷ Revenue. Overall profitability after all costs.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Return on Assets (ROA)</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.roa_pct and ratios.roa_pct >= 5 %}text-green-700
+                        {% elif ratios.roa_pct and ratios.roa_pct >= 2 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">
+                        {% if ratios.roa_pct %}{{ ratios.roa_pct }}%{% else %}N/A{% endif %}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≥ 5%</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Net Income ÷ Total Assets. How efficiently assets generate profit.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Return on Equity (ROE)</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.roe_pct and ratios.roe_pct >= 15 %}text-green-700
+                        {% elif ratios.roe_pct and ratios.roe_pct >= 8 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">
+                        {% if ratios.roe_pct %}{{ ratios.roe_pct }}%{% else %}N/A{% endif %}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≥ 15%</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Net Income ÷ Equity. Return generated for shareholders.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Efficiency Ratios -->
+    <div class="bg-white border border-gray-200 shadow-sm mb-6">
+        <div class="px-6 py-3 bg-amber-50 border-b border-gray-200">
+            <h2 class="text-sm font-bold text-amber-800 uppercase tracking-wide">
+                <i class="fas fa-cogs mr-2"></i>Efficiency Ratios
+            </h2>
+        </div>
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                <tr>
+                    <th class="px-6 py-3 text-left">Ratio</th>
+                    <th class="px-6 py-3 text-right">Value</th>
+                    <th class="px-6 py-3 text-left">Benchmark</th>
+                    <th class="px-6 py-3 text-left">Interpretation</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">AR Turnover</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold text-gray-800">
+                        {{ ratios.ar_turnover|default:"N/A" }}x
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">Higher = better</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Revenue ÷ AR. How quickly customers pay.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Days Sales Outstanding (DSO)</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.days_sales_outstanding and ratios.days_sales_outstanding <= 30 %}text-green-700
+                        {% elif ratios.days_sales_outstanding and ratios.days_sales_outstanding <= 60 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">
+                        {% if ratios.days_sales_outstanding %}{{ ratios.days_sales_outstanding }} days{% else %}N/A{% endif %}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≤ 30 days</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">365 ÷ AR Turnover. Average days to collect payment.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">AP Turnover</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold text-gray-800">
+                        {{ ratios.ap_turnover|default:"N/A" }}x
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">Moderate = better</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Purchases ÷ AP. How quickly the company pays vendors.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Days Payable Outstanding (DPO)</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold text-gray-800">
+                        {% if ratios.days_payable_outstanding %}{{ ratios.days_payable_outstanding }} days{% else %}N/A{% endif %}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">30–60 days</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">365 ÷ AP Turnover. Average days to pay vendors.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Asset Turnover</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold text-gray-800">
+                        {{ ratios.asset_turnover|default:"N/A" }}x
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≥ 1.0x</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Revenue ÷ Total Assets. Revenue generated per unit of assets.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Leverage Ratios -->
+    <div class="bg-white border border-gray-200 shadow-sm mb-6">
+        <div class="px-6 py-3 bg-red-50 border-b border-gray-200">
+            <h2 class="text-sm font-bold text-red-800 uppercase tracking-wide">
+                <i class="fas fa-balance-scale mr-2"></i>Leverage Ratios
+            </h2>
+        </div>
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                <tr>
+                    <th class="px-6 py-3 text-left">Ratio</th>
+                    <th class="px-6 py-3 text-right">Value</th>
+                    <th class="px-6 py-3 text-left">Benchmark</th>
+                    <th class="px-6 py-3 text-left">Interpretation</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Debt-to-Equity</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.debt_to_equity and ratios.debt_to_equity <= 1 %}text-green-700
+                        {% elif ratios.debt_to_equity and ratios.debt_to_equity <= 2 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">
+                        {{ ratios.debt_to_equity|default:"N/A" }}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≤ 1.0</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Total Liabilities ÷ Equity. Financial leverage level.</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Debt Ratio</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold
+                        {% if ratios.debt_ratio and ratios.debt_ratio <= 0.4 %}text-green-700
+                        {% elif ratios.debt_ratio and ratios.debt_ratio <= 0.6 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">
+                        {% if ratios.debt_ratio %}{{ ratios.debt_ratio }}{% else %}N/A{% endif %}
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">≤ 0.4</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">Total Liabilities ÷ Total Assets. Proportion of assets financed by debt.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="text-xs text-gray-400 mt-4">
+        * Ratios are calculated from journal entry data. Benchmarks are general guidelines and vary by industry.
+        N/A indicates insufficient data (zero denominator or missing accounts).
+    </p>
+
+</div>
+{% endblock %}

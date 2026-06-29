@@ -1,0 +1,247 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Receipt — {{ order.order_number }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    .controls {
+      padding: 8px 14px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .controls button { background: #4f46e5; color: white; border: none; padding: 6px 16px; font-size: 13px; cursor: pointer; border-radius: 3px; }
+    .controls button:hover { background: #4338ca; }
+    .controls button.secondary { background: #374151; }
+    .controls button.secondary:hover { background: #1f2937; }
+    .controls .mode-btn { font-size: 12px; padding: 5px 12px; }
+    .controls .mode-btn.active { background: #059669 !important; }
+    .controls span { color: #94a3b8; font-size: 13px; }
+    .controls .sep { color: #475569; }
+
+    body { font-family: Arial, sans-serif; background: #e5e7eb; }
+
+    /* ── A4 mode ── */
+    body.mode-a4 .receipt {
+      background: white;
+      width: 210mm;
+      min-height: 148mm;
+      margin: 16px auto;
+      padding: 14mm 16mm;
+      font-size: 10pt;
+      color: #111;
+    }
+
+    /* ── Thermal 80mm mode ── */
+    body.mode-thermal .receipt {
+      background: white;
+      width: 80mm;
+      margin: 12px auto;
+      padding: 4mm 4mm 8mm;
+      font-size: 8pt;
+      color: #000;
+    }
+
+    /* ── Shared ── */
+    .r-header { text-align: center; margin-bottom: 5mm; }
+    .r-header .company { font-size: 14pt; font-weight: bold; }
+    body.mode-thermal .r-header .company { font-size: 11pt; }
+    .r-header .sub { font-size: 8pt; color: #555; margin-top: 1mm; }
+
+    .r-divider { border: none; border-top: 1px dashed #888; margin: 3mm 0; }
+
+    .r-title { text-align: center; font-size: 11pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3mm; }
+    body.mode-thermal .r-title { font-size: 9pt; }
+
+    .r-meta { display: flex; justify-content: space-between; font-size: 8.5pt; margin-bottom: 1.5mm; }
+    body.mode-thermal .r-meta { font-size: 7.5pt; }
+
+    .r-section-label { font-size: 7pt; text-transform: uppercase; letter-spacing: 0.5px; color: #666; margin: 3mm 0 1mm; }
+    .r-address { font-size: 8.5pt; line-height: 1.5; }
+    body.mode-thermal .r-address { font-size: 7.5pt; }
+
+    .r-table { width: 100%; border-collapse: collapse; margin: 3mm 0; }
+    .r-table th { font-size: 7pt; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #333; padding: 1.5mm 0; text-align: left; }
+    .r-table th.r { text-align: right; }
+    .r-table td { font-size: 8.5pt; padding: 1.5mm 0; border-bottom: 1px dashed #ddd; }
+    .r-table td.r { text-align: right; }
+    body.mode-thermal .r-table th, body.mode-thermal .r-table td { font-size: 7.5pt; }
+
+    .r-totals { width: 100%; margin-top: 2mm; }
+    .r-totals td { font-size: 8.5pt; padding: 1mm 0; }
+    .r-totals td:last-child { text-align: right; }
+    body.mode-thermal .r-totals td { font-size: 7.5pt; }
+    .r-totals .grand td { font-size: 10.5pt; font-weight: bold; border-top: 1.5px solid #111; padding-top: 2mm; }
+    body.mode-thermal .r-totals .grand td { font-size: 9pt; }
+
+    .r-status {
+      display: inline-block;
+      padding: 1mm 3mm; font-size: 7.5pt; font-weight: bold; margin-top: 3mm;
+      border: 1px solid #ccc;
+    }
+    .r-status.delivered { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+    .r-status.cancelled { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+    .r-status.draft { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
+    .r-status.other { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+
+    .r-footer { text-align: center; margin-top: 5mm; font-size: 7.5pt; color: #666; }
+
+    .r-notes { margin-top: 3mm; font-size: 8pt; background: #f9fafb; padding: 2mm 3mm; border-left: 2px solid #ccc; }
+    body.mode-thermal .r-notes { font-size: 7pt; }
+
+    @media print {
+      .controls { display: none !important; }
+      body { background: white !important; }
+      body.mode-a4 .receipt { margin: 0; padding: 10mm 14mm; box-shadow: none; }
+      body.mode-thermal .receipt { margin: 0; padding: 2mm 3mm 6mm; }
+    }
+  </style>
+</head>
+<body class="mode-{{ mode }}">
+
+<div class="controls">
+  <button onclick="window.print()">🖨 Print</button>
+  <button class="secondary" onclick="window.close()">✕ Close</button>
+  <span class="sep">|</span>
+  <span>Mode:</span>
+  <button class="mode-btn {% if mode == 'a4' %}active{% endif %}" onclick="setMode('a4')">A4</button>
+  <button class="mode-btn {% if mode == 'thermal' %}active{% endif %}" onclick="setMode('thermal')">Thermal (80mm)</button>
+</div>
+
+<div class="receipt">
+
+  <!-- Company header -->
+  <div class="r-header">
+    <div class="company">{{ company.name }}</div>
+    {% if company.address %}<div class="sub">{{ company.address }}</div>{% endif %}
+    {% if company.phone %}<div class="sub">📞 {{ company.phone }}</div>{% endif %}
+    {% if company.email %}<div class="sub">{{ company.email }}</div>{% endif %}
+  </div>
+
+  <hr class="r-divider">
+  <div class="r-title">Sales Order Receipt</div>
+
+  <div class="r-meta">
+    <span><strong>Order #:</strong> {{ order.order_number|default:"—" }}</span>
+    <span><strong>Date:</strong> {{ order.order_date|date:"d M Y" }}</span>
+  </div>
+  <div class="r-meta">
+    <span><strong>Status:</strong> {{ order.get_status_display }}</span>
+    {% if order.expected_delivery_date %}
+    <span><strong>Exp. Delivery:</strong> {{ order.expected_delivery_date|date:"d M Y" }}</span>
+    {% endif %}
+  </div>
+
+  <hr class="r-divider">
+
+  <!-- Customer + Delivery -->
+  <div class="r-section-label">Customer</div>
+  <div class="r-address">
+    <strong>{{ order.customer.name|default:"Walk-in" }}</strong>
+    {% if order.customer.phone %}<br>📞 {{ order.customer.phone }}{% endif %}
+    {% if order.customer.email %}<br>✉ {{ order.customer.email }}{% endif %}
+  </div>
+
+  {% if order.delivery_address %}
+  <div class="r-section-label">Deliver To</div>
+  <div class="r-address">
+    {% if order.delivery_contact %}<strong>{{ order.delivery_contact }}</strong><br>{% endif %}
+    {% if order.delivery_phone %}📞 {{ order.delivery_phone }}<br>{% endif %}
+    📍 {{ order.delivery_address }}
+  </div>
+  {% endif %}
+
+  <hr class="r-divider">
+
+  <!-- Items -->
+  <table class="r-table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th class="r">Qty</th>
+        <th class="r">Price</th>
+        {% if mode == 'a4' %}
+        <th class="r">Disc%</th>
+        <th class="r">Tax%</th>
+        {% endif %}
+        <th class="r">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in order.items.all %}
+      <tr>
+        <td>{{ item.product.name|default:item.description|default:"—" }}</td>
+        <td class="r">{{ item.quantity|floatformat:0 }}</td>
+        <td class="r">{{ item.unit_price|floatformat:2|intcomma }}</td>
+        {% if mode == 'a4' %}
+        <td class="r">{{ item.discount_percent }}%</td>
+        <td class="r">{{ item.tax_percent }}%</td>
+        {% endif %}
+        <td class="r"><strong>{{ item.line_total|floatformat:2|intcomma }}</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Totals -->
+  <table class="r-totals">
+    <tr>
+      <td>Subtotal</td>
+      <td>Rs {{ order.subtotal|floatformat:2|intcomma }}</td>
+    </tr>
+    {% if order.discount_amount %}
+    <tr>
+      <td>Discount</td>
+      <td>- Rs {{ order.discount_amount|floatformat:2|intcomma }}</td>
+    </tr>
+    {% endif %}
+    {% if order.tax_amount %}
+    <tr>
+      <td>Tax</td>
+      <td>Rs {{ order.tax_amount|floatformat:2|intcomma }}</td>
+    </tr>
+    {% endif %}
+    <tr class="grand">
+      <td>TOTAL</td>
+      <td>Rs {{ order.total|floatformat:2|intcomma }}</td>
+    </tr>
+  </table>
+
+  <div>
+    <span class="r-status {% if order.status == 'DELIVERED' %}delivered{% elif order.status == 'CANCELLED' %}cancelled{% elif order.status == 'DRAFT' %}draft{% else %}other{% endif %}">
+      {{ order.get_status_display }}
+    </span>
+  </div>
+
+  {% if order.notes %}
+  <div class="r-notes"><strong>Notes:</strong> {{ order.notes }}</div>
+  {% endif %}
+
+  {% if order.invoice %}
+  <div class="r-notes" style="margin-top:2mm;">
+    <strong>Invoice:</strong> {{ order.invoice.invoice_number }}
+  </div>
+  {% endif %}
+
+  <hr class="r-divider" style="margin-top:4mm;">
+  <div class="r-footer">
+    Thank you for your business!<br>
+    {{ company.name }}{% if company.phone %} · {{ company.phone }}{% endif %}
+  </div>
+
+</div>
+
+<script>
+  function setMode(m) {
+    document.body.className = 'mode-' + m;
+    document.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>

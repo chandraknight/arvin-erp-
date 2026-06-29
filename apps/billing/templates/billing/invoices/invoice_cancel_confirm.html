@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Cancel Invoice{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+  <div class="bg-white border border-red-200 shadow-sm">
+
+    <div class="px-6 py-4 bg-red-50 border-b border-red-200 flex items-center gap-3">
+      <i class="fas fa-ban text-red-600 text-lg"></i>
+      <h1 class="text-lg font-bold text-red-800">Cancel Invoice</h1>
+    </div>
+
+    <div class="px-6 py-5">
+      <p class="text-sm text-gray-700 mb-4">
+        You are about to cancel invoice
+        <span class="font-semibold text-gray-900">{{ invoice.invoice_number }}</span>.
+        This action cannot be undone.
+      </p>
+
+      <div class="bg-gray-50 border border-gray-200 rounded p-4 mb-5 text-sm space-y-1">
+        <div class="flex justify-between">
+          <span class="text-gray-500">Customer</span>
+          <span class="font-medium">{{ invoice.customer.name|default:"Walk-in (Cash)" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Date</span>
+          <span class="font-medium">{{ invoice.transaction_date|date:"Y-m-d" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Total</span>
+          <span class="font-medium">{{ invoice.total }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Status</span>
+          <span class="font-medium">{{ invoice.status }}</span>
+        </div>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded p-3 mb-5 text-xs text-amber-800">
+        <strong>What happens next?</strong> The invoice will be marked as
+        <em>Cancelled</em>. To correct an error, issue a new invoice. If the
+        customer was already charged, raise a Credit Note to reverse the amount.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Cancellation Reason <span class="text-red-500">*</span>
+          </label>
+          <textarea name="reason" rows="3" required
+                    placeholder="Describe why this invoice is being cancelled…"
+                    class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-400"></textarea>
+        </div>
+
+        <div class="flex gap-3">
+          <button type="submit"
+                  class="px-5 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition">
+            Confirm Cancellation
+          </button>
+          <a href="{% url 'accounts:user_dashboard' %}"
+             class="px-5 py-2 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            Go Back
+          </a>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

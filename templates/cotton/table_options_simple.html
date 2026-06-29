@@ -1,0 +1,15 @@
+{% load global_filter %}
+<div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-green-600 text-white text-xs uppercase">
+             <tr>
+            {{ th }}
+             </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+            {{ tbody }}
+            </tbody>
+        </table>
+    </div>
+</div>

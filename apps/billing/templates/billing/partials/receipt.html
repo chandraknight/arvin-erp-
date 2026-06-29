@@ -1,0 +1,84 @@
+<div class="receipt-container p-6 bg-white border border-gray-300 rounded shadow-lg" style="max-width: 400px; margin: 20px auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px;">
+    <div class="header text-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Sales Receipt</h1>
+        <p class="text-gray-600">Invoice #{{ invoice.invoice_number }}</p>
+        <p class="text-gray-600">Date: {{ invoice.created_at|date:"F d, Y" }}</p>
+    </div>
+
+    <div class="customer-info mb-6 border-b pb-4">
+        <h2 class="font-semibold text-gray-700 mb-2">Customer Details:</h2>
+        {% if invoice.customer %}
+            <p><strong>Name:</strong> {{ invoice.customer.name }}</p>
+            {% if invoice.customer.address %}<p><strong>Address:</strong> {{ invoice.customer.address }}</p>{% endif %}
+            {% if invoice.customer.phone %}<p><strong>Phone:</strong> {{ invoice.customer.phone }}</p>{% endif %}
+        {% else %}
+            <p>Cash Sale (Walk-in Customer)</p>
+        {% endif %}
+    </div>
+
+    <div class="items-table mb-6">
+        <h2 class="font-semibold text-gray-700 mb-3">Items:</h2>
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b">
+                    <th class="py-2 px-1">Item</th>
+                    <th class="py-2 px-1 text-center">Qty</th>
+                    <th class="py-2 px-1 text-right">Price</th>
+                    <th class="py-2 px-1 text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice_items %}
+                    <tr class="border-b border-gray-200 last:border-b-0">
+                        <td class="py-2 px-1">
+                            {{ item.name }}
+                        </td>
+                        <td class="py-2 px-1 text-center">{{ item.quantity }}</td>
+                        <td class="py-2 px-1 text-right">Rs. {{ item.price|floatformat:2 }}</td>
+                        <td class="py-2 px-1 text-right">Rs. {{ item.total|floatformat:2 }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary-totals border-t pt-4">
+        <div class="flex justify-between mb-1">
+            <span>Subtotal:</span>
+            <span>Rs. {{ invoice.subtotal|floatformat:2 }}</span>
+        </div>
+        {% if invoice.discount_percent > 0 %}
+            <div class="flex justify-between mb-1">
+                <span>Discount ({{ invoice.discount_percent|floatformat:2 }}%):</span>
+                <span>- Rs. {{ invoice.discount_amount|floatformat:2 }}</span>
+            </div>
+        {% endif %}
+        {% if vat_registered and invoice.tax_percent > 0 %}
+            <div class="flex justify-between mb-1">
+                <span>VAT ({{ invoice.tax_percent|floatformat:2 }}%):</span>
+                <span>+ Rs. {{ invoice.tax_amount|floatformat:2 }}</span>
+            </div>
+        {% endif %}
+        <div class="flex justify-between items-center mt-3 pt-3 border-t font-bold text-lg">
+            <span>Grand Total:</span>
+            <span>Rs. {{ invoice.total|floatformat:2 }}</span>
+        </div>
+        {% if invoice.total_payments_received %}
+        <div class="flex justify-between mt-2 text-sm text-gray-700">
+            <span>Amount Paid:</span>
+            <span>Rs. {{ invoice.total_payments_received|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        {% if invoice.outstanding_balance > 0 %}
+        <div class="flex justify-between mt-1 text-sm text-red-600">
+            <span>Balance Due:</span>
+            <span>Rs. {{ invoice.outstanding_balance|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="footer text-center mt-8 text-gray-500 text-xs">
+        <p>Thank you for your business!</p>
+        <p>Powered by Your ERP Billing Engine</p>
+    </div>
+</div> 

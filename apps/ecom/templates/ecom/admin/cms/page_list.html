@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Pages — Ecom CMS{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">Pages</h1>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'ecom:cms_dashboard' %}" class="text-sm text-gray-500"><i class="fas fa-arrow-left mr-1"></i>CMS</a>
+      <a href="{% url 'ecom:cms_page_create' %}" class="bg-indigo-600 text-white px-4 py-2 text-sm font-medium">
+        <i class="fas fa-plus mr-1"></i>New Page
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-white border border-gray-200 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+        <tr>
+          <th class="px-5 py-3 text-left">Title</th>
+          <th class="px-5 py-3 text-left">Slug</th>
+          <th class="px-5 py-3 text-left">Type</th>
+          <th class="px-5 py-3 text-left">Footer</th>
+          <th class="px-5 py-3 text-left">Status</th>
+          <th class="px-5 py-3 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for page in pages %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-5 py-3 font-medium text-gray-800">{{ page.title }}</td>
+          <td class="px-5 py-3 font-mono text-xs text-gray-500">/store/p/{{ page.slug }}/</td>
+          <td class="px-5 py-3 text-gray-500">{{ page.get_slug_type_display }}</td>
+          <td class="px-5 py-3">
+            {% if page.show_in_footer %}<span class="text-green-600 text-xs font-semibold">Yes</span>
+            {% else %}<span class="text-gray-400 text-xs">No</span>{% endif %}
+          </td>
+          <td class="px-5 py-3">
+            {% if page.is_published %}
+            <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 font-semibold">Published</span>
+            {% else %}
+            <span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 font-semibold">Draft</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 flex items-center space-x-2">
+            <a href="/store/p/{{ page.slug }}/" target="_blank" class="text-xs text-gray-400 hover:text-indigo-600"><i class="fas fa-external-link-alt"></i></a>
+            <a href="{% url 'ecom:cms_page_edit' page.id %}" class="text-xs text-indigo-600">Edit</a>
+            <form method="post" action="{% url 'ecom:cms_page_delete' page.id %}"
+              onsubmit="return confirm('Delete this page?')">
+              {% csrf_token %}
+              <button class="text-xs text-red-500">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-5 py-10 text-center text-gray-400">No pages yet. <a href="{% url 'ecom:cms_page_create' %}" class="text-indigo-600">Create one →</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

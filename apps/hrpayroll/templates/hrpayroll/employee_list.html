@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Employees{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mx-auto mt-2">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-200 pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Employees</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ page_obj.paginator.count }} total employee{{ page_obj.paginator.count|pluralize }}</p>
+        </div>
+        <a href="{% url 'hrpayroll:employee_create' %}"
+           class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition shadow">
+            <i class="fas fa-plus"></i> Add Employee
+        </a>
+    </div>
+
+    <!-- Search + Filters -->
+    <div class="bg-white border border-gray-200 shadow-sm p-4 mb-4"
+         x-data="{ loading: false }"
+         @htmx:before-request.window="loading = true"
+         @htmx:after-request.window="loading = false">
+        <div class="flex flex-col sm:flex-row gap-3">
+
+            <!-- Live search -->
+            <div class="relative flex-1">
+                <input type="text"
+                       name="q"
+                       value="{{ q|default:'' }}"
+                       placeholder="Search by name, email, position…"
+                       class="w-full border border-gray-300 px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
+                       hx-get="{% url 'hrpayroll:employee_list' %}"
+                       hx-target="#employee-list-container"
+                       hx-swap="innerHTML"
+                       hx-trigger="input changed delay:400ms, search"
+                       hx-include="[data-filter]"
+                       hx-push-url="true"
+                       autocomplete="off">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <i class="fas fa-search text-gray-400 text-xs" x-show="!loading"></i>
+                    <i class="fas fa-spinner fa-spin text-green-600 text-xs" x-show="loading" style="display:none"></i>
+                </div>
+            </div>
+
+            <!-- Department filter -->
+            <select name="department"
+                    data-filter
+                    class="border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
+                    hx-get="{% url 'hrpayroll:employee_list' %}"
+                    hx-target="#employee-list-container"
+                    hx-swap="innerHTML"
+                    hx-trigger="change"
+                    hx-include="[name='q'],[name='is_active']"
+                    hx-push-url="true">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                    <option value="{{ dept.id }}" {% if department == dept.id|stringformat:"s" %}selected{% endif %}>
+                        {{ dept.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <!-- Active filter -->
+            <select name="is_active"
+                    data-filter
+                    class="border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
+                    hx-get="{% url 'hrpayroll:employee_list' %}"
+                    hx-target="#employee-list-container"
+                    hx-swap="innerHTML"
+                    hx-trigger="change"
+                    hx-include="[name='q'],[name='department']"
+                    hx-push-url="true">
+                <option value="">All Status</option>
+                <option value="1" {% if is_active == '1' %}selected{% endif %}>Active</option>
+                <option value="0" {% if is_active == '0' %}selected{% endif %}>Inactive</option>
+            </select>
+
+        </div>
+    </div>
+
+    <!-- List container -->
+    <div id="employee-list-container">
+        {% include 'hrpayroll/partials/employee_table.html' %}
+    </div>
+
+</div>
+{% endblock %}

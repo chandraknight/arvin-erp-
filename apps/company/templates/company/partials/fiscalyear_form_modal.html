@@ -1,0 +1,52 @@
+{% load widget_tweaks %}
+<div>
+    <div class="mb-4">
+        <div class="text-lg font-semibold text-gray-900">Create Fiscal Year</div>
+        <div class="text-sm text-gray-500">Add a fiscal year without leaving this page.</div>
+    </div>
+
+    <form method="post"
+          novalidate
+          hx-post="{% url 'company:fiscalyear_create' %}?modal=1"
+          hx-target="#app-modal-content"
+          hx-swap="innerHTML"
+          class="space-y-4">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="rounded-lg border border-red-200 bg-red-50 p-3">
+                {% for error in form.non_field_errors %}
+                    <div class="text-sm text-red-700">{{ error|striptags }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
+                    {{ field.label }}
+                </label>
+                {{ field|add_class:"w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition" }}
+                {% if field.errors %}
+                    <div class="text-sm text-red-600 mt-1">{{ field.errors|striptags }}</div>
+                {% endif %}
+                {% if field.help_text %}
+                    <div class="text-xs text-gray-500 mt-1">{{ field.help_text }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button type="submit"
+                    class="inline-flex items-center justify-center rounded-lg bg-green-600 text-white px-5 py-2.5 font-semibold hover:bg-green-700 transition">
+                Save
+            </button>
+            <button type="button"
+                    class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 px-5 py-2.5 font-semibold hover:bg-gray-50 transition"
+                    @click="modalOpen = false">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
+

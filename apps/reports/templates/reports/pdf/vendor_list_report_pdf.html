@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vendor List Report - PDF</title>
+        <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: sans-serif; font-size: 10pt; color: #000; margin: 0; }
+        h1 { color: #333; text-align: center; font-size: 14pt; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #999; padding: 5px 7px; text-align: left; font-size: 9pt; }
+        th { background-color: #e8e8e8; font-weight: bold; }
+        tr { page-break-inside: avoid; }
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <h1>Vendor List Report</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Contact Person</th>
+                <th>Email</th>
+                <th>Phone</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vendor in vendors %}
+            <tr>
+                <td>{{ vendor.name }}</td>
+                <td>{{ vendor.contact_person|default:"-" }}</td>
+                <td>{{ vendor.email|default:"-" }}</td>
+                <td>{{ vendor.phone|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html> 

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Enquiry {{ enq.enquiry_number }}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <a href="{% url 'tours:enquiry_list' %}" class="text-gray-400 hover:text-gray-600 transition">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">{{ enq.enquiry_number }}</h2>
+        <p class="text-sm text-gray-500 mt-0.5">{{ enq.contact_name }} · {{ enq.created_at|date:"Y-m-d" }}</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'tours:enquiry_edit' enq.pk %}"
+         class="border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium px-4 py-2 transition duration-150">
+        <i class="fas fa-edit mr-1"></i> Edit
+      </a>
+      {% if enq.status != 'CONVERTED' %}
+        <a href="{% url 'tours:enquiry_convert' enq.pk %}"
+           class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 transition duration-150">
+          <i class="fas fa-exchange-alt mr-1"></i> Convert to Booking
+        </a>
+      {% else %}
+        <a href="{% url 'tours:booking_detail' enq.booking.pk %}"
+           class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 transition duration-150">
+          <i class="fas fa-ticket-alt mr-1"></i> View Booking
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Main info -->
+    <div class="md:col-span-2 space-y-5">
+
+      <div class="bg-white border border-gray-200 shadow-sm p-5">
+        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Contact</h3>
+        <dl class="grid grid-cols-2 gap-3 text-sm">
+          <dt class="text-gray-500">Name</dt><dd class="font-medium text-gray-800">{{ enq.contact_name }}</dd>
+          <dt class="text-gray-500">Phone</dt><dd class="text-gray-800">{{ enq.contact_phone|default:"—" }}</dd>
+          <dt class="text-gray-500">Email</dt><dd class="text-gray-800">{{ enq.contact_email|default:"—" }}</dd>
+          <dt class="text-gray-500">Source</dt><dd class="text-gray-800">{{ enq.get_source_display }}</dd>
+          {% if enq.customer %}
+            <dt class="text-gray-500">Customer</dt><dd class="text-gray-800">{{ enq.customer.name }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+
+      <div class="bg-white border border-gray-200 shadow-sm p-5">
+        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Trip Details</h3>
+        <dl class="grid grid-cols-2 gap-3 text-sm">
+          <dt class="text-gray-500">Package</dt><dd class="font-medium text-gray-800">{{ enq.package|default:"—" }}</dd>
+          <dt class="text-gray-500">Destination</dt><dd class="text-gray-800">{{ enq.destination|default:"—" }}</dd>
+          <dt class="text-gray-500">Travel Date</dt><dd class="text-gray-800">{{ enq.travel_date|default:"—" }}</dd>
+          <dt class="text-gray-500">Return Date</dt><dd class="text-gray-800">{{ enq.return_date|default:"—" }}</dd>
+          <dt class="text-gray-500">Adults</dt><dd class="text-gray-800">{{ enq.num_adults }}</dd>
+          <dt class="text-gray-500">Children</dt><dd class="text-gray-800">{{ enq.num_children }}</dd>
+        </dl>
+        {% if enq.special_requests %}
+          <div class="mt-3 pt-3 border-t border-gray-100">
+            <p class="text-xs text-gray-500 mb-1">Special Requests</p>
+            <p class="text-sm text-gray-700">{{ enq.special_requests }}</p>
+          </div>
+        {% endif %}
+        {% if enq.internal_notes %}
+          <div class="mt-3 pt-3 border-t border-gray-100">
+            <p class="text-xs text-gray-500 mb-1">Internal Notes</p>
+            <p class="text-sm text-gray-700">{{ enq.internal_notes }}</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Status sidebar -->
+    <div class="space-y-4">
+      <div class="bg-white border border-gray-200 shadow-sm p-5">
+        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Status</h3>
+        <span class="inline-block text-sm px-3 py-1 font-medium
+          {% if enq.status == 'NEW' %}bg-yellow-100 text-yellow-700
+          {% elif enq.status == 'CONVERTED' %}bg-green-100 text-green-700
+          {% elif enq.status == 'LOST' %}bg-red-100 text-red-700
+          {% else %}bg-gray-100 text-gray-600{% endif %}">
+          {{ enq.get_status_display }}
+        </span>
+
+        {% if enq.status != 'CONVERTED' %}
+          <form method="post" action="{% url 'tours:enquiry_update_status' enq.pk %}" class="mt-4 space-y-2">
+            {% csrf_token %}
+            <select name="status"
+                    class="block w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600">
+              {% for key, label in enq.ENQUIRY_STATUS_CHOICES %}
+                <option value="{{ key }}" {% if enq.status == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit"
+                    class="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm py-2 transition duration-150">
+              Update Status
+            </button>
+          </form>
+        {% endif %}
+      </div>
+
+      {% if enq.assigned_to %}
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Assigned To</h3>
+          <p class="text-sm text-gray-800">{{ enq.assigned_to.get_full_name|default:enq.assigned_to.username }}</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

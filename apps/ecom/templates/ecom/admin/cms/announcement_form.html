@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load global_filter %}
+{% block title %}{% if announcement %}Edit Announcement{% else %}New Announcement{% endif %} — Ecom CMS{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">{% if announcement %}Edit Announcement{% else %}New Announcement{% endif %}</h1>
+    <a href="{% url 'ecom:cms_announcement_list' %}" class="text-sm text-gray-500"><i class="fas fa-arrow-left mr-1"></i>Announcements</a>
+  </div>
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+
+    <div class="bg-white border border-gray-200 p-5 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+          <select name="announcement_type" class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none">
+            <option value="BANNER" {% if announcement and announcement.announcement_type == 'BANNER' %}selected{% endif %}>Top Banner Bar</option>
+            <option value="NEWS" {% if announcement and announcement.announcement_type == 'NEWS' %}selected{% endif %}>News / What's New</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
+          <select name="bg_color" class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none">
+            {% for color in "indigo,red,green,yellow,blue,orange,pink,purple"|split:"," %}
+            <option value="{{ color }}" {% if announcement and announcement.bg_color == color %}selected{% elif not announcement and color == 'indigo' %}selected{% endif %}>{{ color|capfirst }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Text <span class="text-red-500">*</span></label>
+        <input type="text" name="text" value="{{ announcement.text|default:'' }}" required
+          class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          placeholder="Free delivery on orders above Rs 1000!">
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Link URL <span class="text-gray-400 text-xs">(optional)</span></label>
+          <input type="text" name="link_url" value="{{ announcement.link_url|default:'' }}"
+            class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            placeholder="/store/?category=...">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Link Label</label>
+          <input type="text" name="link_label" value="{{ announcement.link_label|default:'' }}"
+            class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            placeholder="Shop Now">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Expires At <span class="text-gray-400 text-xs">(optional)</span></label>
+          <div style="position:relative;">
+            <input type="text" id="expires_at_picker" name="expires_at"
+              value="{% if announcement and announcement.expires_at %}{{ announcement.expires_at|date:'Y-m-d' }}{% endif %}"
+              placeholder="Select date &amp; time…"
+              autocomplete="off" readonly
+              class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              style="cursor:pointer;">
+            <i class="fas fa-calendar-alt" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#9ca3af;pointer-events:none;"></i>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
+          <input type="number" name="sort_order" value="{{ announcement.sort_order|default:0 }}" min="0"
+            class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+        </div>
+      </div>
+
+      <label class="flex items-center space-x-2 cursor-pointer">
+        <input type="checkbox" name="is_active" {% if not announcement or announcement.is_active %}checked{% endif %} class="h-4 w-4">
+        <span class="text-sm font-medium text-gray-700">Active</span>
+      </label>
+    </div>
+
+    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 font-medium text-sm">
+      <i class="fas fa-save mr-1"></i>{% if announcement %}Update{% else %}Create{% endif %}
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+.flatpickr-calendar { font-family: inherit; box-shadow: 0 4px 20px rgba(0,0,0,0.12); border-radius: 8px; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover { background: #4f46e5; border-color: #4f46e5; }
+.flatpickr-day:hover { background: #eef2ff; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+flatpickr('#expires_at_picker', {
+  enableTime: false,
+  dateFormat: 'Y-m-d',
+  allowInput: false,
+  disableMobile: true,
+});
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit Attendance Record{% else %}Create Attendance Record{% endif %}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2 bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+    <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+        <h2 class="text-2xl font-bold text-gray-800">
+            {% if form.instance.pk %}Edit Attendance Record{% else %}Create Attendance Record{% endif %}
+        </h2>
+    </div>
+
+    <form method="post" id="attendance-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-4">
+                <strong>Errors:</strong> {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <!-- Row: Employee + Date -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="flex">
+                <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 shrink-0">
+                    Employee
+                </span>
+                <div class="flex-1">
+                    {{ form.employee|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition" }}
+                    {% if form.employee.errors %}<div class="text-red-500 text-xs mt-1">{% for e in form.employee.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                </div>
+            </div>
+            <div class="flex">
+                <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 shrink-0">
+                    Date
+                </span>
+                <div class="flex-1">
+                    {{ form.date|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition nepali-datepicker"|attr:"autocomplete:off"|attr:"placeholder:YYYY-MM-DD" }}
+                    {% if form.date.errors %}<div class="text-red-500 text-xs mt-1">{% for e in form.date.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Row: Status -->
+        <div class="flex mb-4">
+            <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 shrink-0">
+                Status
+            </span>
+            <div class="flex-1">
+                {{ form.status|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition" }}
+                {% if form.status.errors %}<div class="text-red-500 text-xs mt-1">{% for e in form.status.errors %}{{ e }}{% endfor %}</div>{% endif %}
+            </div>
+        </div>
+
+        <!-- Row: Check In + Check Out -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="flex">
+                <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 shrink-0">
+                    Check In
+                </span>
+                <div class="flex-1">
+                    {{ form.check_in_time|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition" }}
+                    {% if form.check_in_time.errors %}<div class="text-red-500 text-xs mt-1">{% for e in form.check_in_time.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                </div>
+            </div>
+            <div class="flex">
+                <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 shrink-0">
+                    Check Out
+                </span>
+                <div class="flex-1">
+                    {{ form.check_out_time|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition" }}
+                    {% if form.check_out_time.errors %}<div class="text-red-500 text-xs mt-1">{% for e in form.check_out_time.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="flex mb-4">
+            <span class="flex items-start px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 shrink-0 pt-3">
+                Notes
+            </span>
+            <div class="flex-1">
+                {{ form.notes|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition"|attr:"rows:3" }}
+                {% if form.notes.errors %}<div class="text-red-500 text-xs mt-1">{% for e in form.notes.errors %}{{ e }}{% endfor %}</div>{% endif %}
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 shadow-md transition duration-150">
+                {% if form.instance.pk %}Update Record{% else %}Create Record{% endif %}
+            </button>
+            <a href="{% url 'hrpayroll:attendance_list' %}" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 shadow-md transition duration-150 text-center flex items-center justify-center">
+                Cancel
+            </a>
+        </div>
+    </form>
+
+    <div class="mt-4">
+        <a href="{% url 'hrpayroll:attendance_list' %}" class="text-sm text-gray-500 hover:text-gray-700">← Back to Attendance</a>
+    </div>
+</div>
+{% endblock %}

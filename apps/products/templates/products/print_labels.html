@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Print Labels</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body { font-family: Arial, sans-serif; background: #e5e7eb; }
+
+    /* ── Screen controls ── */
+    .controls {
+      padding: 10px 16px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .controls button {
+      background: #4f46e5; color: white; border: none;
+      padding: 7px 18px; font-size: 13px; cursor: pointer; border-radius: 4px;
+    }
+    .controls button:hover { background: #4338ca; }
+    .controls button.secondary {
+      background: #374151;
+    }
+    .controls button.secondary:hover { background: #1f2937; }
+    .controls .sep { color: #475569; }
+    .controls span { color: #94a3b8; font-size: 13px; }
+    .mode-btn { font-size: 12px !important; padding: 5px 12px !important; }
+    .mode-btn.active { background: #059669 !important; }
+
+    /* ── A4 sheet mode ── */
+    body.mode-a4 .sheet {
+      background: white;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 12px auto;
+      padding: 8mm;
+      display: grid;
+      grid-template-columns: repeat(3, 34mm);
+      gap: 3mm;
+      align-content: flex-start;
+      justify-content: center;
+    }
+    body.mode-a4 .label {
+      width: 34mm;
+      height: 20mm;
+      border: 0.5px solid #bbb;
+      border-radius: 1px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1mm 1.5mm;
+      page-break-inside: avoid;
+      background: white;
+    }
+
+    /* ── Label printer mode ── */
+    body.mode-lp .sheet {
+      background: transparent;
+      width: 34mm;
+      margin: 12px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2mm;
+      padding: 3mm 0;
+    }
+    body.mode-lp .label {
+      width: 34mm;
+      height: 20mm;
+      border: 0.5px dashed #aaa;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1mm 1.5mm;
+      page-break-inside: avoid;
+    }
+
+    /* ── Label contents (shared) ── */
+    .label-name {
+      font-size: 5.5pt;
+      font-weight: bold;
+      text-align: center;
+      line-height: 1.15;
+      overflow: hidden;
+      width: 100%;
+      max-height: 2.3em;
+    }
+    .label-barcode { margin: 0.5mm 0 0; max-width: 100%; }
+    .label-barcode svg { display: block; max-width: 31mm; height: auto; }
+    .label-barcode-val { font-size: 4.5pt; color: #555; letter-spacing: 0.3px; margin-bottom: 0.5mm; }
+    .label-price { font-size: 6.5pt; font-weight: bold; color: #111; }
+    .no-barcode {
+      font-size: 5pt; color: #aaa;
+      border: 1px dashed #ddd; padding: 0.5mm 2mm;
+      margin: 1mm 0 0.5mm;
+    }
+
+    @media print {
+      .controls { display: none !important; }
+      body { background: white !important; }
+      body.mode-a4 .sheet { margin: 0; padding: 6mm; box-shadow: none; }
+      body.mode-lp .sheet { margin: 0; padding: 1mm 0; width: 34mm; }
+      .label { border-color: #999 !important; }
+    }
+  </style>
+</head>
+<body class="mode-a4">
+
+<div class="controls">
+  <button onclick="window.print()">🖨 Print</button>
+  <button class="secondary" onclick="window.close()">✕ Close</button>
+  <span class="sep">|</span>
+  <span>Format:</span>
+  <button class="mode-btn active" id="btn-a4" onclick="setMode('a4')">A4 Sheet</button>
+  <button class="mode-btn" id="btn-lp" onclick="setMode('lp')">Label Printer</button>
+  <span class="sep">|</span>
+  <span>{{ labels|length }} label{{ labels|length|pluralize }}</span>
+</div>
+
+<div class="sheet">
+  {% for label in labels %}
+  <div class="label">
+    <div class="label-name">{{ label.name }}</div>
+    {% if label.barcode %}
+    <div class="label-barcode">
+      <svg class="barcode" data-val="{{ label.barcode }}"></svg>
+    </div>
+    <div class="label-barcode-val">{{ label.barcode }}</div>
+    {% else %}
+    <div class="no-barcode">NO BARCODE</div>
+    {% endif %}
+    <div class="label-price">Rs {{ label.price }}</div>
+  </div>
+  {% empty %}
+  <p style="padding:20mm;color:#666;">No labels to print.</p>
+  {% endfor %}
+</div>
+
+<script>
+  function setMode(m) {
+    document.body.className = 'mode-' + m;
+    document.getElementById('btn-a4').classList.toggle('active', m === 'a4');
+    document.getElementById('btn-lp').classList.toggle('active', m === 'lp');
+  }
+
+  document.querySelectorAll('svg.barcode').forEach(function(el) {
+    var val = el.getAttribute('data-val');
+    if (!val) return;
+    try {
+      JsBarcode(el, val, {
+        format: 'CODE128',
+        width: 1,
+        height: 18,
+        displayValue: false,
+        margin: 0,
+      });
+    } catch(e) {
+      el.outerHTML = '<span style="font-size:7pt;color:#c00">Invalid</span>';
+    }
+  });
+</script>
+</body>
+</html>

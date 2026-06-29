@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Cash Position{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-3 border-b border-gray-200 pb-2">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Cash Position</h1>
+            <p class="text-sm text-gray-500 mt-1">As of {{ as_of_date|date:"Y-m-d" }}</p>
+        </div>
+        <button onclick="window.print()"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition shadow">
+            <i class="fas fa-print"></i> Print
+        </button>
+    </div>
+
+    <!-- Date filter -->
+    <form method="get" class="bg-white border border-gray-200 shadow-sm p-4 mb-6">
+        <div class="flex items-end gap-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">As of Date (BS)</label>
+                <input type="text" name="as_of_date" value="{{ as_of_date|date:'Y-m-d' }}"
+                       class="nepali-datepicker border border-gray-300 px-3 py-2 text-sm" autocomplete="off">
+            </div>
+            <button type="submit"
+                    class="px-4 py-2 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition">
+                Apply
+            </button>
+        </div>
+    </form>
+
+    <!-- Total balance -->
+    <div class="bg-green-700 text-white p-6 mb-6 shadow">
+        <p class="text-sm text-green-200 uppercase tracking-wide">Total Cash & Bank Position</p>
+        <p class="text-4xl font-bold mt-1">{{ total_balance|floatformat:2|intcomma }}</p>
+    </div>
+
+    <!-- 30-day movement -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Inflows (Last 30 Days)</p>
+            <p class="text-xl font-bold text-green-700">{{ inflows_30d|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Outflows (Last 30 Days)</p>
+            <p class="text-xl font-bold text-red-600">{{ outflows_30d|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Net Movement (Last 30 Days)</p>
+            <p class="text-xl font-bold {% if net_30d >= 0 %}text-green-700{% else %}text-red-600{% endif %}">
+                {{ net_30d|floatformat:2|intcomma }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Per-account breakdown -->
+    {% for item in account_data %}
+    <div class="bg-white border border-gray-200 shadow-sm mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <div>
+                <h2 class="text-base font-bold text-gray-800">{{ item.account.name }}</h2>
+                <p class="text-xs text-gray-500">{{ item.account.get_account_type_display }} — Code: {{ item.account.code|default:"—" }}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-gray-500">Balance</p>
+                <p class="text-xl font-bold {% if item.balance >= 0 %}text-green-700{% else %}text-red-600{% endif %}">
+                    {{ item.balance|floatformat:2|intcomma }}
+                </p>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                    <tr>
+                        <th class="px-4 py-2 text-left">Date</th>
+                        <th class="px-4 py-2 text-left">Description</th>
+                        <th class="px-4 py-2 text-center">Type</th>
+                        <th class="px-4 py-2 text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in item.recent %}
+                    <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50">
+                        <td class="px-4 py-2 border-b border-gray-100 whitespace-nowrap">{{ line.journal_entry.date|date:"Y-m-d" }}</td>
+                        <td class="px-4 py-2 border-b border-gray-100 text-gray-600 max-w-xs truncate">{{ line.journal_entry.description|truncatechars:50 }}</td>
+                        <td class="px-4 py-2 border-b border-gray-100 text-center">
+                            <span class="px-2 py-0.5 text-xs font-semibold
+                                {% if line.entry_type == 'DEBIT' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ line.entry_type }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-2 border-b border-gray-100 text-right font-mono
+                            {% if line.entry_type == 'DEBIT' %}text-green-700{% else %}text-red-600{% endif %}">
+                            {{ line.amount|floatformat:2|intcomma }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-6 text-center text-gray-400 text-xs">No transactions found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% empty %}
+    <div class="bg-white border border-gray-200 shadow-sm p-12 text-center text-gray-400">
+        <i class="fas fa-wallet text-3xl mb-2 block"></i>
+        No Cash or Bank accounts found. Please set up default ledger accounts.
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% block title %}Purchase Orders Report{% endblock %}
+{% block content %}
+<div class="p-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Purchase Orders</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Per NFRS 2 — Procurement Register (NAS 12 / IAS 2)</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'reports:export_purchase_order_list_report_excel' %}?{{ request.GET.urlencode }}"
+         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+        <i class="fas fa-file-excel"></i> Excel
+      </a>
+      <a href="{% url 'reports:export_purchase_order_list_report_pdf' %}?{{ request.GET.urlencode }}"
+         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition">
+        <i class="fas fa-file-pdf"></i> PDF
+      </a>
+      <a href="{% url 'reports:print_purchase_order_list_report' %}?{{ request.GET.urlencode }}" target="_blank"
+         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">
+        <i class="fas fa-print"></i> Print
+      </a>
+    </div>
+  </div>
+
+  {# Summary cards #}
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+      <p class="text-xs text-gray-500 mb-1">Total POs (filtered)</p>
+      <p class="text-2xl font-bold text-gray-800">{{ total_count }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+      <p class="text-xs text-gray-500 mb-1">Total Purchase Value</p>
+      <p class="text-2xl font-bold text-green-700">Rs.{{ total_po_amount|floatformat:2 }}</p>
+    </div>
+    {% if company %}
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+      <p class="text-xs text-gray-500 mb-1">Company</p>
+      <p class="text-sm font-semibold text-gray-800">{{ company.name }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {# Filters #}
+  <form method="get" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">From Date</label>
+        <input type="date" name="date_from" value="{{ date_from }}"
+               class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">To Date</label>
+        <input type="date" name="date_to" value="{{ date_to }}"
+               class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Vendor</label>
+        <input type="text" name="vendor" value="{{ vendor_q }}" placeholder="Search vendor…"
+               class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Status</label>
+        <select name="status" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="">All Statuses</option>
+          {% for val, label in PURCHASE_STATUS_CHOICES %}
+          <option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button type="submit" class="px-4 py-1.5 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg">Apply</button>
+      <a href="{% url 'reports:purchase_order_list_report' %}" class="px-4 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">Clear</a>
+    </div>
+  </form>
+
+  <div class="flex items-center mb-3 text-sm text-gray-500">
+    <span>Showing <strong class="text-gray-700">{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong> of <strong class="text-gray-700">{{ total_count }}</strong> orders</span>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">PO Number</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Vendor</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">PO Date</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Amount (Rs.)</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Created By</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for po in purchase_orders %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-mono text-xs text-gray-700 whitespace-nowrap">
+            {{ po.purchase_order_number|default:po.id }}
+          </td>
+          <td class="px-4 py-3 font-medium text-gray-800">{{ po.vendor.name }}</td>
+          <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ po.date|date:"Y-m-d" }}</td>
+          <td class="px-4 py-3 text-right font-semibold text-gray-800 whitespace-nowrap">
+            {{ po.total_amount|floatformat:2 }}
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium
+              {% if po.status == 'RECEIVED' %}bg-green-100 text-green-700
+              {% elif po.status == 'SENT' %}bg-blue-100 text-blue-700
+              {% elif po.status == 'CANCELLED' %}bg-red-100 text-red-700
+              {% else %}bg-gray-100 text-gray-600{% endif %}">
+              {{ po.get_status_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-gray-500 text-xs">{{ po.created_by|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-10 text-center text-gray-400">No purchase orders found for the selected filters.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if purchase_orders %}
+      <tfoot class="bg-gray-50 border-t-2 border-gray-300">
+        <tr>
+          <td colspan="3" class="px-4 py-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Total (filtered)</td>
+          <td class="px-4 py-3 text-right font-bold text-gray-900 text-base">Rs.{{ total_po_amount|floatformat:2 }}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="mt-4 flex items-center justify-between text-sm">
+    <span class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+         class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-xs">&laquo; Prev</a>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="px-3 py-1.5 bg-green-700 text-white rounded-lg text-xs">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ num }}"
+           class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-xs">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+         class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-xs">Next &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

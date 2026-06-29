@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Expense Tracker{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-3">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Expense Tracker</h2>
+      <p class="text-sm text-gray-500 mt-0.5">All company expenses with double-entry journal posting</p>
+    </div>
+    <a href="{% url 'payments:expense_create' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold transition">
+      <i class="fas fa-plus text-xs"></i> Add Expense
+    </a>
+  </div>
+
+  <!-- Summary card -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+    <div class="bg-white border border-gray-200 shadow-sm p-4">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Recorded</p>
+      <p class="text-2xl font-bold text-green-800 mt-1">₹ {{ total|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 shadow-sm p-4">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Showing</p>
+      <p class="text-2xl font-bold text-gray-800 mt-1">{{ page_obj.paginator.count }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 shadow-sm p-4 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quick add</p>
+        <p class="text-sm text-gray-600 mt-1">Record a new expense with journal</p>
+      </div>
+      <a href="{% url 'payments:expense_create' %}"
+         class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold transition">
+        + Add
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <form method="get" class="bg-white border border-gray-200 shadow-sm p-4 mb-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search title / ref…"
+             class="border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500">
+      <select name="account" class="border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+        <option value="">All Expense Accounts</option>
+        {% for acc in expense_accounts %}
+          <option value="{{ acc.id }}" {% if account_id == acc.id|stringformat:"s" %}selected{% endif %}>
+            {{ acc.name }}
+          </option>
+        {% endfor %}
+      </select>
+      <select name="method" class="border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+        <option value="">All Methods</option>
+        <option value="CASH" {% if method == 'CASH' %}selected{% endif %}>Cash</option>
+        <option value="BANK_TRANSFER" {% if method == 'BANK_TRANSFER' %}selected{% endif %}>Bank Transfer</option>
+        <option value="CHEQUE" {% if method == 'CHEQUE' %}selected{% endif %}>Cheque</option>
+        <option value="OTHER" {% if method == 'OTHER' %}selected{% endif %}>Other</option>
+      </select>
+      <div class="flex gap-2">
+        <button type="submit"
+                class="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 transition">
+          Filter
+        </button>
+        <a href="{% url 'payments:expense_list' %}"
+           class="flex-1 text-center border border-gray-300 text-gray-600 text-sm font-semibold px-4 py-2 hover:bg-gray-50 transition">
+          Clear
+        </a>
+      </div>
+    </div>
+  </form>
+
+  <!-- Table -->
+  <div class="bg-white border border-gray-200 shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-green-700 text-white text-xs uppercase">
+          <tr>
+            <th class="px-4 py-3 text-left border-r border-green-800">Date</th>
+            <th class="px-4 py-3 text-left border-r border-green-800">Title</th>
+            <th class="px-4 py-3 text-left border-r border-green-800">Expense Account</th>
+            <th class="px-4 py-3 text-left border-r border-green-800">Paid From</th>
+            <th class="px-4 py-3 text-left border-r border-green-800">Method</th>
+            <th class="px-4 py-3 text-right border-r border-green-800">Amount</th>
+            <th class="px-4 py-3 text-center border-r border-green-800">Status</th>
+            <th class="px-4 py-3 text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for expense in page_obj %}
+          <tr class="border-b border-gray-100 {% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50 transition">
+            <td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">{{ expense.date|date:"Y-m-d" }}</td>
+            <td class="px-4 py-2.5 font-medium text-gray-800">
+              <a href="{% url 'payments:expense_detail' expense.pk %}" class="hover:text-green-700">
+                {{ expense.title }}
+              </a>
+              {% if expense.reference_number %}
+                <span class="ml-1 text-xs text-gray-400">#{{ expense.reference_number }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2.5 text-gray-600">{{ expense.expense_account.name }}</td>
+            <td class="px-4 py-2.5 text-gray-600">{{ expense.payment_account.name }}</td>
+            <td class="px-4 py-2.5 text-gray-600">{{ expense.get_payment_method_display }}</td>
+            <td class="px-4 py-2.5 text-right font-mono font-semibold text-gray-800">
+              ₹ {{ expense.amount|floatformat:2|intcomma }}
+            </td>
+            <td class="px-4 py-2.5 text-center">
+              {% if expense.status == 'RECORDED' %}
+                <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium">Recorded</span>
+              {% else %}
+                <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium">Cancelled</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2.5 text-center">
+              <a href="{% url 'payments:expense_detail' expense.pk %}"
+                 class="text-green-700 hover:text-green-900 text-xs font-semibold">
+                View
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="px-4 py-10 text-center text-gray-400 italic text-sm">
+              No expenses found.
+              <a href="{% url 'payments:expense_create' %}" class="ml-1 text-green-600 font-semibold">Add one →</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="px-4 py-3 border-t border-gray-100 flex justify-between items-center text-sm">
+      <span class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      <div class="flex gap-2">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&account={{ account_id }}&method={{ method }}"
+             class="px-3 py-1 border border-gray-300 text-gray-600 hover:bg-gray-50">Prev</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&account={{ account_id }}&method={{ method }}"
+             class="px-3 py-1 border border-gray-300 text-gray-600 hover:bg-gray-50">Next</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

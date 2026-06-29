@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dining Orders{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-list text-green-600 mr-2"></i>Dining Orders</h1>
+  <a href="{% url 'restaurant:dashboard' %}"
+     class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium transition">
+    <i class="fas fa-th-large mr-1"></i>Floor Plan
+  </a>
+</div>
+
+<!-- Filters -->
+<form method="get" class="flex flex-wrap gap-3 mb-6">
+  <input type="text" name="date" value="{{ filter_date_bs }}"
+         class="nepali-datepicker border border-gray-300 px-3 py-2 text-sm w-36"
+         placeholder="YYYY-MM-DD" autocomplete="off" readonly>
+  <select name="status" class="border border-gray-300 px-3 py-2 text-sm bg-white">
+    <option value="">All Statuses</option>
+    <option value="OPEN" {% if status == 'OPEN' %}selected{% endif %}>Open</option>
+    <option value="KOT_SENT" {% if status == 'KOT_SENT' %}selected{% endif %}>KOT Sent</option>
+    <option value="BOT_SENT" {% if status == 'BOT_SENT' %}selected{% endif %}>BOT Sent</option>
+    <option value="BILLED" {% if status == 'BILLED' %}selected{% endif %}>Billed</option>
+    <option value="PAID" {% if status == 'PAID' %}selected{% endif %}>Paid</option>
+    <option value="CANCELLED" {% if status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+  </select>
+  <button type="submit" class="px-4 py-2 bg-green-700 text-white text-sm font-semibold hover:bg-green-800 transition">
+    Filter
+  </button>
+</form>
+
+{% if orders %}
+<div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-green-700 text-white text-xs uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">Order #</th>
+        <th class="px-4 py-3 text-left">Table</th>
+        <th class="px-4 py-3 text-left">Waiter</th>
+        <th class="px-4 py-3 text-center">Covers</th>
+        <th class="px-4 py-3 text-right">Total</th>
+        <th class="px-4 py-3 text-center">Status</th>
+        <th class="px-4 py-3 text-center">Opened</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr class="border-t border-gray-100 hover:bg-gray-50">
+        <td class="px-4 py-3 font-medium text-gray-800">{{ order.order_number }}</td>
+        <td class="px-4 py-3 text-gray-700">{{ order.table.label }}</td>
+        <td class="px-4 py-3 text-gray-600">{{ order.waiter_name|default:"—" }}</td>
+        <td class="px-4 py-3 text-center text-gray-600">{{ order.covers }}</td>
+        <td class="px-4 py-3 text-right font-semibold text-gray-900">{{ order.total|floatformat:2 }}</td>
+        <td class="px-4 py-3 text-center">
+          <span class="px-2 py-0.5 text-xs rounded font-semibold
+            {% if order.status == 'OPEN' %}bg-blue-100 text-blue-800
+            {% elif order.status == 'KOT_SENT' %}bg-orange-100 text-orange-800
+            {% elif order.status == 'BOT_SENT' %}bg-purple-100 text-purple-800
+            {% elif order.status == 'BILLED' %}bg-yellow-100 text-yellow-800
+            {% elif order.status == 'PAID' %}bg-green-100 text-green-800
+            {% else %}bg-gray-100 text-gray-600{% endif %}">
+            {{ order.get_status_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-center text-gray-500 text-xs">{{ order.opened_at|date:"H:i" }}</td>
+        <td class="px-4 py-3 text-center">
+          <a href="{% url 'restaurant:order_detail' pk=order.pk %}"
+             class="text-green-700 hover:text-green-900 font-medium text-xs">View</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="text-center py-12 text-gray-400">
+  <i class="fas fa-receipt text-4xl mb-3"></i>
+  <p class="text-sm">No orders found for the selected filters.</p>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Journal Entry List</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 landscape; margin: 2cm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #777; } }
+html { width: 297mm; }
+body { font-family: Arial, sans-serif; font-size: 8.5pt; color: #000; margin: 0; }
+.rh { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; } .rh .co { font-size: 11pt; font-weight: bold; } .rh .sub { font-size: 8pt; color: #666; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #bbb; padding: 3px 6px; font-size: 8pt; }
+th { background: #ddd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; } thead { display: table-header-group; }
+.tc { text-align: center; }
+.lines { margin: 0; padding: 0 0 0 10px; }
+.lines li { font-size: 7.5pt; list-style: disc; }
+</style></head>
+<body>
+<div class="rh">{% if company %}<div class="co">{{ company.name }}</div>{% endif %}<h1>Journal Entry List</h1><div class="sub">Generated: {% now "Y-m-d" %}</div></div>
+<table>
+  <thead><tr><th>Date</th><th>Reference #</th><th>Description</th><th>Lines</th></tr></thead>
+  <tbody>
+    {% for je in journal_entries %}
+    <tr>
+      <td>{{ je.date|date:"Y-m-d" }}</td>
+      <td>{{ je.reference_number|default:"-" }}</td>
+      <td>{{ je.description|default:"-"|truncatechars:80 }}</td>
+      <td>
+        <ul class="lines">
+          {% for l in je.lines.all|slice:":5" %}<li>{{ l.entry_type }}: {{ l.account.name }} — {{ l.amount|floatformat:2 }}</li>{% endfor %}
+          {% if je.lines.count > 5 %}<li>+{{ je.lines.count|add:"-5" }} more…</li>{% endif %}
+        </ul>
+      </td>
+    </tr>
+    {% empty %}<tr><td colspan="4" class="tc">No journal entries found.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</body></html>

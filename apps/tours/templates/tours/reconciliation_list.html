@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}BSP Reconciliation Files{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+      <i class="fas fa-sync-alt text-green-600"></i> IATA BSP Reconciliation
+    </h2>
+    <a href="{% url 'tours:reconciliation_upload' %}"
+       class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 transition duration-150">
+      <i class="fas fa-upload"></i> Upload BSP File
+    </a>
+  </div>
+
+  <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+    <table class="min-w-full text-sm text-gray-700">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">File</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Period</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Total</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Matched</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Issues</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Uploaded</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for src in page_obj.object_list %}
+          <tr class="hover:bg-gray-50 transition duration-100">
+            <td class="px-4 py-3">
+              <div class="font-medium text-gray-800">{{ src.original_filename }}</div>
+              {% if src.description %}<div class="text-xs text-gray-400">{{ src.description }}</div>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-gray-500 text-xs">
+              {% if src.period_from %}{{ src.period_from }} → {{ src.period_to|default:"?" }}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-xs px-2 py-0.5 font-medium
+                {% if src.status == 'PROCESSED' %}bg-green-100 text-green-700
+                {% elif src.status == 'PROCESSING' %}bg-yellow-100 text-yellow-700
+                {% elif src.status == 'ERROR' %}bg-red-100 text-red-700
+                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                {{ src.get_status_display }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-right text-gray-700">{{ src.rows_total }}</td>
+            <td class="px-4 py-3 text-right text-green-600 font-medium">{{ src.rows_matched }}</td>
+            <td class="px-4 py-3 text-right {% if src.rows_unmatched > 0 %}text-red-600 font-medium{% else %}text-gray-400{% endif %}">
+              {{ src.rows_unmatched }}
+            </td>
+            <td class="px-4 py-3 text-gray-500 text-xs">{{ src.created_at|date:"Y-m-d H:i" }}</td>
+            <td class="px-4 py-3 flex gap-2">
+              <a href="{% url 'tours:reconciliation_detail' src.pk %}"
+                 class="text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 px-3 py-1 transition duration-150">View</a>
+              {% if src.status != 'PROCESSING' %}
+                <form method="post" action="{% url 'tours:reconciliation_process' src.pk %}" class="inline">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="text-xs border border-green-600 text-green-600 hover:bg-green-50 px-3 py-1 transition duration-150">
+                    {% if src.status == 'PROCESSED' %}Re-process{% else %}Process{% endif %}
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="px-4 py-10 text-center text-gray-400">
+              <i class="fas fa-file-upload text-3xl mb-2 block"></i>No BSP files uploaded yet.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

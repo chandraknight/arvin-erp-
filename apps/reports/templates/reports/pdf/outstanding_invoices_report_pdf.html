@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Outstanding Invoices</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 2cm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #777; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; }
+.rh { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; }
+.rh .sub { font-size: 8pt; color: #666; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #bbb; padding: 3px 6px; font-size: 8.5pt; }
+th { background: #ddd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+.tot td { font-weight: bold; border-top: 2px solid #555; background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Outstanding Invoices Report</h1>
+  <div class="sub">Generated: {% now "Y-m-d" %}</div>
+</div>
+<table>
+  <thead><tr><th>Invoice #</th><th>Customer</th><th>Invoice Date</th><th>Due Date</th><th class="tr">Total</th><th class="tr">Outstanding (NPR)</th></tr></thead>
+  <tbody>
+    {% for inv in outstanding_invoices %}
+    <tr>
+      <td>{{ inv.invoice_number|default:inv.id }}</td>
+      <td>{{ inv.customer.name|default:"N/A" }}</td>
+      <td>{{ inv.created_at|date:"Y-m-d" }}</td>
+      <td>{{ inv.due_date|date:"Y-m-d" }}</td>
+      <td class="tr">{{ inv.total|floatformat:2 }}</td>
+      <td class="tr">{{ inv.outstanding_balance|floatformat:2 }}</td>
+    </tr>
+    {% empty %}<tr><td colspan="6" class="tc">No outstanding invoices found.</td></tr>{% endfor %}
+    {% if outstanding_invoices %}<tr class="tot"><td colspan="5">Total Outstanding</td><td class="tr">{{ total_outstanding_amount|floatformat:2 }}</td></tr>{% endif %}
+  </tbody>
+</table>
+</body>
+</html>

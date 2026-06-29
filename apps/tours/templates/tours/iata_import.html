@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="javascript:history.back()" class="text-gray-400 hover:text-gray-600 transition">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <h2 class="text-2xl font-bold text-gray-800">{{ title }}</h2>
+  </div>
+
+  <div class="bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800 mb-5">
+    <p class="font-semibold mb-1"><i class="fas fa-info-circle mr-1"></i> Format</p>
+    <p>{{ description }}</p>
+    <p class="mt-2 font-mono text-xs text-blue-700">{{ sample_headers }}</p>
+    <p class="font-mono text-xs text-blue-600">{{ sample_row }}</p>
+    <p class="mt-2 text-xs">You can download IATA airline/airport data from <strong>ourairports.com</strong> or <strong>openflights.org</strong> (free, open datasets).</p>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="bg-white border border-gray-200 shadow-sm p-6 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">CSV File <span class="text-red-500">*</span></label>
+      <input type="file" name="file" accept=".csv"
+             class="block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+    </div>
+    <div class="flex gap-3 pt-2 border-t border-gray-100">
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 transition duration-150">
+        <i class="fas fa-upload mr-1"></i> Import
+      </button>
+      <a href="javascript:history.back()" class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium px-6 py-2 transition duration-150">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

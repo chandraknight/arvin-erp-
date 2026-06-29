@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'tours:package_list' %}" class="text-gray-400 hover:text-gray-600 transition">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <h2 class="text-2xl font-bold text-gray-800">{{ title }}</h2>
+  </div>
+
+  <form method="post" class="bg-white border border-gray-200 shadow-sm p-6 space-y-5">
+    {% csrf_token %}
+    {% if form.errors %}
+      <div class="bg-red-50 border border-red-200 p-4 text-sm text-red-700">Please correct the errors below.</div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Package Name <span class="text-red-500">*</span></label>
+        {{ form.name }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Destination <span class="text-red-500">*</span></label>
+        {{ form.destination }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+        {{ form.package_type }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Duration (Days)</label>
+        {{ form.duration_days }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Duration (Nights)</label>
+        {{ form.duration_nights }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Price per Adult (NPR)</label>
+        {{ form.price_per_adult }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Price per Child (NPR)</label>
+        {{ form.price_per_child }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Max Capacity</label>
+        {{ form.max_capacity }}
+      </div>
+      <div class="flex items-center gap-2 pt-6">
+        {{ form.is_active }}
+        <label class="text-sm font-medium text-gray-700">Active</label>
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Inclusions</label>
+        {{ form.inclusions }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Exclusions</label>
+        {{ form.exclusions }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        {{ form.description }}
+      </div>
+    </div>
+
+    <div class="flex gap-3 pt-2 border-t border-gray-100">
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 transition duration-150">Save Package</button>
+      <a href="{% url 'tours:package_list' %}" class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium px-6 py-2 transition duration-150">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

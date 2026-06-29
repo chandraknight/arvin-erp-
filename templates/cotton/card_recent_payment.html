@@ -1,0 +1,48 @@
+<div class="lg:col-span-2 h-full flex flex-col">
+    <div class="bg-white border border-gray-200 shadow-sm p-6 flex flex-col h-full">
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+            <h2 class="text-base font-bold text-gray-800">Recent Payments</h2>
+            <a href="{% url 'payments:payment_add' %}"
+               class="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 px-3 shadow transition duration-150">
+                <i class="fas fa-plus"></i> New Payment
+            </a>
+        </div>
+
+        {% if recent_payments %}
+            <div class="overflow-x-auto flex-grow border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Payment #</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Method</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        {% for payment in recent_payments %}
+                            <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                <td class="px-4 py-2 text-sm font-medium text-gray-800">{{ payment.payment_number }}</td>
+                                <td class="px-4 py-2 text-sm text-gray-700">{{ payment.get_payment_type_display }}</td>
+                                <td class="px-4 py-2 text-sm font-semibold text-gray-900">{{ rupee }} {{ payment.amount|floatformat:2 }}</td>
+                                <td class="px-4 py-2 text-sm text-gray-700">{{ payment.get_method_display }}</td>
+                                <td class="px-4 py-2 text-sm text-gray-500">{{ payment.date|date:"M d, Y" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 text-center">
+                <a href="{% url 'reports:payment_history_report' %}" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                    View all payments →
+                </a>
+            </div>
+        {% else %}
+            <div class="text-center py-8 flex-grow flex flex-col justify-center">
+                <i class="fas fa-money-bill-wave text-gray-300 text-4xl mb-2"></i>
+                <p class="mt-2 text-sm text-gray-500">No Payments Yet!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>

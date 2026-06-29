@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Orders Dashboard{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-200 pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Orders & Delivery</h1>
+            <p class="text-sm text-gray-500 mt-1">Sales orders, dispatch, and delivery tracking</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'orders:order_create' %}" class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition shadow">
+                <i class="fas fa-plus"></i> New Order
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Total Orders</p>
+            <p class="text-2xl font-bold text-gray-800">{{ stats.total }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Confirmed</p>
+            <p class="text-2xl font-bold text-blue-700">{{ stats.confirmed }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Dispatched</p>
+            <p class="text-2xl font-bold text-amber-600">{{ stats.dispatched }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Total Value</p>
+            <p class="text-xl font-bold text-green-700">{{ stats.total_value|floatformat:2|intcomma }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Orders -->
+        <div class="bg-white border border-gray-200 shadow-sm">
+            <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-sm font-bold text-gray-700">Recent Orders</h2>
+                <a href="{% url 'orders:order_list' %}" class="text-xs text-green-600 hover:underline">View all →</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-green-600 text-white text-xs uppercase">
+                        <tr>
+                            <th class="px-4 py-2 text-left border border-green-700">Order #</th>
+                            <th class="px-4 py-2 text-left border border-green-700">Customer</th>
+                            <th class="px-4 py-2 text-center border border-green-700">Status</th>
+                            <th class="px-4 py-2 text-right border border-green-700">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                        <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50">
+                            <td class="px-4 py-2 border border-gray-200">
+                                <a href="{% url 'orders:order_detail' order.pk %}" class="text-green-700 hover:underline font-medium">{{ order.order_number }}</a>
+                            </td>
+                            <td class="px-4 py-2 border border-gray-200 text-gray-600">{{ order.customer.name|default:"Walk-in" }}</td>
+                            <td class="px-4 py-2 border border-gray-200 text-center">
+                                <span class="px-2 py-0.5 text-xs font-semibold
+                                    {% if order.status == 'DELIVERED' %}bg-green-100 text-green-800
+                                    {% elif order.status == 'DISPATCHED' %}bg-blue-100 text-blue-800
+                                    {% elif order.status == 'CANCELLED' %}bg-red-100 text-red-800
+                                    {% elif order.status == 'CONFIRMED' %}bg-purple-100 text-purple-800
+                                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ order.total|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">No orders yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pending Deliveries -->
+        <div class="bg-white border border-gray-200 shadow-sm">
+            <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-sm font-bold text-gray-700">Pending Deliveries</h2>
+                <a href="{% url 'orders:delivery_list' %}" class="text-xs text-green-600 hover:underline">View all →</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-amber-600 text-white text-xs uppercase">
+                        <tr>
+                            <th class="px-4 py-2 text-left border border-amber-700">DN #</th>
+                            <th class="px-4 py-2 text-left border border-amber-700">Order</th>
+                            <th class="px-4 py-2 text-center border border-amber-700">Status</th>
+                            <th class="px-4 py-2 text-left border border-amber-700">Expected</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dn in pending_deliveries %}
+                        <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-amber-50">
+                            <td class="px-4 py-2 border border-gray-200">
+                                <a href="{% url 'orders:delivery_detail' dn.pk %}" class="text-amber-700 hover:underline font-medium">{{ dn.delivery_number }}</a>
+                            </td>
+                            <td class="px-4 py-2 border border-gray-200 text-gray-600">{{ dn.sales_order.order_number }}</td>
+                            <td class="px-4 py-2 border border-gray-200 text-center">
+                                <span class="px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-800">{{ dn.get_status_display }}</span>
+                            </td>
+                            <td class="px-4 py-2 border border-gray-200 text-gray-500 text-xs">{{ dn.expected_delivery_date|date:"Y-m-d"|default:"—" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">No pending deliveries.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

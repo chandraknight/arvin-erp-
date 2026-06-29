@@ -1,0 +1,858 @@
+{% load global_filter %}
+
+<!-- Mobile backdrop -->
+<div class="fixed inset-0 bg-black/40 z-40 md:hidden"
+     x-show="sidebarOpen" x-transition.opacity
+     @click="sidebarOpen = false" aria-hidden="true" style="display:none"></div>
+
+<aside id="main-sidebar"
+       class="fixed top-0 left-0 h-full w-64 bg-white text-gray-800 border-r border-gray-100 shadow-lg flex flex-col z-50"
+       @keydown.escape.window="sidebarOpen = false">
+
+    <!-- Brand -->
+    <div class="bg-green-700 text-white p-4 border-b border-green-800 flex justify-between items-center gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            {% if user.company and user.company.logo %}
+            <img src="{{ user.company.logo.url }}" alt="{{ user.company.name }}"
+                 class="flex-shrink-0 object-contain bg-white rounded"
+                 style="width:36px;height:36px;padding:2px;">
+            {% else %}
+            <div class="flex items-center justify-center w-9 h-9 bg-white text-green-700 font-bold text-lg flex-shrink-0 rounded">
+                {{ user.company.name|slice:":1"|upper|default:"E" }}
+            </div>
+            {% endif %}
+            <div class="min-w-0">
+                {% if user.company %}
+                <h2 class="text-base font-bold leading-tight truncate max-w-[140px]">{{ user.company.name }}</h2>
+                <p class="text-green-200 text-xs">ERP System</p>
+                {% else %}
+                <h2 class="text-base font-bold leading-tight">ERP System</h2>
+                {% endif %}
+            </div>
+        </div>
+        <button type="button" class="md:hidden flex-shrink-0 text-green-200 hover:text-white p-1"
+                @click="sidebarOpen = false" aria-label="Close menu">
+            <i class="fas fa-times text-lg"></i>
+        </button>
+    </div>
+
+    <!-- Nav -->
+    <nav id="sidebar-nav" class="flex-1 overflow-y-auto py-2 px-3 space-y-0.5">
+
+        <!-- Dashboard -->
+        <a href="{% url 'accounts:user_dashboard' %}"
+           class="nav-link nav-link-dashboard mb-1"
+           @click="sidebarOpen = false">
+            <i class="fas fa-tachometer-alt w-4 mr-3 text-center"></i>
+            <span class="font-semibold">Dashboard</span>
+        </a>
+
+        {# ─── SALES & BILLING ─── #}
+        {% if user.is_company_admin or user|group_has_perm:'billing.view_invoice' or user|group_has_perm:'billing.add_invoice' %}
+        <div x-data="sidebarSection('sales')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-file-invoice-dollar section-icon"></i> Sales & Billing</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+
+                {% if user.is_company_admin or user|group_has_perm:'billing.view_invoice' %}
+                <a href="{% url 'billing:invoice_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-list nav-icon"></i>Invoices</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'billing.add_invoice' %}
+                <a href="{% url 'billing:invoice_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice nav-icon"></i>Add Invoice</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'billing.add_creditnote' %}
+                <a href="{% url 'billing:credit_note_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-undo-alt nav-icon"></i>Add Credit Note</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'billing.add_debitnote' %}
+                <a href="{% url 'billing:debit_note_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-receipt nav-icon"></i>Add Debit Note</a>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─── ORDER MANAGEMENT ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_order_management %}
+        {% if user.is_company_admin or user|group_has_perm:'orders.view_salesorder' %}
+        <div x-data="sidebarSection('orders')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-shopping-cart section-icon"></i> Order Management</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'orders:dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-th-large nav-icon"></i>Dashboard</a>
+                <a href="{% url 'orders:order_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-list nav-icon"></i>Sales Orders</a>
+                {% if user.is_company_admin or user|group_has_perm:'orders.add_salesorder' %}
+                <a href="{% url 'orders:order_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plus nav-icon"></i>New Order</a>
+                {% endif %}
+                <a href="{% url 'orders:delivery_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-truck nav-icon"></i>Delivery Notes</a>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── PURCHASING ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_purchasing %}
+        {% if user.is_company_admin or user|group_has_perm:'purchasing.view_purchaseorderitem' or user|group_has_perm:'billing.add_vendorbill' %}
+        <div x-data="sidebarSection('purchasing')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-truck section-icon"></i> Purchasing</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'purchasing:purchase_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice nav-icon"></i>Purchase Orders</a>
+                <a href="{% url 'purchasing:purchase_order_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-signature nav-icon"></i>Create PO</a>
+                <a href="{% url 'reports:vendor_bill_list_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice nav-icon"></i>Vendor Bills</a>
+                {% if user.is_company_admin or user|group_has_perm:'billing.add_vendorbill' %}
+                <a href="{% url 'purchasing:vendor_bill_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plus nav-icon"></i>Add Vendor Bill</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── CUSTOMERS & VENDORS ─── #}
+        {% if user.is_company_admin or user|group_has_perm:'customers.view_customer' or user|group_has_perm:'vendors.view_vendor' %}
+        <div x-data="sidebarSection('contacts')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-address-book section-icon"></i> Customers & Vendors</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'customers:contacts_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-address-book nav-icon"></i>Contacts</a>
+                {% if user.is_company_admin or user|group_has_perm:'customers.add_customer' %}
+                <a href="{% url 'customers:create_customer' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-user-plus nav-icon"></i>Add Customer</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'vendors.add_vendor' %}
+                <a href="{% url 'vendors:vendor_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plus nav-icon"></i>Add Vendor</a>
+                {% endif %}
+                <a href="{% url 'customers:referrer_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-user-tag nav-icon"></i>Referrers</a>
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─── INVENTORY ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_inventory %}
+        {% if user.is_company_admin or user|group_has_perm:'products.view_product' %}
+        <div x-data="sidebarSection('inventory')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-boxes section-icon"></i> Inventory</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'products:inventory_management' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-warehouse nav-icon"></i>Inventory</a>
+                <a href="{% url 'products:all_products' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-list nav-icon"></i>All Products</a>
+                {% if user.is_company_admin or user|group_has_perm:'products.add_category' %}
+                <a href="{% url 'products:add_category' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-tags nav-icon"></i>Add Category</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'products.add_package' %}
+                <a href="{% url 'products:create_package' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-box-open nav-icon"></i>Create Package</a>
+                {% endif %}
+                {% if user.is_company_admin or user.is_superuser %}
+                <a href="{% url 'products:uom_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-ruler-combined nav-icon"></i>Units of Measure</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'products.view_product' %}
+                <a href="{% url 'products:print_labels' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-print nav-icon"></i>Print Labels</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── POINT OF SALE ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_pos %}
+        {% if user.is_company_admin or user|group_has_perm:'pos.add_possale' or user|group_has_perm:'pos.view_possale' %}
+        <div x-data="sidebarSection('pos')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-cash-register section-icon"></i> Point of Sale</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                {% if user.is_company_admin or user|group_has_perm:'pos.add_possale' %}
+                <a href="{% url 'pos:terminal' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-cash-register nav-icon"></i>POS Terminal</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'pos.view_possale' %}
+                <a href="{% url 'pos:sale_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-receipt nav-icon"></i>POS Sales</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── PAYMENTS ─── #}
+        {% if user.is_company_admin or user|group_has_perm:'payments.view_payment' %}
+        <div x-data="sidebarSection('payments')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-money-bill-wave section-icon"></i> Payments</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                {% if user.is_company_admin or user|group_has_perm:'payments.view_payment' %}
+                <a href="{% url 'payments:payment_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-list nav-icon"></i>All Payments</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'payments.add_payment' %}
+                <a href="{% url 'payments:payment_add' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plus-circle nav-icon"></i>Add Payment</a>
+                {% endif %}
+                <a href="{% url 'purchasing:vendor_payment_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-money-check-alt nav-icon"></i>Record Payment</a>
+                <a href="{% url 'payments:expense_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice nav-icon"></i>Expense Tracker</a>
+                {% if user.is_company_admin or user|group_has_perm:'payments.add_expense' %}
+                <a href="{% url 'payments:expense_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plus-circle nav-icon"></i>Add Expense</a>
+                {% endif %}
+                <a href="{% url 'payments:bank_account_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-university nav-icon"></i>Bank Accounts</a>
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─── BOOKKEEPING ─── #}
+        {% if user.is_company_admin or user|group_has_perm:'bookkeeping.view_ledgeraccount' %}
+        <div x-data="sidebarSection('bookkeeping')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-book section-icon"></i> Bookkeeping</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'bookkeeping:ledger_account_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-book nav-icon"></i>Ledger Accounts</a>
+                <a href="{% url 'bookkeeping:journal_entry_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-book-open nav-icon"></i>Journal Entries</a>
+                {% if user.is_company_admin or user|group_has_perm:'bookkeeping.add_journalentry' %}
+                <a href="{% url 'bookkeeping:journal_entry_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plus-circle nav-icon"></i>New Journal Entry</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─── HR & PAYROLL ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_hr_payroll %}
+        {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_employee' or user|group_has_perm:'hrpayroll.view_department' %}
+        <div x-data="sidebarSection('hr')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-users-cog section-icon"></i> HR & Payroll</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'hrpayroll:hrpayroll_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-briefcase nav-icon"></i>HR Dashboard</a>
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_employee' %}
+                <a href="{% url 'hrpayroll:employee_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-user-tie nav-icon"></i>Employees</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_department' %}
+                <a href="{% url 'hrpayroll:department_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-sitemap nav-icon"></i>Departments</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_jobposition' or user.is_superuser %}
+                <a href="{% url 'hrpayroll:job_position_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-briefcase nav-icon"></i>Job Positions</a>
+                <a href="{% url 'hrpayroll:application_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-users nav-icon"></i>Applications</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_leaverequest' or user.is_superuser %}
+                <a href="{% url 'hrpayroll:leave_request_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-calendar-minus nav-icon"></i>Leave Requests</a>
+                <a href="{% url 'hrpayroll:leave_type_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-calendar-alt nav-icon"></i>Leave Types</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_attendance' %}
+                <a href="{% url 'hrpayroll:attendance_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-user-clock nav-icon"></i>Attendance</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_performancereview' or user.is_superuser %}
+                <a href="{% url 'hrpayroll:review_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-star nav-icon"></i>Performance Reviews</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_earning' %}
+                <a href="{% url 'hrpayroll:earning_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-money-bill-wave nav-icon"></i>Earnings</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_deduction' %}
+                <a href="{% url 'hrpayroll:deduction_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-minus-circle nav-icon"></i>Deductions</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_payrollrun' %}
+                <a href="{% url 'hrpayroll:payrollrun_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice-dollar nav-icon"></i>Payroll Runs</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'hrpayroll.view_payslip' %}
+                <a href="{% url 'hrpayroll:payslip_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice nav-icon"></i>Payslips</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── REPORTS ─── #}
+        {% if user.is_company_admin or user|group_has_perm:'reports.view_report' %}
+        <div x-data="sidebarSection('reports')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-chart-bar section-icon"></i> Reports</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'reports:report_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-tachometer-alt nav-icon"></i>Dashboard</a>
+
+                <p class="section-sublabel">Financial</p>
+                <a href="{% url 'reports:profit_and_loss_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice-dollar nav-icon"></i>Profit & Loss</a>
+                <a href="{% url 'reports:balance_sheet_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-balance-scale nav-icon"></i>Balance Sheet</a>
+                <a href="{% url 'reports:cash_flow_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-water nav-icon"></i>Cash Flow</a>
+                <a href="{% url 'reports:trial_balance_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-balance-scale-left nav-icon"></i>Trial Balance</a>
+                <a href="{% url 'reports:tax_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-receipt nav-icon"></i>Tax / VAT</a>
+                <a href="{% url 'reports:vat_period_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-calendar-check nav-icon"></i>VAT Filing Periods</a>
+                <a href="{% url 'reports:cash_position_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-wallet nav-icon"></i>Cash Position</a>
+                <a href="{% url 'reports:ratio_analysis_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-percentage nav-icon"></i>Ratio Analysis</a>
+
+                {% if user.is_superuser or user.company and user.company.enable_order_management %}
+                <p class="section-sublabel">Sales</p>
+                <a href="{% url 'reports:detailed_sales_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-chart-line nav-icon"></i>Sales Report</a>
+                <a href="{% url 'reports:outstanding_invoices_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice nav-icon"></i>Outstanding Invoices</a>
+                <a href="{% url 'reports:payment_history_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-money-bill-wave nav-icon"></i>Payment History</a>
+                <a href="{% url 'reports:ar_aging_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-hourglass-half nav-icon"></i>A/R Aging</a>
+                <a href="{% url 'reports:customer_acquisition_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-user-plus nav-icon"></i>Customer Acquisition</a>
+                <a href="{% url 'reports:referral_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-handshake nav-icon"></i>Referral Report</a>
+                <a href="{% url 'reports:debit_credit_note_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-receipt nav-icon"></i>Debit/Credit Notes</a>
+                <a href="{% url 'reports:profitability_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-percentage nav-icon"></i>Profitability</a>
+                {% endif %}
+
+                {% if user.is_superuser or user.company and user.company.enable_inventory %}
+                <p class="section-sublabel">Inventory</p>
+                <a href="{% url 'reports:inventory_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-boxes nav-icon"></i>Inventory</a>
+                <a href="{% url 'reports:stock_movement_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-exchange-alt nav-icon"></i>Stock Movement</a>
+                <a href="{% url 'reports:product_sales_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-box nav-icon"></i>Product Sales</a>
+                <a href="{% url 'reports:cogs_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-calculator nav-icon"></i>COGS</a>
+                {% endif %}
+
+                {% if user.is_superuser or user.company and user.company.enable_purchasing %}
+                <p class="section-sublabel">Purchasing</p>
+                <a href="{% url 'reports:purchase_order_list_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-signature nav-icon"></i>Purchase Orders</a>
+                <a href="{% url 'reports:vendor_bill_list_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice nav-icon"></i>Vendor Bills</a>
+                <a href="{% url 'reports:vendor_payment_list_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-money-check-alt nav-icon"></i>Vendor Payments</a>
+                <a href="{% url 'reports:ap_aging_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-hourglass-half nav-icon"></i>AP Aging</a>
+                {% endif %}
+
+                <p class="section-sublabel">Bookkeeping</p>
+                <a href="{% url 'reports:ledger_account_list_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-book nav-icon"></i>Ledger Accounts</a>
+                <a href="{% url 'reports:journal_entry_list_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-book-open nav-icon"></i>Journal Entries</a>
+                <a href="{% url 'reports:payment_list_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-list nav-icon"></i>Payment List</a>
+                <a href="{% url 'reports:fiscal_year_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-calendar-check nav-icon"></i>Fiscal Year</a>
+
+                {% if user.is_superuser or user.company and user.company.enable_hr_payroll %}
+                <p class="section-sublabel">HR & Payroll</p>
+                <a href="{% url 'reports:payroll_summary_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-users nav-icon"></i>Payroll Summary</a>
+                {% endif %}
+
+                {% if user.is_superuser or user.company and user.company.enable_project_tracking %}
+                <p class="section-sublabel">Projects</p>
+                <a href="{% url 'projects:budget_vs_actual' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-chart-bar nav-icon"></i>Budget vs Actual</a>
+                {% if user.company and user.company.enable_forecasting %}
+                <a href="{% url 'projects:forecast_vs_actual' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-chart-area nav-icon"></i>Forecast vs Actual</a>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# ─── E-COMMERCE ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_ecom %}
+        {% if user.is_company_admin %}
+        <div x-data="sidebarSection('ecom')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-store section-icon"></i> E-Commerce</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'ecom:admin_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-th-large nav-icon"></i>Ecom Dashboard</a>
+                <a href="{% url 'ecom:admin_product_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-boxes nav-icon"></i>Product Visibility</a>
+                <a href="{% url 'ecom:admin_order_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-shopping-bag nav-icon"></i>Online Orders</a>
+                <a href="{% url 'ecom:admin_ecom_inventory' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-warehouse nav-icon"></i>Ecom Inventory</a>
+                <a href="{% url 'ecom:admin_category_images' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-images nav-icon"></i>Category Images</a>
+                <a href="{% url 'ecom:media_library' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-photo-video nav-icon"></i>Media Manager</a>
+                <a href="{% url 'ecom:cms_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-paint-brush nav-icon"></i>Content (CMS)</a>
+                <a href="{% url 'ecom:coupon_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-tag nav-icon"></i>Discount Coupons</a>
+                <a href="/store/" target="_blank" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-external-link-alt nav-icon"></i>View Store</a>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── TOURS & TICKETING ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_tours %}
+        {% if user.is_company_admin or user|group_has_perm:'tours.view_tourenquiry' or user|group_has_perm:'tours.view_tourbooking' %}
+        <div x-data="sidebarSection('tours')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-map-marked-alt section-icon"></i> Tours & Ticketing</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'tours:dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-map-marked-alt nav-icon"></i>Dashboard</a>
+                {% if user.is_company_admin or user|group_has_perm:'tours.view_tourenquiry' %}
+                <a href="{% url 'tours:enquiry_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-question-circle nav-icon"></i>Enquiries</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'tours.view_tourbooking' %}
+                <a href="{% url 'tours:booking_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-ticket-alt nav-icon"></i>Bookings</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'tours.view_airticket' %}
+                <a href="{% url 'tours:ticket_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plane nav-icon"></i>Air Tickets</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'tours.view_iatasourcefile' %}
+                <a href="{% url 'tours:reconciliation_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-sync-alt nav-icon"></i>BSP Reconciliation</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'tours.view_airfile' %}
+                <a href="{% url 'tours:air_file_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-file-invoice-dollar nav-icon"></i>AIR Files</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'tours.view_tourpackage' %}
+                <a href="{% url 'tours:package_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-box-open nav-icon"></i>Packages</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'tours.view_tourdestination' %}
+                <a href="{% url 'tours:destination_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-globe-asia nav-icon"></i>Destinations</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'tours.view_iataairline' %}
+                <a href="{% url 'tours:airline_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plane-departure nav-icon"></i>Airlines (IATA)</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'tours.view_iataairport' %}
+                <a href="{% url 'tours:airport_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-map-marker-alt nav-icon"></i>Airports (IATA)</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── RESTAURANT ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_restaurant %}
+        {% if user.is_company_admin or user|group_has_perm:'restaurant.view_restauranttable' or user|group_has_perm:'restaurant.view_diningorder' %}
+        <div x-data="sidebarSection('restaurant')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-utensils section-icon"></i> Restaurant</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'restaurant:dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-th-large nav-icon"></i>Floor Plan</a>
+                <a href="{% url 'restaurant:order_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-receipt nav-icon"></i>Dining Orders</a>
+                <a href="{% url 'restaurant:table_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-chair nav-icon"></i>Tables</a>
+                {% if user.is_company_admin or user|group_has_perm:'restaurant.view_printerstation' %}
+                <a href="{% url 'restaurant:printer_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-print nav-icon"></i>Printers</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── MANUFACTURING ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_manufacturing %}
+        {% if user.is_company_admin or user|group_has_perm:'manufacturing.view_workorder' %}
+        <div x-data="sidebarSection('manufacturing')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-industry section-icon"></i> Manufacturing</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                {% if user.is_company_admin or user|group_has_perm:'manufacturing.view_billofaterials' %}
+                <a href="{% url 'manufacturing:bom_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-sitemap nav-icon"></i>Bill of Materials</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'manufacturing.view_workorder' %}
+                <a href="{% url 'manufacturing:workorder_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-industry nav-icon"></i>Work Orders</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'manufacturing.view_machine' %}
+                <a href="{% url 'manufacturing:machine_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-cogs nav-icon"></i>Machines</a>
+                {% endif %}
+                <a href="{% url 'manufacturing:production_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-chart-line nav-icon"></i>Production Reports</a>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── PROJECTS ─── #}
+        {% if user.is_superuser or user.company and user.company.enable_project_tracking %}
+        {% if user.is_company_admin or user|group_has_perm:'projects.view_project' or user.is_superuser %}
+        <div x-data="sidebarSection('projects')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-project-diagram section-icon"></i> Projects</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'projects:dashboard' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-project-diagram nav-icon"></i>Dashboard</a>
+                <a href="{% url 'projects:project_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-tasks nav-icon"></i>Projects</a>
+                <a href="{% url 'projects:expense_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-receipt nav-icon"></i>Expenses</a>
+                <a href="{% url 'projects:timelog_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-clock nav-icon"></i>Time Logs</a>
+                <a href="{% url 'projects:costcentre_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-sitemap nav-icon"></i>Cost Centres</a>
+                <a href="{% url 'projects:budget_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-calculator nav-icon"></i>Budgets</a>
+                {% if user.company and user.company.enable_forecasting %}
+                <a href="{% url 'projects:forecast_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-chart-line nav-icon"></i>Forecasts</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ─── ADMINISTRATION ─── #}
+        {% if user.is_superuser or user.is_company_admin %}
+        <div x-data="sidebarSection('admin')"
+             class="section-group">
+            <button @click="toggle()" type="button"
+                    class="section-btn">
+                <span class="section-btn-inner"><i class="fas fa-shield-alt section-icon"></i> Administration</span>
+                <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="section-links">
+
+                {% if user.is_superuser or user.is_company_admin %}
+                <a href="{% url 'accounts:user_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-users nav-icon"></i>Users</a>
+                <a href="{% url 'accounts:user_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-user-plus nav-icon"></i>Add User</a>
+                {% if user.is_superuser %}
+                <a href="{% url 'accounts:rbac_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-user-shield nav-icon"></i>RBAC</a>
+                {% endif %}
+                {% endif %}
+
+                {% if user.is_company_admin or user|group_has_perm:'company.view_company' or user|group_has_perm:'company.add_company' or user|group_has_perm:'company.view_branch' or user|group_has_perm:'company.view_fiscalyear' %}
+                <p class="section-sublabel">Company</p>
+                {% if user.is_superuser or user|group_has_perm:'company.view_company' %}
+                <a href="{% url 'company:company_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-building nav-icon"></i>Companies</a>
+                {% endif %}
+                {% if user.is_superuser %}
+                <a href="{% url 'company:company_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plus-circle nav-icon"></i>Add Company</a>
+                {% endif %}
+                {% if user.is_superuser or user|group_has_perm:'company.view_branch' %}
+                <a href="{% url 'company:branch_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-code-branch nav-icon"></i>Branches</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'company.view_fiscalyear' %}
+                <a href="{% url 'company:fiscalyear_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-calendar-alt nav-icon"></i>Fiscal Years</a>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Account actions -->
+        <div class="mt-3 px-2 space-y-1">
+            <a href="{% url 'accounts:password_change' %}" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition" @click="sidebarOpen = false">
+                <i class="fas fa-key nav-icon"></i>Change Password
+            </a>
+            {% if user.is_superuser or user.is_company_admin %}
+            <a href="{% url 'backup:backup_list' %}" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition" @click="sidebarOpen = false">
+                <i class="fas fa-archive nav-icon"></i>Backup & Restore
+            </a>
+            {% endif %}
+        </div>
+        <!-- Logout -->
+        <div class="mt-1 px-0">
+            <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Log Out</span>
+                </button>
+            </form>
+        </div>
+
+    </nav>
+</aside>
+
+<style>
+/* ── Sidebar shell ── */
+#main-sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
+@media (min-width: 768px) { #main-sidebar { transform: translateX(0) !important; } }
+#main-sidebar.sidebar-open { transform: translateX(0); }
+
+/* ── Dashboard pill ── */
+.nav-link-dashboard {
+    display: flex; align-items: center;
+    padding: 0.45rem 0.75rem;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    font-size: 0.8375rem; font-weight: 600;
+    color: #166534;
+    background: #dcfce7;
+    transition: background 0.15s;
+}
+.nav-link-dashboard:hover { background: #bbf7d0; }
+.nav-link-dashboard i { color: #16a34a; margin-right: 0.55rem; width: 1rem; text-align: center; }
+
+/* ── Section card ── */
+.section-group {
+    margin-bottom: 3px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+}
+
+/* ── Section header button ── */
+.section-btn {
+    width: 100%; display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(90deg, #166534, #15803d);
+    border: none; cursor: pointer;
+    transition: filter 0.15s;
+}
+.section-btn:hover { filter: brightness(1.08); }
+.section-btn-inner { display: flex; align-items: center; gap: 7px; }
+.section-icon { width: 1rem; text-align: center; opacity: 0.85; font-size: 0.85rem; }
+.chevron-icon { font-size: 0.7rem; transition: transform 0.2s ease; opacity: 0.75; }
+.chevron-open { transform: rotate(90deg); }
+
+/* ── Links panel ── */
+.section-links { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 4px 0 6px; }
+
+/* ── Nav link ── */
+.nav-link {
+    display: flex; align-items: center;
+    padding: 0.45rem 0.75rem 0.45rem 1rem;
+    font-size: 0.9rem;
+    color: #4b5563;
+    border-left: 3px solid transparent;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    text-decoration: none;
+}
+.nav-link:hover {
+    background: #f0fdf4;
+    color: #15803d;
+    border-left-color: #86efac;
+}
+.nav-link:hover .nav-icon { color: #16a34a; }
+
+/* ── Active nav link ── */
+.nav-link.active {
+    background: #f0fdf4;
+    color: #15803d;
+    font-weight: 600;
+    border-left: 3px solid #16a34a;
+}
+.nav-link.active .nav-icon { color: #16a34a; }
+
+/* ── Nav icon ── */
+.nav-icon {
+    width: 1rem; margin-right: 0.6rem;
+    text-align: center; color: #9ca3af;
+    font-size: 0.875rem; flex-shrink: 0;
+    transition: color 0.12s;
+}
+
+/* ── Sub-label ── */
+.section-sublabel {
+    display: block;
+    margin: 6px 6px 2px;
+    padding: 0.28rem 0.65rem;
+    font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: #166534;
+    background: #dcfce7;
+    border-radius: 4px;
+    border-left: 3px solid #16a34a;
+}
+
+/* ── Add-on modules divider ── */
+.modules-divider {
+    display: flex; align-items: center; gap: 8px;
+    margin: 10px 0 6px;
+    padding: 0 2px;
+    font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: #6b7280;
+}
+.modules-divider::before,
+.modules-divider::after {
+    content: ''; flex: 1;
+    height: 1px; background: #e5e7eb;
+}
+
+/* ── Logout ── */
+.logout-btn {
+    display: flex; align-items: center; width: 100%;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem; font-weight: 500;
+    color: #dc2626;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
+    background: #fff5f5;
+    transition: background 0.15s;
+    cursor: pointer;
+}
+.logout-btn:hover { background: #fee2e2; }
+.logout-btn i { margin-right: 0.55rem; width: 1rem; text-align: center; }
+</style>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('sidebar', {
+        active: sessionStorage.getItem('sb_active') || null,
+        toggle(key) {
+            this.active = this.active === key ? null : key;
+            if (this.active) sessionStorage.setItem('sb_active', this.active);
+            else sessionStorage.removeItem('sb_active');
+        }
+    });
+});
+
+function sidebarSection(key) {
+    return {
+        get open() { return this.$store.sidebar.active === key; },
+        toggle() { this.$store.sidebar.toggle(key); }
+    };
+}
+
+// Mark active link and auto-open its section
+document.addEventListener('DOMContentLoaded', () => {
+    const path = window.location.pathname;
+    let activeLink = null;
+
+    document.querySelectorAll('.nav-link').forEach(a => {
+        const href = a.getAttribute('href');
+        if (href && href !== '#' && path.startsWith(href) && href !== '/') {
+            if (!activeLink || href.length > activeLink.getAttribute('href').length) {
+                activeLink = a;
+            }
+        }
+    });
+
+    if (activeLink) {
+        activeLink.classList.add('active');
+        const group = activeLink.closest('.section-group');
+        if (group) {
+            const key = group.getAttribute('x-data')?.match(/sidebarSection\('(\w+)'\)/)?.[1];
+            if (key && Alpine.store('sidebar').active !== key) {
+                Alpine.store('sidebar').toggle(key);
+            }
+        }
+    }
+});
+</script>

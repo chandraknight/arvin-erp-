@@ -1,0 +1,227 @@
+{# HTMX partial — rendered by CollectPaymentHtmxView (GET and POST-with-errors) #}
+{# Target: #collect-payment-modal-body                                          #}
+{% load humanize %}
+
+<div class="p-6">
+  <div class="flex items-center justify-between mb-5">
+    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+      <i class="fas fa-money-bill-wave text-green-600"></i>
+      Collect Payment
+    </h3>
+    <button type="button"
+            onclick="document.getElementById('collect-payment-modal').classList.add('hidden')"
+            class="text-gray-400 hover:text-gray-600 transition-colors">
+      <i class="fas fa-times text-xl"></i>
+    </button>
+  </div>
+
+  {# Invoice summary strip #}
+  <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-5 flex flex-wrap gap-4 text-sm">
+    <div>
+      <span class="text-gray-500">Invoice</span>
+      <span class="ml-1 font-semibold text-gray-800">#{{ invoice.invoice_number }}</span>
+    </div>
+    <div>
+      <span class="text-gray-500">Total</span>
+      <span class="ml-1 font-semibold text-gray-800">NPR {{ invoice.total|floatformat:2|intcomma }}</span>
+    </div>
+    <div>
+      <span class="text-gray-500">Outstanding</span>
+      <span class="ml-1 font-bold text-orange-700">NPR {{ invoice.outstanding_balance|floatformat:2|intcomma }}</span>
+    </div>
+  </div>
+
+  {# Validation errors #}
+  {% if errors %}
+    <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm space-y-1">
+      {% for error in errors %}
+        <p class="flex items-start gap-1.5">
+          <i class="fas fa-exclamation-circle mt-0.5 flex-shrink-0"></i>
+          {{ error }}
+        </p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form id="collect-payment-form"
+        hx-post="{% url 'billing:htmx_collect_payment' invoice.pk %}"
+        hx-target="#collect-payment-modal-body"
+        hx-swap="innerHTML"
+        hx-indicator="#collect-payment-spinner">
+
+    {% csrf_token %}
+
+    <div class="space-y-4">
+
+      {# Split payment rows #}
+      <div id="cp-split-container" class="space-y-2">
+
+        {# Row 1 — primary #}
+        <div class="grid grid-cols-2 gap-2 items-end">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Method <span class="text-red-500">*</span></label>
+            <select name="payment_method"
+                    class="cp-method w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    required>
+              <option value="">— Select method —</option>
+              {% for value, label in payment_methods %}
+                <option value="{{ value }}"{% if form_data.payment_method == value %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Amount <span class="text-red-500">*</span></label>
+            <input type="number" name="payment_amount" id="cp-amount"
+                   step="0.01" min="0.01"
+                   value="{{ form_data.payment_amount|default:invoice.outstanding_balance }}"
+                   class="cp-split-amount w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                   required>
+          </div>
+        </div>
+
+        {# Extra rows injected by JS #}
+      </div>
+
+      {# Split total feedback #}
+      <div id="cp-split-bar" class="hidden text-xs py-1.5 px-3 border rounded flex items-center gap-2">
+        <i class="fas fa-info-circle"></i>
+        <span id="cp-split-msg"></span>
+      </div>
+
+      {# Add split row button #}
+      <button type="button" id="cp-add-split"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 border border-green-400 bg-green-50 hover:bg-green-100 px-3 py-1.5 transition">
+        <i class="fas fa-plus"></i> Add Another Payment Method
+      </button>
+
+      {# Payment Date (BS) #}
+      <div class="sm:flex">
+        <label class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-36 w-full text-sm">
+          Date (BS)
+        </label>
+        {# Use nepali-datepicker class so base.html's htmx:afterSettle listener initialises v5 picker #}
+        <input type="text"
+               name="payment_date"
+               id="cp-payment-date"
+               placeholder="YYYY-MM-DD"
+               value="{{ form_data.payment_date|default:today_bs }}"
+               data-default-date="{{ today_bs }}"
+               class="nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+      </div>
+
+      {# Reference #}
+      <div class="sm:flex">
+        <label class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-36 w-full text-sm">
+          Reference
+        </label>
+        <input type="text"
+               name="payment_reference"
+               placeholder="e.g. cheque no., transaction ID"
+               value="{{ form_data.payment_reference|default:'' }}"
+               class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+      </div>
+
+      {# Description #}
+      <div class="sm:flex">
+        <label class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-36 w-full text-sm">
+          Description
+        </label>
+        <textarea name="payment_description"
+                  rows="2"
+                  placeholder="Optional note"
+                  class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ form_data.payment_description|default:'' }}</textarea>
+      </div>
+
+    </div>
+
+    <div class="mt-6 flex gap-3">
+      <button type="submit"
+              class="flex-1 bg-green-700 hover:bg-green-800 text-white font-semibold py-2.5 text-sm transition-colors flex items-center justify-center gap-2">
+        <span id="collect-payment-spinner" class="htmx-indicator">
+          <i class="fas fa-spinner fa-spin"></i>
+        </span>
+        <i class="fas fa-check"></i>
+        Record Payment
+      </button>
+      <button type="button"
+              onclick="document.getElementById('collect-payment-modal').classList.add('hidden')"
+              class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 text-sm transition-colors">
+        Cancel
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  (function () {
+    const outstanding = parseFloat('{{ invoice.outstanding_balance }}') || 0;
+    const container  = document.getElementById('cp-split-container');
+    const addBtn     = document.getElementById('cp-add-split');
+    const splitBar   = document.getElementById('cp-split-bar');
+    const splitMsg   = document.getElementById('cp-split-msg');
+
+    const METHOD_CHOICES = [{% for v, l in payment_methods %}['{{ v }}','{{ l }}'],{% endfor %}];
+
+    function buildOptions(selected) {
+      return '<option value="">— Select method —</option>' +
+        METHOD_CHOICES.map(([v,l]) => `<option value="${v}"${v===selected?' selected':''}>${l}</option>`).join('');
+    }
+
+    function updateSplitTotal() {
+      const amounts = document.querySelectorAll('.cp-split-amount');
+      const extraRows = document.querySelectorAll('.cp-extra-row');
+      let sum = 0;
+      amounts.forEach(el => { sum += parseFloat(el.value) || 0; });
+
+      if (extraRows.length === 0) { splitBar.classList.add('hidden'); return; }
+      splitBar.classList.remove('hidden');
+      const diff = outstanding - sum;
+      splitBar.className = 'text-xs py-1.5 px-3 border rounded flex items-center gap-2 ';
+      if (Math.abs(diff) < 0.01) {
+        splitBar.classList.add('border-green-400','bg-green-50','text-green-800');
+        splitMsg.textContent = `Split total NPR ${sum.toFixed(2)} matches outstanding. ✓`;
+      } else if (sum > outstanding) {
+        splitBar.classList.add('border-red-400','bg-red-50','text-red-700');
+        splitMsg.textContent = `Split total NPR ${sum.toFixed(2)} exceeds outstanding NPR ${outstanding.toFixed(2)}.`;
+      } else {
+        splitBar.classList.add('border-yellow-400','bg-yellow-50','text-yellow-800');
+        splitMsg.textContent = `Split total NPR ${sum.toFixed(2)} — remaining NPR ${diff.toFixed(2)}.`;
+      }
+    }
+
+    function addSplitRow() {
+      const row = document.createElement('div');
+      row.className = 'cp-extra-row grid grid-cols-2 gap-2 items-end';
+      row.innerHTML = `
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Method <span class="text-red-500">*</span></label>
+          <select name="extra_payment_method" class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+            ${buildOptions('')}
+          </select>
+        </div>
+        <div class="flex gap-2 items-end">
+          <div class="flex-1">
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Amount <span class="text-red-500">*</span></label>
+            <input type="number" name="extra_payment_amount" step="0.01" min="0.01"
+                   class="cp-split-amount w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+          </div>
+          <button type="button" class="cp-remove-row mb-0.5 text-red-500 hover:text-red-700 border border-red-300 bg-red-50 hover:bg-red-100 px-2 py-2 text-xs transition" title="Remove">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>`;
+      container.appendChild(row);
+      row.querySelector('.cp-remove-row').addEventListener('click', () => { row.remove(); updateSplitTotal(); });
+      row.querySelectorAll('.cp-split-amount, select').forEach(el => el.addEventListener('input', updateSplitTotal));
+      updateSplitTotal();
+    }
+
+    if (addBtn) addBtn.addEventListener('click', addSplitRow);
+    document.getElementById('cp-amount')?.addEventListener('input', updateSplitTotal);
+
+    // Re-run initNepaliDatePickers so the date field is initialised after HTMX swap
+    if (typeof initNepaliDatePickers === 'function') {
+      initNepaliDatePickers(document.getElementById('collect-payment-modal-body'));
+    }
+  })();
+</script>

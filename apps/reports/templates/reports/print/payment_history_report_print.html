@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payment History - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #aaa; padding: 3px 6px; font-size: 8.5pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+.tot td { font-weight: bold; border-top: 2px solid #555; background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Payment History Report</h1>
+  <div class="sub">Printed: {% now "Y-m-d" %}</div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Date</th><th>Invoice #</th><th>Customer</th>
+      <th>Method</th><th>Reference #</th><th class="tr">Amount (NPR)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in payments %}
+    <tr>
+      <td>{{ p.date|date:"Y-m-d" }}</td>
+      <td>{{ p.invoice.invoice_number|default:"-" }}</td>
+      <td>{{ p.invoice.customer.name|default:"N/A" }}</td>
+      <td>{{ p.get_payment_method_display|default:p.payment_method|default:"-" }}</td>
+      <td>{{ p.reference_number|default:"-" }}</td>
+      <td class="tr">{{ p.amount|floatformat:2 }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="tc">No payment records found.</td></tr>
+    {% endfor %}
+    {% if payments %}
+    <tr class="tot">
+      <td colspan="5">Total Received</td>
+      <td class="tr">{{ total_payments_received|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

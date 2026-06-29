@@ -1,0 +1,113 @@
+{% load static %}
+<div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-200 pt-4">
+
+    <!-- Showing X to Y of Z + per-page -->
+    <div class="flex items-center gap-3 text-sm text-gray-500">
+        <span>
+            Showing
+            <strong class="text-gray-800">{{ page_obj.start_index }}</strong>–<strong class="text-gray-800">{{ page_obj.end_index }}</strong>
+            of <strong class="text-gray-800">{{ page_obj.paginator.count }}</strong>
+        </span>
+        <div class="flex items-center gap-1.5">
+            <label for="paginate_by_select" class="text-xs text-gray-400 whitespace-nowrap">Per page:</label>
+            <select id="paginate_by_select" onchange="updateItemsPerPage(this.value)"
+                    class="text-xs border border-gray-300 px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                <option value="5"  {% if paginate_by == 5  %}selected{% endif %}>5</option>
+                <option value="10" {% if paginate_by == 10 %}selected{% endif %}>10</option>
+                <option value="20" {% if paginate_by == 20 %}selected{% endif %}>20</option>
+                <option value="50" {% if paginate_by == 50 %}selected{% endif %}>50</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Page navigation -->
+    <nav class="flex items-center gap-1" aria-label="Pagination">
+
+        <!-- First + Prev -->
+        {% if page_obj.has_previous %}
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page=1&paginate_by={{ paginate_by }}"
+           class="pagination-btn" title="First">
+            <i class="fas fa-angle-double-left text-xs"></i>
+        </a>
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}&paginate_by={{ paginate_by }}"
+           class="pagination-btn" title="Previous">
+            <i class="fas fa-chevron-left text-xs"></i>
+        </a>
+        {% else %}
+        <span class="pagination-btn disabled"><i class="fas fa-angle-double-left text-xs"></i></span>
+        <span class="pagination-btn disabled"><i class="fas fa-chevron-left text-xs"></i></span>
+        {% endif %}
+
+        <!-- Page numbers (window of ±2) -->
+        <div class="flex items-center gap-1">
+            {% for page in page_obj.paginator.page_range %}
+                {% if page == page_obj.number %}
+                    <span class="pagination-page active">{{ page }}</span>
+                {% elif page > page_obj.number|add:'-3' and page < page_obj.number|add:'3' %}
+                    <a href="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page }}&paginate_by={{ paginate_by }}"
+                       class="pagination-page">{{ page }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Next + Last -->
+        {% if page_obj.has_next %}
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}&paginate_by={{ paginate_by }}"
+           class="pagination-btn" title="Next">
+            <i class="fas fa-chevron-right text-xs"></i>
+        </a>
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}&paginate_by={{ paginate_by }}"
+           class="pagination-btn" title="Last">
+            <i class="fas fa-angle-double-right text-xs"></i>
+        </a>
+        {% else %}
+        <span class="pagination-btn disabled"><i class="fas fa-chevron-right text-xs"></i></span>
+        <span class="pagination-btn disabled"><i class="fas fa-angle-double-right text-xs"></i></span>
+        {% endif %}
+
+    </nav>
+</div>
+
+<style>
+.pagination-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #4b5563;
+    font-size: 0.75rem;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    cursor: pointer;
+    text-decoration: none;
+}
+.pagination-btn:hover { background: #f0fdf4; color: #166534; border-color: #86efac; }
+.pagination-btn.disabled { color: #d1d5db; cursor: not-allowed; background: #f9fafb; }
+
+.pagination-page {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 30px; height: 30px; padding: 0 6px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #4b5563;
+    font-size: 0.8125rem; font-weight: 500;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    text-decoration: none;
+}
+.pagination-page:hover { background: #f0fdf4; color: #166534; border-color: #86efac; }
+.pagination-page.active {
+    background: #166534;
+    border-color: #166534;
+    color: #fff;
+    font-weight: 700;
+    cursor: default;
+}
+</style>
+
+<script>
+function updateItemsPerPage(value) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('paginate_by', value);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+}
+</script>

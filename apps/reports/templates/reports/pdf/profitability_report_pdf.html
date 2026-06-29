@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ report_title }}</title>
+        <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: sans-serif; font-size: 10pt; color: #000; margin: 0; }
+        h1 { color: #333; text-align: center; font-size: 14pt; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #999; padding: 5px 7px; text-align: left; font-size: 9pt; }
+        th { background-color: #e8e8e8; font-weight: bold; }
+        tr { page-break-inside: avoid; }
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <h1>{{ report_title }}</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Total Sales Revenue</td>
+                <td class="text-right">NPR {{ total_revenue|floatformat:"2"|default:"0.00" }}</td>
+            </tr>
+            <tr>
+                <td>Total Cost of Goods Sold (COGS)</td>
+                <td class="text-right">NPR {{ total_cogs|floatformat:"2"|default:"0.00" }}</td>
+            </tr>
+             <tr>
+                <td><strong>Gross Profit</strong></td>
+                <td class="text-right"><strong>NPR {{ gross_profit|floatformat:"2"|default:"0.00" }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html> 

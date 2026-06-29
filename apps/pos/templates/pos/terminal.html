@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}POS Terminal{% endblock %}
+
+{% block content %}
+<div x-data="{ cartOpen: false }" class="flex gap-4 h-full min-h-screen bg-gray-50 p-4">
+
+  <!-- Left panel: Products -->
+  <div class="flex-1 min-w-0">
+
+    <!-- Category type tabs -->
+    <div class="mb-3 border-b border-gray-200">
+      <div class="flex space-x-1 overflow-x-auto pb-2">
+        <a href="?ct=&cat="
+           class="px-4 py-2 text-sm font-medium whitespace-nowrap transition duration-150
+                  {% if not selected_ct_id %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+          All
+        </a>
+        {% for ct in category_types %}
+          <a href="?ct={{ ct.id }}&cat="
+             class="px-4 py-2 text-sm font-medium whitespace-nowrap transition duration-150
+                    {% if selected_ct_id == ct.id|stringformat:'s' %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            {{ ct.name }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Sub-category filter -->
+    {% if categories %}
+      <div class="mb-3 flex space-x-1 overflow-x-auto pb-2">
+        <a href="?ct={{ selected_ct_id }}&cat="
+           class="px-3 py-1 text-xs font-medium whitespace-nowrap transition duration-150
+                  {% if not selected_category_id %}bg-gray-800 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+          All
+        </a>
+        {% for cat in categories %}
+          <a href="?ct={{ selected_ct_id }}&cat={{ cat.id }}"
+             class="px-3 py-1 text-xs font-medium whitespace-nowrap transition duration-150
+                    {% if selected_category_id == cat.id|stringformat:'s' %}bg-gray-800 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            {{ cat.name }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Search bar -->
+    <form method="get" class="mb-4 flex gap-2">
+      {% if selected_ct_id %}<input type="hidden" name="ct" value="{{ selected_ct_id }}">{% endif %}
+      {% if selected_category_id %}<input type="hidden" name="cat" value="{{ selected_category_id }}">{% endif %}
+      <input type="text" name="q" value="{{ q }}" placeholder="Search products..."
+             class="flex-1 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+      <button type="submit"
+              class="bg-gray-100 hover:bg-gray-200 border border-gray-300 px-3 py-2 text-gray-600 transition duration-150">
+        <i class="fas fa-search"></i>
+      </button>
+    </form>
+
+    <!-- Product grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="product-grid">
+      {% for product in page_obj.object_list %}
+        <button class="bg-white border border-gray-200 hover:border-green-500 hover:shadow-md p-3 text-left transition duration-150 add-product-btn{% if not product.is_service and product.current_stock|default:0 <= 0 %} opacity-50 cursor-not-allowed{% endif %}"
+                data-product-id="{{ product.id }}"
+                data-product-name="{{ product.name }}"
+                data-product-price="{{ product.price }}"
+                {% if not product.is_service and product.current_stock|default:0 <= 0 %}disabled{% endif %}>
+          <div class="w-full h-24 bg-gray-50 flex items-center justify-center mb-2 overflow-hidden">
+            {% if product.primary_image_url %}
+              <img src="{{ product.primary_image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+            {% else %}
+              <i class="fas fa-box text-gray-300 text-2xl"></i>
+            {% endif %}
+          </div>
+          <div class="text-sm font-medium text-gray-800 truncate">{{ product.name }}</div>
+          <div class="text-base font-bold text-green-600 mt-1">NPR {{ product.price }}</div>
+          <div class="flex items-center justify-between mt-0.5">
+            {% if product.barcode %}
+              <span class="text-xs text-gray-400">{{ product.barcode }}</span>
+            {% else %}
+              <span></span>
+            {% endif %}
+            {% if not product.is_service %}
+              {% if product.current_stock|default:0 <= 0 %}
+                <span class="text-xs font-semibold text-red-600">Out of stock</span>
+              {% else %}
+                <span class="text-xs text-gray-500">Stock: {{ product.current_stock }}</span>
+              {% endif %}
+            {% endif %}
+          </div>
+        </button>
+      {% empty %}
+        <div class="col-span-4 text-center py-16 text-gray-400">
+          <i class="fas fa-search text-4xl mb-3 block"></i>
+          <p class="text-lg">No products found.</p>
+          <p class="text-sm mt-1">Add products from the Products module first.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <div class="mt-4 mb-20 md:mb-4 flex flex-wrap items-center justify-center gap-1">
+
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+             class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">
+            <i class="fas fa-chevron-left"></i>
+          </a>
+        {% else %}
+          <span class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-200 text-gray-300 cursor-not-allowed"><i class="fas fa-chevron-left"></i></span>
+        {% endif %}
+
+        {% if page_obj.number > 3 %}
+          <a href="?page=1{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+             class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">1</a>
+          {% if page_obj.number > 4 %}<span class="text-xs text-gray-400">…</span>{% endif %}
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            {% if page_obj.number == num %}
+              <span class="inline-flex items-center justify-center w-8 h-8 text-xs border bg-green-600 border-green-600 text-white font-semibold">{{ num }}</span>
+            {% else %}
+              <a href="?page={{ num }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+                 class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">{{ num }}</a>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.number < page_obj.paginator.num_pages|add:"-2" %}
+          {% if page_obj.number < page_obj.paginator.num_pages|add:"-3" %}<span class="text-xs text-gray-400">…</span>{% endif %}
+          <a href="?page={{ page_obj.paginator.num_pages }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+             class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">{{ page_obj.paginator.num_pages }}</a>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+             class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">
+            <i class="fas fa-chevron-right"></i>
+          </a>
+        {% else %}
+          <span class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-200 text-gray-300 cursor-not-allowed"><i class="fas fa-chevron-right"></i></span>
+        {% endif %}
+
+        <span class="ml-1 text-xs text-gray-400">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Right panel: Cart (desktop) -->
+  <div class="hidden md:block w-80 flex-shrink-0">
+    <div id="cart-container">
+      {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods selected_referrer=selected_referrer %}
+    </div>
+  </div>
+
+  <!-- Mobile cart drawer -->
+  <div x-show="cartOpen"
+       x-cloak
+       class="md:hidden fixed inset-0 z-40 flex flex-col justify-end"
+       style="display:none;">
+    <div class="absolute inset-0 bg-black bg-opacity-40" @click="cartOpen = false"></div>
+    <div class="relative bg-white z-10 max-h-[85vh] overflow-y-auto rounded-t-2xl shadow-2xl">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white z-10">
+        <span class="font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-shopping-cart text-green-600"></i> Cart</span>
+        <button @click="cartOpen = false" class="text-gray-400 hover:text-gray-600 p-1"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="cart-container-mobile" class="p-4">
+        {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods selected_referrer=selected_referrer %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile floating cart button -->
+  <button @click="cartOpen = true"
+          class="md:hidden fixed bottom-5 right-5 z-30 bg-green-600 hover:bg-green-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition">
+    <i class="fas fa-shopping-cart text-xl"></i>
+    {% if cart.items %}
+      <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{{ cart.items|length }}</span>
+    {% endif %}
+  </button>
+
+</div>
+
+<script>
+  function refreshCart(url, values) {
+    // Both the desktop and mobile cart panels are present in the DOM at the
+    // same time (mobile is just hidden via x-show), so this must fire a
+    // single POST and mirror the response into both — issuing one POST per
+    // target would apply the cart mutation (e.g. "add 1") twice server-side.
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const body = new URLSearchParams(values).toString();
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrfToken,
+        'HX-Request': 'true',
+      },
+      body: body,
+    })
+      .then(function(res) { return res.text(); })
+      .then(function(html) {
+        ['#cart-container', '#cart-container-mobile'].forEach(function(t) {
+          const el = document.querySelector(t);
+          if (el) el.innerHTML = html;
+        });
+      });
+  }
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.add-product-btn');
+    if (!btn) return;
+    e.preventDefault();
+    refreshCart('{% url "pos:add_item" %}', { product_id: btn.dataset.productId, quantity: 1 });
+  });
+</script>
+{% endblock %}

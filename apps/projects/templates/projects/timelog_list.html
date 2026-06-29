@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Time Logs{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-clock text-teal-600 mr-2"></i>Time Logs</h1>
+    <p class="text-sm text-gray-500 mt-1">Total: <strong>{{ total_hours|floatformat:1 }}h</strong></p>
+  </div>
+</div>
+
+<!-- Project filter -->
+<div class="flex gap-3 mb-4">
+  <select onchange="window.location='?project='+this.value" class="border border-gray-300 px-3 py-2 text-sm bg-white">
+    <option value="">All Projects</option>
+    {% for p in projects %}
+    <option value="{{ p.pk }}" {% if selected_project == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+  {% if logs %}
+  <table class="w-full text-sm">
+    <thead class="bg-teal-700 text-white text-xs uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">Date</th>
+        <th class="px-4 py-3 text-left">Project</th>
+        <th class="px-4 py-3 text-left">Employee</th>
+        <th class="px-4 py-3 text-left">Task</th>
+        <th class="px-4 py-3 text-right">Hours</th>
+        <th class="px-4 py-3 text-center">Billable</th>
+        <th class="px-4 py-3 text-right">Billable Amount</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr class="border-t border-gray-100 hover:bg-gray-50">
+        <td class="px-4 py-3 text-gray-500 text-xs">{{ log.log_date|date:"Y-m-d" }}</td>
+        <td class="px-4 py-3 font-medium text-green-700">
+          <a href="{% url 'projects:project_detail' log.project.pk %}" class="hover:underline">{{ log.project.name }}</a>
+        </td>
+        <td class="px-4 py-3 text-gray-700">{{ log.employee.full_name|default:"—" }}</td>
+        <td class="px-4 py-3 text-gray-500 text-xs">{{ log.task.title|default:"—" }}</td>
+        <td class="px-4 py-3 text-right font-mono font-semibold">{{ log.hours }}</td>
+        <td class="px-4 py-3 text-center">
+          {% if log.is_billable %}<i class="fas fa-check-circle text-green-600"></i>{% else %}<i class="fas fa-times-circle text-gray-400"></i>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-right font-mono text-green-700">
+          {% if log.billable_amount %}{{ log.billable_amount|floatformat:2|intcomma }}{% else %}—{% endif %}
+        </td>
+        <td class="px-4 py-3 text-center">
+          <button type="button"
+                  hx-post="{% url 'projects:timelog_delete' pk=log.pk %}"
+                  hx-target="closest tr"
+                  hx-swap="outerHTML swap:300ms"
+                  hx-confirm="Delete this time log? This cannot be undone."
+                  class="text-red-400 hover:text-red-600 text-xs" title="Delete">
+            <i class="fas fa-trash-alt htmx-hide-on-request"></i>
+            <i class="fas fa-spinner fa-spin" style="display:none" aria-hidden="true"></i>
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="text-center py-12 text-gray-400">
+    <i class="fas fa-clock text-4xl mb-3"></i>
+    <p class="text-sm">No time logs found.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

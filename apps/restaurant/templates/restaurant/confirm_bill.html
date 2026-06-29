@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Issue Bill — {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-2">
+  <div class="bg-white border border-gray-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-green-700 text-white rounded-t">
+      <h1 class="text-lg font-bold"><i class="fas fa-file-invoice-dollar mr-2"></i>Issue Bill</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="text-sm text-gray-700 space-y-1">
+        <p><strong>Order:</strong> {{ order.order_number }}</p>
+        <p><strong>Table:</strong> {{ order.table.label }}</p>
+        <p><strong>Covers:</strong> {{ order.covers }} pax</p>
+        {% if order.customer %}<p><strong>Customer:</strong> {{ order.customer.name }}</p>{% endif %}
+      </div>
+
+      <div class="border-t border-gray-200 pt-4 space-y-1 text-sm">
+        <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>{{ order.subtotal|floatformat:2 }}</span></div>
+        {% if order.discount_amount %}<div class="flex justify-between text-red-600"><span>Discount</span><span>- {{ order.discount_amount|floatformat:2 }}</span></div>{% endif %}
+        {% if order.tax_amount %}<div class="flex justify-between text-gray-600"><span>Tax</span><span>{{ order.tax_amount|floatformat:2 }}</span></div>{% endif %}
+        <div class="flex justify-between font-bold text-gray-900 text-base border-t border-gray-200 pt-2 mt-2">
+          <span>Total</span><span>{{ order.total|floatformat:2 }}</span>
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-500">
+        This will create an Invoice and queue a bill print job. The table will be marked for cleaning.
+      </p>
+
+      <div class="flex gap-3 pt-2">
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit"
+                  class="px-6 py-2 bg-green-700 hover:bg-green-800 text-white font-semibold rounded shadow transition">
+            <i class="fas fa-check mr-1"></i>Confirm &amp; Issue Bill
+          </button>
+        </form>
+        <a href="{% url 'restaurant:order_detail' pk=order.pk %}"
+           class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded transition">
+          Cancel
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

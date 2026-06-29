@@ -1,0 +1,333 @@
+{% url 'pos:clear_cart' as clear_cart_url %}
+<!-- POS Cart Panel -->
+<div x-data="{ checkoutOpen: false, clearConfirmOpen: false }" class="bg-white border border-gray-200 shadow-sm p-4 sticky top-4">
+  <h3 class="text-lg font-bold mb-3 flex items-center gap-2 text-gray-800">
+    <i class="fas fa-shopping-cart text-green-600"></i> Current Sale
+  </h3>
+
+  {% if stock_warning %}
+    <div class="bg-yellow-50 border border-yellow-300 text-yellow-800 text-xs px-3 py-2 mb-3">
+      <i class="fas fa-exclamation-triangle mr-1"></i>{{ stock_warning }}
+    </div>
+  {% endif %}
+
+  {% if cart.items %}
+    <!-- Cart items -->
+    <div class="space-y-2 max-h-72 overflow-y-auto mb-3 pr-1">
+      {% for pid, item in cart.items.items %}
+        <div class="border-b border-gray-100 pb-2" data-item-id="{{ pid }}">
+          <div class="flex justify-between items-start gap-2">
+            <!-- Thumbnail -->
+            <div class="w-8 h-8 bg-gray-50 flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-100">
+              {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+              {% else %}
+                <i class="fas fa-box text-gray-300 text-[10px]"></i>
+              {% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-sm text-gray-800 truncate">{{ item.name }}</div>
+              <div class="text-gray-500 text-xs">NPR {{ item.price }} × {{ item.quantity }}</div>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <div class="font-semibold text-sm text-gray-800">NPR {{ item.line_total }}</div>
+              <button class="text-red-500 text-xs hover:underline mt-0.5"
+                      hx-post="{% url 'pos:remove_item' %}"
+                      hx-vals='{"product_id": "{{ pid }}"}'
+                      hx-target="#cart-container"
+                      hx-swap="innerHTML">
+                Remove
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center mt-1.5 gap-2">
+            <button class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center text-sm transition duration-150"
+                    hx-post="{% url 'pos:update_qty' %}"
+                    hx-vals='{"product_id": "{{ pid }}", "quantity": {{ item.quantity|add:-1 }}}'
+                    hx-target="#cart-container"
+                    hx-swap="innerHTML">−</button>
+            <span class="text-sm w-6 text-center font-medium">{{ item.quantity }}</span>
+            <button class="w-6 h-6 bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center text-sm transition duration-150"
+                    hx-post="{% url 'pos:update_qty' %}"
+                    hx-vals='{"product_id": "{{ pid }}", "quantity": {{ item.quantity|add:1 }}}'
+                    hx-target="#cart-container"
+                    hx-swap="innerHTML">+</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Totals -->
+    <div class="border-t border-gray-200 pt-3 mb-3 space-y-1">
+      <div class="flex justify-between text-sm text-gray-600">
+        <span>Subtotal</span>
+        <span class="font-medium text-gray-800">NPR {{ totals.subtotal|floatformat:2 }}</span>
+      </div>
+      {% if totals.discount_amount > 0 %}
+        <div class="flex justify-between text-sm text-green-600">
+          <span>Discount</span>
+          <span>−NPR {{ totals.discount_amount|floatformat:2 }}</span>
+        </div>
+      {% endif %}
+      {% if company.vat_registered %}
+        <div class="flex justify-between text-sm text-gray-600">
+          <span>Tax ({{ totals.tax_pct }}%)</span>
+          <span class="font-medium text-gray-800">NPR {{ totals.tax_amount|floatformat:2 }}</span>
+        </div>
+      {% endif %}
+      <div class="flex justify-between text-base font-bold text-gray-800 pt-1 border-t border-gray-100 mt-1">
+        <span>Total</span>
+        <span class="text-green-600">NPR {{ totals.total|floatformat:2 }}</span>
+      </div>
+    </div>
+
+    <!-- Customer selector -->
+    <div class="mb-3">
+      <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Customer</label>
+      <select class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150"
+              hx-post="{% url 'pos:set_customer' %}"
+              hx-trigger="change"
+              hx-include="this"
+              hx-target="#cart-container"
+              hx-swap="innerHTML"
+              name="customer_id">
+        <option value="">Walk-in / Cash</option>
+        {% for cust in customers %}
+          <option value="{{ cust.id }}" {% if cart.customer_id == cust.id|stringformat:'s' %}selected{% endif %}>{{ cust.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Referred By (loyalty tracking — not printed on the receipt) -->
+    <div class="mb-3" x-data="{
+        open: false,
+        q: '{{ selected_referrer.name|default:""|escapejs }}',
+        results: [],
+        selectedId: '{{ cart.referrer_id|default:"" }}',
+        search() {
+          if (!this.q.trim()) { this.results = []; this.open = false; return; }
+          fetch('{% url 'pos:referrer_search' %}?q=' + encodeURIComponent(this.q))
+            .then(r => r.json())
+            .then(data => { this.results = data.referrers; this.open = true; });
+        },
+        select(r) {
+          this.q = r.name;
+          this.selectedId = r.id;
+          this.open = false;
+          refreshCart('{% url 'pos:set_referrer' %}', { referrer_id: r.id });
+        },
+        clear() {
+          this.q = ''; this.selectedId = ''; this.results = []; this.open = false;
+          refreshCart('{% url 'pos:set_referrer' %}', { referrer_id: '' });
+        },
+        addNew() {
+          if (!this.q.trim()) return;
+          this.open = false;
+          refreshCart('{% url 'pos:create_referrer' %}', { name: this.q, phone: '' });
+        }
+      }" @click.outside="open = false">
+      <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Referred By</label>
+      <div class="relative">
+        <input type="text"
+               x-model="q"
+               @input.debounce.300ms="selectedId = ''; search()"
+               @focus="if (results.length) open = true"
+               placeholder="Type name or phone…"
+               autocomplete="off"
+               class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+        <button type="button" x-show="q" @click="clear()"
+                class="absolute right-2 top-2 text-gray-400 hover:text-gray-600 text-xs">
+          <i class="fas fa-times"></i>
+        </button>
+        <div x-show="open" x-cloak
+             class="absolute z-10 mt-1 w-full bg-white border border-gray-200 shadow-lg max-h-48 overflow-y-auto">
+          <template x-for="r in results" :key="r.id">
+            <button type="button" @click="select(r)"
+                    class="w-full text-left px-3 py-2 text-sm hover:bg-green-50 border-b border-gray-50 last:border-0">
+              <span x-text="r.name"></span>
+              <span class="text-gray-400" x-text="r.phone ? ' · ' + r.phone : ''"></span>
+            </button>
+          </template>
+          <button type="button" x-show="q.trim() && !results.some(r => r.name.toLowerCase() === q.trim().toLowerCase())"
+                  @click="addNew()"
+                  class="w-full text-left px-3 py-2 text-sm text-green-700 font-medium hover:bg-green-50">
+            <i class="fas fa-plus mr-1"></i> Add "<span x-text="q"></span>" as new referrer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Discount % -->
+    <div class="mb-4" x-data="{ pct: '{{ cart.discount_pct|default:'0' }}' }">
+      <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Discount %</label>
+      <input type="number" min="0" max="100" step="1"
+             x-model="pct"
+             @input.debounce.500ms="refreshCart('{% url 'pos:set_discount' %}', { discount_pct: pct })"
+             @change="refreshCart('{% url 'pos:set_discount' %}', { discount_pct: pct })"
+             class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+    </div>
+
+    <!-- Checkout button -->
+    <button @click="checkoutOpen = true"
+            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 transition duration-150 flex items-center justify-center gap-2">
+      <i class="fas fa-credit-card"></i> Checkout
+    </button>
+
+    <!-- Clear cart -->
+    <button type="button"
+            @click="clearConfirmOpen = true"
+            class="w-full mt-2 border border-red-300 text-red-600 hover:bg-red-50 py-2 px-4 transition duration-150 text-sm">
+      <i class="fas fa-trash mr-1"></i> Clear Cart
+    </button>
+
+  {% else %}
+    <!-- Empty cart -->
+    <div class="text-center py-10 text-gray-400">
+      <i class="fas fa-shopping-basket text-4xl mb-3 block"></i>
+      <p class="font-medium">Cart is empty</p>
+      <p class="text-sm mt-1">Click a product to add it</p>
+    </div>
+  {% endif %}
+
+  <!-- Tax info -->
+  {% if company.vat_registered %}
+    <div class="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400">
+      Tax rate: {{ company.tax_rate }}%
+    </div>
+  {% endif %}
+
+  <!-- Clear Cart Confirm Modal -->
+  <div x-show="clearConfirmOpen"
+       x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center"
+       style="display: none;">
+    <div class="absolute inset-0 bg-black bg-opacity-50" @click="clearConfirmOpen = false"></div>
+    <div class="relative bg-white w-full max-w-sm mx-4 shadow-xl z-10">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h5 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <i class="fas fa-trash text-red-500"></i> Clear Cart
+        </h5>
+        <button type="button" @click="clearConfirmOpen = false"
+                class="text-gray-400 hover:text-gray-600 transition duration-150">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="px-6 py-5 text-sm text-gray-600">
+        Are you sure you want to remove all items from the cart? This cannot be undone.
+      </div>
+      <div class="flex gap-3 px-6 py-4 border-t border-gray-200">
+        <button type="button" @click="clearConfirmOpen = false"
+                class="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 text-sm font-medium transition duration-150">
+          Cancel
+        </button>
+        <button type="button"
+                @click="
+                  clearConfirmOpen = false;
+                  ['#cart-container', '#cart-container-mobile'].forEach(function(t) {
+                    const el = document.querySelector(t);
+                    if (el) htmx.ajax('POST', '{{ clear_cart_url }}', { target: t, swap: 'innerHTML' });
+                  });
+                "
+                class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 text-sm font-bold transition duration-150">
+          Yes, Clear Cart
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout Modal (Alpine.js) -->
+  <div x-show="checkoutOpen"
+       x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center"
+       style="display: none;">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black bg-opacity-50" @click="checkoutOpen = false"></div>
+
+    <!-- Modal -->
+    <div class="relative bg-white w-full max-w-md mx-4 shadow-xl z-10">
+      <form method="post" action="{% url 'pos:checkout' %}">
+        {% csrf_token %}
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h5 class="text-lg font-bold text-gray-800">Complete Sale</h5>
+          <button type="button" @click="checkoutOpen = false"
+                  class="text-gray-400 hover:text-gray-600 transition duration-150">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="px-6 py-4 space-y-4">
+          <!-- Payment method -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
+            <div class="space-y-2">
+              {% for method_key, method_label in payment_methods %}
+                <label class="flex items-center gap-3 p-3 border border-gray-200 hover:bg-gray-50 cursor-pointer transition duration-150">
+                  <input type="radio" name="payment_method" value="{{ method_key }}"
+                         {% if forloop.first %}checked{% endif %}
+                         class="accent-green-600">
+                  <span class="text-sm text-gray-800">{{ method_label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Amount tendered -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Amount Tendered</label>
+            <input type="number" name="amount_tendered" id="amount_tendered" step="0.01" min="0"
+                   value="{{ totals.total|floatformat:2 }}"
+                   class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150"
+                   required>
+            <p class="text-xs text-gray-400 mt-1">Enter cash received from customer</p>
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Notes (optional)</label>
+            <textarea name="notes" rows="2"
+                      class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150"></textarea>
+          </div>
+
+          <!-- Change preview -->
+          <div class="bg-gray-50 border border-gray-200 p-3">
+            <div class="flex justify-between text-sm font-bold text-gray-800">
+              <span>Change to give:</span>
+              <span id="change-amount" class="text-green-600">NPR 0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex gap-3 px-6 py-4 border-t border-gray-200">
+          <button type="button" @click="checkoutOpen = false"
+                  class="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 text-sm font-medium transition duration-150">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 text-sm font-bold transition duration-150">
+            Confirm Sale
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const input = document.getElementById('amount_tendered');
+    const display = document.getElementById('change-amount');
+    const total = parseFloat('{{ totals.total|default:"0" }}');
+    if (input && display) {
+      function updateChange() {
+        const tendered = parseFloat(input.value) || 0;
+        display.textContent = 'NPR ' + (tendered - total).toFixed(2);
+      }
+      input.addEventListener('input', updateChange);
+      updateChange();
+    }
+  })();
+</script>

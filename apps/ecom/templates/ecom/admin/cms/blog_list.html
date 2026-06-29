@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Blog Posts — Ecom CMS{% endblock %}
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Blog Posts</h1>
+    <a href="{% url 'ecom:cms_blog_create' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold rounded-lg transition">
+      <i class="fas fa-plus"></i> New Post
+    </a>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Title</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Published</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for post in posts %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-medium text-gray-800">
+            <a href="{% url 'ecom:cms_blog_edit' post.id %}" class="hover:text-indigo-600">{{ post.title }}</a>
+          </td>
+          <td class="px-4 py-3 text-gray-500">{{ post.published_at|date:"d M Y" }}</td>
+          <td class="px-4 py-3">
+            {% if post.is_published %}
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">Published</span>
+            {% else %}
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">Draft</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <div class="flex justify-end gap-3 text-xs font-medium">
+              <a href="{% url 'ecom:cms_blog_edit' post.id %}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+              <a href="{% url 'ecom:blog_detail' post.slug %}" target="_blank" class="text-gray-500 hover:text-gray-800">View</a>
+              <a href="{% url 'ecom:cms_blog_delete' post.id %}"
+                 onclick="return confirm('Delete this post?')"
+                 class="text-red-500 hover:text-red-700">Delete</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="px-4 py-10 text-center text-gray-400">
+            No posts yet. <a href="{% url 'ecom:cms_blog_create' %}" class="text-indigo-600 hover:underline">Create one →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

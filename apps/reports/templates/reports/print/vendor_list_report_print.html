@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vendor List Report - Print</title>
+    <style>
+        * { box-sizing: border-box; }
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        html { width: 210mm; }
+        body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 0; }
+        .report-header { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+        .report-header h1 { font-size: 14pt; margin: 0 0 2px; }
+        .report-header .company { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+        .report-header .subtitle { font-size: 9pt; color: #555; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #aaa; padding: 5px 8px; text-align: left; font-size: 9pt; }
+        th { background-color: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+        tr { page-break-inside: avoid; }
+        thead { display: table-header-group; }
+        .text-center { text-align: center; }
+        @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        {% if company %}<div class="company">{{ company.name }}</div>{% endif %}
+        <h1>Vendor List Report</h1>
+        <div class="subtitle">Printed on: {{ today|date:"Y-m-d" }}</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Contact Person</th>
+                <th>Email</th>
+                <th>Phone</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vendor in vendors %}
+            <tr>
+                <td>{{ vendor.name }}</td>
+                <td>{{ vendor.contact_person|default:"-" }}</td>
+                <td>{{ vendor.email|default:"-" }}</td>
+                <td>{{ vendor.phone|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">No vendors found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>window.onload = function () { window.print(); };</script>
+</body>
+</html>

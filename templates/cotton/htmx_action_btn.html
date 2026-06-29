@@ -1,0 +1,32 @@
+{# ── HTMX quick-action button ─────────────────────────────────────────────────
+   Sends a POST/PATCH to an endpoint and swaps the target element.
+   Shows a spinner while the request is in flight.
+
+   Parameters:
+     url        — endpoint URL (required)
+     method     — hx-post / hx-patch / hx-delete (default: hx-post)
+     target     — CSS selector to swap (default: closest tr or card)
+     swap       — hx-swap value (default: outerHTML)
+     label      — button text
+     icon       — Font Awesome class (e.g. fas fa-check)
+     colour     — Tailwind colour name: green / red / amber / blue / gray
+     confirm    — confirmation message (optional)
+     size       — sm / md (default: sm)
+#}
+{% with colour=colour|default:"green" size=size|default:"sm" %}
+<button type="button"
+        {{ method|default:"hx-post" }}="{{ url }}"
+        hx-target="{{ target|default:'closest tr' }}"
+        hx-swap="{{ swap|default:'outerHTML' }}"
+        {% if confirm %}hx-confirm="{{ confirm }}"{% endif %}
+        class="inline-flex items-center gap-1
+               {% if size == 'sm' %}px-2 py-1 text-xs{% else %}px-3 py-1.5 text-sm{% endif %}
+               font-medium
+               bg-{{ colour }}-600 text-white hover:bg-{{ colour }}-700
+               transition disabled:opacity-50 disabled:cursor-not-allowed"
+        hx-indicator="find .htmx-spinner">
+    <i class="{{ icon }} htmx-hide-on-request"></i>
+    <i class="fas fa-spinner fa-spin htmx-spinner" style="display:none"></i>
+    <span>{{ label }}</span>
+</button>
+{% endwith %}

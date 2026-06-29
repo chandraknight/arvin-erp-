@@ -1,0 +1,13 @@
+{# Loader overlay — shows during HTMX requests #}
+<div
+    id="{{ element_id|default:'htmx-loader' }}"
+    class="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+    x-show="true" x-cloak
+    style="display: none;"
+    hx-indicator
+>
+    <div class="bg-white shadow-2xl p-8 flex flex-col items-center gap-4 border border-gray-200">
+        <i class="fas fa-spinner fa-spin text-green-600 text-3xl"></i>
+        <p class="text-sm font-semibold text-gray-700">{{ message|default:"Loading…" }}</p>
+    </div>
+</div>

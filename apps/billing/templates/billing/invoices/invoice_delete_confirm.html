@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Delete Draft Invoice{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+  <div class="bg-white border border-gray-200 shadow-sm">
+
+    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center gap-3">
+      <i class="fas fa-trash text-gray-600 text-lg"></i>
+      <h1 class="text-lg font-bold text-gray-800">Delete Draft Invoice</h1>
+    </div>
+
+    <div class="px-6 py-5">
+      <p class="text-sm text-gray-700 mb-4">
+        You are about to permanently delete draft invoice
+        <span class="font-semibold text-gray-900">{{ invoice.invoice_number|default:"(unsaved)" }}</span>.
+        This draft was never issued, so no financial records will be affected.
+      </p>
+
+      <div class="bg-amber-50 border border-amber-200 rounded p-3 mb-5 text-xs text-amber-800">
+        Only <strong>DRAFT</strong> invoices can be deleted. Issued invoices must be
+        <em>cancelled</em> instead.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="flex gap-3">
+          <button type="submit"
+                  class="px-5 py-2 text-sm font-medium bg-gray-700 text-white hover:bg-gray-800 transition">
+            Delete Draft
+          </button>
+          <a href="{% url 'accounts:user_dashboard' %}"
+             class="px-5 py-2 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+            Go Back
+          </a>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

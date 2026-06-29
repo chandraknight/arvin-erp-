@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Billing Dashboard{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Billing</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Invoices, credit notes, vendor bills</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="{% url 'billing:invoice_create' %}"
+         class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">
+        <i class="fas fa-plus"></i> New Invoice
+      </a>
+      <a href="{% url 'billing:invoice_list' %}"
+         class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm transition-colors">
+        <i class="fas fa-list"></i> All Invoices
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 col-span-2 md:col-span-1">
+      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Issued</p>
+      <p class="text-2xl font-bold text-gray-900 mt-1">{{ stats.total_issued }}</p>
+      <p class="text-xs text-gray-400 mt-0.5">total invoices</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Outstanding</p>
+      <p class="text-xl font-bold text-orange-600 mt-1">{{ rupee }} {{ stats.total_outstanding|floatformat:0|intcomma }}</p>
+      <p class="text-xs text-gray-400 mt-0.5">to collect</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">This Month</p>
+      <p class="text-xl font-bold text-blue-600 mt-1">{{ rupee }} {{ stats.total_invoiced_month|floatformat:0|intcomma }}</p>
+      <p class="text-xs text-gray-400 mt-0.5">invoiced</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Paid</p>
+      <p class="text-2xl font-bold text-green-600 mt-1">{{ stats.count_paid }}</p>
+      <p class="text-xs text-gray-400 mt-0.5">fully paid</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Overdue</p>
+      <p class="text-2xl font-bold {% if stats.count_overdue > 0 %}text-red-600{% else %}text-gray-400{% endif %} mt-1">{{ stats.count_overdue }}</p>
+      <p class="text-xs text-gray-400 mt-0.5">past due date</p>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+    <a href="{% url 'billing:invoice_create' %}"
+       class="flex flex-col items-center justify-center gap-2 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl p-4 text-green-800 font-medium text-sm transition-colors">
+      <i class="fas fa-file-invoice text-xl text-green-600"></i>
+      New Invoice
+    </a>
+    <a href="{% url 'billing:vendor_bill_create' %}"
+       class="flex flex-col items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl p-4 text-blue-800 font-medium text-sm transition-colors">
+      <i class="fas fa-file-alt text-xl text-blue-600"></i>
+      Vendor Bill
+    </a>
+    <a href="{% url 'billing:credit_note_create' %}"
+       class="flex flex-col items-center justify-center gap-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl p-4 text-purple-800 font-medium text-sm transition-colors">
+      <i class="fas fa-undo text-xl text-purple-600"></i>
+      Credit Note
+    </a>
+    <a href="{% url 'billing:debit_note_create' %}"
+       class="flex flex-col items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl p-4 text-orange-800 font-medium text-sm transition-colors">
+      <i class="fas fa-plus-circle text-xl text-orange-600"></i>
+      Debit Note
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Recent Issued Invoices -->
+    <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h2 class="font-semibold text-gray-800">Recent Invoices</h2>
+        <a href="{% url 'billing:invoice_list' %}" class="text-xs text-blue-600 hover:underline">View all →</a>
+      </div>
+      {% if recent_invoices %}
+      <div class="divide-y divide-gray-50">
+        {% for inv in recent_invoices %}
+        <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
+          <div class="min-w-0 flex-1">
+            <a href="{% url 'billing:view_invoice_detail' inv.pk %}"
+               class="text-sm font-semibold text-blue-700 hover:underline truncate block">
+              #{{ inv.invoice_number }}
+            </a>
+            <p class="text-xs text-gray-500 truncate">{{ inv.customer.name|default:"Walk-in" }} &nbsp;·&nbsp; {{ inv.transaction_date }}</p>
+          </div>
+          <div class="ml-4 text-right flex-shrink-0">
+            <p class="text-sm font-bold text-gray-800">{{ rupee }} {{ inv.total|floatformat:0|intcomma }}</p>
+            {% if inv.outstanding_balance == 0 %}
+              <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Paid</span>
+            {% elif inv.due_date and inv.due_date < today %}
+              <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Overdue</span>
+            {% else %}
+              <span class="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{{ rupee }} {{ inv.outstanding_balance|floatformat:0|intcomma }} due</span>
+            {% endif %}
+          </div>
+          <div class="ml-3 flex gap-1">
+            <a href="{% url 'billing:invoice_pdf' inv.pk %}" target="_blank"
+               class="text-gray-400 hover:text-blue-600 transition-colors" title="Download PDF">
+              <i class="fas fa-file-pdf text-sm"></i>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-10 text-gray-400">
+        <i class="fas fa-file-invoice text-3xl mb-2 block"></i>
+        <p class="text-sm">No invoices yet.</p>
+        <a href="{% url 'billing:invoice_create' %}" class="mt-2 inline-block text-blue-600 hover:underline text-sm">Create your first invoice →</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Drafts + Links -->
+    <div class="space-y-4">
+
+      <!-- Draft invoices -->
+      {% if draft_invoices %}
+      <div class="bg-yellow-50 border border-yellow-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-yellow-200">
+          <h3 class="font-semibold text-yellow-800 text-sm flex items-center gap-2">
+            <i class="fas fa-clock text-yellow-600"></i> Draft Invoices
+          </h3>
+        </div>
+        <div class="divide-y divide-yellow-100">
+          {% for inv in draft_invoices %}
+          <div class="flex items-center justify-between px-4 py-2.5 hover:bg-yellow-100 transition-colors">
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-gray-700 truncate">{{ inv.customer.name|default:"Walk-in" }}</p>
+              <p class="text-xs text-gray-400">{{ inv.created_at|date:"d M Y" }}</p>
+            </div>
+            <a href="{% url 'billing:invoice_update' inv.pk %}"
+               class="ml-2 text-xs bg-yellow-200 text-yellow-800 hover:bg-yellow-300 px-2 py-1 rounded font-medium">
+              Edit
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Navigation links -->
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100">
+          <h3 class="font-semibold text-gray-700 text-sm">Billing Modules</h3>
+        </div>
+        <div class="divide-y divide-gray-50">
+          <a href="{% url 'billing:invoice_list' %}" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 transition-colors">
+            <i class="fas fa-file-invoice w-5 text-green-500"></i> Invoices
+          </a>
+          <a href="{% url 'billing:credit_note_list' %}" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 transition-colors">
+            <i class="fas fa-undo w-5 text-purple-500"></i> Credit Notes
+          </a>
+          <a href="{% url 'billing:debit_note_list' %}" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 transition-colors">
+            <i class="fas fa-plus-circle w-5 text-orange-500"></i> Debit Notes
+          </a>
+          <a href="{% url 'purchasing:purchase_dashboard' %}" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 transition-colors">
+            <i class="fas fa-shopping-cart w-5 text-blue-500"></i> Purchase Orders
+          </a>
+          <a href="{% url 'reports:outstanding_invoices_report' %}" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 transition-colors">
+            <i class="fas fa-exclamation-circle w-5 text-red-500"></i> Outstanding Report
+          </a>
+          <a href="{% url 'reports:ar_aging_report' %}" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 transition-colors">
+            <i class="fas fa-clock w-5 text-gray-500"></i> AR Aging
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

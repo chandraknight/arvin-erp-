@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit Earning{% else %}Create Earning{% endif %}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2 bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+    <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+        <h2 class="text-2xl font-bold text-gray-800">
+            {% if form.instance.pk %}Edit Earning{% else %}Create Earning{% endif %}
+        </h2>
+    </div>
+
+    <form method="post" id="earning-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-4">
+                <strong>Errors:</strong> {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <!-- Name -->
+        <div class="flex mb-4">
+            <span class="flex items-center px-4 py-2 bg-gray-50 text-gray-700 font-semibold border border-gray-300 border-r-0 w-40 shrink-0">
+                Name
+            </span>
+            <div class="flex-1">
+                {{ form.name|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition" }}
+                {% if form.name.errors %}<div class="text-red-500 text-xs mt-1">{% for e in form.name.errors %}{{ e }}{% endfor %}</div>{% endif %}
+            </div>
+        </div>
+
+        <!-- Is Taxable -->
+        <div class="flex mb-4">
+            <span class="flex items-center px-4 py-2 bg-gray-50 text-gray-700 font-semibold border border-gray-300 border-r-0 w-40 shrink-0">
+                Taxable
+            </span>
+            <div class="flex items-center border border-gray-300 px-4 py-2 flex-1">
+                {{ form.is_taxable }}
+                <span class="ml-2 text-sm text-gray-600">This earning is subject to tax</span>
+                {% if form.is_taxable.errors %}<div class="text-red-500 text-xs mt-1">{% for e in form.is_taxable.errors %}{{ e }}{% endfor %}</div>{% endif %}
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 shadow-md hover:shadow-lg transition duration-150">
+                {% if form.instance.pk %}Update Earning{% else %}Create Earning{% endif %}
+            </button>
+            <a href="{% url 'hrpayroll:earning_list' %}" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 shadow-md hover:shadow-lg transition duration-150 text-center flex items-center justify-center">
+                Cancel
+            </a>
+        </div>
+    </form>
+
+    <div class="mt-4">
+        <a href="{% url 'hrpayroll:earning_list' %}" class="text-sm text-gray-500 hover:text-gray-700">← Back to Earnings</a>
+    </div>
+</div>
+{% endblock %}

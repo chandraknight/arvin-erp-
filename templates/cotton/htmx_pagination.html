@@ -1,0 +1,98 @@
+{# ── HTMX-aware pagination ────────────────────────────────────────────────────
+   Replaces the standard c-pagination component with HTMX-driven page switching.
+   Swaps only the #list-container div, no full page reload.
+
+   Usage: replace <c-pagination> with <c-htmx_pagination target="#list-container">
+#}
+{% if page_obj.has_other_pages %}
+<div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+
+    <div class="flex items-center gap-4 order-2 sm:order-1">
+        <p class="text-sm text-gray-500 font-medium">
+            Showing <span class="text-gray-900">{{ page_obj.start_index }}</span>
+            to <span class="text-gray-900">{{ page_obj.end_index }}</span>
+            of <span class="text-gray-900">{{ page_obj.paginator.count }}</span>
+        </p>
+        <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-500 font-medium whitespace-nowrap">Show:</label>
+            <select onchange="
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('paginate_by', this.value);
+                    url.searchParams.set('page', 1);
+                    htmx.ajax('GET', url.toString(), {
+                        target: '{{ target|default:'#list-container' }}',
+                        swap: 'innerHTML'
+                    });"
+                    class="text-xs font-bold border border-gray-200 px-2 py-1 bg-white focus:ring-2 focus:ring-green-500">
+                <option value="10"  {% if paginate_by == 10  %}selected{% endif %}>10</option>
+                <option value="20"  {% if paginate_by == 20  %}selected{% endif %}>20</option>
+                <option value="50"  {% if paginate_by == 50  %}selected{% endif %}>50</option>
+                <option value="100" {% if paginate_by == 100 %}selected{% endif %}>100</option>
+            </select>
+        </div>
+    </div>
+
+    <nav class="flex items-center gap-1 order-1 sm:order-2" aria-label="Pagination">
+        {% if page_obj.has_previous %}
+            <a hx-get="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page=1&paginate_by={{ paginate_by }}"
+               hx-target="{{ target|default:'#list-container' }}"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors cursor-pointer"
+               title="First">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+            <a hx-get="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}&paginate_by={{ paginate_by }}"
+               hx-target="{{ target|default:'#list-container' }}"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors cursor-pointer"
+               title="Previous">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+        {% endif %}
+
+        <div class="hidden sm:flex items-center gap-1">
+            {% for page in page_obj.paginator.page_range %}
+                {% if page == page_obj.number %}
+                    <span class="px-3.5 py-1.5 text-sm font-bold bg-green-600 text-white shadow-sm">
+                        {{ page }}
+                    </span>
+                {% elif page > page_obj.number|add:'-3' and page < page_obj.number|add:'3' %}
+                    <a hx-get="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page }}&paginate_by={{ paginate_by }}"
+                       hx-target="{{ target|default:'#list-container' }}"
+                       hx-swap="innerHTML"
+                       hx-push-url="true"
+                       class="px-3.5 py-1.5 text-sm font-medium text-gray-600 hover:text-green-600 hover:bg-green-50 transition-colors cursor-pointer">
+                        {{ page }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <span class="sm:hidden text-sm text-gray-600 px-2">
+            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+            <a hx-get="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}&paginate_by={{ paginate_by }}"
+               hx-target="{{ target|default:'#list-container' }}"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors cursor-pointer"
+               title="Next">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            <a hx-get="?{% for k,v in request.GET.items %}{% if k != 'page' and k != 'paginate_by' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}&paginate_by={{ paginate_by }}"
+               hx-target="{{ target|default:'#list-container' }}"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors cursor-pointer"
+               title="Last">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
+

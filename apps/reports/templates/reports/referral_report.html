@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Referral Report{% endblock %}
+{% block content %}
+<div class="p-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Referral Report</h1>
+      <p class="text-sm text-gray-500 mt-0.5">POS sales performance by referrer — sales &amp; outstanding balances</p>
+    </div>
+    <button onclick="window.print()"
+       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">
+      <i class="fas fa-print"></i> Print
+    </button>
+  </div>
+
+  {# Filters #}
+  <form method="get" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">From Date</label>
+        <input type="text" name="start_date" value="{{ selected_start_date }}" placeholder="YYYY-MM-DD"
+               autocomplete="off"
+               class="nepali-datepicker w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">To Date</label>
+        <input type="text" name="end_date" value="{{ selected_end_date }}" placeholder="YYYY-MM-DD"
+               autocomplete="off"
+               class="nepali-datepicker w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-xs text-gray-500 mb-1">Referrer</label>
+        <select name="referrer" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="">All Referrers</option>
+          {% for r in referrers %}
+          <option value="{{ r.id }}" {% if selected_referrer == r.id|stringformat:"s" %}selected{% endif %}>
+            {{ r.name }}{% if r.phone %} — {{ r.phone }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button type="submit" class="px-4 py-1.5 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg">Apply</button>
+      <a href="{% url 'reports:referral_report' %}" class="px-4 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">Clear</a>
+    </div>
+  </form>
+
+  {# POS Sales by Referrer #}
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Referrer</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">Sales Count</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Total Sales (Rs.)</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Outstanding (Rs.)</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Collected (Rs.)</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for row in pos_referral_data %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-medium text-gray-800">{{ row.referred_by__name }}</td>
+          <td class="px-4 py-3 text-gray-500">{{ row.referred_by__phone|default:"—" }}</td>
+          <td class="px-4 py-3 text-right text-gray-700">{{ row.sale_count }}</td>
+          <td class="px-4 py-3 text-right font-semibold text-gray-800">{{ row.total_sales|floatformat:2 }}</td>
+          <td class="px-4 py-3 text-right font-semibold {% if row.total_outstanding %}text-red-600{% else %}text-gray-400{% endif %}">
+            {{ row.total_outstanding|default:0|floatformat:2 }}
+          </td>
+          <td class="px-4 py-3 text-right text-green-700 font-semibold">
+            {{ row.total_collected|default:row.total_sales|floatformat:2 }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-10 text-center text-gray-400">
+            No referral sales data{% if selected_start_date or selected_end_date or selected_referrer %} for the selected filters{% endif %}.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if pos_referral_data %}
+      <tfoot class="bg-gray-50 border-t-2 border-gray-300">
+        <tr>
+          <td colspan="3" class="px-4 py-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Totals</td>
+          <td class="px-4 py-3 text-right font-bold text-gray-900">
+            {% with total=pos_referral_data|length %}{% endwith %}
+            —
+          </td>
+          <td class="px-4 py-3 text-right font-bold text-red-600">—</td>
+          <td class="px-4 py-3 text-right font-bold text-green-700">—</td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+
+</div>
+{% endblock %}

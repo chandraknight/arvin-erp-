@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Rooms{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-door-open text-indigo-600 mr-2"></i>Rooms</h1>
+  <div class="flex gap-2">
+    <a href="{% url 'restaurant:room_board' %}"
+       class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold shadow transition">
+      <i class="fas fa-th mr-1"></i>Status Board
+    </a>
+    <a href="{% url 'restaurant:room_create' %}"
+       class="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-semibold shadow transition">
+      <i class="fas fa-plus mr-1"></i>Add Room
+    </a>
+  </div>
+</div>
+
+<div class="overflow-x-auto bg-white shadow rounded-lg">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+      <tr>
+        <th class="px-4 py-3 text-left">Room #</th>
+        <th class="px-4 py-3 text-left">Type</th>
+        <th class="px-4 py-3 text-left">Floor</th>
+        <th class="px-4 py-3 text-left">Status</th>
+        <th class="px-4 py-3 text-left">Notes</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for room in rooms %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 font-medium text-gray-800">{{ room.room_number }}</td>
+        <td class="px-4 py-3">{{ room.room_type.name }}</td>
+        <td class="px-4 py-3">{{ room.floor|default:"—" }}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-1 rounded-full text-xs font-semibold
+            {% if room.status == 'AVAILABLE' %}bg-green-100 text-green-800
+            {% elif room.status == 'OCCUPIED' %}bg-red-100 text-red-800
+            {% elif room.status == 'RESERVED' %}bg-yellow-100 text-yellow-800
+            {% elif room.status == 'MAINTENANCE' %}bg-gray-100 text-gray-600
+            {% else %}bg-orange-100 text-orange-800{% endif %}">
+            {{ room.get_status_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-gray-500">{{ room.notes|default:"—"|truncatechars:40 }}</td>
+        <td class="px-4 py-3 text-right space-x-2">
+          <a href="{% url 'restaurant:room_update' room.pk %}" class="text-indigo-600 hover:underline text-xs font-medium">Edit</a>
+          {% if room.status == 'CHECKOUT' %}
+          <a href="{% url 'restaurant:room_set_available' room.pk %}" class="text-green-600 hover:underline text-xs font-medium">Mark Available</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No rooms yet. <a href="{% url 'restaurant:room_create' %}" class="text-indigo-600 underline">Add one</a>.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+<!-- reports/templates/reports/debit_credit_note_report.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Debit and Credit Note Report{% endblock %}
+
+{% block content %}
+    <div class="w-full mt-2">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Debit and Credit Note Report</h1>
+             <a href="{% url 'reports:report_dashboard' %}" class="inline-block bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200 ease-in-out text-sm">Back to Reports Dashboard</a>
+        </div>
+
+        {# Messages are handled in base.html #}
+
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">Credit Notes</h2>
+            {% if credit_notes %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white shadow-md rounded">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                <th class="py-3 px-6 text-left">Number</th>
+                                <th class="py-3 px-6 text-left">Invoice</th>
+                                <th class="py-3 px-6 text-left">Customer</th>
+                                <th class="py-3 px-6 text-right">Amount</th>
+                                <th class="py-3 px-6 text-left">Date</th>
+                                <th class="py-3 px-6 text-left">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-600 text-sm font-light">
+                            {% for cn in credit_notes %}
+                                <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                    <td class="py-3 px-6 text-left whitespace-nowrap">{% if cn.credit_note_number %}{{ cn.credit_note_number }}{% else %}{{ cn.id }}{% endif %}</td>
+                                    <td class="py-3 px-6 text-left whitespace-nowrap">{% if cn.invoice %}{{ cn.invoice.invoice_number }}{% else %}N/A{% endif %}</td>
+                                    <td class="py-3 px-6 text-left">{% if cn.customer %}{{ cn.customer.name }}{% else %}N/A{% endif %}</td>
+                                    <td class="py-3 px-6 text-right whitespace-nowrap">{{ cn.amount|floatformat:2 }}</td>
+                                    <td class="py-3 px-6 text-left whitespace-nowrap">{{ cn.created_at|date:"Y-m-d" }}</td>
+                                    <td class="py-3 px-6 text-left whitespace-nowrap">{{ cn.get_status_display }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-gray-600 italic">No credit notes found.</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">Debit Notes</h2>
+            {% if debit_notes %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white shadow-md rounded">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                <th class="py-3 px-6 text-left">Number</th>
+                                <th class="py-3 px-6 text-left">Invoice</th>
+                                <th class="py-3 px-6 text-left">Customer</th>
+                                <th class="py-3 px-6 text-right">Amount</th>
+                                <th class="py-3 px-6 text-left">Date</th>
+                                <th class="py-3 px-6 text-left">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-600 text-sm font-light">
+                            {% for dn in debit_notes %}
+                                <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                    <td class="py-3 px-6 text-left whitespace-nowrap">{% if dn.debit_note_number %}{{ dn.debit_note_number }}{% else %}{{ dn.id }}{% endif %}</td>
+                                    <td class="py-3 px-6 text-left whitespace-nowrap">{% if dn.invoice %}{{ dn.invoice.invoice_number }}{% else %}N/A{% endif %}</td>
+                                    <td class="py-3 px-6 text-left">{% if dn.customer %}{{ dn.customer.name }}{% else %}N/A{% endif %}</td>
+                                    <td class="py-3 px-6 text-right whitespace-nowrap">{{ dn.amount|floatformat:2 }}</td>
+                                    <td class="py-3 px-6 text-left whitespace-nowrap">{{ dn.created_at|date:"Y-m-d" }}</td>
+                                    <td class="py-3 px-6 text-left whitespace-nowrap">{{ dn.get_status_display }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-gray-600 italic">No debit notes found.</p>
+            {% endif %}
+        </div>
+
+    </div>
+{% endblock %} 

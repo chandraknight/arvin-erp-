@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Upload AIR File{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'tours:air_file_list' %}" class="text-gray-400 hover:text-gray-600 transition">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <h2 class="text-2xl font-bold text-gray-800">Upload AIR File</h2>
+  </div>
+
+  <!-- Info -->
+  <div class="bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800 mb-5">
+    <p class="font-semibold mb-2"><i class="fas fa-info-circle mr-1"></i> About AIR Files</p>
+    <p class="mb-2">An <strong>Agency Invoice Report (AIR)</strong> is the BSP billing summary that shows what your agency owes IATA for a billing period — total sales, refunds, commission earned, taxes, and the net amount due.</p>
+    <p class="font-semibold mt-2 mb-1">Supported formats:</p>
+    <ul class="list-disc list-inside space-y-0.5 text-blue-700">
+      <li>IATA fixed-width text (.air, .txt) — amounts are parsed automatically</li>
+      <li>CSV summary export (.csv) — flexible column names</li>
+      <li>Excel (.xlsx / .xls) — first sheet used</li>
+    </ul>
+    <p class="mt-2 text-blue-700">If the parser can't extract amounts from your file, fill them in manually below.</p>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="bg-white border border-gray-200 shadow-sm p-6 space-y-5">
+    {% csrf_token %}
+    {% if form.errors %}
+      <div class="bg-red-50 border border-red-200 p-4 text-sm text-red-700">Please correct the errors below.</div>
+    {% endif %}
+
+    <!-- File upload -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">AIR File <span class="text-gray-400 font-normal">(optional — fill amounts manually if no file)</span></label>
+      {{ form.file }}
+    </div>
+
+    <!-- Period & Reference -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Period From <span class="text-red-500">*</span></label>
+        {{ form.period_from }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Period To <span class="text-red-500">*</span></label>
+        {{ form.period_to }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Due Date</label>
+        {{ form.payment_due_date }}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Billing Reference</label>
+        {{ form.billing_reference }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Link to BSP Billing File</label>
+        {{ form.bsp_source_file }}
+        <p class="text-xs text-gray-400 mt-1">Optionally link the matching ticket-level BSP file.</p>
+      </div>
+    </div>
+
+    <!-- Billing amounts -->
+    <div class="border-t border-gray-100 pt-4">
+      <p class="text-sm font-semibold text-gray-700 mb-3">Billing Amounts <span class="font-normal text-gray-400">(auto-filled from file; edit if needed)</span></p>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Total Sales (Gross)</label>
+          {{ form.total_sales }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Total Refunds / Voids</label>
+          {{ form.total_refunds }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Commission Earned</label>
+          {{ form.total_commission }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Total Taxes</label>
+          {{ form.total_taxes }}
+        </div>
+        <div class="col-span-2 md:col-span-1">
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Net Amount Due to BSP</label>
+          {{ form.net_amount_due }}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+      {{ form.description }}
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+      {{ form.notes }}
+    </div>
+
+    <div class="flex gap-3 pt-2 border-t border-gray-100">
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 transition duration-150">
+        <i class="fas fa-save mr-1"></i> Save AIR File
+      </button>
+      <a href="{% url 'tours:air_file_list' %}" class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium px-6 py-2 transition duration-150">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

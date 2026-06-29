@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ branch.name }} Details{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">{{ branch.name }} Details</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+            <p class="text-gray-700"><strong class="font-semibold">Company:</strong> <a href="{% url 'company:company_detail' id=branch.company.pk %}" class="text-blue-500 hover:underline">{{ branch.company.name }}</a></p>
+            <p class="text-gray-700"><strong class="font-semibold">Name:</strong> {{ branch.name }}</p>
+            <p class="text-gray-700"><strong class="font-semibold">Address:</strong> {{ branch.address|default:"N/A"|linebreaksbr }}</p>
+            <p class="text-gray-700"><strong class="font-semibold">Phone:</strong> {{ branch.phone|default:"N/A" }}</p>
+            <p class="text-gray-700"><strong class="font-semibold">Email:</strong> {{ branch.email|default:"N/A" }}</p>
+            <p class="text-gray-700"><strong class="font-semibold">Main Branch:</strong> {% if branch.is_main_branch %}Yes{% else %}No{% endif %}</p>
+            <p class="text-gray-700"><strong class="font-semibold">Created At:</strong> {{ branch.created_at|date:"M d, Y H:i" }}</p>
+            <p class="text-gray-700"><strong class="font-semibold">Last Updated:</strong> {{ branch.updated_at|date:"M d, Y H:i" }}</p>
+        </div>
+    </div>
+
+    <div class="mt-6">
+        <a href="{% url 'company:company_detail' id=branch.company.pk %}" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition duration-200 ease-in-out">Back to Company</a>
+        <a href="{% url 'company:branch_update' id=branch.pk %}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-200 ease-in-out ml-2">Edit Branch</a>
+        <a href="{% url 'company:branch_delete' id=branch.pk %}" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-200 ease-in-out ml-2">Delete Branch</a>
+    </div>
+</div>
+{% endblock content %} 

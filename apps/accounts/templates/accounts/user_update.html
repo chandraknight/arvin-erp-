@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Update User{% endblock %}
+
+{% block content %}
+  <c-card_title_button
+      title="Update User"
+      descriptions="{{ user_to_update.email }}"
+      create_link="accounts:user_list"
+      button_name="Back to Users">
+  </c-card_title_button>
+
+  <div class="w-full bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+    {% include 'includes/toast.html' %}
+
+    <form method="post" novalidate class="space-y-0">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="mb-4 bg-red-50 border border-red-200 p-4">
+          {% for error in form.non_field_errors %}
+            <p class="text-red-700 text-sm">{{ error|striptags }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% for field in form %}
+        {% if field.is_hidden %}
+          {{ field }}
+        {% else %}
+          <div class="mb-4">
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="flex items-start gap-3 px-4 py-3 border border-gray-300">
+                {{ field }}
+                <label for="{{ field.id_for_label }}" class="text-sm font-semibold text-gray-700 leading-normal mt-0.5">
+                  {{ field.label }}
+                </label>
+              </div>
+            {% elif field.field.widget.input_type == "textarea" %}
+              <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
+                {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+              </label>
+              {{ field|add_class:"w-full border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 min-h-24" }}
+            {% else %}
+              <div class="flex items-stretch">
+                <label for="{{ field.id_for_label }}"
+                       class="inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 text-sm font-semibold border border-gray-300 border-r-0 min-w-40 whitespace-nowrap">
+                  {{ field.label }}{% if field.field.required %} <span class="text-red-500 ml-0.5">*</span>{% endif %}
+                </label>
+                {{ field|add_class:"flex-1 min-w-0 border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+              </div>
+            {% endif %}
+            {% if field.errors %}
+              <p class="text-red-600 text-xs mt-1 px-1">{{ field.errors|striptags }}</p>
+            {% endif %}
+            {% if field.help_text %}
+              <p class="text-gray-500 text-xs mt-1 px-1">{{ field.help_text }}</p>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+        <button type="submit"
+                class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-6 py-3 shadow transition duration-150">
+          <i class="fas fa-save mr-2"></i>Save Changes
+        </button>
+        <a href="{% url 'accounts:password_change' %}"
+           class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-6 py-3 shadow transition duration-150">
+          <i class="fas fa-key mr-2"></i>Change Password
+        </a>
+        <a href="{% url 'accounts:user_list' %}"
+           class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-6 py-3 border border-gray-300 transition duration-150">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

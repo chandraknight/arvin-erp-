@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Ecom Inventory{% endblock %}
+
+{% block content %}
+    <c-card_title
+            title="Ecom Inventory"
+            descriptions="Mass-update ecom stock, price, and compare-at (discount) price. Stock is moved from the POS pool automatically — products that are out of ecom stock are listed first.">
+    </c-card_title>
+
+    {% include 'ecom/admin/_inventory_panel.html' %}
+
+    <script>
+      /* Delegated so it keeps working after HTMX swaps the panel. */
+      document.addEventListener('input', function (e) {
+        const el = e.target;
+        if (!el.classList || !el.classList.contains('qty-input')) return;
+
+        const max = parseInt(el.getAttribute('max') || '0', 10);
+        const val = el.value === '' ? null : parseInt(el.value, 10);
+        const over = val !== null && (isNaN(val) || val < 0 || val > max);
+
+        const hint = el.parentElement.querySelector('.qty-hint');
+        el.style.borderColor = over ? '#f87171' : '';
+        el.style.backgroundColor = over ? '#fef2f2' : '';
+        if (hint) {
+          hint.textContent = over ? 'Max ' + max + ' available' : '';
+          hint.classList.toggle('hidden', !over);
+        }
+        if (over) el.dataset.invalid = '1'; else delete el.dataset.invalid;
+
+        const form = el.closest('form');
+        const btn = form && form.querySelector('button[type=submit]');
+        if (btn) {
+          const anyInvalid = !!form.querySelector('.qty-input[data-invalid]');
+          btn.disabled = anyInvalid;
+          btn.classList.toggle('opacity-50', anyInvalid);
+          btn.classList.toggle('cursor-not-allowed', anyInvalid);
+        }
+      });
+    </script>
+{% endblock %}

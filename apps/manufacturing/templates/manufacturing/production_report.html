@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Production Report{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Production Report</h1>
+            <p class="text-sm text-gray-500 mt-1">Summary of planned and produced work orders.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white border border-gray-200 shadow-sm p-4"><p class="text-xs text-gray-500 uppercase">Work Orders</p><p class="text-2xl font-bold text-gray-800">{{ work_orders|length }}</p></div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4"><p class="text-xs text-gray-500 uppercase">Produced Qty</p><p class="text-2xl font-bold text-green-700">{{ stats.produced|default:0|floatformat:2 }}</p></div>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm overflow-x-auto mb-6">
+        <table class="min-w-full text-sm">
+            <thead class="bg-blue-600 text-white text-xs uppercase">
+                <tr>
+                    <th class="px-4 py-2 text-left border border-blue-700">Work Order</th>
+                    <th class="px-4 py-2 text-left border border-blue-700">Product</th>
+                    <th class="px-4 py-2 text-right border border-blue-700">Planned</th>
+                    <th class="px-4 py-2 text-right border border-blue-700">Produced</th>
+                    <th class="px-4 py-2 text-right border border-blue-700">Rejected</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in by_product %}
+                <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                    <td class="px-4 py-2 border border-gray-200">{{ row.bom__finished_product__name }}</td>
+                    <td class="px-4 py-2 border border-gray-200">{{ row.total_planned|floatformat:2 }}</td>
+                    <td class="px-4 py-2 border border-gray-200">{{ row.total_produced|floatformat:2 }}</td>
+                    <td class="px-4 py-2 border border-gray-200">{{ row.total_rejected|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="px-4 py-12 text-center text-gray-400">No production data available.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm p-5">
+        <h2 class="text-sm font-bold text-gray-700 mb-3">Work Orders</h2>
+        <ul class="space-y-3">
+            {% for wo in work_orders %}
+            <li class="border border-gray-200 p-4 rounded-sm hover:bg-gray-50">
+                <a href="{% url 'manufacturing:workorder_detail' wo.pk %}" class="text-green-600 hover:underline font-semibold">{{ wo.work_order_number }}</a> • {{ wo.bom.finished_product.name }} • Planned {{ wo.planned_quantity }} • Produced {{ wo.produced_quantity }}
+            </li>
+            {% endfor %}
+            {% if work_orders|length == 0 %}
+            <li class="text-gray-400">No work orders found.</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

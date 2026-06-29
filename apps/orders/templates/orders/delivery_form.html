@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block title %}{% if object %}Edit Delivery Note{% else %}Create Delivery Note{% endif %}{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2 bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+
+    <div class="flex justify-between items-start mb-6 border-b pb-4">
+        <div>
+            <h1 class="text-xl font-bold text-gray-800">
+                {% if object %}Edit Delivery Note{% else %}Create Delivery Note{% endif %}
+            </h1>
+            {% if sales_order %}
+            <p class="text-sm text-gray-500 mt-1">
+                For order <a href="{% url 'orders:order_detail' sales_order.pk %}"
+                   class="text-blue-600 hover:underline font-medium">#{{ sales_order.order_number }}</a>
+                — {{ sales_order.customer.name|default:"Walk-in" }}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="post" class="space-y-5" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 text-sm">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <!-- Dates -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">
+                    Dispatch Date (BS) <span class="text-red-500">*</span>
+                </label>
+                {{ form.dispatch_date|add_class:"nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"|attr:"placeholder:YYYY-MM-DD"|attr:"autocomplete:off" }}
+                {% if form.dispatch_date.errors %}<p class="text-red-500 text-xs mt-1">{{ form.dispatch_date.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Expected Delivery (BS)</label>
+                {{ form.expected_delivery_date|add_class:"nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"|attr:"placeholder:YYYY-MM-DD"|attr:"autocomplete:off" }}
+                {% if form.expected_delivery_date.errors %}<p class="text-red-500 text-xs mt-1">{{ form.expected_delivery_date.errors|join:", " }}</p>{% endif %}
+            </div>
+        </div>
+
+        <!-- Carrier info -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Carrier Name</label>
+                {{ form.carrier_name|add_class:"w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" }}
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Tracking Number</label>
+                {{ form.tracking_number|add_class:"w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" }}
+            </div>
+        </div>
+
+        <!-- Vehicle / Driver -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Vehicle Number</label>
+                {{ form.vehicle_number|add_class:"w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" }}
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Driver Name</label>
+                {{ form.driver_name|add_class:"w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" }}
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Driver Phone</label>
+                {{ form.driver_phone|add_class:"w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" }}
+            </div>
+        </div>
+
+        <!-- Delivery destination -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="sm:col-span-1">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Delivery Contact</label>
+                {{ form.delivery_contact|add_class:"w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" }}
+            </div>
+            <div class="sm:col-span-1">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Delivery Phone</label>
+                {{ form.delivery_phone|add_class:"w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" }}
+            </div>
+            <div class="sm:col-span-1">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Delivery Address</label>
+                {{ form.delivery_address|add_class:"w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"|attr:"rows:2" }}
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Notes</label>
+            {{ form.notes|add_class:"w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"|attr:"rows:2" }}
+        </div>
+
+        <div class="flex gap-3 pt-2">
+            <button type="submit"
+                    class="px-6 py-2.5 bg-green-700 hover:bg-green-800 text-white font-semibold text-sm shadow transition">
+                {% if object %}Update{% else %}Create{% endif %} Delivery Note
+            </button>
+            {% if sales_order %}
+            <a href="{% url 'orders:order_detail' sales_order.pk %}"
+               class="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm transition">
+                Cancel
+            </a>
+            {% elif object %}
+            <a href="{% url 'orders:delivery_detail' object.pk %}"
+               class="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm transition">
+                Cancel
+            </a>
+            {% else %}
+            <a href="{% url 'orders:delivery_list' %}"
+               class="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm transition">
+                Cancel
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

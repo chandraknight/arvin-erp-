@@ -1,0 +1,106 @@
+{% extends "ecom/storefront/base.html" %}
+{% load static %}
+
+{% block page_title %}Track Order{% endblock %}
+{% block nav_active_orders %}active{% endblock %}
+
+{% block content %}
+
+<section class="order-tracking-page">
+  <div class="container">
+    <div class="order-tracking-wrap">
+      <h1 class="order-tracking-title">Order Tracking</h1>
+
+      {% if not order %}
+      <div class="tracking-card tracking-search-card">
+        <h2>Find Your Order</h2>
+        <p>Enter the order reference and phone number used at checkout.</p>
+        <form method="get" action="" class="tracking-search-form">
+          <div class="tracking-field">
+            <label for="order_number">Order Number</label>
+            <input type="text" id="order_number" name="order_number" placeholder="e.g. EC-00001 or DN-2026-0001" value="{{ request.GET.order_number|default:'' }}" required>
+          </div>
+          <div class="tracking-field">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" placeholder="Phone used at checkout" value="{{ request.GET.phone|default:'' }}" required>
+          </div>
+          <button type="submit">Track Order</button>
+        </form>
+        {% if request.GET.order_number and request.GET.phone %}
+        <div class="tracking-not-found">
+          No order found with that number and phone. Please check and try again.
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if order %}
+      <div class="tracking-card">
+        <div class="tracking-card-head">
+          <div>
+            <p>Tracking Reference ID: #{{ order.order_number }}</p>
+            <h2>{% with first_item=order.items.first %}{% if first_item %}{{ first_item.product.name }}{% else %}Order {{ order.order_number }}{% endif %}{% endwith %}</h2>
+          </div>
+          <span class="tracking-status-badge">{{ tracking_status_label|default:order.get_status_display }}</span>
+        </div>
+
+        <div class="tracking-divider"></div>
+
+        <div class="tracking-progress" style="--current-step: {{ current_step|default:1 }};">
+          <div class="tracking-progress-line" aria-hidden="true">
+            <span></span>
+          </div>
+
+          <div class="tracking-step {% if current_step >= 1 %}is-complete{% endif %}">
+            <div class="tracking-step-icon">✓</div>
+            <span>Confirmed</span>
+          </div>
+
+          <div class="tracking-step {% if current_step >= 2 %}is-complete{% endif %}">
+            <div class="tracking-step-icon">✓</div>
+            <span>Assembling</span>
+          </div>
+
+          <div class="tracking-step {% if current_step >= 4 %}is-complete{% elif current_step >= 3 %}is-active{% endif %}">
+            <div class="tracking-step-icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3 7h11v9H3zM14 10h3.2L21 13.8V16h-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <circle cx="7" cy="18" r="1.6" fill="currentColor"/>
+                <circle cx="18" cy="18" r="1.6" fill="currentColor"/>
+              </svg>
+            </div>
+            <span>In Transit</span>
+          </div>
+
+          <div class="tracking-step {% if current_step >= 4 %}is-complete{% endif %}">
+            <div class="tracking-step-icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" stroke="currentColor" stroke-width="2"/>
+                <path d="m4.5 8 7.5 4 7.5-4M12 12v8" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <span>Delivered</span>
+          </div>
+        </div>
+
+        <div class="tracking-rider-card">
+          <div class="tracking-rider-avatar">RP</div>
+          <div class="tracking-rider-copy">
+            <h3>{% if delivery_note and delivery_note.carrier_name %}{{ delivery_note.carrier_name }}{% else %}Rajesh Paswan{% endif %} (Delivery Partner)</h3>
+            <p>{% if delivery_note and delivery_note.tracking_number %}Tracking # {{ delivery_note.tracking_number }}{% else %}+977&nbsp; 9851XXXXX2{% endif %}</p>
+          </div>
+          <a href="tel:{% if delivery_note and delivery_note.tracking_number %}{{ order.customer_phone }}{% else %}9851000002{% endif %}" class="tracking-call-btn">Call Dispatcher</a>
+        </div>
+      </div>
+
+      <div class="tracking-card tracking-help-card">
+        <h2>Need Help With Your Order?</h2>
+        <p>Our support team can help adjust quantities, delivery timing, substitutions, and gift packaging before dispatch.</p>
+        <a href="{% url 'ecom:contact' %}">Contact Support Line</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

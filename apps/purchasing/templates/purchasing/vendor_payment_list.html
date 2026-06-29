@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Vendor Payments{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Vendor Payments</h1>
+      <p class="text-sm text-gray-500">All recorded payments to vendors</p>
+    </div>
+    <div class="flex gap-2">
+        <button onclick="window.print()"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition shadow no-print">
+            <i class="fas fa-print"></i> Print
+        </button>
+      <a href="{% url 'purchasing:vendor_payment_create' %}"
+         class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">
+        <i class="fas fa-plus"></i> Record Payment
+      </a>
+      <a href="{% url 'purchasing:purchasing_hub' %}"
+         class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm transition-colors">
+        <i class="fas fa-arrow-left"></i> Back
+      </a>
+    </div>
+  </div>
+
+  {% if vendor_payments %}
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Ref / ID</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Vendor Bill</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Date</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Method</th>
+            <th class="text-right px-4 py-3 font-semibold text-gray-600">Amount</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for pmt in vendor_payments %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 py-3 font-mono text-xs text-gray-600">
+              {% if pmt.transaction_id %}{{ pmt.transaction_id }}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-gray-700">
+              {% if pmt.vendor_bill %}
+                <span class="font-medium">{{ pmt.vendor_bill.bill_number }}</span>
+                <span class="text-gray-400 text-xs ml-1">· {{ pmt.vendor_bill.vendor.name }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-gray-500 hidden sm:table-cell whitespace-nowrap">
+              {{ pmt.payment_date|date:"d M Y" }}
+            </td>
+            <td class="px-4 py-3 hidden sm:table-cell">
+              <span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                {{ pmt.get_payment_method_display|default:pmt.payment_method }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-right font-semibold text-gray-800 whitespace-nowrap">
+              {{ rupee }} {{ pmt.amount|floatformat:2|intcomma }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm text-center py-16 text-gray-400">
+    <i class="fas fa-money-bill-wave text-4xl mb-3 block"></i>
+    <p class="text-base font-medium text-gray-500">No vendor payments recorded.</p>
+    <a href="{% url 'purchasing:vendor_payment_create' %}" class="mt-3 inline-block text-green-600 hover:underline font-medium">
+      Record first payment →
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Bill of Materials{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Bill of Materials</h1>
+            <p class="text-sm text-gray-500 mt-1">Create and manage BOM versions for finished products.</p>
+        </div>
+        <a href="{% url 'manufacturing:bom_create' %}" class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition shadow"><i class="fas fa-plus"></i> New BOM</a>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm p-4 mb-4">
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <input type="text" name="q" value="{{ q }}" placeholder="Search finished product…" class="w-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600">
+        </form>
+    </div>
+
+    <div id="bom-list-container">
+        {% include 'manufacturing/partials/bom_table.html' %}
+    </div>
+</div>
+{% endblock %}

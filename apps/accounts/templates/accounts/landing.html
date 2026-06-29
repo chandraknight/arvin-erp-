@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Multi-Tenant ERP Platform — All-in-one business management built for Nepal. Billing, inventory, HR, payroll, CBMS e-billing, multi-branch & multi-company.">
+  <title>ERP Billing Engine — Multi-Tenant ERP Platform for Nepal</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+
+    /* ── Dark hero background ─────────────────────────── */
+    .hero-bg {
+      background-color: #011a13;
+      background-image:
+        radial-gradient(ellipse 90% 70% at 10% 5%,  rgba(5,150,105,0.55) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 90% 15%, rgba(16,185,129,0.30) 0%, transparent 50%),
+        radial-gradient(ellipse 70% 50% at 55% 90%, rgba(4,120,87,0.35)  0%, transparent 55%),
+        linear-gradient(170deg, #011a13 0%, #05391f 55%, #011a13 100%);
+    }
+
+    /* ── Animated orbs ────────────────────────────────── */
+    .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(90px); opacity: 0.20;
+      animation: orb-drift 14s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 600px; height: 600px; background: #059669; top: -150px; left: -120px; animation-delay: 0s; }
+    .orb-2 { width: 450px; height: 450px; background: #10b981; top:   80px; right: -100px; animation-delay: -5s; }
+    .orb-3 { width: 380px; height: 380px; background: #34d399; bottom: -80px; left: 38%;  animation-delay: -9s; }
+    @keyframes orb-drift {
+      0%   { transform: translate(0,0)    scale(1);    }
+      100% { transform: translate(24px,16px) scale(1.09); }
+    }
+    @media (prefers-reduced-motion: reduce) { .orb { animation: none; } }
+
+    /* ── Glass nav ────────────────────────────────────── */
+    .glass-nav {
+      background: rgba(1,26,19,0.80);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* ── Gradient text ────────────────────────────────── */
+    .grad-text {
+      background: linear-gradient(135deg, #6ee7b7 0%, #34d399 45%, #a7f3d0 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Hero badge ───────────────────────────────────── */
+    .hero-badge {
+      background: linear-gradient(135deg, rgba(5,150,105,0.18), rgba(16,185,129,0.12));
+      border: 1px solid rgba(52,211,153,0.35);
+    }
+
+    /* ── Stat glass cards ─────────────────────────────── */
+    .stat-glass {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(12px);
+    }
+
+    /* ── Feature cards ────────────────────────────────── */
+    .feat-card {
+      transition: transform .22s cubic-bezier(.4,0,.2,1), box-shadow .22s cubic-bezier(.4,0,.2,1);
+    }
+    .feat-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 28px 56px rgba(5,150,105,0.13), 0 4px 14px rgba(0,0,0,0.07);
+    }
+
+    /* ── Module pill ──────────────────────────────────── */
+    .mod-pill {
+      transition: background .18s, transform .18s;
+    }
+    .mod-pill:hover {
+      background: #ecfdf5;
+      transform: scale(1.03);
+    }
+
+    /* ── Pricing card ─────────────────────────────────── */
+    .price-card {
+      transition: transform .22s, box-shadow .22s;
+    }
+    .price-card:hover { transform: translateY(-4px); }
+    .price-featured {
+      background: linear-gradient(160deg, #064e3b 0%, #047857 100%);
+      box-shadow: 0 0 0 2px #34d399, 0 24px 56px rgba(5,150,105,0.35);
+    }
+
+    /* ── CTA section ──────────────────────────────────── */
+    .cta-bg {
+      background: linear-gradient(160deg, #011a13 0%, #064e3b 55%, #011a13 100%);
+    }
+    .cta-bg::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 65% 55% at 50% 50%, rgba(5,150,105,0.28) 0%, transparent 70%);
+    }
+
+    /* ── Section divider ──────────────────────────────── */
+    .divider { height:1px; background: linear-gradient(90deg, transparent, rgba(5,150,105,0.25), transparent); }
+
+    /* ── Scroll caret ─────────────────────────────────── */
+    .scroll-caret { animation: caret-bounce 2s ease-in-out infinite; }
+    @keyframes caret-bounce {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(8px); }
+    }
+
+    /* ── Ticker / marquee ─────────────────────────────── */
+    .marquee-track { display: flex; gap: 3rem; animation: marquee 30s linear infinite; white-space: nowrap; }
+    @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  </style>
+</head>
+<body class="bg-white text-gray-900 antialiased" x-data="{ mobileOpen: false }">
+
+<!-- ══════════════════════════════════════════════════════════════
+     NAV
+═══════════════════════════════════════════════════════════════ -->
+<nav class="glass-nav fixed w-full top-0 z-50">
+  <div class="max-w-7xl mx-auto px-5 sm:px-10 py-3.5 flex items-center justify-between">
+
+    <!-- Logo -->
+    <a href="/" class="flex items-center space-x-3 group" aria-label="Home">
+      <div class="w-9 h-9 rounded-xl bg-emerald-600 group-hover:bg-emerald-500 transition-colors flex items-center justify-center shadow-lg">
+        <i class="fas fa-layer-group text-white text-sm"></i>
+      </div>
+      <div class="leading-none">
+        <div class="text-white font-bold text-base tracking-tight">ERP<span class="text-emerald-400 font-light ml-1">Billing</span></div>
+        <div class="text-emerald-500/70 text-xs font-medium tracking-widest uppercase" style="font-size:9px; letter-spacing:.12em;">Multi-Tenant Platform</div>
+      </div>
+    </a>
+
+    <!-- Desktop links -->
+    <div class="hidden md:flex items-center gap-1">
+      <a href="#features"  class="text-gray-400 hover:text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/8 transition">Features</a>
+      <a href="#modules"   class="text-gray-400 hover:text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/8 transition">Modules</a>
+      <a href="#pricing"   class="text-gray-400 hover:text-white text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/8 transition">Plans</a>
+      <div class="w-px h-5 bg-white/15 mx-2"></div>
+      <a href="{% url 'accounts:login' %}" class="text-gray-400 hover:text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-white/8 transition">Sign In</a>
+      <a href="{% url 'accounts:login' %}"
+         class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition shadow-lg shadow-emerald-900/40 flex items-center gap-2">
+        Get Started <i class="fas fa-arrow-right text-xs"></i>
+      </a>
+    </div>
+
+    <!-- Mobile hamburger -->
+    <button @click="mobileOpen=!mobileOpen" class="md:hidden text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10 transition" aria-label="Menu">
+      <i class="fas text-lg" :class="mobileOpen ? 'fa-times' : 'fa-bars'"></i>
+    </button>
+  </div>
+
+  <!-- Mobile drawer -->
+  <div x-show="mobileOpen"
+       x-transition:enter="transition duration-150" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+       x-transition:leave="transition duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+       class="md:hidden border-t border-white/10 px-5 py-4 space-y-1">
+    <a href="#features" @click="mobileOpen=false" class="flex items-center gap-3 text-gray-300 hover:text-white px-3 py-3 rounded-xl hover:bg-white/8 transition">
+      <i class="fas fa-th-large w-4 text-center text-emerald-400"></i> Features
+    </a>
+    <a href="#modules" @click="mobileOpen=false" class="flex items-center gap-3 text-gray-300 hover:text-white px-3 py-3 rounded-xl hover:bg-white/8 transition">
+      <i class="fas fa-cubes w-4 text-center text-emerald-400"></i> Modules
+    </a>
+    <a href="#pricing" @click="mobileOpen=false" class="flex items-center gap-3 text-gray-300 hover:text-white px-3 py-3 rounded-xl hover:bg-white/8 transition">
+      <i class="fas fa-tags w-4 text-center text-emerald-400"></i> Plans
+    </a>
+    <div class="pt-2 space-y-2 border-t border-white/10 mt-2">
+      <a href="{% url 'accounts:login' %}" class="block text-center text-gray-300 border border-white/20 font-medium px-4 py-3 rounded-xl hover:bg-white/10 transition">Sign In</a>
+      <a href="{% url 'accounts:login' %}" class="block text-center bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-3 rounded-xl transition">Get Started →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════════════════ -->
+<section class="hero-bg relative overflow-hidden min-h-screen flex flex-col justify-center pt-24 pb-20 px-5 sm:px-10">
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+  <div class="orb orb-3" aria-hidden="true"></div>
+
+  <div class="relative z-10 max-w-5xl mx-auto text-center">
+
+    <!-- Badge -->
+    <div class="inline-flex items-center gap-2.5 hero-badge rounded-full px-5 py-2 mb-8">
+      <span class="relative flex h-2 w-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+      </span>
+      <span class="text-emerald-200 text-xs font-bold tracking-widest uppercase">Multi-Tenant ERP Platform</span>
+      <span class="bg-emerald-500/30 text-emerald-300 text-xs font-semibold px-2 py-0.5 rounded-full">Nepal</span>
+    </div>
+
+    <!-- Headline -->
+    <h1 class="text-4xl sm:text-5xl lg:text-7xl font-black leading-none text-white mb-6 tracking-tight">
+      One Platform.<br>
+      <span class="grad-text">Every Business.</span>
+    </h1>
+
+    <!-- Sub-headline -->
+    <p class="text-lg sm:text-xl text-emerald-100/75 max-w-2xl mx-auto mb-4 leading-relaxed">
+      Billing · Inventory · HR &amp; Payroll · Manufacturing · E-Commerce · POS · Restaurant · Tours
+    </p>
+    <p class="text-base text-emerald-300/60 max-w-xl mx-auto mb-12">
+      Built for Nepal — Nepali BS/AD dates, CBMS IRD e-billing, VAT, multi-company &amp; multi-branch.
+    </p>
+
+    <!-- CTAs -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
+      <a href="{% url 'accounts:login' %}"
+         class="w-full sm:w-auto bg-white text-emerald-800 font-bold px-8 py-4 rounded-2xl hover:bg-emerald-50 transition shadow-2xl shadow-black/30 text-base flex items-center justify-center gap-2.5">
+        <i class="fas fa-sign-in-alt text-emerald-600"></i>
+        Sign In to Your Account
+      </a>
+      <a href="#features"
+         class="w-full sm:w-auto border border-emerald-500/40 text-emerald-200 font-semibold px-8 py-4 rounded-2xl hover:bg-emerald-900/30 transition text-base flex items-center justify-center gap-2.5">
+        <i class="fas fa-play-circle"></i>
+        See How It Works
+      </a>
+    </div>
+
+    <!-- Trust row -->
+    <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-emerald-400/60">
+      <span class="flex items-center gap-2"><i class="fas fa-shield-alt text-emerald-400"></i> IRD CBMS Certified</span>
+      <span class="flex items-center gap-2"><i class="fas fa-calendar text-emerald-400"></i> BS &amp; AD Dates</span>
+      <span class="flex items-center gap-2"><i class="fas fa-sitemap text-emerald-400"></i> Multi-branch</span>
+      <span class="flex items-center gap-2"><i class="fas fa-lock text-emerald-400"></i> Role-based Access</span>
+      <span class="flex items-center gap-2"><i class="fas fa-building text-emerald-400"></i> Multi-company</span>
+    </div>
+  </div>
+
+  <!-- Scroll caret -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-emerald-500/40 scroll-caret" aria-hidden="true">
+    <i class="fas fa-chevron-down text-sm"></i>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     STATS STRIP
+═══════════════════════════════════════════════════════════════ -->
+<section class="hero-bg relative py-10 px-5 sm:px-10">
+  <div class="relative z-10 max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="stat-glass rounded-2xl px-5 py-5 text-center">
+      <div class="text-3xl font-black text-white">20+</div>
+      <div class="text-emerald-400 text-xs font-semibold mt-1 uppercase tracking-wide">Modules</div>
+    </div>
+    <div class="stat-glass rounded-2xl px-5 py-5 text-center">
+      <div class="text-3xl font-black text-emerald-400">CBMS</div>
+      <div class="text-emerald-400/70 text-xs font-semibold mt-1 uppercase tracking-wide">IRD Ready</div>
+    </div>
+    <div class="stat-glass rounded-2xl px-5 py-5 text-center">
+      <div class="text-3xl font-black text-white">BS/AD</div>
+      <div class="text-emerald-400/70 text-xs font-semibold mt-1 uppercase tracking-wide">Nepali Dates</div>
+    </div>
+    <div class="stat-glass rounded-2xl px-5 py-5 text-center">
+      <div class="text-3xl font-black text-white">∞</div>
+      <div class="text-emerald-400/70 text-xs font-semibold mt-1 uppercase tracking-wide">Companies</div>
+    </div>
+    <div class="stat-glass rounded-2xl px-5 py-5 text-center col-span-2 md:col-span-1">
+      <div class="text-3xl font-black text-white">VAT</div>
+      <div class="text-emerald-400/70 text-xs font-semibold mt-1 uppercase tracking-wide">13% Auto</div>
+    </div>
+  </div>
+</section>
+
+<!-- Module ticker -->
+<div class="hero-bg py-4 border-t border-white/5 overflow-hidden" aria-hidden="true">
+  <div class="marquee-track text-emerald-500/50 text-xs font-semibold uppercase tracking-widest select-none">
+    <span>Billing &nbsp;·&nbsp;</span><span>Inventory &nbsp;·&nbsp;</span><span>HR &amp; Payroll &nbsp;·&nbsp;</span><span>POS &nbsp;·&nbsp;</span><span>Manufacturing &nbsp;·&nbsp;</span><span>E-Commerce &nbsp;·&nbsp;</span><span>Restaurant &nbsp;·&nbsp;</span><span>Tours &amp; Ticketing &nbsp;·&nbsp;</span><span>Bookkeeping &nbsp;·&nbsp;</span><span>CBMS IRD &nbsp;·&nbsp;</span><span>Multi-Branch &nbsp;·&nbsp;</span><span>Reports &nbsp;·&nbsp;</span><span>Projects &nbsp;·&nbsp;</span><span>VAT &nbsp;·&nbsp;</span><span>Fixed Assets &nbsp;·&nbsp;</span><span>RBAC &nbsp;·&nbsp;</span><span>Vendors &nbsp;·&nbsp;</span><span>Customers &nbsp;·&nbsp;</span><span>Purchasing &nbsp;·&nbsp;</span><span>Activity Log &nbsp;·&nbsp;</span>
+    <span>Billing &nbsp;·&nbsp;</span><span>Inventory &nbsp;·&nbsp;</span><span>HR &amp; Payroll &nbsp;·&nbsp;</span><span>POS &nbsp;·&nbsp;</span><span>Manufacturing &nbsp;·&nbsp;</span><span>E-Commerce &nbsp;·&nbsp;</span><span>Restaurant &nbsp;·&nbsp;</span><span>Tours &amp; Ticketing &nbsp;·&nbsp;</span><span>Bookkeeping &nbsp;·&nbsp;</span><span>CBMS IRD &nbsp;·&nbsp;</span><span>Multi-Branch &nbsp;·&nbsp;</span><span>Reports &nbsp;·&nbsp;</span><span>Projects &nbsp;·&nbsp;</span><span>VAT &nbsp;·&nbsp;</span><span>Fixed Assets &nbsp;·&nbsp;</span><span>RBAC &nbsp;·&nbsp;</span><span>Vendors &nbsp;·&nbsp;</span><span>Customers &nbsp;·&nbsp;</span><span>Purchasing &nbsp;·&nbsp;</span><span>Activity Log &nbsp;·&nbsp;</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FEATURES
+═══════════════════════════════════════════════════════════════ -->
+<section id="features" class="py-24 px-5 sm:px-10 bg-white">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="text-center mb-16">
+      <span class="inline-block text-emerald-700 text-xs font-bold tracking-widest uppercase bg-emerald-50 border border-emerald-100 px-4 py-1.5 rounded-full mb-4">Platform Overview</span>
+      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight">Everything Your Business Needs</h2>
+      <p class="text-gray-500 mt-4 max-w-xl mx-auto text-lg">One platform. Multiple companies. All modules on demand.</p>
+    </div>
+
+    <!-- 3-column Why Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+      <div class="feat-card bg-gradient-to-br from-emerald-50 to-white rounded-2xl p-8 border border-emerald-100 shadow-sm">
+        <div class="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center mb-5 shadow-lg shadow-emerald-200">
+          <i class="fas fa-receipt text-white text-lg"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 text-lg mb-2">IRD CBMS e-Billing</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Automatic real-time bill submission to Nepal IRD. 3-copy tax invoices, credit notes, debit notes — all compliant.</p>
+      </div>
+      <div class="feat-card bg-gradient-to-br from-teal-50 to-white rounded-2xl p-8 border border-teal-100 shadow-sm">
+        <div class="w-12 h-12 bg-teal-600 rounded-xl flex items-center justify-center mb-5 shadow-lg shadow-teal-200">
+          <i class="fas fa-calendar-alt text-white text-lg"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 text-lg mb-2">Native Nepali Calendar</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Full Bikram Sambat (BS) &amp; Gregorian (AD) support across every module — invoices, payroll, reports, and fiscal years.</p>
+      </div>
+      <div class="feat-card bg-gradient-to-br from-green-50 to-white rounded-2xl p-8 border border-green-100 shadow-sm">
+        <div class="w-12 h-12 bg-green-700 rounded-xl flex items-center justify-center mb-5 shadow-lg shadow-green-200">
+          <i class="fas fa-network-wired text-white text-lg"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 text-lg mb-2">True Multi-Tenancy</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Manage unlimited companies, branches, and users from one login. Granular RBAC per entity, per module, per action.</p>
+      </div>
+    </div>
+
+    <!-- Feature module grid -->
+    <div id="modules" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {% for feature in features %}
+      <div class="feat-card bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-start gap-4 group cursor-default">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 transition-colors flex items-center justify-center flex-shrink-0 text-2xl leading-none">
+          {{ feature.icon }}
+        </div>
+        <div class="flex-1 min-w-0 pt-0.5">
+          <h3 class="font-semibold text-gray-900 text-sm mb-1 leading-snug">{{ feature.name }}</h3>
+          <p class="text-gray-500 text-xs leading-relaxed">{{ feature.desc }}</p>
+        </div>
+      </div>
+      {% empty %}
+      {% for i in "123456789012" %}
+      <div class="rounded-2xl bg-gray-50 border border-gray-100 h-24 animate-pulse"></div>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODULE SHOWCASE
+═══════════════════════════════════════════════════════════════ -->
+<section class="py-24 px-5 sm:px-10 bg-gray-50">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-14">
+      <span class="inline-block text-emerald-700 text-xs font-bold tracking-widest uppercase bg-emerald-50 border border-emerald-100 px-4 py-1.5 rounded-full mb-4">Module Library</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">20+ Integrated Modules</h2>
+      <p class="text-gray-500 mt-3 max-w-xl mx-auto">Enable only what you need. Disable what you don't. Feature flags per company.</p>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      {% for mod in modules_list %}
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center cursor-default">
+        <i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i>
+        <div class="text-gray-700 text-xs font-semibold leading-snug">{{ mod }}</div>
+      </div>
+      {% empty %}
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Billing</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Inventory</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">HR &amp; Payroll</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Manufacturing</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Bookkeeping</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Point of Sale</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">E-Commerce</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Restaurant</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Tours &amp; Ticketing</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Projects</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Purchasing</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Vendors</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Customers</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Reports</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Fixed Assets</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">CBMS IRD</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Multi-Branch</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">RBAC Security</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Activity Log</div></div>
+      <div class="mod-pill bg-white rounded-xl px-3 py-4 border border-gray-100 shadow-sm text-center"><i class="fas fa-check-circle text-emerald-500 text-xs mb-2 block"></i><div class="text-gray-700 text-xs font-semibold">Fiscal Year</div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     WHY US — 4-PILLAR
+═══════════════════════════════════════════════════════════════ -->
+<section class="py-24 px-5 sm:px-10 bg-white">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-14">
+      <span class="inline-block text-emerald-700 text-xs font-bold tracking-widest uppercase bg-emerald-50 border border-emerald-100 px-4 py-1.5 rounded-full mb-4">Why Choose Us</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Designed for Nepal. Built to Scale.</h2>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <div class="feat-card text-center p-8 rounded-2xl border border-gray-100 shadow-sm bg-white">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-100">
+          <i class="fas fa-file-invoice-dollar text-white text-xl"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 mb-2">IRD Compliant</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">CBMS real-time submission. 3-copy tax invoices. Audit-ready VAT &amp; PAN reports.</p>
+      </div>
+
+      <div class="feat-card text-center p-8 rounded-2xl border border-gray-100 shadow-sm bg-white">
+        <div class="w-14 h-14 rounded-2xl bg-teal-600 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-teal-100">
+          <i class="fas fa-calendar-check text-white text-xl"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 mb-2">Nepali First</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">BS &amp; AD calendars natively. Fiscal years. Nepali number support. Locally tuned for accounting standards.</p>
+      </div>
+
+      <div class="feat-card text-center p-8 rounded-2xl border border-gray-100 shadow-sm bg-white">
+        <div class="w-14 h-14 rounded-2xl bg-green-700 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-green-100">
+          <i class="fas fa-shield-alt text-white text-xl"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 mb-2">Enterprise Security</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Role-based access per company &amp; branch. Full audit trail. Soft-delete. Activity log on every action.</p>
+      </div>
+
+      <div class="feat-card text-center p-8 rounded-2xl border border-gray-100 shadow-sm bg-white">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-800 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-100">
+          <i class="fas fa-expand-arrows-alt text-white text-xl"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 mb-2">Scales With You</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Add companies, branches, and modules on demand. Feature flags per organisation type. No restart required.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PRICING / PLANS
+═══════════════════════════════════════════════════════════════ -->
+<section id="pricing" class="py-24 px-5 sm:px-10 bg-gray-50">
+  <div class="max-w-6xl mx-auto">
+
+    <div class="text-center mb-14">
+      <span class="inline-block text-emerald-700 text-xs font-bold tracking-widest uppercase bg-emerald-50 border border-emerald-100 px-4 py-1.5 rounded-full mb-4">Plans</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">One Subscription. All Modules.</h2>
+      <p class="text-gray-500 mt-3 max-w-lg mx-auto">Choose the plan that matches your company size. Scale up anytime — no data migration needed.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+
+      <!-- Starter -->
+      <div class="price-card bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+        <div class="text-emerald-600 font-bold text-xs tracking-widest uppercase mb-3">Starter</div>
+        <div class="flex items-end gap-1 mb-2">
+          <span class="text-4xl font-black text-gray-900">Free</span>
+        </div>
+        <p class="text-gray-500 text-sm mb-6">Perfect for single-branch small businesses getting started.</p>
+        <a href="{% url 'accounts:login' %}" class="block w-full text-center border-2 border-emerald-600 text-emerald-700 font-bold py-3 rounded-xl hover:bg-emerald-50 transition mb-6">Get Started</a>
+        <ul class="space-y-3 text-sm text-gray-600">
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>1 Company · 1 Branch</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>Billing &amp; Invoicing</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>Inventory Management</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>Basic Bookkeeping</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>5 Users</li>
+          <li class="flex items-center gap-2.5 text-gray-400"><i class="fas fa-times text-gray-300 flex-shrink-0"></i>CBMS e-Billing</li>
+          <li class="flex items-center gap-2.5 text-gray-400"><i class="fas fa-times text-gray-300 flex-shrink-0"></i>Multi-company</li>
+        </ul>
+      </div>
+
+      <!-- Pro — featured -->
+      <div class="price-card price-featured rounded-2xl p-8 relative">
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+          <span class="bg-emerald-400 text-emerald-900 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg">Most Popular</span>
+        </div>
+        <div class="text-emerald-300 font-bold text-xs tracking-widest uppercase mb-3">Pro</div>
+        <div class="flex items-end gap-1 mb-2">
+          <span class="text-4xl font-black text-white">Custom</span>
+        </div>
+        <p class="text-emerald-200/70 text-sm mb-6">For growing businesses needing compliance &amp; multi-branch.</p>
+        <a href="{% url 'accounts:login' %}" class="block w-full text-center bg-white text-emerald-800 font-bold py-3 rounded-xl hover:bg-emerald-50 transition mb-6 shadow-lg">Sign In Now</a>
+        <ul class="space-y-3 text-sm text-emerald-100">
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-400 flex-shrink-0"></i>1 Company · Unlimited Branches</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-400 flex-shrink-0"></i>All Starter modules</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-400 flex-shrink-0"></i><strong>CBMS IRD e-Billing</strong></li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-400 flex-shrink-0"></i>HR &amp; Payroll</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-400 flex-shrink-0"></i>POS · Restaurant · E-Commerce</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-400 flex-shrink-0"></i>25 Users</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-400 flex-shrink-0"></i>Advanced Reports</li>
+        </ul>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="price-card bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+        <div class="text-gray-500 font-bold text-xs tracking-widest uppercase mb-3">Enterprise</div>
+        <div class="flex items-end gap-1 mb-2">
+          <span class="text-4xl font-black text-gray-900">Contact</span>
+        </div>
+        <p class="text-gray-500 text-sm mb-6">Multi-company groups, conglomerates, and franchise networks.</p>
+        <a href="{% url 'accounts:login' %}" class="block w-full text-center bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition mb-6">Talk to Us</a>
+        <ul class="space-y-3 text-sm text-gray-600">
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>Unlimited Companies</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>All Pro modules</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>Manufacturing &amp; Projects</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>Tours &amp; Ticketing + IATA</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>Unlimited Users</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>Data Backup &amp; Restore</li>
+          <li class="flex items-center gap-2.5"><i class="fas fa-check text-emerald-500 flex-shrink-0"></i>Dedicated Support</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <p class="text-center text-gray-400 text-sm mt-8">All plans include Nepali BS/AD calendar, VAT support, and role-based access control.</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CTA
+═══════════════════════════════════════════════════════════════ -->
+<section class="cta-bg relative py-24 px-5 sm:px-10 text-center text-white overflow-hidden">
+  <div class="relative z-10 max-w-2xl mx-auto">
+    <div class="inline-flex items-center gap-2 hero-badge rounded-full px-4 py-1.5 mb-6">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span class="text-emerald-200 text-xs font-bold tracking-widest uppercase">Multi-Tenant ERP Platform</span>
+    </div>
+    <h2 class="text-3xl sm:text-5xl font-black mb-5 tracking-tight leading-tight">
+      Your Business,<br><span class="grad-text">One Platform.</span>
+    </h2>
+    <p class="text-emerald-200/70 mb-10 text-lg max-w-lg mx-auto leading-relaxed">
+      Sign in with your company credentials to access your dashboard — or contact your administrator to provision a new company.
+    </p>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="{% url 'accounts:login' %}"
+         class="w-full sm:w-auto bg-white text-emerald-800 font-bold px-10 py-4 rounded-2xl hover:bg-emerald-50 transition shadow-2xl shadow-black/30 text-base flex items-center justify-center gap-2.5">
+        <i class="fas fa-sign-in-alt text-emerald-600"></i>
+        Sign In Now
+      </a>
+      <a href="{% url 'accounts:password_reset' %}"
+         class="w-full sm:w-auto border border-emerald-500/35 text-emerald-200 font-medium px-10 py-4 rounded-2xl hover:bg-emerald-900/30 transition text-base flex items-center justify-center gap-2.5">
+        <i class="fas fa-key"></i>
+        Forgot Password?
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════════════ -->
+<footer class="bg-gray-950 text-gray-500 py-14 px-5 sm:px-10">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+
+      <!-- Brand -->
+      <div class="md:col-span-2">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center">
+            <i class="fas fa-layer-group text-white text-sm"></i>
+          </div>
+          <div>
+            <div class="text-white font-bold text-base">ERP Billing Engine</div>
+            <div class="text-emerald-600/60 text-xs font-semibold uppercase tracking-widest">Multi-Tenant ERP Platform</div>
+          </div>
+        </div>
+        <p class="text-gray-600 text-sm leading-relaxed max-w-sm">
+          All-in-one business management software built specifically for Nepali businesses — IRD CBMS compliant, Nepali calendar, multi-company ready.
+        </p>
+        <div class="flex gap-3 mt-5">
+          <span class="bg-gray-800 text-gray-400 text-xs px-3 py-1.5 rounded-full font-medium">IRD Certified</span>
+          <span class="bg-gray-800 text-gray-400 text-xs px-3 py-1.5 rounded-full font-medium">CBMS Ready</span>
+          <span class="bg-gray-800 text-gray-400 text-xs px-3 py-1.5 rounded-full font-medium">BS/AD</span>
+        </div>
+      </div>
+
+      <!-- Platform links -->
+      <div>
+        <h4 class="text-white text-sm font-semibold mb-4">Platform</h4>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="#features" class="hover:text-emerald-400 transition">Features</a></li>
+          <li><a href="#modules" class="hover:text-emerald-400 transition">Modules</a></li>
+          <li><a href="#pricing" class="hover:text-emerald-400 transition">Plans</a></li>
+        </ul>
+      </div>
+
+      <!-- Account links -->
+      <div>
+        <h4 class="text-white text-sm font-semibold mb-4">Account</h4>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="{% url 'accounts:login' %}" class="hover:text-emerald-400 transition">Sign In</a></li>
+          <li><a href="{% url 'accounts:password_reset' %}" class="hover:text-emerald-400 transition">Reset Password</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="border-t border-gray-800/60 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-700">
+      <p>© {% now "Y" %} ERP Billing Engine. All rights reserved.</p>
+      <p class="flex items-center gap-1.5">
+        <i class="fas fa-heart text-emerald-600 text-xs"></i>
+        Made with pride in Nepal
+      </p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

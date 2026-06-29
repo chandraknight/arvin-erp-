@@ -1,0 +1,39 @@
+{% load humanize %}
+<div class="bg-white border border-gray-200 shadow-sm overflow-x-auto">
+    <table class="min-w-full text-sm">
+        <thead class="bg-green-600 text-white text-xs uppercase">
+            <tr>
+                <th class="px-4 py-2 text-left border border-green-700">WO #</th>
+                <th class="px-4 py-2 text-left border border-green-700">Product</th>
+                <th class="px-4 py-2 text-right border border-green-700">Planned</th>
+                <th class="px-4 py-2 text-right border border-green-700">Produced</th>
+                <th class="px-4 py-2 text-center border border-green-700">Status</th>
+                <th class="px-4 py-2 text-center border border-green-700">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for wo in work_orders %}
+            <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50">
+                <td class="px-4 py-2 border border-gray-200 font-medium"><a href="{% url 'manufacturing:workorder_detail' wo.pk %}" class="text-green-700 hover:underline">{{ wo.work_order_number }}</a></td>
+                <td class="px-4 py-2 border border-gray-200">{{ wo.bom.finished_product.name }}</td>
+                <td class="px-4 py-2 border border-gray-200 text-right">{{ wo.planned_quantity }}</td>
+                <td class="px-4 py-2 border border-gray-200 text-right">{{ wo.produced_quantity }}</td>
+                <td class="px-4 py-2 border border-gray-200 text-center">{{ wo.get_status_display }}</td>
+                <td class="px-4 py-2 border border-gray-200 text-center"><a href="{% url 'manufacturing:workorder_detail' wo.pk %}" class="text-blue-600 hover:text-blue-800">View</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="px-4 py-12 text-center text-gray-400">No work orders found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-between px-1">
+    <p class="text-sm text-gray-500">{{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</p>
+    <nav class="flex items-center gap-1">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status }}" class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50">‹ Prev</a>{% endif %}
+        <span class="px-3 py-1 text-sm bg-green-600 text-white font-bold">{{ page_obj.number }}</span>
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status }}" class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50">Next ›</a>{% endif %}
+    </nav>
+</div>
+{% endif %}

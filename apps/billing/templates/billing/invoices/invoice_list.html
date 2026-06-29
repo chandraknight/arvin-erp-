@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Invoices{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Invoices</h1>
+      <p class="text-sm text-gray-500">Search, filter, and manage all invoices</p>
+    </div>
+        <button onclick="window.print()"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition shadow no-print">
+            <i class="fas fa-print"></i> Print
+        </button>
+    <a href="{% url 'billing:invoice_create' %}"
+       class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">
+      <i class="fas fa-plus"></i> New Invoice
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <form method="get"
+        hx-get="{% url 'billing:invoice_list' %}"
+        hx-target="#invoice-table-container"
+        hx-push-url="true"
+        hx-trigger="change, submit"
+        class="bg-white border border-gray-200 rounded-xl shadow-sm p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Search</label>
+      <input type="text" name="q" value="{{ q }}"
+             placeholder="Invoice # or customer…"
+             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
+      <select name="status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+        <option value="">All Statuses</option>
+        <option value="DRAFT"       {% if status == 'DRAFT' %}selected{% endif %}>Draft</option>
+        <option value="ISSUED"      {% if status == 'ISSUED' %}selected{% endif %}>Issued</option>
+        <option value="OUTSTANDING" {% if status == 'OUTSTANDING' %}selected{% endif %}>Outstanding</option>
+        <option value="PAID"        {% if status == 'PAID' %}selected{% endif %}>Paid</option>
+        <option value="CANCELLED"   {% if status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">From (BS)</label>
+      <input type="text" name="start" value="{{ start }}"
+             class="nepali-datepicker w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+             placeholder="YYYY-MM-DD">
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">To (BS)</label>
+      <input type="text" name="end" value="{{ end }}"
+             class="nepali-datepicker w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+             placeholder="YYYY-MM-DD">
+    </div>
+
+    <div class="sm:col-span-2 lg:col-span-4 flex gap-2 justify-end pt-1">
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+        <i class="fas fa-search mr-1"></i> Search
+      </button>
+      <a href="{% url 'billing:invoice_list' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium">
+        Clear
+      </a>
+    </div>
+  </form>
+
+  <!-- Summary bar -->
+  {% if grand_total %}
+  <div class="flex flex-wrap gap-4 mb-4 text-sm text-gray-600">
+    <span>Total invoiced: <strong class="text-gray-800">{{ rupee }} {{ grand_total|floatformat:2|intcomma }}</strong></span>
+    <span>Outstanding: <strong class="text-orange-600">{{ rupee }} {{ grand_outstanding|floatformat:2|intcomma }}</strong></span>
+  </div>
+  {% endif %}
+
+  <!-- Table container (HTMX target) -->
+  <div id="invoice-table-container">
+    {% include 'billing/partials/invoice_table.html' %}
+  </div>
+
+</div>
+{% endblock %}

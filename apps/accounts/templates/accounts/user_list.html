@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% load crispy_forms_tags %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+    <c-card_title_button
+            title="User Management"
+            descriptions="Manage users efficiently with full control"
+            info="Manage users efficiently with full control"
+            create_link="accounts:user_create"
+            button_name="Create New User">
+    </c-card_title_button>
+
+    
+    <c-table_options_modal
+            :th_list="['Email', 'Username', 'Company', 'Role']"
+            :td_list="['email', 'username', 'company_name', 'role_name']"
+            edit_url="accounts:user_update"
+            view_url="accounts:user_update"
+            access_url="accounts:user_access"
+            delete_url="/accounts/user/delete"
+            name="Existing Users"
+    >
+    </c-table_options_modal>
+{% endblock %}

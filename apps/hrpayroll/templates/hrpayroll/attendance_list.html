@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Attendance{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-200 pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Attendance</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</p>
+        </div>
+        <div class="flex gap-2">
+          <a href="{% url 'hrpayroll:attendance_bulk_upload' %}"
+             class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-700 text-white hover:bg-blue-800 transition shadow rounded">
+              <i class="fas fa-upload"></i> Bulk Upload
+          </a>
+          <a href="{% url 'hrpayroll:attendance_create' %}"
+             class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition shadow rounded">
+              <i class="fas fa-plus"></i> Add Record
+          </a>
+        </div>
+    </div>
+
+    <!-- Search + Status filter -->
+    <div class="bg-white border border-gray-200 shadow-sm p-4 mb-4"
+         x-data="{ loading: false }"
+         @htmx:before-request.window="loading = true"
+         @htmx:after-request.window="loading = false">
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <input type="text"
+                       name="q"
+                       value="{{ q|default:'' }}"
+                       placeholder="Search by employee name…"
+                       class="w-full border border-gray-300 px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
+                       hx-get="{% url 'hrpayroll:attendance_list' %}"
+                       hx-target="#attendance-list-container"
+                       hx-swap="innerHTML"
+                       hx-trigger="input changed delay:400ms, search"
+                       hx-include="[data-filter]"
+                       hx-push-url="true"
+                       autocomplete="off">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <i class="fas fa-search text-gray-400 text-xs" x-show="!loading"></i>
+                    <i class="fas fa-spinner fa-spin text-green-600 text-xs" x-show="loading" style="display:none"></i>
+                </div>
+            </div>
+            <select name="status"
+                    data-filter
+                    class="border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
+                    hx-get="{% url 'hrpayroll:attendance_list' %}"
+                    hx-target="#attendance-list-container"
+                    hx-swap="innerHTML"
+                    hx-trigger="change"
+                    hx-include="[name='q']"
+                    hx-push-url="true">
+                <option value="">All Statuses</option>
+                <option value="Present" {% if status == 'Present' %}selected{% endif %}>Present</option>
+                <option value="Absent"  {% if status == 'Absent'  %}selected{% endif %}>Absent</option>
+                <option value="Leave"   {% if status == 'Leave'   %}selected{% endif %}>Leave</option>
+                <option value="Holiday" {% if status == 'Holiday' %}selected{% endif %}>Holiday</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="attendance-list-container">
+        {% include 'hrpayroll/partials/attendance_table.html' %}
+    </div>
+
+</div>
+{% endblock %}

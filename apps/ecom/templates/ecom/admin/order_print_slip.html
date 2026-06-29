@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Delivery Slip — {{ order.order_number }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ── Screen controls ── */
+    .controls {
+      padding: 8px 14px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .controls button {
+      background: #4f46e5; color: white; border: none;
+      padding: 6px 16px; font-size: 13px; cursor: pointer; border-radius: 3px;
+    }
+    .controls button:hover { background: #4338ca; }
+    .controls button.secondary { background: #374151; }
+    .controls button.secondary:hover { background: #1f2937; }
+    .controls .mode-btn { font-size: 12px; padding: 5px 12px; }
+    .controls .mode-btn.active { background: #059669 !important; }
+    .controls span { color: #94a3b8; font-size: 13px; }
+    .controls .sep { color: #475569; }
+
+    body { font-family: Arial, sans-serif; background: #e5e7eb; }
+
+    /* ── A4 mode ── */
+    body.mode-a4 .slip {
+      background: white;
+      width: 210mm;
+      min-height: 148mm;
+      margin: 16px auto;
+      padding: 12mm 14mm;
+      font-size: 10pt;
+      color: #111;
+    }
+
+    /* ── Thermal mode (58mm or 80mm roll — we use 80mm) ── */
+    body.mode-thermal .slip {
+      background: white;
+      width: 80mm;
+      margin: 12px auto;
+      padding: 4mm 4mm 8mm;
+      font-size: 8pt;
+      color: #000;
+    }
+
+    /* ── Shared slip styles ── */
+    .slip-header { text-align: center; margin-bottom: 6mm; }
+    .slip-header .shop-name { font-size: 14pt; font-weight: bold; }
+    body.mode-thermal .slip-header .shop-name { font-size: 11pt; }
+    .slip-header .tagline { font-size: 8pt; color: #555; margin-top: 1mm; }
+    .slip-header .contact { font-size: 8pt; color: #333; margin-top: 1mm; }
+
+    .slip-divider { border: none; border-top: 1px dashed #999; margin: 3mm 0; }
+
+    .slip-title {
+      text-align: center;
+      font-size: 11pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 3mm;
+    }
+    body.mode-thermal .slip-title { font-size: 9pt; }
+
+    .slip-meta { display: flex; justify-content: space-between; font-size: 8.5pt; margin-bottom: 3mm; }
+    body.mode-thermal .slip-meta { font-size: 7.5pt; }
+
+    .customer-block { margin-bottom: 3mm; }
+    .customer-block .label { font-size: 7.5pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    .customer-block .value { font-size: 9.5pt; font-weight: bold; }
+    body.mode-thermal .customer-block .value { font-size: 8.5pt; }
+    .customer-block .address { font-size: 8.5pt; line-height: 1.4; margin-top: 0.5mm; }
+    body.mode-thermal .customer-block .address { font-size: 7.5pt; }
+
+    .items-table { width: 100%; border-collapse: collapse; margin: 3mm 0; }
+    .items-table th {
+      font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid #333; padding: 1.5mm 0; text-align: left;
+    }
+    .items-table th.right, .items-table td.right { text-align: right; }
+    .items-table td { font-size: 8.5pt; padding: 1.5mm 0; border-bottom: 1px dashed #ddd; }
+    body.mode-thermal .items-table th, body.mode-thermal .items-table td { font-size: 7.5pt; }
+
+    .totals { width: 100%; margin-top: 2mm; }
+    .totals tr td { font-size: 8.5pt; padding: 1mm 0; }
+    body.mode-thermal .totals tr td { font-size: 7.5pt; }
+    .totals .total-row td { font-size: 10pt; font-weight: bold; border-top: 1px solid #333; padding-top: 2mm; }
+    body.mode-thermal .totals .total-row td { font-size: 9pt; }
+    .totals td:last-child { text-align: right; }
+
+    .payment-badge {
+      display: inline-block;
+      background: #fef3c7; color: #92400e;
+      border: 1px solid #fcd34d;
+      padding: 1mm 3mm; font-size: 7.5pt; font-weight: bold;
+      margin-top: 3mm;
+    }
+    .payment-badge.paid { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+
+    .slip-footer { text-align: center; margin-top: 5mm; font-size: 7.5pt; color: #666; }
+
+    .notes-block { margin-top: 3mm; font-size: 8pt; background: #f9fafb; padding: 2mm 3mm; border-left: 2px solid #ccc; }
+    body.mode-thermal .notes-block { font-size: 7pt; }
+
+    @media print {
+      .controls { display: none !important; }
+      body { background: white !important; }
+      body.mode-a4 .slip { margin: 0; padding: 10mm 14mm; box-shadow: none; }
+      body.mode-thermal .slip { margin: 0; padding: 2mm 3mm 6mm; }
+    }
+  </style>
+</head>
+<body class="mode-{{ mode }}">
+
+<div class="controls">
+  <button onclick="window.print()">🖨 Print</button>
+  <button class="secondary" onclick="window.close()">✕ Close</button>
+  <span class="sep">|</span>
+  <span>Mode:</span>
+  <button class="mode-btn {% if mode == 'a4' %}active{% endif %}" onclick="setMode('a4')">A4</button>
+  <button class="mode-btn {% if mode == 'thermal' %}active{% endif %}" onclick="setMode('thermal')">Thermal (80mm)</button>
+</div>
+
+<div class="slip">
+
+  <!-- Header -->
+  <div class="slip-header">
+    {% if site and site.store_name %}
+    <div class="shop-name">{{ site.store_name }}</div>
+    {% if site.tagline %}<div class="tagline">{{ site.tagline }}</div>{% endif %}
+    {% if site.contact_phone or site.contact_address %}
+    <div class="contact">
+      {% if site.contact_phone %}📞 {{ site.contact_phone }}{% endif %}
+      {% if site.contact_address %} · {{ site.contact_address }}{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="shop-name">Delivery Slip</div>
+    {% endif %}
+  </div>
+
+  <hr class="slip-divider">
+  <div class="slip-title">Delivery Order</div>
+
+  <div class="slip-meta">
+    <span><strong>Order:</strong> {{ order.order_number }}</span>
+    <span><strong>Date:</strong> {{ order.created_at|date:"d M Y" }}</span>
+  </div>
+
+  <div class="slip-meta">
+    <span>
+      <strong>Status:</strong> {{ order.get_status_display }}
+    </span>
+    <span>
+      <strong>Payment:</strong> {{ order.get_payment_method_display }}
+    </span>
+  </div>
+
+  <hr class="slip-divider">
+
+  <!-- Customer -->
+  <div class="customer-block">
+    <div class="label">Deliver To</div>
+    <div class="value">{{ order.customer_name }}</div>
+    <div class="address">
+      📞 {{ order.customer_phone }}<br>
+      📍 {{ order.delivery_address }}
+    </div>
+  </div>
+
+  {% if order.notes %}
+  <div class="notes-block"><strong>Note:</strong> {{ order.notes }}</div>
+  {% endif %}
+
+  <hr class="slip-divider">
+
+  <!-- Items -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th class="right">Qty</th>
+        <th class="right">Price</th>
+        <th class="right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in order.items.all %}
+      <tr>
+        <td>{{ item.product.name }}</td>
+        <td class="right">{{ item.quantity }}</td>
+        <td class="right">Rs {{ item.unit_price|floatformat:0 }}</td>
+        <td class="right">Rs {{ item.total_price|floatformat:0 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Totals -->
+  <table class="totals">
+    {% if order.subtotal != order.total %}
+    <tr>
+      <td>Subtotal</td>
+      <td>Rs {{ order.subtotal|floatformat:2 }}</td>
+    </tr>
+    {% if order.discount_amount %}
+    <tr>
+      <td>Discount</td>
+      <td>- Rs {{ order.discount_amount|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+    {% if order.delivery_charge %}
+    <tr>
+      <td>Delivery</td>
+      <td>Rs {{ order.delivery_charge|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+    {% endif %}
+    <tr class="total-row">
+      <td>TOTAL</td>
+      <td>Rs {{ order.total|floatformat:2 }}</td>
+    </tr>
+  </table>
+
+  {% if order.payment_method == 'COD' %}
+  <div>
+    <span class="payment-badge">💵 COLLECT CASH ON DELIVERY</span>
+  </div>
+  {% else %}
+  <div>
+    <span class="payment-badge paid">✓ PAID ONLINE</span>
+  </div>
+  {% endif %}
+
+  <hr class="slip-divider" style="margin-top:4mm;">
+
+  <div class="slip-footer">
+    Thank you for your order!
+    {% if site and site.contact_phone %}<br>Help: {{ site.contact_phone }}{% endif %}
+  </div>
+
+</div>
+
+<script>
+  function setMode(m) {
+    document.body.className = 'mode-' + m;
+    document.querySelectorAll('.mode-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>

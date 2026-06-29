@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Product E-Commerce Content{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">Product E-Commerce Content</h1>
+    <a href="{% url 'ecom:cms_dashboard' %}" class="text-sm text-gray-500"><i class="fas fa-arrow-left mr-1"></i>CMS</a>
+  </div>
+
+  <form method="get" class="flex gap-3 mb-5">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search products…"
+      class="border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 w-64">
+    <button type="submit" class="bg-gray-700 text-white px-4 py-2 text-sm">Search</button>
+    {% if search %}
+    <a href="{% url 'ecom:cms_product_content_list' %}" class="border border-gray-300 px-4 py-2 text-sm text-gray-600">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if products %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm border border-gray-200">
+      <thead class="bg-green-800 text-white">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold">#</th>
+          <th class="px-4 py-3 text-left font-semibold">Product</th>
+          <th class="px-4 py-3 text-left font-semibold">Category</th>
+          <th class="px-4 py-3 text-center font-semibold">On Ecom</th>
+          <th class="px-4 py-3 text-center font-semibold">Images</th>
+          <th class="px-4 py-3 text-center font-semibold">Has Description</th>
+          <th class="px-4 py-3 text-center font-semibold">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for product in products %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-gray-500">{{ forloop.counter }}</td>
+          <td class="px-4 py-3 font-medium text-gray-900">{{ product.name }}</td>
+          <td class="px-4 py-3 text-gray-600">{{ product.category_name }}</td>
+          <td class="px-4 py-3 text-center">
+            {% if product.show_on_ecom %}
+            <span class="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 font-semibold">Yes</span>
+            {% else %}
+            <span class="inline-block bg-gray-100 text-gray-500 text-xs px-2 py-0.5">No</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-center text-gray-600">{{ product.images.count }}</td>
+          <td class="px-4 py-3 text-center">
+            {% if product.short_description or product.ecom_description %}
+            <span class="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-0.5 font-semibold">Yes</span>
+            {% else %}
+            <span class="inline-block bg-gray-100 text-gray-400 text-xs px-2 py-0.5">—</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-center">
+            <a href="{% url 'ecom:cms_product_content_edit' product.id %}"
+               class="inline-block border border-green-600 text-green-700 text-xs px-3 py-1.5 font-semibold hover:bg-green-50 transition">
+              Edit Content
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-20 text-gray-400">
+    <i class="fas fa-box-open text-5xl mb-4"></i>
+    <p>No products found{% if search %} for "{{ search }}"{% endif %}.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

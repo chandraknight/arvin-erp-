@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block title %}{% if object %}Edit Budget{% else %}New Budget Line{% endif %}{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2 bg-white border border-gray-200 shadow-sm">
+  <div class="px-6 py-3 bg-blue-700 text-white rounded-t text-sm font-bold uppercase tracking-wide">
+    <i class="fas fa-calculator mr-2"></i>{% if object %}Edit Budget Line{% else %}New Budget Line{% endif %}
+  </div>
+  <form method="post" class="p-6">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 mb-4 text-sm">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {% for field in form %}
+      <div class="{% if field.name == 'notes' %}sm:col-span-2{% endif %}">
+        <label class="text-sm font-semibold text-gray-700">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-blue-600 mt-1" }}
+        {% if field.errors %}<p class="text-red-600 text-xs mt-1">{{ field.errors|striptags }}</p>{% endif %}
+        {% if field.help_text %}<p class="text-gray-400 text-xs mt-0.5">{{ field.help_text }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="flex gap-3 pt-4">
+      <button type="submit" class="px-6 py-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded shadow transition">Save Budget</button>
+      <a href="{% url 'projects:budget_list' %}" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded transition">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

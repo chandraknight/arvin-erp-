@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Air Tickets{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+      <i class="fas fa-plane text-green-600"></i> Air Tickets
+    </h2>
+    <a href="{% url 'tours:ticket_create' %}"
+       class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 transition duration-150">
+      <i class="fas fa-plus"></i> Issue Ticket
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="flex flex-wrap gap-3 mb-5">
+    <input type="text" name="q" value="{{ q }}" placeholder="Ticket #, passenger, PNR..."
+           class="border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 w-64">
+    <select name="status" onchange="this.form.submit()"
+            class="border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-600">
+      <option value="">All Statuses</option>
+      {% for key, label in status_choices %}
+        <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 px-4 py-2 text-sm text-gray-700 transition duration-150">
+      Search
+    </button>
+    <a href="{% url 'tours:ticket_list' %}" class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-4 py-2 text-sm transition duration-150">Clear</a>
+  </form>
+
+  <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+    <table class="min-w-full text-sm text-gray-700">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Ticket #</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Passenger</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">PNR</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Carrier</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Routing</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Issue Date</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Gross</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Net</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for tkt in page_obj.object_list %}
+          <tr class="hover:bg-gray-50 transition duration-100">
+            <td class="px-4 py-3 font-mono text-gray-800">{{ tkt.ticket_number }}</td>
+            <td class="px-4 py-3">
+              <div class="font-medium text-gray-800">{{ tkt.passenger_name }}</div>
+              <div class="text-xs text-gray-400">{{ tkt.passenger_type }}</div>
+            </td>
+            <td class="px-4 py-3 font-mono text-gray-600">{{ tkt.pnr|default:"—" }}</td>
+            <td class="px-4 py-3 font-bold text-gray-700">{{ tkt.validating_carrier|default:tkt.airline.iata_code|default:"—" }}</td>
+            <td class="px-4 py-3 text-gray-500 text-xs">{{ tkt.routing|default:"—" }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ tkt.issue_date }}</td>
+            <td class="px-4 py-3 text-right font-semibold text-gray-800">{{ tkt.gross_fare|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-right text-gray-600">{{ tkt.net_fare|floatformat:2 }}</td>
+            <td class="px-4 py-3">
+              <span class="text-xs px-2 py-0.5 font-medium
+                {% if tkt.status == 'ISSUED' %}bg-green-100 text-green-700
+                {% elif tkt.status == 'VOIDED' %}bg-red-100 text-red-700
+                {% elif tkt.status == 'REFUNDED' %}bg-yellow-100 text-yellow-700
+                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                {{ tkt.get_status_display }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <a href="{% url 'tours:ticket_detail' tkt.pk %}"
+                 class="text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 px-3 py-1 transition duration-150">View</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="10" class="px-4 py-10 text-center text-gray-400">
+              <i class="fas fa-plane text-3xl mb-2 block"></i>No tickets found.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if page_obj.has_other_pages %}
+      <div class="border-t border-gray-200 px-4 py-3 flex items-center justify-center gap-1">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+             class="px-3 py-1 text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Previous</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          <a href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+             class="px-3 py-1 text-sm border transition {% if page_obj.number == num %}bg-green-600 border-green-600 text-white{% else %}border-gray-300 text-gray-600 hover:bg-gray-50{% endif %}">
+            {{ num }}
+          </a>
+        {% endfor %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+             class="px-3 py-1 text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Next</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

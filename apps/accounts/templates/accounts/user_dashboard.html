@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Dashboard — {{ user.get_full_name|default:user.email }}{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<!-- Welcome Banner -->
+<c-card_welcome>
+    <c-slot name="username">
+        {{ user.get_full_name|default:user.username|default:user.email }}
+    </c-slot>
+</c-card_welcome>
+
+<!-- Primary KPI Cards — always shown -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <c-card_stats name="Today's Sales" value="{{ rupee }} {{ today_sales|default:0|floatformat:2|intcomma }}">
+        <c-slot name="icon"><c-icon_dollor></c-icon_dollor></c-slot>
+    </c-card_stats>
+    <c-card_stats name="Total Customers" value="{{ total_customers|default:0|intcomma }}">
+        <c-slot name="icon"><c-icon_people></c-icon_people></c-slot>
+    </c-card_stats>
+    <c-card_stats name="Total Invoices" value="{{ total_invoices|default:0|intcomma }}">
+        <c-slot name="icon"><c-icon_invoice></c-icon_invoice></c-slot>
+    </c-card_stats>
+    <!-- 4th card: context-sensitive based on enabled modules -->
+    {% if show_inventory %}
+    <c-card_stats name="Total Products" value="{{ total_products|default:0|intcomma }}">
+        <c-slot name="icon"><c-icon_box></c-icon_box></c-slot>
+    </c-card_stats>
+    {% elif show_hr %}
+    <c-card_stats name="Active Employees" value="{{ active_employees|default:0|intcomma }}">
+        <c-slot name="icon">
+            <i class="fas fa-user-tie text-2xl text-teal-500"></i>
+        </c-slot>
+    </c-card_stats>
+    {% elif show_projects %}
+    <c-card_stats name="Active Projects" value="{{ active_projects|default:0|intcomma }}">
+        <c-slot name="icon">
+            <i class="fas fa-project-diagram text-2xl text-indigo-500"></i>
+        </c-slot>
+    </c-card_stats>
+    {% else %}
+    <c-card_stats name="Outstanding" value="{{ rupee }} {{ total_outstanding|default:0|floatformat:2|intcomma }}">
+        <c-slot name="icon">
+            <i class="fas fa-file-invoice-dollar text-2xl text-green-500"></i>
+        </c-slot>
+    </c-card_stats>
+    {% endif %}
+</div>
+
+<!-- Secondary KPI Cards — module-gated -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+    <!-- Outstanding Receivables — always shown -->
+    <c-card_stats name="Outstanding Receivables" value="{{ rupee }} {{ total_outstanding|default:0|floatformat:2|intcomma }}">
+        <c-slot name="icon">
+            <i class="fas fa-exclamation-circle text-2xl text-red-500"></i>
+        </c-slot>
+    </c-card_stats>
+
+    <!-- Vendors — only when purchasing is enabled -->
+    {% if show_purchasing %}
+    <c-card_stats name="Total Vendors" value="{{ total_vendors|default:0|intcomma }}">
+        <c-slot name="icon">
+            <i class="fas fa-truck text-2xl text-blue-500"></i>
+        </c-slot>
+    </c-card_stats>
+    {% endif %}
+
+    <!-- Low Stock — only when inventory is enabled -->
+    {% if show_inventory %}
+    <c-card_stats name="Low Stock Alerts" value="{{ low_stock_count|default:0 }}">
+        <c-slot name="icon">
+            <i class="fas fa-boxes text-2xl {% if low_stock_count > 0 %}text-yellow-500{% else %}text-green-500{% endif %}"></i>
+        </c-slot>
+    </c-card_stats>
+    {% endif %}
+
+    <!-- Pending POs — only when purchasing is enabled -->
+    {% if show_purchasing %}
+    <c-card_stats name="Pending Purchase Orders" value="{{ pending_po_count|default:0 }}">
+        <c-slot name="icon">
+            <i class="fas fa-file-signature text-2xl text-purple-500"></i>
+        </c-slot>
+    </c-card_stats>
+    {% endif %}
+
+    <!-- Pending Orders — only when order management is enabled -->
+    {% if show_orders %}
+    <c-card_stats name="Pending Orders" value="{{ pending_orders_count|default:0 }}">
+        <c-slot name="icon">
+            <i class="fas fa-shopping-cart text-2xl text-orange-500"></i>
+        </c-slot>
+    </c-card_stats>
+    {% endif %}
+
+    <!-- Active Projects — only when project tracking is enabled -->
+    {% if show_projects %}
+    <c-card_stats name="Active Projects" value="{{ active_projects|default:0 }}">
+        <c-slot name="icon">
+            <i class="fas fa-project-diagram text-2xl text-indigo-500"></i>
+        </c-slot>
+    </c-card_stats>
+    {% endif %}
+
+    <!-- Open Work Orders — only when manufacturing is enabled -->
+    {% if show_manufacturing %}
+    <c-card_stats name="Open Work Orders" value="{{ open_work_orders|default:0 }}">
+        <c-slot name="icon">
+            <i class="fas fa-industry text-2xl text-gray-600"></i>
+        </c-slot>
+    </c-card_stats>
+    {% endif %}
+
+    <!-- Active Employees — only when HR is enabled -->
+    {% if show_hr %}
+    <c-card_stats name="Active Employees" value="{{ active_employees|default:0 }}">
+        <c-slot name="icon">
+            <i class="fas fa-user-tie text-2xl text-teal-500"></i>
+        </c-slot>
+    </c-card_stats>
+    {% endif %}
+
+</div>
+
+<!-- Fiscal Year Info Bar -->
+{% if active_fiscal_year %}
+<div class="bg-green-50 border border-green-200 px-6 py-3 mb-8 flex flex-wrap items-center gap-4">
+    <div class="flex items-center gap-2">
+        <i class="fas fa-calendar-check text-green-600"></i>
+        <span class="text-sm font-semibold text-green-800">Active Fiscal Year:</span>
+        <span class="text-sm text-green-700">{{ active_fiscal_year.name|default:active_fiscal_year }}</span>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-gray-600">
+        <i class="fas fa-calendar-alt text-gray-400"></i>
+        <span>{{ active_fiscal_year.start_date|date:"M d, Y" }} — {{ active_fiscal_year.end_date|date:"M d, Y" }}</span>
+    </div>
+    {% if active_fiscal_year.start_date_bs and active_fiscal_year.end_date_bs %}
+    <div class="flex items-center gap-2 text-sm text-gray-500">
+        <i class="fas fa-globe-asia text-gray-400"></i>
+        <span>BS: {{ active_fiscal_year.start_date_bs }} — {{ active_fiscal_year.end_date_bs }}</span>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <c-card_quickaction></c-card_quickaction>
+    <c-card_recent_invoice rupee="{{ rupee }}"></c-card_recent_invoice>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+    <c-card_recent_payment rupee="{{ rupee }}"></c-card_recent_payment>
+
+    <!-- Alerts & Notifications Panel -->
+    <div class="lg:col-span-1">
+        <div class="bg-white border border-gray-200 shadow-sm p-6 h-full">
+            <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
+                <i class="fas fa-bell text-yellow-500"></i> Alerts
+            </h2>
+            <div class="space-y-3">
+
+                {% if show_inventory and low_stock_count > 0 %}
+                <a href="{% url 'products:inventory_management' %}"
+                   class="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 hover:bg-yellow-100 transition">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-sm font-semibold text-yellow-800">Low Stock Warning</p>
+                        <p class="text-xs text-yellow-700">{{ low_stock_count }} product{{ low_stock_count|pluralize }} below minimum stock level</p>
+                    </div>
+                </a>
+                {% endif %}
+
+                {% if unpaid_invoices_count > 0 %}
+                <a href="{% url 'reports:outstanding_invoices_report' %}"
+                   class="flex items-start gap-3 p-3 bg-red-50 border border-red-200 hover:bg-red-100 transition">
+                    <i class="fas fa-file-invoice-dollar text-red-500 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-sm font-semibold text-red-800">Outstanding Invoices</p>
+                        <p class="text-xs text-red-700">{{ unpaid_invoices_count }} invoice{{ unpaid_invoices_count|pluralize }} with unpaid balance</p>
+                    </div>
+                </a>
+                {% endif %}
+
+                {% if show_purchasing and pending_po_count > 0 %}
+                <a href="{% url 'purchasing:purchase_dashboard' %}"
+                   class="flex items-start gap-3 p-3 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition">
+                    <i class="fas fa-file-signature text-purple-500 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-sm font-semibold text-purple-800">Pending Purchase Orders</p>
+                        <p class="text-xs text-purple-700">{{ pending_po_count }} PO{{ pending_po_count|pluralize }} awaiting action</p>
+                    </div>
+                </a>
+                {% endif %}
+
+                {% if show_orders and pending_orders_count > 0 %}
+                <a href="{% url 'orders:dashboard' %}"
+                   class="flex items-start gap-3 p-3 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition">
+                    <i class="fas fa-shopping-cart text-orange-500 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-sm font-semibold text-orange-800">Pending Sales Orders</p>
+                        <p class="text-xs text-orange-700">{{ pending_orders_count }} order{{ pending_orders_count|pluralize }} awaiting fulfilment</p>
+                    </div>
+                </a>
+                {% endif %}
+
+                {% if show_manufacturing and open_work_orders > 0 %}
+                <a href="{% url 'manufacturing:workorder_list' %}"
+                   class="flex items-start gap-3 p-3 bg-gray-50 border border-gray-200 hover:bg-gray-100 transition">
+                    <i class="fas fa-industry text-gray-600 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Open Work Orders</p>
+                        <p class="text-xs text-gray-600">{{ open_work_orders }} work order{{ open_work_orders|pluralize }} in progress</p>
+                    </div>
+                </a>
+                {% endif %}
+
+                {% if not show_inventory or not low_stock_count %}
+                  {% if not unpaid_invoices_count %}
+                    {% if not show_purchasing or not pending_po_count %}
+                      {% if not show_orders or not pending_orders_count %}
+                        {% if not show_manufacturing or not open_work_orders %}
+                <div class="flex items-center gap-3 p-3 bg-green-50 border border-green-200">
+                    <i class="fas fa-check-circle text-green-500 flex-shrink-0"></i>
+                    <p class="text-sm text-green-700 font-medium">All clear — no alerts at this time.</p>
+                </div>
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

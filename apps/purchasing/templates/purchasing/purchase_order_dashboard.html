@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Purchase Orders{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-200 pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Purchase Orders</h1>
+            <p class="text-sm text-gray-500 mt-1">
+                Total value: {{ rupee }} {{ total_po_amount|floatformat:2|intcomma }}
+            </p>
+        </div>
+        <button onclick="window.print()"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition shadow no-print">
+            <i class="fas fa-print"></i> Print
+        </button>
+        <a href="{% url 'purchasing:purchase_order_create' %}"
+           class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition shadow">
+            <i class="fas fa-plus"></i> Create PO
+        </a>
+    </div>
+
+    <!-- Search + Status filter -->
+    <div class="bg-white border border-gray-200 shadow-sm p-4 mb-4"
+         x-data="{ loading: false }"
+         @htmx:before-request.window="loading = true"
+         @htmx:after-request.window="loading = false">
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <input type="text"
+                       name="q"
+                       value="{{ q|default:'' }}"
+                       placeholder="Search by PO number or vendor…"
+                       class="w-full border border-gray-300 px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
+                       hx-get="{% url 'purchasing:purchase_dashboard' %}"
+                       hx-target="#po-list-container"
+                       hx-swap="innerHTML"
+                       hx-trigger="input changed delay:400ms, search"
+                       hx-include="[data-filter]"
+                       hx-push-url="true"
+                       autocomplete="off">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <i class="fas fa-search text-gray-400 text-xs" x-show="!loading"></i>
+                    <i class="fas fa-spinner fa-spin text-green-600 text-xs" x-show="loading" style="display:none"></i>
+                </div>
+            </div>
+            <select name="status"
+                    data-filter
+                    class="border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
+                    hx-get="{% url 'purchasing:purchase_dashboard' %}"
+                    hx-target="#po-list-container"
+                    hx-swap="innerHTML"
+                    hx-trigger="change"
+                    hx-include="[name='q']"
+                    hx-push-url="true">
+                <option value="">All Statuses</option>
+                <option value="DRAFT"    {% if status == 'DRAFT'    %}selected{% endif %}>Draft</option>
+                <option value="SENT"     {% if status == 'SENT'     %}selected{% endif %}>Sent</option>
+                <option value="RECEIVED" {% if status == 'RECEIVED' %}selected{% endif %}>Received</option>
+                <option value="CANCELLED"{% if status == 'CANCELLED'%}selected{% endif %}>Cancelled</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- List container -->
+    <div id="po-list-container">
+        {% include 'purchasing/partials/po_table.html' %}
+    </div>
+
+</div>
+{% endblock %}

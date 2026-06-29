@@ -1,0 +1,10 @@
+<template id="product-options">
+{% for p in products %}
+<option value="{{ p.id }}">{{ p.name }}</option>
+{% endfor %}
+</template>
+<template id="package-options">
+{% for pkg in packages %}
+<option value="{{ pkg.id }}">{{ pkg.name }}</option>
+{% endfor %}
+</template>

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Vendor Bills{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Vendor Bills</h1>
+      <p class="text-sm text-gray-500">Track and manage bills from your vendors</p>
+    </div>
+    <div class="flex gap-2">
+        <button onclick="window.print()"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition shadow no-print">
+            <i class="fas fa-print"></i> Print
+        </button>
+      <a href="{% url 'purchasing:vendor_bill_create' %}"
+         class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors">
+        <i class="fas fa-plus"></i> Record Bill
+      </a>
+      <a href="{% url 'purchasing:purchasing_hub' %}"
+         class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm transition-colors">
+        <i class="fas fa-arrow-left"></i> Back
+      </a>
+    </div>
+  </div>
+
+  {% if vendor_bills %}
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Bill #</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Vendor</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Bill Date</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Due Date</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">PO #</th>
+            <th class="text-right px-4 py-3 font-semibold text-gray-600">Amount</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for bill in vendor_bills %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 py-3 font-semibold text-gray-800">{{ bill.bill_number }}</td>
+            <td class="px-4 py-3 text-gray-700 max-w-[160px] truncate">{{ bill.vendor.name }}</td>
+            <td class="px-4 py-3 text-gray-500 hidden sm:table-cell whitespace-nowrap">
+              {{ bill.bill_date|date:"d M Y" }}
+            </td>
+            <td class="px-4 py-3 hidden md:table-cell whitespace-nowrap">
+              {% if bill.due_date %}
+                {% if bill.status == 'UNPAID' and bill.due_date < today %}
+                  <span class="text-red-600 font-medium">{{ bill.due_date|date:"d M Y" }}</span>
+                {% else %}
+                  <span class="text-gray-500">{{ bill.due_date|date:"d M Y" }}</span>
+                {% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">
+              {% if bill.purchase_order %}
+                <a href="{% url 'purchasing:purchase_order_detail' bill.purchase_order.pk %}"
+                   class="text-blue-600 hover:underline">{{ bill.purchase_order.purchase_order_number }}</a>
+              {% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-right font-semibold text-gray-800 whitespace-nowrap">
+              {{ rupee }} {{ bill.total_amount|floatformat:2|intcomma }}
+            </td>
+            <td class="px-4 py-3">
+              {% if bill.status == 'UNPAID' %}
+                {% if bill.due_date and bill.due_date < today %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Overdue</span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">Unpaid</span>
+                {% endif %}
+              {% elif bill.status == 'PAID' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid</span>
+              {% elif bill.status == 'CANCELLED' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelled</span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ bill.status }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2 justify-end">
+                {% if bill.status == 'UNPAID' %}
+                <a href="{% url 'purchasing:vendor_payment_create' %}?bill={{ bill.pk }}"
+                   class="text-gray-400 hover:text-green-600 transition-colors" title="Record Payment">
+                  <i class="fas fa-money-bill-wave text-sm"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm text-center py-16 text-gray-400">
+    <i class="fas fa-receipt text-4xl mb-3 block"></i>
+    <p class="text-base font-medium text-gray-500">No vendor bills recorded yet.</p>
+    <a href="{% url 'purchasing:vendor_bill_create' %}" class="mt-3 inline-block text-green-600 hover:underline font-medium">
+      Record your first vendor bill →
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

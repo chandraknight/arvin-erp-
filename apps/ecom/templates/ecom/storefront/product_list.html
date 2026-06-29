@@ -1,0 +1,235 @@
+{% extends "ecom/storefront/base.html" %}
+{% load static %}
+
+{% block page_title %}Shop{% endblock %}
+{% block nav_active_shop %}active{% endblock %}
+{% block nav_bottom_shop %}class="active"{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block content %}
+<div class="section-box shop-template mb-15">
+  <div class="container">
+
+    <div class="row">
+
+      {# ── SIDEBAR ── #}
+      <div class="col-12 col-lg-4 col-xl-3 mb-20">
+        <button class="d-lg-none btn btn-sm btn-buy w-100 mb-10 sidebar-toggle-btn"
+                onclick="document.getElementById('sidebar-filters').classList.toggle('d-none')">
+          ☰ Filter &amp; Sort
+        </button>
+
+        {# filter-form is included by hx-include="#filter-form" on grid controls #}
+        <form id="filter-form"
+              hx-get="{% url 'ecom:product_list' %}"
+              hx-target="#product-grid"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-on:htmx:config-request="injectTopbarParams(event)">
+          <input type="hidden" name="colors" id="colors-hidden" value="{{ colors_param }}">
+          <input type="hidden" name="category" id="category-hidden" value="{{ selected_category|default:'' }}">
+
+        <div class="sidebar-filters d-none d-lg-block" id="sidebar-filters">
+
+          {# Categories — HTMX links #}
+          <div class="filter-panel mb-15">
+            <div class="filter-title">Categories</div>
+            <a class="cat-link {% if not selected_category %}active{% endif %}"
+               href="#" data-cat-id="" onclick="setCategory('');return false;">All Products</a>
+            {% for cat in categories %}
+            <a class="cat-link {% if selected_category == cat.id|stringformat:'s' %}active{% endif %}"
+               href="#" data-cat-id="{{ cat.id }}" onclick="setCategory('{{ cat.id }}');return false;">
+              {{ cat.name }}
+            </a>
+            {% endfor %}
+          </div>
+
+          {# Price Range #}
+          <div class="filter-panel mb-15">
+            <div class="filter-title">Price</div>
+            <div class="price-range-wrap">
+              <div class="price-range-label">
+                Range: Rs.<span id="price-lo-label">{{ price_min|default:price_lo|floatformat:0 }}</span>
+                – Rs.<span id="price-hi-label">{{ price_max|default:price_hi|floatformat:0 }}</span>
+              </div>
+              <div class="price-slider-wrap">
+                <div class="price-track-fill" id="price-track-fill"></div>
+                <input type="range" id="range-min" name="price_min"
+                       min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}"
+                       value="{{ price_min|default:price_lo|floatformat:0 }}">
+                <input type="range" id="range-max" name="price_max"
+                       min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}"
+                       value="{{ price_max|default:price_hi|floatformat:0 }}">
+              </div>
+              <div class="price-inputs">
+                <input class="price-input" type="number" id="price-min-input"
+                       placeholder="Min" value="{{ price_min|default:'' }}"
+                       min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}">
+                <input class="price-input" type="number" id="price-max-input"
+                       placeholder="Max" value="{{ price_max|default:'' }}"
+                       min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}">
+              </div>
+              <button type="button" class="apply-btn" id="apply-price-btn"
+                      hx-get="{% url 'ecom:product_list' %}"
+                      hx-target="#product-grid"
+                      hx-swap="outerHTML"
+                      hx-push-url="true"
+                      hx-include="#filter-form"
+                      onclick="syncPriceInputs()">Apply Price</button>
+            </div>
+          </div>
+
+          {# Color Filter #}
+          {% if all_colors %}
+          <div class="filter-panel mb-15">
+            <div class="filter-title">Color</div>
+            <input class="color-search-input" type="text" placeholder="Search color..."
+                   oninput="filterColorList(this.value)" id="color-search">
+            <div id="color-list" class="color-list-scroll">
+              {% for c in all_colors %}
+              <label class="color-check" data-color="{{ c|lower }}">
+                <input type="checkbox" value="{{ c }}"
+                       {% if c in selected_colors %}checked{% endif %}
+                       onchange="syncColorAndFetch()"
+                <span class="color-dot" style="background:{{ c|lower }};"></span>
+                {{ c }}
+              </label>
+              {% endfor %}
+            </div>
+            <div class="color-count-note">
+              Showing {{ all_colors|length }} option{{ all_colors|length|pluralize }}
+            </div>
+          </div>
+          {% endif %}
+
+        </div>{# end sidebar-filters #}
+        </form>
+      </div>
+
+      {# ── PRODUCT GRID (HTMX target) ── #}
+      <div class="col-12 col-lg-8 col-xl-9">
+        {% include "ecom/storefront/_product_grid.html" %}
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set category hidden input, update active link, trigger filter-form HTMX request
+function setCategory(id) {
+  document.getElementById('category-hidden').value = id;
+  document.querySelectorAll('.cat-link').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.catId === String(id));
+  });
+  htmx.trigger('#filter-form', 'submit');
+}
+
+// Read current sort/per_page/view from the topbar selects/buttons
+function getTopbarParams() {
+  var sort = document.querySelector('#product-grid .sort-select');
+  var pp   = document.querySelector('#product-grid .per-page-select');
+  var view = document.querySelector('#product-grid .view-btn.active');
+  return {
+    sort:     sort ? sort.value : '{{ sort }}',
+    per_page: pp   ? pp.value   : '{{ per_page }}',
+    view:     view ? (view.title === 'List view' ? 'list' : 'grid') : '{{ view_mode }}'
+  };
+}
+
+// Inject topbar state into filter-form HTMX requests (search, price, color)
+function injectTopbarParams(evt) {
+  var p = getTopbarParams();
+  if (!evt.detail.parameters['sort'])     evt.detail.parameters['sort']     = p.sort;
+  if (!evt.detail.parameters['per_page']) evt.detail.parameters['per_page'] = p.per_page;
+  if (!evt.detail.parameters['view'])     evt.detail.parameters['view']     = p.view;
+}
+
+// Colour filter — sync hidden input then fire HTMX manually
+function syncColorAndFetch() {
+  var checked = Array.from(document.querySelectorAll('#color-list input[type="checkbox"]:checked'))
+                     .map(function(cb){ return cb.value; });
+  document.getElementById('colors-hidden').value = checked.join(',');
+  htmx.trigger('#filter-form', 'submit');
+}
+
+function filterColorList(q) {
+  document.querySelectorAll('#color-list label').forEach(function(el){
+    el.style.display = el.dataset.color.includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+// Copy price inputs into the named fields that filter-form will submit
+function syncPriceInputs() {
+  var mn = document.getElementById('price-min-input').value;
+  var mx = document.getElementById('price-max-input').value;
+  // Reuse the range inputs as the authoritative named fields
+  document.getElementById('range-min').value = mn || document.getElementById('range-min').min;
+  document.getElementById('range-max').value = mx || document.getElementById('range-max').max;
+}
+
+// Active-filter tag removal
+function removeParam(key) {
+  // Also clear the corresponding hidden input in filter-form
+  if (key === 'category') document.getElementById('category-hidden').value = '';
+  if (key === 'colors') document.getElementById('colors-hidden').value = '';
+  var p = new URLSearchParams(window.location.search);
+  p.delete(key);
+  p.delete('page');
+  // preserve topbar state
+  var tb = getTopbarParams();
+  p.set('sort', tb.sort); p.set('per_page', tb.per_page); p.set('view', tb.view);
+  htmx.ajax('GET', '{% url "ecom:product_list" %}?' + p.toString(),
+    {target:'#product-grid', swap:'outerHTML', pushUrl:true});
+}
+
+function removeColor(color) {
+  var hidden = document.getElementById('colors-hidden');
+  var colors = (hidden.value || '').split(',').filter(function(c){ return c && c.toLowerCase() !== color.toLowerCase(); });
+  hidden.value = colors.join(',');
+  document.querySelectorAll('#color-list input[type="checkbox"]').forEach(function(cb){
+    if (cb.value.toLowerCase() === color.toLowerCase()) cb.checked = false;
+  });
+  htmx.trigger('#filter-form', 'submit');  // injectTopbarParams fires automatically via hx-on
+}
+
+// Price range sliders — update labels and number inputs
+(function(){
+  var rMin = document.getElementById('range-min');
+  var rMax = document.getElementById('range-max');
+  var iMin = document.getElementById('price-min-input');
+  var iMax = document.getElementById('price-max-input');
+  var lLo = document.getElementById('price-lo-label');
+  var lHi = document.getElementById('price-hi-label');
+  var fill = document.getElementById('price-track-fill');
+  if (!rMin) return;
+
+  function updateTrack() {
+    var lo = parseFloat(rMin.min), hi = parseFloat(rMin.max);
+    var vMin = parseFloat(rMin.value), vMax = parseFloat(rMax.value);
+    var pMin = (vMin - lo) / (hi - lo) * 100;
+    var pMax = (vMax - lo) / (hi - lo) * 100;
+    if (fill) { fill.style.left = pMin + '%'; fill.style.width = (pMax - pMin) + '%'; }
+  }
+
+  rMin.addEventListener('input', function(){
+    if (parseFloat(rMin.value) > parseFloat(rMax.value)) rMin.value = rMax.value;
+    if (iMin) iMin.value = rMin.value;
+    if (lLo) lLo.textContent = rMin.value;
+    updateTrack();
+  });
+  rMax.addEventListener('input', function(){
+    if (parseFloat(rMax.value) < parseFloat(rMin.value)) rMax.value = rMin.value;
+    if (iMax) iMax.value = rMax.value;
+    if (lHi) lHi.textContent = rMax.value;
+    updateTrack();
+  });
+  if (iMin) iMin.addEventListener('input', function(){ rMin.value = this.value; if(lLo) lLo.textContent = this.value; updateTrack(); });
+  if (iMax) iMax.addEventListener('input', function(){ rMax.value = this.value; if(lHi) lHi.textContent = this.value; updateTrack(); });
+  updateTrack();
+})();
+</script>
+{% endblock %}

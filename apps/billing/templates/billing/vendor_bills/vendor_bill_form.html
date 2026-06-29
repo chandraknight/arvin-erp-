@@ -1,0 +1,585 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if vendor_bill %}Update{% else %}Create{% endif %} Vendor Bill{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-3">
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    {# ── Main column (4/5) ── #}
+    <div class="lg:col-span-4 bg-white border border-gray-200 shadow-sm p-5">
+
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3 border-b border-gray-100 pb-4">
+        <h2 class="text-2xl font-bold text-gray-800 tracking-tight">
+          {% if vendor_bill %}Update Vendor Bill{% else %}Create Vendor Bill{% endif %}
+        </h2>
+        <div class="flex gap-2 items-center">
+          {% if vendor_bill %}
+            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium border border-dashed border-green-300">#{{ vendor_bill.bill_number }}</span>
+          {% endif %}
+          <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium">{{ user.company.name }}</span>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+
+            <form method="post" novalidate class="space-y-6" id="vendor-bill-form">
+                {% csrf_token %}
+                {{ formset.management_form }}
+
+                {% if form.errors %}
+                <div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 text-sm">
+                    {{ form.non_field_errors }}
+                    {% for field in form %}{% if field.errors %}<div>{{ field.label }}: {{ field.errors }}</div>{% endif %}{% endfor %}
+                </div>
+                {% endif %}
+
+                {# Header fields #}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                        {# Vendor #}
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Vendor <span class="text-red-500">*</span></label>
+                            <div class="flex gap-1">
+                                {{ form.vendor|add_class:"flex-1 border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                                <button type="button"
+                                        title="Add new vendor"
+                                        hx-get="{% url 'vendors:vendor_quick_create' %}"
+                                        hx-target="#quick-create-vendor-modal-body"
+                                        hx-swap="innerHTML"
+                                        onclick="document.getElementById('quick-create-vendor-modal').classList.remove('hidden')"
+                                        class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold whitespace-nowrap transition">
+                                    + New
+                                </button>
+                            </div>
+                        </div>
+
+                        {# Vendor quick-create modal #}
+                        <div id="quick-create-vendor-modal"
+                             class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                             onclick="if(event.target===this)closeVendorQuickCreateModal()">
+                            <div class="bg-white w-full max-w-md shadow-xl p-5 relative" onclick="event.stopPropagation()">
+                                <div id="quick-create-vendor-modal-body">
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Purchase Order #}
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Purchase Order</label>
+                            {{ form.purchase_order|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                        </div>
+
+                        {# Bill Date #}
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Bill Date (BS) <span class="text-red-500">*</span></label>
+                            {{ form.bill_date|add_class:"nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                        </div>
+
+                        {# Due Date #}
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Due Date (BS)</label>
+                            {{ form.due_date|add_class:"nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                        </div>
+
+                        {# Bill Number #}
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Bill Number</label>
+                            {{ form.bill_number|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                        </div>
+
+
+                </div>
+
+                {# Bill Items #}
+                <div class="mt-6">
+                    <div class="flex justify-between items-center mb-3 border-b border-gray-100 pb-3">
+                        <h3 class="text-base font-bold text-green-800">Bill Items</h3>
+                        <button type="button" id="add-item"
+                                class="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 text-xs font-semibold transition">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-green-700 text-white text-xs uppercase">
+                                <tr>
+                                    <th class="py-2.5 px-3 text-left border-r border-green-800" style="width:160px">Item</th>
+                                    <th class="py-2.5 px-3 text-left border-r border-green-800">Description</th>
+                                    <th class="py-2.5 px-3 text-left border-r border-green-800" style="width:90px">HS Code</th>
+                                    <th class="py-2.5 px-3 text-center border-r border-green-800" style="width:60px">Qty</th>
+                                    <th class="py-2.5 px-3 text-right border-r border-green-800" style="width:90px">Price</th>
+                                    <th class="py-2.5 px-3 text-right border-r border-green-800" style="width:90px">Total (₹)</th>
+                                    <th class="py-2.5 px-3" style="width:36px"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="items-container">
+                                {% for item_form in formset %}
+                                <tr class="border-b border-gray-100 item-form" data-index="{{ forloop.counter0 }}">
+                                    {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td class="py-2 px-2" style="width:160px">
+                                        {{ item_form.product|add_class:"product-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                                    </td>
+                                    <td class="py-2 px-2">
+                                        {{ item_form.description|add_class:"w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                                    </td>
+                                    <td class="py-2 px-2" style="width:90px">
+                                        {{ item_form.hscode|add_class:"hscode w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                                    </td>
+                                    <td class="py-2 px-2" style="width:60px">
+                                        {{ item_form.quantity|add_class:"quantity-input w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                                    </td>
+                                    <td class="py-2 px-2" style="width:90px">
+                                        {{ item_form.price|add_class:"price-input w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                                    </td>
+                                    <td class="py-2 px-2" style="width:90px">
+                                        <input type="text" class="item-total w-full border border-gray-200 px-2 py-1.5 text-sm bg-gray-50 text-right font-mono" readonly>
+                                    </td>
+                                    <td class="py-2 px-2 text-center" style="width:36px">
+                                        <button type="button" class="remove-item text-red-500 hover:text-red-700 transition">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {# Totals #}
+                    <div class="py-3 border-t border-gray-200 flex justify-end mt-1">
+                        <div class="grid grid-cols-2 gap-x-8 gap-y-1 text-sm w-72">
+                            <span class="text-gray-600 font-medium text-right">Subtotal</span>
+                            <span class="font-mono font-semibold text-right" id="subtotal-display">0.00</span>
+                            <span class="text-gray-800 font-bold text-right">Total (₹)</span>
+                            <span class="font-mono font-bold text-right text-green-800" id="total-display">0.00</span>
+                            {{ form.total_amount|add_class:"hidden" }}
+                        </div>
+                    </div>
+                </div>
+
+                {# Payment Collection — matches invoice form style #}
+                <div class="bg-green-50 border border-green-200 shadow-sm">
+                    <div class="flex items-center gap-2 px-5 py-3 border-b border-green-200">
+                        <i class="fas fa-money-bill-wave text-green-700"></i>
+                        <h3 class="text-sm font-bold text-green-800 uppercase tracking-wide">Payment Collection</h3>
+                    </div>
+                    <div class="px-5 py-4">
+                        <div class="flex items-start gap-3">
+                            {{ form.collect_payment|add_class:"mt-0.5 h-4 w-4 cursor-pointer accent-green-600" }}
+                            <label for="vb-collect-payment-checkbox" class="cursor-pointer select-none">
+                                <span class="text-sm font-semibold text-gray-800">Record Payment Immediately</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Check this box to record payment for this bill immediately</p>
+                            </label>
+                        </div>
+
+                        <div id="vb-payment-section" class="hidden mt-5 space-y-3">
+
+                            {# Date row — shared across all splits #}
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Payment Date (BS)</label>
+                                    {{ form.payment_date|add_class:"nepali-datepicker w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                                </div>
+                            </div>
+
+                            {# Split payment rows #}
+                            <div id="vb-split-rows-container" class="space-y-2">
+                                {# Primary row — bound to form fields #}
+                                <div class="vb-split-row grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Payment Method <span class="text-red-500">*</span></label>
+                                        {{ form.payment_method|add_class:"w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Amount <span class="text-red-500">*</span></label>
+                                        {{ form.payment_amount|add_class:"vb-split-amount w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {# Split total feedback #}
+                            <div id="vb-split-total-bar" class="hidden text-xs py-1.5 px-3 border flex items-center gap-2">
+                                <i class="fas fa-info-circle"></i>
+                                <span id="vb-split-total-msg"></span>
+                            </div>
+
+                            <button type="button" id="vb-add-split-row"
+                                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 border border-green-400 bg-green-50 hover:bg-green-100 px-3 py-1.5 transition">
+                                <i class="fas fa-plus"></i> Add Another Payment Method
+                            </button>
+
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 shadow-md transition">
+                    {% if vendor_bill %}Update Vendor Bill{% else %}Create Vendor Bill{% endif %}
+                </button>
+
+            </form>
+
+            <c-back-link>
+                <c-slot name="url">{% url 'products:inventory_management' %}</c-slot>
+            </c-back-link>
+      </div>{# end space-y-6 #}
+    </div>{# end main col #}
+
+    {# ── Sidebar (1/5) ── #}
+    <div class="lg:col-span-1 space-y-4">
+
+      {# Vendor info card #}
+      <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-truck text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Vendor Info</h3>
+        </div>
+        <div id="vendor-info-panel" class="p-5 text-sm text-gray-500 italic">
+          Select a vendor to see details
+        </div>
+      </div>
+
+      {# Bill summary card #}
+      <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="px-4 py-3 border-b border-gray-200">
+          <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Bill Summary</h3>
+        </div>
+        <div class="p-5 space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500 font-medium">Items</span>
+            <span id="summary-items" class="font-semibold text-gray-800">0</span>
+          </div>
+          <div class="flex justify-between border-t border-gray-100 pt-2 mt-1">
+            <span class="font-bold text-gray-800">Total</span>
+            <span id="summary-total" class="font-bold text-green-800 font-mono">₹ 0.00</span>
+          </div>
+        </div>
+      </div>
+
+      {# Payment summary — visible when payment is being collected #}
+      <div id="vb-payment-summary-card" class="hidden bg-green-50 border border-green-200 shadow-sm">
+        <div class="flex items-center gap-2 px-4 py-3 border-b border-green-200">
+          <i class="fas fa-money-bill-wave text-green-700 text-sm"></i>
+          <h3 class="text-sm font-bold text-green-800 uppercase tracking-wide">Payment</h3>
+        </div>
+        <div class="p-5 space-y-1.5 text-sm" id="vb-payment-summary-rows"></div>
+        <div class="px-5 pb-4 border-t border-green-100 pt-2 flex justify-between text-sm">
+          <span class="font-semibold text-gray-800">Total Paid</span>
+          <span id="vb-payment-summary-total" class="font-bold text-green-800 font-mono">₹ 0.00</span>
+        </div>
+      </div>
+
+    </div>{# end sidebar #}
+
+  </div>{# end grid #}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container    = document.getElementById('items-container');
+    const addButton    = document.getElementById('add-item');
+    const totalForms   = document.getElementById('id_items-TOTAL_FORMS');
+
+    let formCount = parseInt(totalForms?.value || '0');
+
+    // Clone empty row
+    let emptyForm = container.querySelector('.item-form')?.cloneNode(true);
+
+    // ── Vendor info panel ──────────────────────────────────────────
+    const vendorSelect  = document.getElementById('id_vendor');
+    const infoPanel     = document.getElementById('vendor-info-panel');
+
+    function loadVendorInfo(vendorId) {
+        if (!vendorId) {
+            infoPanel.innerHTML = '<span class="italic text-gray-400">Select a vendor to see details</span>';
+            return;
+        }
+        fetch(`/vendors/api/${vendorId}/json/`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) { infoPanel.innerHTML = '<span class="text-red-500 text-xs">Could not load vendor info.</span>'; return; }
+                infoPanel.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="font-bold text-gray-800 text-base">${data.name}</div>
+                        ${data.contact_person ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-user w-4 text-gray-400 mt-0.5"></i>${data.contact_person}</div>` : ''}
+                        ${data.email ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-envelope w-4 text-gray-400 mt-0.5"></i>${data.email}</div>` : ''}
+                        ${data.phone ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-phone w-4 text-gray-400 mt-0.5"></i>${data.phone}</div>` : ''}
+                        ${data.pan_number ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-id-card w-4 text-gray-400 mt-0.5"></i>PAN: ${data.pan_number}</div>` : ''}
+                        ${data.address ? `<div class="flex gap-2 text-gray-500 text-xs mt-1"><i class="fas fa-map-marker-alt w-4 text-gray-400 mt-0.5"></i>${data.address}</div>` : ''}
+                    </div>`;
+            })
+            .catch(() => { infoPanel.innerHTML = '<span class="text-red-500 text-xs">Error loading vendor.</span>'; });
+    }
+
+    if (vendorSelect) {
+        vendorSelect.addEventListener('change', function () { loadVendorInfo(this.value); });
+        if (vendorSelect.value) loadVendorInfo(vendorSelect.value);
+    }
+    // ── Select2 integration: fire on change event ──────────────────
+    $(document).on('select2:select select2:unselect', '#id_vendor', function () {
+        loadVendorInfo(this.value);
+    });
+
+    // ── Payment section toggle ─────────────────────────────────────
+    const collectCheckbox = document.getElementById('vb-collect-payment-checkbox');
+    const paymentSection  = document.getElementById('vb-payment-section');
+    function togglePayment() {
+        if (collectCheckbox?.checked) paymentSection.classList.remove('hidden');
+        else paymentSection.classList.add('hidden');
+    }
+    collectCheckbox?.addEventListener('change', togglePayment);
+    togglePayment();
+
+    // Auto-fill payment amount when total changes
+    document.addEventListener('input', function (e) {
+        if (e.target.classList.contains('quantity-input') || e.target.classList.contains('price-input')) {
+            updateCalculations();
+        }
+    });
+
+    // ── Item rows ──────────────────────────────────────────────────
+    function updateItemTotal(row) {
+        const qty   = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+        const price = parseFloat(row.querySelector('.price-input')?.value) || 0;
+        const totalEl = row.querySelector('.item-total');
+        if (totalEl) totalEl.value = (qty * price).toFixed(2);
+    }
+
+    function updateCalculations() {
+        let total = 0;
+        let items = 0;
+        document.querySelectorAll('.item-form').forEach(row => {
+            if (row.style.display === 'none') return;
+            const qty   = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+            const price = parseFloat(row.querySelector('.price-input')?.value) || 0;
+            total += qty * price;
+            if (qty > 0 || price > 0) items++;
+            updateItemTotal(row);
+        });
+        document.getElementById('subtotal-display').textContent = total.toFixed(2);
+        document.getElementById('total-display').textContent    = total.toFixed(2);
+        document.getElementById('summary-total').textContent    = '₹ ' + total.toFixed(2);
+        document.getElementById('summary-items').textContent    = items;
+        const totalInput = document.getElementById('id_total_amount');
+        if (totalInput) totalInput.value = total.toFixed(2);
+
+        // Sync payment amount
+        const payAmt = document.getElementById('id_payment_amount');
+        if (payAmt && collectCheckbox?.checked && !payAmt.dataset.userEdited) {
+            payAmt.value = total.toFixed(2);
+        }
+    }
+
+    function addRowListeners(row) {
+        row.querySelector('.product-select')?.addEventListener('change', function () {
+            if (this.value) {
+                fetch(`/api/products/${this.value}/price/`)
+                    .then(r => r.json())
+                    .then(data => {
+                        const priceInput   = row.querySelector('.price-input');
+                        const hscodeInput  = row.querySelector('.hscode');
+                        if (priceInput && data.price) priceInput.value = data.price;
+                        if (hscodeInput)              hscodeInput.value = data.hscode || '';
+                        updateCalculations();
+                    }).catch(() => {});
+            }
+        });
+        row.querySelector('.quantity-input')?.addEventListener('input', updateCalculations);
+        row.querySelector('.price-input')?.addEventListener('input', updateCalculations);
+    }
+
+    document.querySelectorAll('.item-form').forEach(row => { addRowListeners(row); updateItemTotal(row); });
+
+    addButton?.addEventListener('click', function () {
+        if (!emptyForm) return;
+        const newRow = emptyForm.cloneNode(true);
+        const idx = formCount;
+        ['product','description','hscode','quantity','price','id','DELETE'].forEach(field => {
+            newRow.querySelectorAll(`[name*="-${field}"]`).forEach(el => {
+                el.name = el.name.replace(/items-\d+-/, `items-${idx}-`);
+                if (el.id) el.id = el.id.replace(/id_items-\d+-/, `id_items-${idx}-`);
+                if (el.tagName === 'SELECT') el.selectedIndex = 0;
+                else if (el.type !== 'hidden') el.value = field === 'quantity' ? '1' : '';
+            });
+        });
+        newRow.querySelector('.item-total')?.setAttribute('value', '');
+        container.appendChild(newRow);
+        formCount++;
+        if (totalForms) totalForms.value = formCount;
+        addRowListeners(newRow);
+        // Re-init Select2 on new row selects
+        if (typeof initSelect2 === 'function') initSelect2(newRow);
+    });
+
+    container.addEventListener('click', function (e) {
+        const btn = e.target.closest('.remove-item');
+        if (!btn) return;
+        const row = btn.closest('.item-form');
+        const idInput = row.querySelector('[name$="-id"]');
+        const delInput = row.querySelector('[name$="-DELETE"]');
+        if (idInput?.value) {
+            if (delInput) delInput.checked = true;
+            row.style.display = 'none';
+        } else {
+            row.remove();
+            formCount--;
+            if (totalForms) totalForms.value = formCount;
+        }
+        updateCalculations();
+    });
+
+    // Mark payment_amount as user-edited if touched
+    document.getElementById('id_payment_amount')?.addEventListener('input', function () {
+        this.dataset.userEdited = '1';
+    });
+
+    // ── Split payment rows ─────────────────────────────────────────
+    // Build method options by cloning the existing rendered select — no need for
+    // a separate VB_METHODS JS array (avoids rendering/encoding issues).
+    function getMethodOptionsHtml() {
+        const src = document.getElementById('id_payment_method');
+        if (!src) return '';
+        return Array.from(src.options)
+            .filter(o => o.value)
+            .map(o => `<option value="${o.value}">${o.text}</option>`)
+            .join('');
+    }
+
+    function updateSplitTotal() {
+        const splitBar  = document.getElementById('vb-split-total-bar');
+        const splitMsg  = document.getElementById('vb-split-total-msg');
+        if (!splitBar || !splitMsg) return;
+        const extraRows = document.querySelectorAll('.vb-extra-split-row');
+        const allAmts   = document.querySelectorAll('.vb-split-amount');
+        let sum = 0;
+        allAmts.forEach(el => { sum += parseFloat(el.value) || 0; });
+
+        if (extraRows.length === 0) { splitBar.classList.add('hidden'); return; }
+        const billTotal = parseFloat(document.getElementById('id_total_amount')?.value || '0') || 0;
+        splitBar.classList.remove('hidden');
+        const diff = billTotal - sum;
+        splitBar.className = 'text-xs py-1.5 px-3 border flex items-center gap-2';
+        if (Math.abs(diff) < 0.01) {
+            splitBar.classList.add('border-green-400','bg-green-50','text-green-800');
+            splitMsg.textContent = `Split total ₹${sum.toFixed(2)} matches bill total ✓`;
+        } else if (sum > billTotal) {
+            splitBar.classList.add('border-red-400','bg-red-50','text-red-700');
+            splitMsg.textContent = `Exceeds bill total by ₹${(sum - billTotal).toFixed(2)}`;
+        } else {
+            splitBar.classList.add('border-yellow-400','bg-yellow-50','text-yellow-800');
+            splitMsg.textContent = `Remaining ₹${diff.toFixed(2)}`;
+        }
+        updatePaymentSummary();
+    }
+
+    function updatePaymentSummary() {
+        const card  = document.getElementById('vb-payment-summary-card');
+        const rows  = document.getElementById('vb-payment-summary-rows');
+        const total = document.getElementById('vb-payment-summary-total');
+        if (!card || !rows || !total) return;
+
+        const cb = document.getElementById('vb-collect-payment-checkbox');
+        if (!cb?.checked) { card.classList.add('hidden'); return; }
+        card.classList.remove('hidden');
+
+        const entries = [];
+        const pmSel   = document.getElementById('id_payment_method');
+        const pmAmt   = document.getElementById('id_payment_amount');
+        const pmLabel = pmSel?.options[pmSel?.selectedIndex]?.text || '';
+        const pmVal   = parseFloat(pmAmt?.value) || 0;
+        if (pmLabel && pmLabel !== 'Select Payment Method' && pmVal > 0)
+            entries.push({ method: pmLabel, amount: pmVal });
+
+        document.querySelectorAll('.vb-extra-split-row').forEach(r => {
+            const sel = r.querySelector('select');
+            const inp = r.querySelector('input[name="extra_payment_amount"]');
+            const m   = sel?.options[sel?.selectedIndex]?.text || '';
+            const a   = parseFloat(inp?.value) || 0;
+            if (m && a > 0) entries.push({ method: m, amount: a });
+        });
+
+        rows.innerHTML = entries.length
+            ? entries.map(e => `<div class="flex justify-between"><span class="text-gray-600">${e.method}</span><span class="font-mono text-gray-800">₹ ${e.amount.toFixed(2)}</span></div>`).join('')
+            : '<span class="text-gray-400 italic text-xs">No payment entered yet</span>';
+        total.textContent = '₹ ' + entries.reduce((s, e) => s + e.amount, 0).toFixed(2);
+    }
+
+    document.getElementById('vb-add-split-row')?.addEventListener('click', function () {
+        const splitContainer = document.getElementById('vb-split-rows-container');
+        if (!splitContainer) return;
+        const row = document.createElement('div');
+        row.className = 'vb-extra-split-row grid grid-cols-1 md:grid-cols-2 gap-3 items-end';
+        row.innerHTML = `
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    Payment Method <span class="text-red-500">*</span>
+                </label>
+                <select name="extra_payment_method"
+                        class="w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <option value="">— Select method —</option>
+                    ${getMethodOptionsHtml()}
+                </select>
+            </div>
+            <div class="flex gap-2 items-end">
+                <div class="flex-1">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Amount <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" name="extra_payment_amount" step="0.01" min="0.01"
+                           class="vb-split-amount w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+                <button type="button" class="vb-remove-split mb-0.5 text-red-500 hover:text-red-700 border border-red-300 bg-red-50 hover:bg-red-100 px-2 py-2 text-xs transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>`;
+        splitContainer.appendChild(row);
+        row.querySelector('.vb-remove-split').addEventListener('click', () => { row.remove(); updateSplitTotal(); updatePaymentSummary(); });
+        row.querySelectorAll('.vb-split-amount, select').forEach(el => el.addEventListener('input', () => { updateSplitTotal(); updatePaymentSummary(); }));
+        updateSplitTotal();
+    });
+
+    document.getElementById('id_payment_amount')?.addEventListener('input', () => { updateSplitTotal(); updatePaymentSummary(); });
+    document.getElementById('id_payment_method')?.addEventListener('change', updatePaymentSummary);
+    document.getElementById('vb-collect-payment-checkbox')?.addEventListener('change', updatePaymentSummary);
+
+    // ── Vendor quick-create ────────────────────────────────────────
+    function closeVendorQuickCreateModal() {
+        document.getElementById('quick-create-vendor-modal').classList.add('hidden');
+        document.getElementById('quick-create-vendor-modal-body').innerHTML = '';
+    }
+    window.closeVendorQuickCreateModal = closeVendorQuickCreateModal;
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeVendorQuickCreateModal();
+    });
+
+    document.body.addEventListener('vendorCreated', function (evt) {
+        const data = evt.detail;
+        if (!data?.id || !data?.name) return;
+        const $sel = $('select[name="vendor"]');
+        if ($sel.find(`option[value="${data.id}"]`).length === 0) {
+            $sel.append(new Option(data.name, data.id, true, true));
+        } else {
+            $sel.val(data.id).trigger('change');
+        }
+        $sel.trigger('change');
+        closeVendorQuickCreateModal();
+        loadVendorInfo(data.id);
+    });
+
+    // Run after ALL listeners are set — prevents any missing-element errors from
+    // blocking listener attachment above.
+    updateCalculations();
+    updatePaymentSummary();
+});
+</script>
+
+<style>
+input[type="checkbox"][name$="-DELETE"] { display: none; }
+.item-form { transition: opacity 0.2s; }
+</style>
+
+{% endblock %}

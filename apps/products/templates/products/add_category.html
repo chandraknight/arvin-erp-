@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add New Category{% endblock %}
+
+{% block content %}
+ {% include 'includes/toast.html' %}
+    <c-card_title_simple
+            title="Manage Product Categories"
+            icon="fas fa-tags text-green-700"
+            info="Create and manage your product categorization"
+    ></c-card_title_simple>
+
+    <c-section_options title="Add New Category" >
+    <c-slot name="body">
+         <c-form_simple
+        title="New Category"
+        back_link="products:inventory_management"
+      ></c-form_simple>
+    </c-slot>
+    </c-section_options>
+
+    <c-section_options title="Existing Categories" >
+    <c-slot name="body">
+          <c-table_options
+        :th_list="['Type', 'Category Name','Parent Category']"
+        :td_list="['type_name', 'name', 'parent']"
+        edit_url="products:edit_category"
+        view_url="products:edit_category"
+        delete_url="products:edit_category"
+        name="No Category Found!"
+      >
+      </c-table_options>
+    </c-slot>
+    </c-section_options>
+
+{% endblock %}

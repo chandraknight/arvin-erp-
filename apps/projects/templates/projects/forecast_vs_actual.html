@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Forecast vs Actual{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Forecast vs Actual</h1>
+            <p class="text-sm text-gray-500">{% if fiscal_year %}FY {{ fiscal_year.name }}{% endif %} — {{ forecast_type }}</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="?type=REVENUE" class="px-3 py-1.5 text-xs font-medium {% if forecast_type == 'REVENUE' %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %} transition">Revenue</a>
+            <a href="?type=EXPENSE" class="px-3 py-1.5 text-xs font-medium {% if forecast_type == 'EXPENSE' %}bg-amber-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %} transition">Expense</a>
+            <a href="?type=CASHFLOW" class="px-3 py-1.5 text-xs font-medium {% if forecast_type == 'CASHFLOW' %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %} transition">Cash Flow</a>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase">Total Forecast</p>
+            <p class="text-2xl font-bold text-gray-800">{{ total_forecast|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase">Total Actual</p>
+            <p class="text-2xl font-bold text-green-700">{{ total_actual|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase">Variance</p>
+            <p class="text-2xl font-bold {% if total_forecast > total_actual %}text-amber-600{% else %}text-green-700{% endif %}">
+                {{ total_forecast|add:total_actual|floatformat:2|intcomma }}
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-green-600 text-white text-xs uppercase">
+                <tr>
+                    <th class="px-4 py-3 text-left border border-green-700">Name</th>
+                    <th class="px-4 py-3 text-left border border-green-700">Period</th>
+                    <th class="px-4 py-3 text-left border border-green-700">Account</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Forecast</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Actual</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Variance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in forecast_data %}
+                <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50">
+                    <td class="px-4 py-2 border border-gray-200 font-medium">{{ row.forecast.name }}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-gray-500 text-xs">{{ row.month_label }}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-gray-500 text-xs">{{ row.forecast.ledger_account.name|default:"—" }}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ row.forecast.forecast_amount|floatformat:2|intcomma }}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right font-mono text-green-700">{{ row.actual|floatformat:2|intcomma }}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right font-mono {% if row.variance > 0 %}text-amber-600{% else %}text-green-700{% endif %}">
+                        {{ row.variance|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-4 py-12 text-center text-gray-400">
+                        No forecast lines found. <a href="{% url 'projects:forecast_create' %}" class="text-green-600 hover:underline">Create a forecast</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

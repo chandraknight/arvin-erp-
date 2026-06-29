@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Journal Entry List - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 landscape; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 297mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #aaa; padding: 3px 6px; font-size: 8.5pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+.lines { margin: 0; padding: 0 0 0 10px; }
+.lines li { font-size: 8pt; list-style: disc; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Journal Entry List</h1>
+  <div class="sub">Printed: {% now "Y-m-d" %}</div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Date</th><th>Reference #</th><th>Description</th>
+      <th class="tr">Total Debit</th><th class="tr">Total Credit</th><th>Entries</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for je in journal_entries %}
+    <tr>
+      <td>{{ je.date|date:"Y-m-d" }}</td>
+      <td>{{ je.reference_number|default:"-" }}</td>
+      <td>{{ je.description|default:"-"|truncatechars:60 }}</td>
+      <td class="tr">
+        {{ je.lines.filter.entry_type.DEBIT|default:"" }}
+        {% with debit=je.lines.all %}
+          {% for l in debit %}{% if l.entry_type == 'DEBIT' %}{{ l.amount|floatformat:2 }}{% endif %}{% endfor %}
+        {% endwith %}
+      </td>
+      <td class="tr">-</td>
+      <td>
+        <ul class="lines">
+          {% for l in je.lines.all|slice:":4" %}
+          <li>{{ l.entry_type }}: {{ l.account.name }} — {{ l.amount|floatformat:2 }}</li>
+          {% endfor %}
+          {% if je.lines.count > 4 %}<li>+{{ je.lines.count|add:"-4" }} more…</li>{% endif %}
+        </ul>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="tc">No journal entries found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+{% load humanize %}
+
+<!-- Food Items -->
+{% if food_items %}
+<div class="bg-white border border-orange-200 shadow-sm rounded mb-4">
+  <div class="px-4 py-2 bg-orange-50 border-b border-orange-200 flex items-center justify-between">
+    <h3 class="text-sm font-bold text-orange-800"><i class="fas fa-fire mr-1"></i>Food</h3>
+    <span class="text-xs text-orange-600">{{ food_items.count }} item{{ food_items.count|pluralize }}</span>
+  </div>
+  <table class="w-full text-sm">
+    <thead class="bg-orange-50 text-xs text-gray-500 uppercase">
+      <tr>
+        <th class="px-3 py-2 text-left">Item</th>
+        <th class="px-3 py-2 text-center">Qty</th>
+        <th class="px-3 py-2 text-right">Price</th>
+        <th class="px-3 py-2 text-center">KOT</th>
+        <th class="px-3 py-2 text-center">Status</th>
+        <th class="px-3 py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in food_items %}
+      <tr class="border-t border-gray-100 hover:bg-gray-50">
+        <td class="px-3 py-2">
+          <span class="font-medium text-gray-800">{{ item.product.name }}</span>
+          {% if item.notes %}<br><span class="text-xs text-gray-400 italic">{{ item.notes }}</span>{% endif %}
+        </td>
+        <td class="px-3 py-2 text-center">{{ item.quantity }}</td>
+        <td class="px-3 py-2 text-right">{{ item.line_total|floatformat:2 }}</td>
+        <td class="px-3 py-2 text-center">
+          {% if item.kot_printed %}
+            <span class="text-green-600"><i class="fas fa-check-circle"></i></span>
+          {% else %}
+            <span class="text-gray-300"><i class="fas fa-clock"></i></span>
+          {% endif %}
+        </td>
+        <td class="px-3 py-2 text-center">
+          <span class="px-1.5 py-0.5 text-xs rounded
+            {% if item.status == 'PENDING' %}bg-gray-100 text-gray-600
+            {% elif item.status == 'PREPARING' %}bg-orange-100 text-orange-700
+            {% elif item.status == 'READY' %}bg-blue-100 text-blue-700
+            {% elif item.status == 'SERVED' %}bg-green-100 text-green-700
+            {% else %}bg-red-100 text-red-600{% endif %}">
+            {{ item.get_status_display }}
+          </span>
+        </td>
+        <td class="px-3 py-2 text-center">
+          {% if order.status not in 'BILLED,PAID,CANCELLED' %}
+          <button hx-post="{% url 'restaurant:order_remove_item' pk=order.pk item_pk=item.pk %}"
+                  hx-target="#order-items-panel"
+                  hx-swap="innerHTML"
+                  hx-confirm="Remove {{ item.product.name }}?"
+                  class="text-red-400 hover:text-red-600 text-xs">
+            <i class="fas fa-times"></i>
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Beverage Items -->
+{% if beverage_items %}
+<div class="bg-white border border-purple-200 shadow-sm rounded mb-4">
+  <div class="px-4 py-2 bg-purple-50 border-b border-purple-200 flex items-center justify-between">
+    <h3 class="text-sm font-bold text-purple-800"><i class="fas fa-glass-martini-alt mr-1"></i>Beverages</h3>
+    <span class="text-xs text-purple-600">{{ beverage_items.count }} item{{ beverage_items.count|pluralize }}</span>
+  </div>
+  <table class="w-full text-sm">
+    <thead class="bg-purple-50 text-xs text-gray-500 uppercase">
+      <tr>
+        <th class="px-3 py-2 text-left">Item</th>
+        <th class="px-3 py-2 text-center">Qty</th>
+        <th class="px-3 py-2 text-right">Price</th>
+        <th class="px-3 py-2 text-center">BOT</th>
+        <th class="px-3 py-2 text-center">Status</th>
+        <th class="px-3 py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in beverage_items %}
+      <tr class="border-t border-gray-100 hover:bg-gray-50">
+        <td class="px-3 py-2">
+          <span class="font-medium text-gray-800">{{ item.product.name }}</span>
+          {% if item.notes %}<br><span class="text-xs text-gray-400 italic">{{ item.notes }}</span>{% endif %}
+        </td>
+        <td class="px-3 py-2 text-center">{{ item.quantity }}</td>
+        <td class="px-3 py-2 text-right">{{ item.line_total|floatformat:2 }}</td>
+        <td class="px-3 py-2 text-center">
+          {% if item.bot_printed %}
+            <span class="text-green-600"><i class="fas fa-check-circle"></i></span>
+          {% else %}
+            <span class="text-gray-300"><i class="fas fa-clock"></i></span>
+          {% endif %}
+        </td>
+        <td class="px-3 py-2 text-center">
+          <span class="px-1.5 py-0.5 text-xs rounded
+            {% if item.status == 'PENDING' %}bg-gray-100 text-gray-600
+            {% elif item.status == 'PREPARING' %}bg-purple-100 text-purple-700
+            {% elif item.status == 'READY' %}bg-blue-100 text-blue-700
+            {% elif item.status == 'SERVED' %}bg-green-100 text-green-700
+            {% else %}bg-red-100 text-red-600{% endif %}">
+            {{ item.get_status_display }}
+          </span>
+        </td>
+        <td class="px-3 py-2 text-center">
+          {% if order.status not in 'BILLED,PAID,CANCELLED' %}
+          <button hx-post="{% url 'restaurant:order_remove_item' pk=order.pk item_pk=item.pk %}"
+                  hx-target="#order-items-panel"
+                  hx-swap="innerHTML"
+                  hx-confirm="Remove {{ item.product.name }}?"
+                  class="text-red-400 hover:text-red-600 text-xs">
+            <i class="fas fa-times"></i>
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if not food_items and not beverage_items %}
+<div class="bg-white border border-gray-200 rounded p-8 text-center text-gray-400">
+  <i class="fas fa-utensils text-3xl mb-2"></i>
+  <p class="text-sm">No items yet. Add food or beverages from the form.</p>
+</div>
+{% endif %}
+
+<!-- Order Totals -->
+<div class="bg-white border border-gray-200 shadow-sm rounded p-4 mt-2">
+  <div class="space-y-1 text-sm">
+    <div class="flex justify-between text-gray-600">
+      <span>Subtotal</span><span>{{ order.subtotal|floatformat:2 }}</span>
+    </div>
+    {% if order.discount_amount %}
+    <div class="flex justify-between text-red-600">
+      <span>Discount</span><span>- {{ order.discount_amount|floatformat:2 }}</span>
+    </div>
+    {% endif %}
+    {% if order.tax_amount %}
+    <div class="flex justify-between text-gray-600">
+      <span>Tax</span><span>{{ order.tax_amount|floatformat:2 }}</span>
+    </div>
+    {% endif %}
+    <div class="flex justify-between font-bold text-gray-900 text-base border-t border-gray-200 pt-2 mt-2">
+      <span>Total</span><span>{{ order.total|floatformat:2 }}</span>
+    </div>
+  </div>
+</div>

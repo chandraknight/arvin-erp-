@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="flex gap-6 mt-2 items-start">
+
+  <!-- Form -->
+  <div class="flex-1 bg-white border border-gray-200 shadow-sm p-6">
+    <h2 class="text-xl font-extrabold text-center text-green-800 mb-5 tracking-tight">Debit Note Entry</h2>
+
+    {% include 'includes/toast.html' %}
+
+    <form method="post" novalidate class="space-y-4" id="note-form">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="bg-red-50 border border-red-200 p-3">
+          {% for error in form.non_field_errors %}<p class="text-red-700 text-sm">{{ error|striptags }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Company -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Company</label>
+        {{ form.company|add_class:"w-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-500" }}
+        {% if form.company.errors %}<p class="text-red-600 text-sm mt-1">{{ form.company.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <!-- Invoice -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Invoice <span class="text-red-400">*</span></label>
+        {{ form.invoice|add_class:"w-full border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+        {% if form.invoice.errors %}<p class="text-red-600 text-sm mt-1">{{ form.invoice.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <!-- Customer (auto-filled from invoice) -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Customer</label>
+        {{ form.customer|add_class:"w-full border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+        {% if form.customer.errors %}<p class="text-red-600 text-sm mt-1">{{ form.customer.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <!-- Amount -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Amount <span class="text-red-400">*</span></label>
+        {{ form.amount|add_class:"w-full border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+        {% if form.amount.errors %}<p class="text-red-600 text-sm mt-1">{{ form.amount.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <!-- Reason -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Reason</label>
+        {{ form.reason|add_class:"w-full border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+        {% if form.reason.errors %}<p class="text-red-600 text-sm mt-1">{{ form.reason.errors|striptags }}</p>{% endif %}
+      </div>
+
+      <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 transition duration-150">
+        Submit
+      </button>
+      <a href="{% url 'accounts:user_dashboard' %}" class="block text-sm text-gray-500 mt-2">← Back to Overview</a>
+    </form>
+  </div>
+
+  <!-- Summary Sidebar -->
+  <div class="w-72 shrink-0 bg-white border border-gray-200 shadow-sm p-5 sticky top-4">
+    <h3 class="text-sm font-bold text-green-800 uppercase tracking-wide border-b border-gray-100 pb-2 mb-4">Invoice Summary</h3>
+    <div id="summary-empty" class="text-sm text-gray-400 italic">Select an invoice to see details</div>
+    <div id="summary-content" class="hidden space-y-2 text-sm">
+      <div class="flex justify-between">
+        <span class="text-gray-500">Invoice #</span>
+        <span id="s-number" class="font-medium text-gray-800"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-500">Customer</span>
+        <span id="s-customer" class="font-medium text-gray-800"></span>
+      </div>
+      <div class="border-t border-gray-100 pt-2 mt-2 space-y-1">
+        <div class="flex justify-between">
+          <span class="text-gray-500">Subtotal</span>
+          <span id="s-subtotal"></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Discount</span>
+          <span id="s-discount" class="text-red-500"></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Tax</span>
+          <span id="s-tax"></span>
+        </div>
+        <div class="flex justify-between font-semibold border-t border-gray-200 pt-1 mt-1">
+          <span>Total</span>
+          <span id="s-total"></span>
+        </div>
+        <div class="flex justify-between text-orange-600 font-medium">
+          <span>Outstanding</span>
+          <span id="s-outstanding"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  const invoiceSelect = document.getElementById('{{ form.invoice.id_for_label }}');
+  const customerSelect = document.getElementById('{{ form.customer.id_for_label }}');
+  const summaryEmpty = document.getElementById('summary-empty');
+  const summaryContent = document.getElementById('summary-content');
+
+  function fmt(val) { return '₹ ' + parseFloat(val).toFixed(2); }
+
+  function loadSummary(invoiceId) {
+    if (!invoiceId) {
+      summaryEmpty.classList.remove('hidden');
+      summaryContent.classList.add('hidden');
+      return;
+    }
+    fetch('{% url "billing:invoice_summary_api" pk="00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', invoiceId))
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('s-number').textContent = data.invoice_number;
+        document.getElementById('s-customer').textContent = data.customer_name;
+        document.getElementById('s-subtotal').textContent = fmt(data.subtotal);
+        document.getElementById('s-discount').textContent = '- ' + fmt(data.discount);
+        document.getElementById('s-tax').textContent = fmt(data.tax);
+        document.getElementById('s-total').textContent = fmt(data.total);
+        document.getElementById('s-outstanding').textContent = fmt(data.outstanding);
+        summaryEmpty.classList.add('hidden');
+        summaryContent.classList.remove('hidden');
+        if (data.customer_id && customerSelect) {
+          customerSelect.value = data.customer_id;
+          if (window.$ && $(customerSelect).data('select2')) {
+            $(customerSelect).trigger('change');
+          }
+        }
+      });
+  }
+
+  if (invoiceSelect) {
+    invoiceSelect.addEventListener('change', function() { loadSummary(this.value); });
+    if (invoiceSelect.value) loadSummary(invoiceSelect.value);
+  }
+})();
+</script>
+{% endblock %}

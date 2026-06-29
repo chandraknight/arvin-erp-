@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Fiscal Years{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<c-card_title_button
+    title="Fiscal Years"
+    descriptions="Manage and close fiscal years for your company"
+    info="Manage fiscal years"
+    create_link="company:fiscalyear_create"
+    button_name="New Fiscal Year">
+</c-card_title_button>
+
+<!-- Info banner -->
+<div class="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
+    <i class="fas fa-lock mt-0.5 flex-shrink-0 text-amber-500"></i>
+    <span>
+        <strong>Closed fiscal years are read-only.</strong>
+        Once closed, no invoices, payments, or journal entries can be created or edited for that period.
+        A year-end closing journal entry is automatically created on close.
+    </span>
+</div>
+
+<c-section_options title="Fiscal Year List">
+    <c-slot name="body">
+
+        <!-- Mobile card view -->
+        <div class="block md:hidden space-y-4">
+            {% for fy in object_list %}
+            <div class="bg-white rounded-lg shadow p-4 border border-gray-200 {% if fy.is_closed %}opacity-75{% endif %}">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-gray-800">{{ fy.name }}</span>
+                        {% if fy.is_closed %}<i class="fas fa-lock text-gray-400 text-xs" title="Closed"></i>{% endif %}
+                    </div>
+                    {% if fy.is_closed %}
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"><i class="fas fa-lock mr-1"></i>Closed</span>
+                    {% elif fy.is_active %}
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700"><i class="fas fa-circle mr-1"></i>Active</span>
+                    {% else %}
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Inactive</span>
+                    {% endif %}
+                </div>
+                <div class="text-sm space-y-1">
+                    {% if user.is_superuser %}<div class="flex justify-between"><span class="text-gray-500">Company:</span><span>{{ fy.company_name }}</span></div>{% endif %}
+                    <div class="flex justify-between"><span class="text-gray-500">Period (BS):</span><span class="font-medium">{{ fy.bs_date }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Period (AD):</span><span>{{ fy.ad_date }}</span></div>
+                    {% if fy.is_closed and fy.closed_at %}
+                    <div class="flex justify-between"><span class="text-gray-500">Closed on:</span><span>{{ fy.closed_at|date:"d M Y" }}</span></div>
+                    {% endif %}
+                </div>
+                {% if not fy.is_closed %}
+                <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                    <a href="{% url 'company:select_fiscal_year' fy.id %}"
+                       class="flex-1 text-center px-3 py-1.5 text-xs font-medium rounded transition
+                           {% if fy.is_active %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700{% endif %}">
+                        <i class="fas fa-check-circle mr-1"></i>{% if fy.is_active %}Active{% else %}Select{% endif %}
+                    </a>
+                    <a href="{% url 'company:fiscalyear_close' fy.pk %}"
+                       class="flex-1 text-center px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 rounded hover:bg-red-100 transition">
+                        <i class="fas fa-lock mr-1"></i>Close Year
+                    </a>
+                </div>
+                {% else %}
+                <p class="text-xs text-gray-400 italic mt-3 pt-3 border-t border-gray-100 text-center">Read-only</p>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="text-center py-10 text-gray-400">
+                <i class="fas fa-calendar-times text-4xl mb-3 block"></i>
+                <p class="text-sm">No fiscal years found.</p>
+                <a href="{% url 'company:fiscalyear_create' %}" class="mt-3 inline-flex items-center gap-1 px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-plus"></i> Create First Fiscal Year
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Desktop table view -->
+        <div class="hidden md:block rounded-lg border border-gray-300 shadow overflow-x-auto">
+            <table class="min-w-full text-sm text-left text-gray-800">
+                <thead class="bg-green-600 text-white text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 border border-green-500">#</th>
+                        <th class="px-4 py-3 border border-green-500">Name</th>
+                        {% if user.is_superuser %}<th class="px-4 py-3 border border-green-500">Company</th>{% endif %}
+                        <th class="px-4 py-3 border border-green-500">Period (BS)</th>
+                        <th class="px-4 py-3 border border-green-500">Period (AD)</th>
+                        <th class="px-4 py-3 border border-green-500 text-center">Status</th>
+                        <th class="px-4 py-3 border border-green-500 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fy in object_list %}
+                    <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50 transition-colors {% if fy.is_closed %}opacity-80{% endif %}">
+                        <td class="px-4 py-3 border border-gray-200 text-gray-500">{{ forloop.counter }}</td>
+                        <td class="px-4 py-3 border border-gray-200">
+                            <span class="font-semibold text-gray-800">{{ fy.name }}</span>
+                            {% if fy.is_closed %}<i class="fas fa-lock text-gray-400 ml-1 text-xs" title="Closed — read-only"></i>{% endif %}
+                        </td>
+                        {% if user.is_superuser %}
+                        <td class="px-4 py-3 border border-gray-200 text-gray-600">{{ fy.company_name }}</td>
+                        {% endif %}
+                        <td class="px-4 py-3 border border-gray-200 text-gray-700 font-medium">{{ fy.bs_date }}</td>
+                        <td class="px-4 py-3 border border-gray-200 text-gray-500">{{ fy.ad_date }}</td>
+                        <td class="px-4 py-3 border border-gray-200 text-center">
+                            {% if fy.is_closed %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                <i class="fas fa-lock text-xs"></i> Closed
+                            </span>
+                            {% if fy.closed_at %}
+                            <div class="text-xs text-gray-400 mt-0.5">{{ fy.closed_at|date:"d M Y" }}</div>
+                            {% endif %}
+                            {% elif fy.is_active %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                <i class="fas fa-circle text-xs"></i> Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                                Inactive
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 border border-gray-200 text-center">
+                            {% if not fy.is_closed %}
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'company:select_fiscal_year' fy.id %}"
+                                   class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded transition
+                                       {% if fy.is_active %}bg-green-100 text-green-700 cursor-default{% else %}bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700{% endif %}"
+                                   title="{% if fy.is_active %}Currently active{% else %}Set as active fiscal year{% endif %}">
+                                    <i class="fas fa-check-circle"></i>
+                                    {% if fy.is_active %}Active{% else %}Select{% endif %}
+                                </a>
+                                <a href="{% url 'company:fiscalyear_close' fy.pk %}"
+                                   class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-red-50 text-red-700 rounded hover:bg-red-100 transition"
+                                   title="Review and close this fiscal year">
+                                    <i class="fas fa-lock"></i> Close Year
+                                </a>
+                            </div>
+                            {% else %}
+                            <span class="text-xs text-gray-400 italic">Read-only</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if user.is_superuser %}7{% else %}6{% endif %}"
+                            class="px-4 py-10 text-center text-gray-400">
+                            <i class="fas fa-calendar-times text-3xl mb-2 block"></i>
+                            No fiscal years found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </c-slot>
+</c-section_options>
+
+{% endblock %}

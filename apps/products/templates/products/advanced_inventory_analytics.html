@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Advanced Inventory Analytics{% endblock %}
+
+{% block content %}
+    <c-card_title_simple
+        title="Inventory Analytic Dashboard"
+        icon="fas fa-tags text-green-700"
+        info="Comprehensive Inventory Insights, Inventory Health Overview"
+    ></c-card_title_simple>
+
+    <c-card_4stats
+        name_1="Total Products"
+        name_2="High Risk"
+        name_3="Medium Risk"
+        name_4="Low Risk"
+        value_1="{{ inventory_health_metrics.total_products }}"
+        value_2="{{ inventory_health_metrics.high_risk_products }}"
+        value_3="{{ inventory_health_metrics.medium_risk_products }}"
+        value_4="{{ inventory_health_metrics.low_risk_products }}"
+        icon_1="fas fa-box"
+        icon_2="fas fa-tag"
+        icon_3="fas fa-folder text-yellow-600"
+        icon_4="fas fa-exclamation-triangle text-red-600"
+        class="mb-6"
+    >
+    </c-card_4stats>
+
+    <c-section_options title="Inventory Health Chart" class="mb-6">
+        <c-slot name="body">
+            <div class="max-w-xs mx-auto w-full sm:h-72 h-60">
+                <canvas id="inventoryHealthChart" class="w-full h-full"></canvas>
+            </div>
+        </c-slot>
+    </c-section_options>
+
+    <c-section_options title="Stock Turnover Analysis" class="mb-6">
+        <c-slot name="body">
+            <div class="overflow-x-auto">
+                <table class="table-auto w-full border-collapse border border-gray-300 text-sm sm:text-base">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[120px]">Product</th>
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[100px]">Avg Daily Usage</th>
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[100px]">Current Stock</th>
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[100px]">Days of Stock</th>
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[120px]">Stockout Risk</th>
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[120px]">Usage Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in stock_turnover_data %}
+                            <tr class="hover:bg-blue-50">
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 whitespace-nowrap">{{ item.product.name }}</td>
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 whitespace-nowrap">{{ item.avg_daily_usage }}</td>
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 whitespace-nowrap">{{ item.current_stock }}</td>
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 whitespace-nowrap">{{ item.days_of_stock }}</td>
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2">
+                                    <span class="inline-block px-2 sm:px-3 py-0.5 rounded-full font-semibold text-xs sm:text-sm
+                                        {% if item.stockout_risk|lower == 'high' %} bg-red-500 text-white
+                                        {% elif item.stockout_risk|lower == 'medium' %} bg-yellow-400 text-gray-800
+                                        {% else %} bg-green-500 text-white
+                                        {% endif %}">
+                                        {{ item.stockout_risk }}
+                                    </span>
+                                </td>
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 whitespace-nowrap">{{ item.usage_trend }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-gray-500 px-4 py-6">No data available</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </c-slot>
+    </c-section_options>
+
+    <c-section_options title="30-Day Inventory Forecast" class="mb-6">
+        <c-slot name="body">
+            <div class="hidden md:block rounded-lg border border-gray-300 shadow overflow-x-auto">
+                <table class="min-w-full text-sm text-left text-gray-800">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[120px]">Product</th>
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[140px]">30-Day Forecast</th>
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[140px]">Historical Average</th>
+                            <th class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 text-left font-semibold min-w-[160px]">Historical Std Deviation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for forecast in forecast_data %}
+                            <tr class="hover:bg-blue-50">
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 whitespace-nowrap">{{ forecast.product.name }}</td>
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 whitespace-nowrap">{{ forecast.forecast_30_days }}</td>
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 whitespace-nowrap">{{ forecast.historical_avg }}</td>
+                                <td class="border border-gray-300 px-2 sm:px-4 py-1 sm:py-2 whitespace-nowrap">{{ forecast.historical_std }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-gray-500 px-4 py-6">No forecast data available</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </c-slot>
+    </c-section_options>
+
+    <c-section_options title="Reports" class="mb-6">
+        <c-slot name="body">
+            <div class="flex flex-wrap justify-between gap-4 text-sm font-semibold text-gray-700">
+                <div><span class="font-bold">Total Products:</span> {{ processing_stats.total_products }}</div>
+                <div><span class="font-bold">Processed Products:</span> {{ processing_stats.processed_products }}</div>
+                <div>
+                    <span class="font-bold">Error Products:</span>
+                    <span class="{% if processing_stats.error_products > 0 %}text-red-600{% else %}text-green-600{% endif %}">{{ processing_stats.error_products }}</span>
+                </div>
+                <div><span class="font-bold">Processing Duration:</span> {{ processing_stats.processing_duration }} seconds</div>
+            </div>
+        </c-slot>
+    </c-section_options>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('inventoryHealthChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+            datasets: [{
+                data: [
+                    {{ inventory_health_metrics.high_risk_products }},
+                    {{ inventory_health_metrics.medium_risk_products }},
+                    {{ inventory_health_metrics.low_risk_products }}
+                ],
+                backgroundColor: [
+                    'rgba(220, 38, 38, 0.8)',  // Tailwind red-600
+                    'rgba(202, 138, 4, 0.8)',  // Tailwind yellow-700
+                    'rgba(34, 197, 94, 0.8)'   // Tailwind green-500
+                ],
+                borderWidth: 1,
+                borderColor: '#fff',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { padding: 15, font: { size: 14 } }
+                },
+                title: {
+                    display: true,
+                    text: 'Inventory Risk Distribution',
+                    font: { size: 18, weight: '600' }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

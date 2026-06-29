@@ -1,0 +1,85 @@
+{% load humanize %}
+{# HTMX partial — swapped into #attendance-list-container #}
+<div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+        <thead class="bg-green-600 text-white text-xs uppercase">
+            <tr>
+                <th class="px-4 py-3 text-left border border-green-700">Employee</th>
+                <th class="px-4 py-3 text-left border border-green-700">Date</th>
+                <th class="px-4 py-3 text-center border border-green-700">Status</th>
+                <th class="px-4 py-3 text-left border border-green-700">Check In</th>
+                <th class="px-4 py-3 text-left border border-green-700">Check Out</th>
+                <th class="px-4 py-3 text-center border border-green-700">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rec in attendance_records %}
+            <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50 transition-colors">
+                <td class="px-4 py-2 border border-gray-200 font-semibold text-gray-800">
+                    {{ rec.employee.first_name }} {{ rec.employee.last_name }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-600 whitespace-nowrap">
+                    {{ rec.date|date:"Y-m-d" }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-center">
+                    <span class="px-2 py-0.5 text-xs font-semibold
+                        {% if rec.status == 'Present' %}bg-green-100 text-green-800
+                        {% elif rec.status == 'Absent' %}bg-red-100 text-red-800
+                        {% elif rec.status == 'Leave' %}bg-blue-100 text-blue-800
+                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {{ rec.status }}
+                    </span>
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-600 text-xs">
+                    {{ rec.check_in_time|date:"H:i"|default:"—" }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-600 text-xs">
+                    {{ rec.check_out_time|date:"H:i"|default:"—" }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-center">
+                    <div class="flex items-center justify-center gap-3">
+                        <a href="{% url 'hrpayroll:attendance_update' rec.pk %}"
+                           class="text-amber-600 hover:text-amber-800 transition" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button type="button"
+                                hx-post="{% url 'hrpayroll:attendance_delete' rec.pk %}"
+                                hx-target="closest tr"
+                                hx-swap="outerHTML swap:300ms"
+                                hx-confirm="Delete this attendance record? This cannot be undone."
+                                class="text-red-500 hover:text-red-700 transition" title="Delete">
+                            <i class="fas fa-trash-alt htmx-hide-on-request"></i>
+                            <i class="fas fa-spinner fa-spin text-xs" style="display:none" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="px-4 py-12 text-center text-gray-400">
+                    <i class="fas fa-user-clock text-3xl mb-2 block"></i>
+                    {% if q %}No records match "{{ q }}".{% else %}No attendance records found.{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-between px-1">
+    <p class="text-sm text-gray-500">{{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</p>
+    <nav class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+            <a hx-get="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status }}"
+               hx-target="#attendance-list-container" hx-swap="innerHTML" hx-push-url="true"
+               class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">‹ Prev</a>
+        {% endif %}
+        <span class="px-3 py-1 text-sm bg-green-600 text-white font-bold">{{ page_obj.number }}</span>
+        {% if page_obj.has_next %}
+            <a hx-get="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status }}"
+               hx-target="#attendance-list-container" hx-swap="innerHTML" hx-push-url="true"
+               class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">Next ›</a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load global_filter %}
+
+{% block title %}Printer Stations{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-print text-green-600 mr-2"></i>Printer Stations</h1>
+  {% if user|group_has_perm:'restaurant.add_printerstation' %}
+  <a href="{% url 'restaurant:printer_create' %}"
+     class="px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold shadow transition">
+    <i class="fas fa-plus mr-1"></i>Add Printer
+  </a>
+  {% endif %}
+</div>
+
+<div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+  {% if printers %}
+  <table class="w-full text-sm">
+    <thead class="bg-green-700 text-white text-xs uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">Name</th>
+        <th class="px-4 py-3 text-left">Type</th>
+        <th class="px-4 py-3 text-left">IP Address</th>
+        <th class="px-4 py-3 text-center">Port</th>
+        <th class="px-4 py-3 text-center">Default</th>
+        <th class="px-4 py-3 text-center">Active</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for printer in printers %}
+      <tr class="border-t border-gray-100 hover:bg-gray-50">
+        <td class="px-4 py-3 font-medium text-gray-800">{{ printer.name }}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-0.5 text-xs rounded font-semibold
+            {% if printer.printer_type == 'KOT' %}bg-orange-100 text-orange-800
+            {% elif printer.printer_type == 'BOT' %}bg-purple-100 text-purple-800
+            {% else %}bg-green-100 text-green-800{% endif %}">
+            {{ printer.get_printer_type_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-gray-600 font-mono text-xs">{{ printer.ip_address|default:"—" }}</td>
+        <td class="px-4 py-3 text-center text-gray-600">{{ printer.port }}</td>
+        <td class="px-4 py-3 text-center">
+          {% if printer.is_default %}<i class="fas fa-star text-yellow-500"></i>{% else %}<span class="text-gray-300">—</span>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-center">
+          {% if printer.is_active %}<i class="fas fa-check-circle text-green-600"></i>{% else %}<i class="fas fa-times-circle text-red-400"></i>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-center">
+          {% if user|group_has_perm:'restaurant.change_printerstation' %}
+          <a href="{% url 'restaurant:printer_update' pk=printer.pk %}"
+             class="text-green-700 hover:text-green-900 text-xs font-medium">Edit</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="text-center py-12 text-gray-400">
+    <i class="fas fa-print text-4xl mb-3"></i>
+    <p class="text-sm">No printers configured yet.</p>
+    <p class="text-xs mt-1">Add a KOT printer for the kitchen, a BOT printer for the bar, and a Bill printer for receipts.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="mt-6 bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
+  <p class="font-semibold mb-1"><i class="fas fa-info-circle mr-1"></i>How printing works</p>
+  <p>When you send a KOT, BOT, or Bill, a print job is queued in the database.
+     A local print agent running on your network polls <code class="bg-blue-100 px-1 rounded text-xs">{% url 'restaurant:print_jobs_api' %}</code>
+     and sends the job to the configured printer's IP address over TCP port 9100 (ESC/POS).</p>
+</div>
+{% endblock %}

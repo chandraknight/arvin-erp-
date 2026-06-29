@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vendor Details{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2 py-6">
+    <div class="w-full">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">{{ vendor.name }}</h2>
+                <div class="flex space-x-3">
+                    <a href="{% url 'vendors:vendor_update' vendor.pk %}"
+                       class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-200">
+                        Edit Vendor
+                    </a>
+                    <a href="{% url 'vendors:vendor_delete' vendor.pk %}"
+                       class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition duration-200">
+                        Delete Vendor
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Contact Information -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Vendor Name</p>
+                            <p class="text-sm text-gray-900">{{ vendor.name }}</p>
+                        </div>
+                        {% if vendor.contact_person %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Contact Person</p>
+                            <p class="text-sm text-gray-900">{{ vendor.contact_person }}</p>
+                        </div>
+                        {% endif %}
+                        {% if vendor.email %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Email</p>
+                            <p class="text-sm text-gray-900">{{ vendor.email }}</p>
+                        </div>
+                        {% endif %}
+                        {% if vendor.phone %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Phone</p>
+                            <p class="text-sm text-gray-900">{{ vendor.phone }}</p>
+                        </div>
+                        {% endif %}
+                        {% if vendor.address %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Address</p>
+                            <p class="text-sm text-gray-900">{{ vendor.address }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Account Information -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+                    <div class="space-y-3">
+                        {% if vendor.related_ledger_account %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Ledger Account</p>
+                            <p class="text-sm text-gray-900">{{ vendor.related_ledger_account.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Account Code</p>
+                            <p class="text-sm text-gray-900">{{ vendor.related_ledger_account.code }}</p>
+                        </div>
+                        {% endif %}
+                        {% if opening_balance %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Opening Balance</p>
+                            <p class="text-sm text-gray-900">{{ opening_balance.opening_type }}: {{ opening_balance.amount }}</p>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Created On</p>
+                            <p class="text-sm text-gray-900">{{ vendor.created_at|date:"F d, Y" }}</p>
+                        </div>
+                        {% if vendor.updated_at %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Last Updated</p>
+                            <p class="text-sm text-gray-900">{{ vendor.updated_at|date:"F d, Y" }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-start">
+                <a href="{% url 'vendors:vendor_dashboard' %}"
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded transition duration-200">
+                    ← Back to Vendors
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

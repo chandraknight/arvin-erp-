@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}
+    {% if form.instance.pk %}Edit Company{% else %}Create Company{% endif %}
+{% endblock %}
+
+{% block content %}
+    <c-form_simple 
+        title="{% if form.instance.pk %}Edit Company{% else %}Company Entry Form{% endif %}"
+        back_link="company:company_list"
+        hx-post="{{ request.path }}"
+        hx-target="#company-form-card"
+        hx-swap="outerHTML"
+        element_id="company-form-card">
+    </c-form_simple>
+{% endblock content %}
+
+
+

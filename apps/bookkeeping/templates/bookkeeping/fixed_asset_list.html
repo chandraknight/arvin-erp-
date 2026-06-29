@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+{% block title %}Fixed Assets{% endblock %}
+{% block content %}
+<div class="w-full mt-2">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Fixed Asset Register</h1>
+    <a href="{% url 'bookkeeping:fixed_asset_create' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">+ Add Asset</a>
+  </div>
+
+  {% if assets %}
+  <div class="overflow-x-auto bg-white rounded shadow">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="text-left px-4 py-2">Asset</th>
+          <th class="text-left px-4 py-2">Category</th>
+          <th class="text-left px-4 py-2">Method</th>
+          <th class="text-right px-4 py-2">Cost</th>
+          <th class="text-right px-4 py-2">Accum. Dep.</th>
+          <th class="text-right px-4 py-2">NBV</th>
+          <th class="text-left px-4 py-2">Status</th>
+          <th class="px-4 py-2"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asset in assets %}
+        <tr class="border-t hover:bg-gray-50">
+          <td class="px-4 py-2 font-medium">{{ asset.name }}</td>
+          <td class="px-4 py-2 text-gray-500">{{ asset.category|default:"—" }}</td>
+          <td class="px-4 py-2">{{ asset.get_depreciation_method_display }}</td>
+          <td class="text-right px-4 py-2">{{ asset.cost|floatformat:2|intcomma }}</td>
+          <td class="text-right px-4 py-2 text-orange-600">{{ asset.accumulated_depreciation|floatformat:2|intcomma }}</td>
+          <td class="text-right px-4 py-2 font-semibold text-green-700">{{ asset.net_book_value|floatformat:2|intcomma }}</td>
+          <td class="px-4 py-2">
+            <span class="text-xs px-2 py-0.5 rounded {% if asset.status == 'ACTIVE' %}bg-green-100 text-green-800{% elif asset.status == 'DISPOSED' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+              {{ asset.status }}
+            </span>
+          </td>
+          <td class="px-4 py-2">
+            <a href="{% url 'bookkeeping:fixed_asset_detail' asset.pk %}" class="text-blue-600 hover:underline text-xs">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-16 text-gray-400">
+    <p>No fixed assets recorded. <a href="{% url 'bookkeeping:fixed_asset_create' %}" class="text-blue-600 hover:underline">Add the first one.</a></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

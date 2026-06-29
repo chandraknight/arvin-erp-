@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load global_filter %}
+
+{% block title %}Companies{% endblock %}
+
+{% block content %}
+    {% if user|group_has_perm:"company.add_company" %}
+        <c-card_title_button
+                title="Company Management"
+                descriptions="Manage company efficiently with full control"
+                info="Manage company efficiently with full control!"
+                create_link="company:company_create"
+                button_name="Create New Company">
+        </c-card_title_button>
+    {% else %}
+          <c-card_title
+                title="Company Management"
+                descriptions="Manage company efficiently with full control"
+                info="Manage company efficiently with full control!">
+        </c-card_title>
+    {% endif %}
+
+    <c-table_options
+            :th_list="['Name', 'Email', 'Phone']"
+            :td_list="['name', 'email', 'phone']"
+            edit_url="company:company_update"
+            view_url="company:company_detail"
+            delete_url="company:company_delete"
+            empty_message="No Existing Company Found!"
+    >
+    </c-table_options>
+
+{% endblock content %} 

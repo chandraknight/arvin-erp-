@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block title %}Media Manager{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div>
+      <h1 class="text-xl font-bold text-gray-900">Media Manager</h1>
+      <p class="text-sm text-gray-500">
+        {{ items|length }} file(s) · {{ total_size|filesizeformat }}
+        {% if unoptimized_count %}· <span class="text-amber-600">{{ unoptimized_count }} not optimized</span>{% endif %}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      {% if unoptimized_count %}
+      <form method="post" action="{% url 'ecom:media_optimize' %}">
+        {% csrf_token %}
+        <input type="hidden" name="kind" value="{{ active_kind|default:'' }}">
+        <input type="hidden" name="q" value="{{ q }}">
+        <button class="bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700">
+          <i class="fas fa-bolt mr-1"></i> Optimize All
+        </button>
+      </form>
+      {% endif %}
+      <button onclick="document.getElementById('upload-panel').classList.toggle('hidden')"
+              class="bg-indigo-600 text-white px-4 py-2 text-sm font-medium hover:bg-indigo-700">
+        <i class="fas fa-cloud-upload-alt mr-1"></i> Upload
+      </button>
+      <a href="{% url 'ecom:admin_dashboard' %}" class="text-sm text-gray-500 ml-1"><i class="fas fa-arrow-left mr-1"></i>Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+  <div class="mb-4 space-y-2">
+    {% for message in messages %}
+    <div class="px-4 py-2 text-sm {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Upload Panel (hidden by default) -->
+  <div id="upload-panel" class="hidden mb-5 bg-indigo-50 border border-indigo-200 p-5">
+    <h2 class="font-semibold text-indigo-700 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+      <i class="fas fa-cloud-upload-alt"></i> Upload New Image
+    </h2>
+    <form method="post" action="{% url 'ecom:media_upload' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">File <span class="text-red-500">*</span></label>
+          <input type="file" name="file" accept="image/*" required
+                 class="block w-full text-sm text-gray-600 border border-gray-300 px-2 py-1.5 bg-white cursor-pointer file:mr-3 file:py-1 file:px-3 file:border-0 file:text-sm file:bg-indigo-600 file:text-white file:cursor-pointer">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Label</label>
+          <input type="text" name="label" placeholder="e.g. Banner Hero Summer"
+                 class="w-full border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Folder</label>
+          <input type="text" name="folder" list="folder-suggestions" value="{{ active_folder|default:'general' }}"
+                 placeholder="general"
+                 class="w-full border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+          <datalist id="folder-suggestions">
+            <option value="general">
+            {% for f in folders %}<option value="{{ f }}">{% endfor %}
+          </datalist>
+        </div>
+      </div>
+      <!-- Drag-drop zone -->
+      <div id="drop-zone"
+           class="border-2 border-dashed border-indigo-300 rounded p-8 text-center text-sm text-indigo-400 mb-4 cursor-pointer hover:bg-indigo-100 transition"
+           ondragover="event.preventDefault();this.classList.add('bg-indigo-100')"
+           ondragleave="this.classList.remove('bg-indigo-100')"
+           ondrop="handleDrop(event)">
+        <i class="fas fa-image text-3xl mb-2 block"></i>
+        Drag &amp; drop an image here, or click <strong>Choose File</strong> above
+      </div>
+      <div id="drop-preview" class="hidden mb-4">
+        <img id="drop-img" class="h-24 object-contain border border-indigo-200 p-1">
+        <p id="drop-name" class="text-xs text-gray-500 mt-1"></p>
+      </div>
+      <button type="submit" class="bg-indigo-600 text-white px-5 py-2 text-sm font-medium hover:bg-indigo-700">
+        <i class="fas fa-upload mr-1"></i> Upload &amp; Optimize
+      </button>
+    </form>
+  </div>
+
+  <div class="flex gap-5">
+    <!-- Folder Sidebar -->
+    <div class="w-44 shrink-0">
+      <div class="bg-white border border-gray-200 mb-3">
+        <div class="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Folders</span>
+          <button onclick="document.getElementById('new-folder-form').classList.toggle('hidden')"
+                  class="text-indigo-600 text-xs hover:underline" title="New folder">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+        <!-- New folder form -->
+        <div id="new-folder-form" class="hidden border-b border-gray-100 p-2">
+          <form method="post" action="{% url 'ecom:media_folder_create' %}">
+            {% csrf_token %}
+            <input type="text" name="name" placeholder="Folder name" required
+                   class="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 mb-1">
+            <button class="w-full bg-indigo-600 text-white text-xs py-1">Create</button>
+          </form>
+        </div>
+        <ul class="divide-y divide-gray-50 text-sm">
+          <li>
+            <a href="{% url 'ecom:media_library' %}?kind=upload"
+               class="block px-3 py-2 hover:bg-gray-50 {% if active_kind == 'upload' and not active_folder %}font-semibold text-indigo-700{% else %}text-gray-600{% endif %}">
+              <i class="fas fa-folder mr-1 text-gray-400"></i> All Uploads
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'ecom:media_library' %}?kind=upload&folder=general"
+               class="block px-3 py-2 hover:bg-gray-50 {% if active_folder == 'general' %}font-semibold text-indigo-700{% else %}text-gray-600{% endif %}">
+              <i class="fas fa-folder-open mr-1 text-yellow-500"></i> General
+            </a>
+          </li>
+          {% for folder in folders %}
+          {% if folder != 'general' %}
+          <li class="flex items-center justify-between group">
+            <a href="{% url 'ecom:media_library' %}?kind=upload&folder={{ folder }}"
+               class="flex-1 block px-3 py-2 hover:bg-gray-50 truncate {% if active_folder == folder %}font-semibold text-indigo-700{% else %}text-gray-600{% endif %}">
+              <i class="fas fa-folder mr-1 text-yellow-400"></i> {{ folder }}
+            </a>
+            <form method="post" action="{% url 'ecom:media_folder_delete' %}"
+                  onsubmit="return confirm('Delete folder &quot;{{ folder }}&quot;? Files move to General.')">
+              {% csrf_token %}
+              <input type="hidden" name="name" value="{{ folder }}">
+              <button class="hidden group-hover:block text-red-400 hover:text-red-600 text-xs px-2 py-2">
+                <i class="fas fa-trash"></i>
+              </button>
+            </form>
+          </li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Kind filters -->
+      <div class="bg-white border border-gray-200">
+        <div class="px-3 py-2 border-b border-gray-100">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Filter by Type</span>
+        </div>
+        <ul class="divide-y divide-gray-50 text-sm">
+          <li>
+            <a href="{% url 'ecom:media_library' %}{% if q %}?q={{ q }}{% endif %}"
+               class="block px-3 py-2 hover:bg-gray-50 {% if not active_kind %}font-semibold text-indigo-700{% else %}text-gray-600{% endif %}">
+              All
+            </a>
+          </li>
+          {% for value, label in kinds %}
+          <li>
+            <a href="{% url 'ecom:media_library' %}?kind={{ value }}{% if q %}&q={{ q }}{% endif %}"
+               class="block px-3 py-2 hover:bg-gray-50 {% if active_kind == value %}font-semibold text-indigo-700{% else %}text-gray-600{% endif %}">
+              {{ label }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-1 min-w-0">
+      <!-- Search bar -->
+      <div class="flex items-center gap-2 mb-4">
+        <form method="get" class="flex items-center gap-2 flex-1">
+          {% if active_kind %}<input type="hidden" name="kind" value="{{ active_kind }}">{% endif %}
+          {% if active_folder %}<input type="hidden" name="folder" value="{{ active_folder }}">{% endif %}
+          <input type="text" name="q" value="{{ q }}" placeholder="Search by name…"
+                 class="border border-gray-200 px-3 py-1.5 text-sm w-56 focus:outline-none focus:border-gray-400 flex-1">
+          <button class="bg-gray-100 border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200">
+            <i class="fas fa-search"></i>
+          </button>
+          {% if q %}
+          <a href="{% url 'ecom:media_library' %}{% if active_kind %}?kind={{ active_kind }}{% endif %}"
+             class="text-sm text-gray-400 hover:text-gray-600">Clear</a>
+          {% endif %}
+        </form>
+      </div>
+
+      {% if items %}
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {% for item in items %}
+        <div class="bg-white border border-gray-200 flex flex-col group">
+          <div class="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden relative">
+            <img src="{{ item.url }}" alt="{{ item.label }}" loading="lazy" class="w-full h-full object-cover">
+            {% if item.kind == 'upload' and item.folder %}
+            <span class="absolute top-1 left-1 bg-black bg-opacity-50 text-white text-[9px] px-1.5 py-0.5 rounded">{{ item.folder }}</span>
+            {% endif %}
+          </div>
+          <div class="p-2.5 flex-1 flex flex-col">
+            <p class="text-xs font-medium text-gray-800 truncate" title="{{ item.label }}">{{ item.label }}</p>
+            <p class="text-[11px] text-gray-400 truncate" title="{{ item.name }}">{{ item.name }}</p>
+            <div class="flex items-center gap-1.5 mt-1.5">
+              <span class="text-[10px] uppercase px-1.5 py-0.5 bg-gray-100 text-gray-500">{{ item.kind }}</span>
+              <span class="text-[11px] text-gray-400">{{ item.size|filesizeformat }}</span>
+              {% if item.is_webp %}
+              <span class="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 ml-auto">WEBP</span>
+              {% endif %}
+            </div>
+            <div class="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100 flex-wrap">
+              {% if not item.is_webp %}
+              <form method="post" action="{% url 'ecom:media_optimize' %}">
+                {% csrf_token %}
+                <input type="hidden" name="key" value="{{ item.key }}">
+                <input type="hidden" name="kind" value="{{ active_kind|default:'' }}">
+                <input type="hidden" name="q" value="{{ q }}">
+                <button class="text-[11px] text-emerald-600 hover:underline"><i class="fas fa-bolt"></i> Optimize</button>
+              </form>
+              {% endif %}
+              <form method="post" action="{% url 'ecom:media_replace' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="key" value="{{ item.key }}">
+                <input type="hidden" name="kind" value="{{ active_kind|default:'' }}">
+                <input type="hidden" name="q" value="{{ q }}">
+                <label class="text-[11px] text-indigo-600 hover:underline cursor-pointer">
+                  <i class="fas fa-upload"></i> Replace
+                  <input type="file" name="file" accept="image/*" class="hidden" onchange="this.form.submit()">
+                </label>
+              </form>
+              {% if item.can_delete %}
+              <form method="post" action="{% url 'ecom:media_delete' %}" class="ml-auto"
+                    onsubmit="return confirm('Remove this image?')">
+                {% csrf_token %}
+                <input type="hidden" name="key" value="{{ item.key }}">
+                <input type="hidden" name="kind" value="{{ active_kind|default:'' }}">
+                <input type="hidden" name="q" value="{{ q }}">
+                <button class="text-[11px] text-red-500 hover:underline"><i class="fas fa-trash"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="bg-white border border-gray-200 p-10 text-center text-sm text-gray-400">
+        No media found{% if q %} for "{{ q }}"{% endif %}.
+        {% if active_kind == 'upload' or not active_kind %}
+        <div class="mt-3">
+          <button onclick="document.getElementById('upload-panel').classList.remove('hidden');window.scrollTo(0,0)"
+                  class="bg-indigo-600 text-white px-4 py-2 text-sm">
+            <i class="fas fa-cloud-upload-alt mr-1"></i> Upload your first image
+          </button>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('bg-indigo-100');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const fileInput = document.querySelector('input[name="file"]');
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  fileInput.files = dt.files;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('drop-img').src = ev.target.result;
+    document.getElementById('drop-name').textContent = file.name;
+    document.getElementById('drop-preview').classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+</script>
+{% endblock %}

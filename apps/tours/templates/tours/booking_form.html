@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'tours:booking_list' %}" class="text-gray-400 hover:text-gray-600 transition">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <h2 class="text-2xl font-bold text-gray-800">{{ title }}</h2>
+  </div>
+
+  {% if enquiry %}
+    <div class="bg-blue-50 border border-blue-200 p-4 text-sm text-blue-700 mb-5">
+      Converting from enquiry <strong>{{ enquiry.enquiry_number }}</strong> — {{ enquiry.contact_name }}
+    </div>
+  {% endif %}
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    {% if form.errors or formset.errors %}
+      <div class="bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+        Please correct the errors below.
+      </div>
+    {% endif %}
+
+    <!-- Booking details -->
+    <div class="bg-white border border-gray-200 shadow-sm p-6">
+      <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 border-b border-gray-100 pb-1">Contact & Trip</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+          {{ form.customer }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Contact Name <span class="text-red-500">*</span></label>
+          {{ form.contact_name }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+          {{ form.contact_phone }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          {{ form.contact_email }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Travel Date <span class="text-red-500">*</span></label>
+          {{ form.travel_date }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Return Date</label>
+          {{ form.return_date }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Adults</label>
+          {{ form.num_adults }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Children</label>
+          {{ form.num_children }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Discount (NPR)</label>
+          {{ form.discount_amount }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tax %</label>
+          {{ form.tax_percent }}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+          {{ form.assigned_to }}
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Special Requests</label>
+          {{ form.special_requests }}
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Internal Notes</label>
+          {{ form.internal_notes }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Line Items -->
+    <div class="bg-white border border-gray-200 shadow-sm p-6">
+      <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 border-b border-gray-100 pb-1">Line Items</h3>
+      {{ formset.management_form }}
+      <div id="formset-container" class="space-y-3">
+        {% for item_form in formset %}
+          <div class="formset-row border border-gray-100 p-3 bg-gray-50 {% if item_form.instance.pk %}{% endif %}">
+            {{ item_form.id }}
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-2">
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">Type</label>
+                {{ item_form.item_type }}
+              </div>
+              <div class="md:col-span-2">
+                <label class="text-xs text-gray-500 mb-1 block">Description</label>
+                {{ item_form.description }}
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">Qty</label>
+                {{ item_form.quantity }}
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">Unit Price</label>
+                {{ item_form.unit_price }}
+              </div>
+              <div class="flex items-end gap-2">
+                <div class="flex-1">
+                  <label class="text-xs text-gray-500 mb-1 block">Disc %</label>
+                  {{ item_form.discount_percent }}
+                </div>
+                {% if formset.can_delete %}
+                  <div class="flex items-center pb-1">
+                    <label class="text-xs text-red-500 mr-1">Del</label>
+                    {{ item_form.DELETE }}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <button type="submit"
+              class="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 transition duration-150">
+        Save Booking
+      </button>
+      <a href="{% url 'tours:booking_list' %}"
+         class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium px-6 py-2 transition duration-150">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

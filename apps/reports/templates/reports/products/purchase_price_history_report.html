@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Purchase Price History{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-gray-800">Purchase Price History</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Track cost price changes per product across different vendor bills and dates.</p>
+    </div>
+    <a href="{% url 'reports:export_purchase_price_history_excel' %}?{{ request.GET.urlencode }}"
+       class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition">
+      Export Excel
+    </a>
+  </div>
+
+  {# Filters #}
+  <form method="get" class="bg-white rounded shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end">
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Product</label>
+      <select name="product" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 w-48">
+        <option value="">All Products</option>
+        {% for p in products %}
+          <option value="{{ p.id }}" {% if selected_product_id == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Vendor</label>
+      <select name="vendor" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 w-44">
+        <option value="">All Vendors</option>
+        {% for v in vendors %}
+          <option value="{{ v.id }}" {% if selected_vendor_id == v.id|stringformat:"s" %}selected{% endif %}>{{ v.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">From Date (BS)</label>
+      <input type="text" name="start_date" value="{{ start_date }}" placeholder="YYYY-MM-DD"
+             class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 w-36">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">To Date (BS)</label>
+      <input type="text" name="end_date" value="{{ end_date }}" placeholder="YYYY-MM-DD"
+             class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 w-36">
+    </div>
+    <button type="submit" class="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition">Filter</button>
+    <a href="{% url 'reports:purchase_price_history_report' %}" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded hover:bg-gray-50 transition">Reset</a>
+  </form>
+
+  {% for group in product_groups %}
+  <div class="bg-white rounded shadow-md overflow-hidden mb-6">
+    {# Product header #}
+    <div class="px-5 py-3 bg-gray-100 flex flex-wrap gap-6 items-center">
+      <div>
+        <span class="font-semibold text-gray-800 text-base">{{ group.product.name }}</span>
+        {% if group.product.sku %}
+          <span class="ml-2 text-xs text-gray-500">SKU: {{ group.product.sku }}</span>
+        {% endif %}
+        <span class="ml-2 text-xs text-gray-500">{{ group.product.category.name|default:"" }}</span>
+      </div>
+      <div class="flex gap-6 ml-auto text-sm">
+        <div class="text-gray-600">
+          Current cost price:
+          <span class="font-semibold text-gray-900">NPR {{ group.product.cost_price|floatformat:"2" }}</span>
+        </div>
+        <div class="text-gray-600">
+          Purchases: <span class="font-semibold text-gray-900">{{ group.purchases|length }}</span>
+        </div>
+        <div class="text-gray-600">
+          Min: <span class="font-semibold text-red-700">NPR {{ group.min_price|floatformat:"2" }}</span>
+        </div>
+        <div class="text-gray-600">
+          Max: <span class="font-semibold text-green-700">NPR {{ group.max_price|floatformat:"2" }}</span>
+        </div>
+        <div class="text-gray-600">
+          Wtd. Avg: <span class="font-semibold text-blue-700">NPR {{ group.weighted_avg_cost|floatformat:"2" }}</span>
+        </div>
+      </div>
+    </div>
+
+    {# Price variance indicator #}
+    {% if group.min_price != group.max_price %}
+    <div class="px-5 py-2 bg-yellow-50 border-b border-yellow-100 text-xs text-yellow-800">
+      ⚠ Cost price varies across purchases — range NPR {{ group.min_price|floatformat:"2" }} – NPR {{ group.max_price|floatformat:"2" }}.
+      {% if group.product.cost_method == 'FIFO' %}Using FIFO — current cost_price reflects latest batch.
+      {% else %}Using Weighted Average — consider updating cost_price to NPR {{ group.weighted_avg_cost|floatformat:"2" }}.{% endif %}
+    </div>
+    {% endif %}
+
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bill Date</th>
+          <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+          <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bill #</th>
+          <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+          <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unit Cost</th>
+          <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Line Total</th>
+          <th class="px-5 py-3 text-center text-xs font-medium text-gray-500 uppercase">vs Current Cost</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-100">
+        {% for item in group.purchases %}
+        {% with diff=item.price|floatformat:"2" %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-5 py-3 text-gray-700">{{ item.vendor_bill.bill_date }}</td>
+          <td class="px-5 py-3 text-gray-700">{{ item.vendor_bill.vendor.name }}</td>
+          <td class="px-5 py-3 text-gray-500">{{ item.vendor_bill.bill_number }}</td>
+          <td class="px-5 py-3 text-right text-gray-700">{{ item.quantity }}</td>
+          <td class="px-5 py-3 text-right font-semibold text-gray-900">NPR {{ item.price|floatformat:"2" }}</td>
+          <td class="px-5 py-3 text-right text-gray-700">NPR {{ item.total_price|floatformat:"2" }}</td>
+          <td class="px-5 py-3 text-center text-xs">
+            {% if item.price > group.product.cost_price %}
+              <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full">Higher</span>
+            {% elif item.price < group.product.cost_price %}
+              <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Lower</span>
+            {% else %}
+              <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">Same</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+      <tfoot class="bg-gray-50">
+        <tr>
+          <td colspan="3" class="px-5 py-3 text-xs text-gray-500 font-medium">Totals</td>
+          <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ group.total_qty }}</td>
+          <td class="px-5 py-3 text-right text-xs text-gray-500">Wtd avg: NPR {{ group.weighted_avg_cost|floatformat:"2" }}</td>
+          <td class="px-5 py-3 text-right font-semibold text-gray-900">NPR {{ group.total_cost|floatformat:"2" }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% empty %}
+  <div class="bg-white rounded shadow-md p-8 text-center text-gray-500">
+    No purchase history found. Vendor bills with product line items will appear here.
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

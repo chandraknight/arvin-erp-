@@ -1,0 +1,83 @@
+{% load humanize %}
+{# HTMX partial — swapped into #contact-list-container when tab=customers #}
+
+<div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+        <thead class="bg-green-600 text-white text-xs uppercase">
+            <tr>
+                <th class="px-4 py-3 text-left border border-green-700">#</th>
+                <th class="px-4 py-3 text-left border border-green-700">Name</th>
+                <th class="px-4 py-3 text-left border border-green-700">Phone</th>
+                <th class="px-4 py-3 text-left border border-green-700">Email</th>
+                <th class="px-4 py-3 text-left border border-green-700">Address</th>
+                <th class="px-4 py-3 text-left border border-green-700">Since</th>
+                <th class="px-4 py-3 text-center border border-green-700">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customer_list %}
+            <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50 transition-colors">
+                <td class="px-4 py-2 border border-gray-200 text-gray-500 text-xs">
+                    {{ forloop.counter0|add:customer_page_obj.start_index }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 font-semibold text-gray-800">
+                    {{ customer.name }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-600">{{ customer.phone|default:"—" }}</td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-600">{{ customer.email|default:"—" }}</td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-500 text-xs max-w-xs truncate">
+                    {{ customer.address|default:"—"|truncatechars:40 }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-500 text-xs whitespace-nowrap">
+                    {{ customer.created_at|date:"Y-m-d" }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-center">
+                    <div class="flex items-center justify-center gap-3">
+                        <a href="{% url 'customers:update_customer' customer.id %}"
+                           class="text-amber-600 hover:text-amber-800 transition" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button type="button"
+                                hx-post="{% url 'customers:delete_customer' customer.id %}"
+                                hx-target="closest tr"
+                                hx-swap="outerHTML swap:300ms"
+                                hx-confirm="Delete {{ customer.name }}? This cannot be undone."
+                                class="text-red-500 hover:text-red-700 transition"
+                                title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="px-4 py-12 text-center text-gray-400">
+                    <i class="fas fa-users text-3xl mb-2 block"></i>
+                    {% if q %}No customers match "{{ q }}".{% else %}No customers found.{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if customer_page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-between px-1">
+    <p class="text-sm text-gray-500">
+        {{ customer_page_obj.start_index }}–{{ customer_page_obj.end_index }} of {{ customer_page_obj.paginator.count }}
+    </p>
+    <nav class="flex items-center gap-1">
+        {% if customer_page_obj.has_previous %}
+            <a hx-get="?tab=customers&page={{ customer_page_obj.previous_page_number }}&q={{ q }}"
+               hx-target="#contact-list-container" hx-swap="innerHTML" hx-push-url="true"
+               class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">‹ Prev</a>
+        {% endif %}
+        <span class="px-3 py-1 text-sm bg-green-600 text-white font-bold">{{ customer_page_obj.number }}</span>
+        {% if customer_page_obj.has_next %}
+            <a hx-get="?tab=customers&page={{ customer_page_obj.next_page_number }}&q={{ q }}"
+               hx-target="#contact-list-container" hx-swap="innerHTML" hx-push-url="true"
+               class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">Next ›</a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}

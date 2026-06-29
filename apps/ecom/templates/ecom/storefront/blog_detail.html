@@ -1,0 +1,29 @@
+{% extends "ecom/storefront/base.html" %}
+{% load static %}
+
+{% block page_title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+
+<section class="mb-60">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-9">
+        {% if post.cover_image %}
+        <div class="mb-30" style="border-radius:8px;overflow:hidden;max-height:400px;">
+          <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="width:100%;object-fit:cover;">
+        </div>
+        {% endif %}
+        <span class="font-xs color-gray-500">{{ post.published_at|date:"F d, Y" }}{% if post.author_name %} · by {{ post.author_name }}{% endif %}</span>
+        <h2 class="mt-10 mb-30 color-brand-3">{{ post.title }}</h2>
+        <div class="content-page font-sm color-gray-900" style="line-height:2;">
+          {{ post.content|linebreaks }}
+        </div>
+        <div class="mt-40 pt-30" style="border-top:1px solid #eee;">
+          <a href="{% url 'ecom:blog_list' %}" class="btn btn-cart">← Back to Blog</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

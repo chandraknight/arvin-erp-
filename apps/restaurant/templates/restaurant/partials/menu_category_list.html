@@ -1,0 +1,65 @@
+{% for cat in categories %}
+<div class="bg-white border border-gray-200 rounded shadow-sm mb-4" id="cat-{{ cat.pk }}">
+  <div class="flex justify-between items-center px-4 py-3 bg-gray-50 border-b border-gray-200">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-gray-800">{{ cat.name }}</span>
+      <span class="px-2 py-0.5 text-xs rounded
+        {% if cat.item_type == 'FOOD' %}bg-orange-100 text-orange-700
+        {% elif cat.item_type == 'BEVERAGE' %}bg-blue-100 text-blue-700
+        {% else %}bg-purple-100 text-purple-700{% endif %}">
+        {{ cat.get_item_type_display }}
+      </span>
+      {% if not cat.is_active %}<span class="text-xs text-gray-400">(hidden)</span>{% endif %}
+    </div>
+    <span class="text-xs text-gray-400">{{ cat.items.count }} item{{ cat.items.count|pluralize }}</span>
+  </div>
+
+  <div class="divide-y divide-gray-100">
+    {% for item in cat.items.all %}
+    <div class="flex items-center justify-between px-4 py-2 {% if not item.is_available %}opacity-50{% endif %}">
+      <div class="flex-1 min-w-0">
+        <span class="text-sm font-medium text-gray-800">{{ item.product.name }}</span>
+        {% if item.notes %}<span class="text-xs text-gray-400 ml-2">{{ item.notes }}</span>{% endif %}
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-mono text-gray-700">₹{{ item.effective_price }}</span>
+        {% if item.price_override %}<span class="text-xs text-orange-500">custom</span>{% endif %}
+        <form method="post" action="{% url 'restaurant:menu_item_toggle' menu.pk item.pk %}"
+              hx-post="{% url 'restaurant:menu_item_toggle' menu.pk item.pk %}"
+              hx-target="#menu-categories" hx-swap="innerHTML">
+          {% csrf_token %}
+          <button type="submit"
+                  class="px-2 py-1 text-xs {% if item.is_available %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %} rounded font-semibold">
+            {% if item.is_available %}Available{% else %}86'd{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+    {% empty %}
+    <div class="px-4 py-3 text-xs text-gray-400 italic">No items yet — add below.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Add item to this category -->
+  <div class="border-t border-dashed border-gray-200 px-4 py-3 bg-gray-50">
+    <p class="text-xs font-semibold text-gray-500 mb-2">Add item to {{ cat.name }}</p>
+    <form method="post" action="{% url 'restaurant:menu_item_add' menu.pk cat.pk %}"
+          hx-post="{% url 'restaurant:menu_item_add' menu.pk cat.pk %}"
+          hx-target="#menu-categories" hx-swap="innerHTML"
+          class="flex flex-wrap gap-2 items-end">
+      {% csrf_token %}
+      {% for field in item_form %}
+      <div class="flex flex-col">
+        <label class="text-xs text-gray-500 mb-0.5">{{ field.label }}</label>
+        {{ field }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="px-3 py-1.5 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white self-end">
+        + Add
+      </button>
+    </form>
+  </div>
+</div>
+{% empty %}
+<p class="text-sm text-gray-400 italic">No categories yet. Add one above.</p>
+{% endfor %}

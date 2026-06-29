@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Monthly Attendance Report{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Monthly Attendance Report</h1>
+
+    <form method="get" class="bg-white border border-gray-200 shadow-lg p-6 mb-8 flex items-center space-x-4">
+        <div class="flex-grow">
+            <label for="employee" class="block text-sm font-semibold text-gray-700 mb-2">Employee:</label>
+            <select name="employee" id="employee" class="block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 bg-white">
+                <option value="">-- Select Employee --</option>
+                {% for emp in employees %}
+                    <option value="{{ emp.pk }}" {% if request.GET.employee == emp.pk|stringformat:"s" %}selected{% endif %}>{{ emp.first_name }} {{ emp.last_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="w-1/4">
+            <label for="month" class="block text-sm font-semibold text-gray-700 mb-2">Month:</label>
+            <select name="month" id="month" class="block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 bg-white">
+                <option value="">-- Select Month --</option>
+                <option value="1" {% if request.GET.month == "1" %}selected{% endif %}>January</option>
+                <option value="2" {% if request.GET.month == "2" %}selected{% endif %}>February</option>
+                <option value="3" {% if request.GET.month == "3" %}selected{% endif %}>March</option>
+                <option value="4" {% if request.GET.month == "4" %}selected{% endif %}>April</option>
+                <option value="5" {% if request.GET.month == "5" %}selected{% endif %}>May</option>
+                <option value="6" {% if request.GET.month == "6" %}selected{% endif %}>June</option>
+                <option value="7" {% if request.GET.month == "7" %}selected{% endif %}>July</option>
+                <option value="8" {% if request.GET.month == "8" %}selected{% endif %}>August</option>
+                <option value="9" {% if request.GET.month == "9" %}selected{% endif %}>September</option>
+                <option value="10" {% if request.GET.month == "10" %}selected{% endif %}>October</option>
+                <option value="11" {% if request.GET.month == "11" %}selected{% endif %}>November</option>
+                <option value="12" {% if request.GET.month == "12" %}selected{% endif %}>December</option>
+            </select>
+        </div>
+        <div class="w-1/4">
+            <label for="year" class="block text-sm font-semibold text-gray-700 mb-2">Year:</label>
+            <input type="number" name="year" id="year" value="{{ request.GET.year|default:current_year }}" class="block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+        </div>
+        <div>
+            <button type="submit" class="mt-5 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 shadow-md hover:shadow-lg transition duration-150">
+                Filter
+            </button>
+        </div>
+    </form>
+
+    {% if attendance_summary %}
+    <div class="overflow-x-auto bg-white shadow-md rounded-lg">
+        <table class="min-w-full leading-normal">
+            <thead>
+                <tr>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Employee
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Date
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Status
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Check-in
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Check-out
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Notes
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in attendance_summary %}
+                <tr>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <p class="text-gray-900 whitespace-no-wrap">{{ record.employee.first_name }} {{ record.employee.last_name }}</p>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <p class="text-gray-900 whitespace-no-wrap">{{ record.date|date:"M d, Y" }}</p>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <p class="text-gray-900 whitespace-no-wrap">{{ record.status }}</p>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <p class="text-gray-900 whitespace-no-wrap">{{ record.check_in_time|date:"H:i"|default:"N/A" }}</p>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <p class="text-gray-900 whitespace-no-wrap">{{ record.check_out_time|date:"H:i"|default:"N/A" }}</p>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <p class="text-gray-900 whitespace-no-wrap">{{ record.notes|default:"N/A" }}</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-600">No attendance records found for the selected period/employee. Adjust your filters or add attendance records.</p>
+    {% endif %}
+</div>
+{% endblock %} 

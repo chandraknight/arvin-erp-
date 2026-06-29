@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Forecasts{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-chart-line text-purple-600 mr-2"></i>Forecasts</h1>
+  <div class="flex gap-2">
+    <a href="{% url 'projects:forecast_create' %}" class="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white text-sm font-semibold shadow transition">
+      <i class="fas fa-plus mr-1"></i>New Forecast Line
+    </a>
+    <a href="{% url 'projects:forecast_vs_actual' %}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium transition">
+      <i class="fas fa-chart-area mr-1"></i>Forecast vs Actual
+    </a>
+  </div>
+</div>
+
+<div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+  {% if forecasts %}
+  <table class="w-full text-sm">
+    <thead class="bg-purple-700 text-white text-xs uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">Name</th>
+        <th class="px-4 py-3 text-left">Type</th>
+        <th class="px-4 py-3 text-center">Period</th>
+        <th class="px-4 py-3 text-left">Account</th>
+        <th class="px-4 py-3 text-right">Forecast</th>
+        <th class="px-4 py-3 text-right">Actual</th>
+        <th class="px-4 py-3 text-right">Variance</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in forecasts %}
+      <tr class="border-t border-gray-100 hover:bg-gray-50">
+        <td class="px-4 py-3 font-semibold text-gray-800">{{ f.name }}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-0.5 text-xs font-semibold rounded
+            {% if f.forecast_type == 'REVENUE' %}bg-green-100 text-green-800
+            {% elif f.forecast_type == 'CASHFLOW' %}bg-blue-100 text-blue-800
+            {% else %}bg-amber-100 text-amber-800{% endif %}">
+            {{ f.get_forecast_type_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-center text-gray-500 text-xs">{{ f.year }}/{{ f.month|stringformat:"02d" }}</td>
+        <td class="px-4 py-3 text-gray-500 text-xs">{{ f.ledger_account.name|default:"—" }}</td>
+        <td class="px-4 py-3 text-right font-mono">{{ f.forecast_amount|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right font-mono text-green-700">{{ f.actual_amount|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right font-mono {% if f.variance > 0 %}text-amber-600{% else %}text-green-700{% endif %}">{{ f.variance|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-center">
+          <div class="flex items-center justify-center gap-2">
+            <a href="{% url 'projects:forecast_update' pk=f.pk %}" class="text-purple-600 hover:text-purple-800 text-xs"><i class="fas fa-edit"></i></a>
+            <button type="button"
+                    hx-post="{% url 'projects:forecast_delete' pk=f.pk %}"
+                    hx-target="closest tr" hx-swap="outerHTML swap:300ms"
+                    hx-confirm="Delete this forecast? This cannot be undone."
+                    class="text-red-500 hover:text-red-700 text-xs" title="Delete">
+                <i class="fas fa-trash-alt htmx-hide-on-request"></i>
+                <i class="fas fa-spinner fa-spin" style="display:none" aria-hidden="true"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="text-center py-12 text-gray-400">
+    <i class="fas fa-chart-line text-4xl mb-3"></i>
+    <p class="text-sm">No forecast lines yet.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

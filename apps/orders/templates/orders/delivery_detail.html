@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load humanize billing_filters %}
+{% block title %}Delivery {{ delivery.delivery_number }}{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">{{ delivery.delivery_number|default:"Delivery Note" }}</h1>
+            <p class="text-sm text-gray-500 mt-1">
+                Sales Order:
+                <a href="{% url 'orders:order_detail' delivery.sales_order.pk %}"
+                   class="text-blue-600 hover:underline font-medium">
+                    #{{ delivery.sales_order.order_number }}
+                </a>
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            {% if delivery.status == 'DELIVERED' %}
+                <span class="px-3 py-1 text-sm font-semibold bg-green-100 text-green-800">Delivered</span>
+            {% elif delivery.status == 'IN_TRANSIT' %}
+                <span class="px-3 py-1 text-sm font-semibold bg-purple-100 text-purple-800">In Transit</span>
+            {% elif delivery.status == 'DISPATCHED' %}
+                <span class="px-3 py-1 text-sm font-semibold bg-blue-100 text-blue-800">Dispatched</span>
+            {% elif delivery.status == 'FAILED' %}
+                <span class="px-3 py-1 text-sm font-semibold bg-red-100 text-red-800">Failed</span>
+            {% elif delivery.status == 'CANCELLED' %}
+                <span class="px-3 py-1 text-sm font-semibold bg-gray-200 text-gray-600">Cancelled</span>
+            {% else %}
+                <span class="px-3 py-1 text-sm font-semibold bg-gray-100 text-gray-700">{{ delivery.get_status_display }}</span>
+            {% endif %}
+
+            {% if delivery.status != 'DELIVERED' and delivery.status != 'CANCELLED' %}
+            <a href="{% url 'orders:delivery_update' delivery.pk %}"
+               class="px-3 py-1 text-sm font-semibold bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition">
+                Edit
+            </a>
+            <a href="{% url 'orders:delivery_track' delivery.pk %}"
+               class="px-3 py-1 text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition">
+                + Add Tracking
+            </a>
+            <form method="post" action="{% url 'orders:delivery_cancel' delivery.pk %}"
+                  x-data="{ open: false }" class="inline">
+                {% csrf_token %}
+                <button type="button" @click="open = true"
+                        class="px-3 py-1 text-sm font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition">
+                    Cancel Delivery
+                </button>
+                <!-- Inline confirm popover -->
+                <div x-show="open" x-transition
+                     class="absolute z-20 mt-2 w-72 bg-white border border-red-200 shadow-lg p-4 rounded"
+                     @click.outside="open = false">
+                    <p class="text-sm font-semibold text-gray-800 mb-2">Cancel this delivery?</p>
+                    <input type="text" name="reason" placeholder="Reason (optional)"
+                           class="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3 focus:outline-none focus:ring-1 focus:ring-red-400">
+                    <div class="flex gap-2">
+                        <button type="submit"
+                                class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+                            Confirm Cancel
+                        </button>
+                        <button type="button" @click="open = false"
+                                class="px-3 py-1 border border-gray-300 text-sm rounded hover:bg-gray-50">
+                            No
+                        </button>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Info cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <!-- Dispatch info -->
+        <div class="bg-white border border-gray-200 shadow-sm p-4 space-y-3">
+            <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide border-b pb-2">Dispatch Info</h2>
+            <div class="grid grid-cols-2 gap-y-2 text-sm">
+                <span class="text-gray-500">Dispatch Date</span>
+                <span class="font-medium">{{ delivery.dispatch_date|to_bs }}</span>
+
+                <span class="text-gray-500">Expected Delivery</span>
+                <span class="font-medium">{{ delivery.expected_delivery_date|to_bs|default:"—" }}</span>
+
+                <span class="text-gray-500">Carrier</span>
+                <span class="font-medium">{{ delivery.carrier_name|default:"—" }}</span>
+
+                <span class="text-gray-500">Tracking #</span>
+                <span class="font-medium">{{ delivery.tracking_number|default:"—" }}</span>
+
+                <span class="text-gray-500">Vehicle</span>
+                <span class="font-medium">{{ delivery.vehicle_number|default:"—" }}</span>
+
+                <span class="text-gray-500">Driver</span>
+                <span class="font-medium">{{ delivery.driver_name|default:"—" }}</span>
+
+                <span class="text-gray-500">Driver Phone</span>
+                <span class="font-medium">{{ delivery.driver_phone|default:"—" }}</span>
+            </div>
+        </div>
+
+        <!-- Delivery destination -->
+        <div class="bg-white border border-gray-200 shadow-sm p-4 space-y-3">
+            <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide border-b pb-2">Delivery Destination</h2>
+            <div class="grid grid-cols-2 gap-y-2 text-sm">
+                <span class="text-gray-500">Contact</span>
+                <span class="font-medium">{{ delivery.delivery_contact|default:"—" }}</span>
+
+                <span class="text-gray-500">Phone</span>
+                <span class="font-medium">{{ delivery.delivery_phone|default:"—" }}</span>
+
+                <span class="text-gray-500">Address</span>
+                <span class="font-medium">{{ delivery.delivery_address|default:"—" }}</span>
+            </div>
+            {% if delivery.notes %}
+            <div class="pt-2 border-t border-gray-100">
+                <p class="text-xs font-semibold text-gray-500 mb-1">Notes</p>
+                <p class="text-sm text-gray-700">{{ delivery.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Items delivered -->
+    {% if delivery.items.exists %}
+    <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100">
+            <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Items Delivered</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                    <tr>
+                        <th class="px-4 py-2 text-left">Product</th>
+                        <th class="px-4 py-2 text-right">Qty Delivered</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for item in delivery.items.all %}
+                    <tr>
+                        <td class="px-4 py-2 text-gray-800">
+                            {{ item.order_item.product.name|default:"—" }}
+                        </td>
+                        <td class="px-4 py-2 text-right text-gray-700">{{ item.quantity_delivered }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tracking events -->
+    <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="px-4 py-3 border-b border-gray-100">
+            <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Tracking History</h2>
+        </div>
+        {% if tracking_events %}
+        <div class="divide-y divide-gray-100">
+            {% for event in tracking_events %}
+            <div class="px-4 py-3 flex gap-4 text-sm">
+                <div class="shrink-0 text-gray-400 text-xs w-32 pt-0.5">
+                    {{ event.event_time|date:"Y-m-d H:i" }}
+                </div>
+                <div class="flex-1">
+                    <span class="font-semibold text-gray-800">{{ event.get_status_display }}</span>
+                    {% if event.location %}
+                        <span class="text-gray-500 ml-2">@ {{ event.location }}</span>
+                    {% endif %}
+                    {% if event.notes %}
+                        <p class="text-gray-500 text-xs mt-0.5">{{ event.notes }}</p>
+                    {% endif %}
+                    {% if event.updated_by_name %}
+                        <p class="text-gray-400 text-xs mt-0.5">by {{ event.updated_by_name }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="px-4 py-6 text-sm text-gray-400 text-center">No tracking events yet.</p>
+        {% endif %}
+    </div>
+
+    <a href="{% url 'orders:delivery_list' %}" class="text-sm text-gray-500 hover:text-gray-700 inline-block">← Back to Deliveries</a>
+
+</div>
+{% endblock %}

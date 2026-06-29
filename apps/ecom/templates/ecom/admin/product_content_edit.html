@@ -1,0 +1,471 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block title %}Ecom Content — {{ product.name }}{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+/* Quill — undo Tailwind resets */
+#quill-wrapper .ql-toolbar {
+  border: 1px solid #d1d5db !important;
+  border-bottom: none !important;
+  border-radius: 0;
+  background: #f9fafb;
+  padding: 8px;
+}
+#quill-wrapper .ql-container {
+  border: 1px solid #d1d5db !important;
+  border-radius: 0;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+#quill-wrapper .ql-editor {
+  min-height: 300px;
+  padding: 14px 18px;
+  color: #111827;
+  line-height: 1.7;
+}
+#quill-wrapper .ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: italic;
+}
+/* Fix Tailwind breaking Quill pickers */
+#quill-wrapper .ql-toolbar .ql-picker { display: inline-block; position: relative; }
+#quill-wrapper .ql-toolbar .ql-picker-label {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid #d1d5db !important;
+  background: #fff !important;
+  color: #374151 !important;
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#quill-wrapper .ql-toolbar .ql-picker-label::before { line-height: 1.4; }
+#quill-wrapper .ql-toolbar .ql-picker-label svg { display: inline; width: 14px; height: 14px; }
+#quill-wrapper .ql-toolbar .ql-picker-options {
+  display: none;
+  position: absolute;
+  top: 100%; left: 0;
+  z-index: 9999;
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  min-width: 120px;
+  padding: 4px 0;
+}
+#quill-wrapper .ql-toolbar .ql-picker.ql-expanded .ql-picker-options { display: block; }
+#quill-wrapper .ql-toolbar .ql-picker-item {
+  padding: 4px 10px;
+  cursor: pointer;
+  color: #374151 !important;
+  font-size: 0.82rem;
+}
+#quill-wrapper .ql-toolbar .ql-picker-item:hover { background: #f3f4f6; }
+#quill-wrapper .ql-toolbar button {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 5px; border: none; background: transparent; cursor: pointer;
+}
+#quill-wrapper .ql-toolbar button svg { display: inline; width: 16px; height: 16px; }
+#quill-wrapper .ql-toolbar button:hover { color: #166534; }
+#quill-wrapper .ql-toolbar button.ql-active { color: #16a34a; }
+/* Color picker swatches */
+#quill-wrapper .ql-color-picker .ql-picker-options,
+#quill-wrapper .ql-background .ql-picker-options {
+  min-width: 152px; padding: 4px;
+  display: none;
+}
+#quill-wrapper .ql-color-picker.ql-expanded .ql-picker-options,
+#quill-wrapper .ql-background.ql-expanded .ql-picker-options { display: block; }
+#quill-wrapper .ql-toolbar .ql-formats { display: inline-flex; align-items: center; gap: 2px; margin-right: 8px; }
+/* Quill editor content styles */
+#quill-wrapper .ql-editor h1 { font-size: 1.75rem; font-weight: 700; margin: 0.5em 0; }
+#quill-wrapper .ql-editor h2 { font-size: 1.4rem;  font-weight: 700; margin: 0.5em 0; }
+#quill-wrapper .ql-editor h3 { font-size: 1.15rem; font-weight: 600; margin: 0.5em 0; }
+#quill-wrapper .ql-editor ul, #quill-wrapper .ql-editor ol { padding-left: 1.5em; }
+#quill-wrapper .ql-editor blockquote { border-left: 3px solid #d1d5db; padding-left: 1em; color: #6b7280; }
+#quill-wrapper .ql-editor pre { background: #f3f4f6; padding: 10px; border-radius: 4px; font-family: monospace; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <a href="{% url 'ecom:cms_product_content_list' %}" class="text-sm text-gray-500 hover:text-gray-700">
+        <i class="fas fa-arrow-left mr-1"></i>All Products
+      </a>
+      <h1 class="text-xl font-bold text-gray-900 mt-1">{{ product.name }}</h1>
+      <p class="text-sm text-gray-500">{{ product.category_name }} &middot; {{ product.barcode|default:"No barcode" }}</p>
+    </div>
+    <a href="{% url 'products:edit_item' product.id %}"
+       class="text-sm border border-gray-300 px-3 py-1.5 text-gray-600 hover:bg-gray-50 transition">
+      <i class="fas fa-box mr-1"></i>Inventory Details
+    </a>
+  </div>
+
+  {% include 'includes/toast.html' %}
+
+  <form method="post" enctype="multipart/form-data" id="ecom-content-form" class="space-y-8">
+    {% csrf_token %}
+
+    <div class="bg-white border border-gray-200 shadow-sm p-6 space-y-6">
+      <h2 class="text-lg font-bold text-green-800 flex items-center gap-2">
+        <i class="fas fa-store text-green-600"></i> Visibility &amp; Labels
+      </h2>
+
+      <div class="flex items-center gap-3">
+        {{ form.show_on_ecom }}
+        <label for="{{ form.show_on_ecom.id_for_label }}" class="text-gray-700 font-medium">
+          Show on E-Commerce store
+        </label>
+      </div>
+
+      <div>
+        <label for="{{ form.color.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
+          Color <span class="text-xs text-gray-400 font-normal">(used for storefront filter, e.g. Red, Blue)</span>
+        </label>
+        {{ form.color|add_class:"border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-48" }}
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+        <div>
+          <label for="{{ form.price.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
+            Selling Price <span class="text-xs text-gray-400 font-normal">(what the customer pays)</span>
+          </label>
+          {{ form.price|add_class:"border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-48" }}
+          {% if form.price.errors %}<p class="text-red-600 text-sm mt-1">{{ form.price.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.compare_at_price.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
+            Compare-at Price <span class="text-xs text-gray-400 font-normal">(original, struck-through; blank = no discount)</span>
+          </label>
+          {{ form.compare_at_price|add_class:"border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-48" }}
+          {% if form.compare_at_price.errors %}<p class="text-red-600 text-sm mt-1">{{ form.compare_at_price.errors|striptags }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm p-6 space-y-6">
+      <h2 class="text-lg font-bold text-green-800 flex items-center gap-2">
+        <i class="fas fa-align-left text-green-600"></i> Descriptions
+      </h2>
+
+      <div>
+        <label for="{{ form.short_description.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
+          Short Description
+          <span class="text-xs text-gray-400 font-normal ml-1">(shown in product listing cards, max 500 chars)</span>
+        </label>
+        {{ form.short_description|add_class:"w-full border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 transition" }}
+        {% if form.short_description.errors %}
+        <p class="text-red-600 text-sm mt-1">{{ form.short_description.errors|striptags }}</p>
+        {% endif %}
+        <p class="text-xs text-gray-400 mt-1"><span id="short-desc-len">{{ product.short_description|default:''|length }}</span> / 500</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">
+          Full Description
+          <span class="text-xs text-gray-400 font-normal ml-1">(shown on product detail page)</span>
+        </label>
+        {{ form.ecom_description }}
+        <div id="quill-wrapper">
+          <div id="quill-editor"></div>
+        </div>
+        {% if form.ecom_description.errors %}
+        <p class="text-red-600 text-sm mt-1">{{ form.ecom_description.errors|striptags }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-bold text-green-800 flex items-center gap-2">
+          <i class="fas fa-images text-green-600"></i> Product Images
+        </h2>
+        <button type="button" id="add-image-btn"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold shadow transition">
+          <i class="fas fa-plus"></i> Add Image
+        </button>
+      </div>
+
+      {{ image_formset.management_form }}
+
+      <div id="image-cards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+        {% for img_form in image_formset %}
+        <div class="image-card relative border border-gray-200 bg-gray-50 overflow-hidden{% if not img_form.instance.pk %} new-slot{% endif %}"
+             data-index="{{ forloop.counter0 }}">
+          {{ img_form.id }}
+
+          {% if img_form.instance.image %}
+          <div class="relative">
+            <img src="{{ img_form.instance.image.url }}"
+                 class="w-full h-36 object-cover"
+                 loading="lazy" alt="">
+            {% if img_form.instance.is_primary %}
+            <span class="absolute top-1 left-1 bg-green-600 text-white text-xs px-2 py-0.5 font-semibold">Primary</span>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="w-full h-36 bg-gray-100 flex items-center justify-center text-gray-300">
+            <i class="fas fa-image text-3xl"></i>
+          </div>
+          {% endif %}
+
+          <div class="p-3 space-y-2">
+            <div>
+              {% if img_form.instance.image %}
+              <label class="block text-xs text-gray-400 mb-1">Change image</label>
+              {% endif %}
+              {{ img_form.image|add_class:"block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer" }}
+            </div>
+
+            <div>
+              <label class="primary-toggle flex items-center gap-2 cursor-pointer select-none">
+                <span class="hidden">{{ img_form.is_primary }}</span>
+                <button type="button"
+                        class="primary-btn w-full text-xs py-1.5 px-2 border font-semibold transition
+                               {% if img_form.instance.is_primary %}bg-green-600 border-green-600 text-white{% else %}border-gray-300 text-gray-500 hover:border-green-400 hover:text-green-600{% endif %}"
+                        data-primary-input="{{ img_form.is_primary.id_for_label }}">
+                  <i class="fas fa-star mr-1"></i>
+                  {% if img_form.instance.is_primary %}Primary{% else %}Set as Primary{% endif %}
+                </button>
+              </label>
+            </div>
+
+            {% if img_form.instance.pk %}
+            <button type="button"
+                    class="delete-btn w-full text-xs py-1.5 px-2 border border-red-300 text-red-600 hover:bg-red-600 hover:text-white font-semibold transition"
+                    data-image-id="{{ img_form.instance.pk }}"
+                    data-delete-url="{% url 'ecom:cms_product_image_delete' img_form.instance.pk %}">
+              <i class="fas fa-trash-alt mr-1"></i> Delete
+            </button>
+            {% else %}
+            <button type="button"
+                    class="remove-new-btn w-full text-xs py-1.5 px-2 border border-red-300 text-red-600 hover:bg-red-50 font-semibold transition">
+              <i class="fas fa-times mr-1"></i> Remove
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {# Hidden template for JS-cloned new slots #}
+      <template id="image-slot-template">
+        <div class="image-card new-slot relative border border-dashed border-gray-300 bg-gray-50 overflow-hidden">
+          <div class="w-full h-36 bg-gray-100 flex items-center justify-center text-gray-300">
+            <i class="fas fa-image text-3xl"></i>
+          </div>
+          <div class="p-3 space-y-2">
+            <div>
+              <input type="file" name="__IMG_NAME__" accept="image/*"
+                     class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer">
+            </div>
+            <div>
+              <button type="button"
+                      class="primary-btn w-full text-xs py-1.5 px-2 border border-gray-300 text-gray-500 hover:border-green-400 hover:text-green-600 font-semibold transition">
+                <i class="fas fa-star mr-1"></i> Set as Primary
+              </button>
+              <input type="hidden" name="__PRIMARY_NAME__" value="">
+            </div>
+            <button type="button"
+                    class="remove-new-btn w-full text-xs py-1.5 px-2 border border-red-300 text-red-600 hover:bg-red-50 font-semibold transition">
+              <i class="fas fa-times mr-1"></i> Remove
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="flex gap-4">
+      <button type="submit"
+              class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 shadow-md transition duration-150">
+        Save E-Commerce Content
+      </button>
+      <a href="{% url 'ecom:cms_product_content_list' %}"
+         class="inline-flex items-center px-6 py-3 border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // ── Short description counter ──────────────────────────
+  const shortDesc = document.getElementById('{{ form.short_description.id_for_label }}');
+  const shortDescLen = document.getElementById('short-desc-len');
+  shortDesc?.addEventListener('input', function () {
+    if (shortDescLen) shortDescLen.textContent = this.value.length;
+  });
+
+  // ── Quill ──────────────────────────────────────────────
+  const quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    placeholder: 'Write a detailed product description…',
+    modules: {
+      toolbar: [
+        [{ font: [] }, { size: ['small', false, 'large', 'huge'] }],
+        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ color: [] }, { background: [] }],
+        [{ script: 'sub' }, { script: 'super' }],
+        [{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
+        [{ indent: '-1' }, { indent: '+1' }],
+        [{ align: [] }],
+        ['blockquote', 'code-block'],
+        ['link', 'image', 'video'],
+        ['clean'],
+      ],
+    },
+  });
+  const hiddenTextarea = document.getElementById('{{ form.ecom_description.id_for_label }}');
+  // Load existing content from hidden textarea (not from DOM to avoid parse issues)
+  const existingHtml = hiddenTextarea ? hiddenTextarea.value.trim() : '';
+  if (existingHtml) {
+    quill.clipboard.dangerouslyPasteHTML(existingHtml);
+  }
+  document.getElementById('ecom-content-form')?.addEventListener('submit', function () {
+    if (hiddenTextarea) {
+      const html = quill.root.innerHTML;
+      hiddenTextarea.value = (html === '<p><br></p>' || html === '') ? '' : html;
+    }
+  });
+
+  // ── Image cards logic ──────────────────────────────────
+
+  const container  = document.getElementById('image-cards');
+  const addBtn     = document.getElementById('add-image-btn');
+  const template   = document.getElementById('image-slot-template');
+  const totalInput = document.querySelector('[name="images-TOTAL_FORMS"]');
+  const prefix     = 'images';
+
+  function getNextIndex() {
+    return parseInt(totalInput.value, 10);
+  }
+
+  // Attach behaviours to a card (existing or newly added)
+  function initCard(card) {
+    // Primary toggle
+    card.querySelectorAll('.primary-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        // Un-set all primaries
+        container.querySelectorAll('.primary-btn').forEach(b => {
+          b.classList.remove('bg-green-600', 'border-green-600', 'text-white');
+          b.classList.add('border-gray-300', 'text-gray-500');
+          b.textContent = '';
+          b.innerHTML = '<i class="fas fa-star mr-1"></i> Set as Primary';
+          const inp = document.getElementById(b.dataset.primaryInput);
+          if (inp) inp.checked = false;
+          // hidden input for new slots
+          const hidden = b.closest('.image-card')?.querySelector('input[name$="-is_primary"]');
+          if (hidden && hidden.type === 'hidden') hidden.value = '';
+        });
+        // Set this one
+        btn.classList.add('bg-green-600', 'border-green-600', 'text-white');
+        btn.classList.remove('border-gray-300', 'text-gray-500');
+        btn.innerHTML = '<i class="fas fa-star mr-1"></i> Primary';
+        const inp = document.getElementById(btn.dataset.primaryInput);
+        if (inp) inp.checked = true;
+        const hidden = btn.closest('.image-card')?.querySelector('input[name$="-is_primary"][type="hidden"]');
+        if (hidden) hidden.value = 'on';
+      });
+    });
+
+    // Delete button — immediate AJAX delete for saved images
+    card.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const url = btn.dataset.deleteUrl;
+        if (!url) return;
+        if (!confirm('Delete this image? This cannot be undone.')) return;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Deleting…';
+        fetch(url, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            card.remove();
+          } else {
+            alert(data.error || 'Could not delete image.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> Delete';
+          }
+        })
+        .catch(() => {
+          alert('Network error — please try again.');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> Delete';
+        });
+      });
+    });
+
+    // Remove button (new unsaved slots)
+    card.querySelectorAll('.remove-new-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        card.remove();
+        totalInput.value = parseInt(totalInput.value, 10) - 1;
+      });
+    });
+
+    // Preview uploaded image
+    card.querySelectorAll('input[type="file"]').forEach(fileInput => {
+      fileInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+          let preview = card.querySelector('img.preview-img');
+          if (!preview) {
+            const placeholder = card.querySelector('.h-36.bg-gray-100');
+            if (placeholder) placeholder.remove();
+            preview = document.createElement('img');
+            preview.className = 'preview-img w-full h-36 object-cover';
+            card.insertBefore(preview, card.querySelector('.p-3'));
+          }
+          preview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
+
+  // Init all existing cards
+  container.querySelectorAll('.image-card').forEach(initCard);
+
+  // Add Image button
+  addBtn.addEventListener('click', function () {
+    const idx = getNextIndex();
+    const clone = template.content.cloneNode(true);
+    const card  = clone.querySelector('.image-card');
+
+    // Wire up form field names
+    card.querySelector('input[type="file"]').name = `${prefix}-${idx}-image`;
+    const primaryHidden = card.querySelector('input[type="hidden"]');
+    if (primaryHidden) primaryHidden.name = `${prefix}-${idx}-is_primary`;
+
+    // Add id field (required by formset)
+    const idInput = document.createElement('input');
+    idInput.type  = 'hidden';
+    idInput.name  = `${prefix}-${idx}-id`;
+    idInput.value = '';
+    card.appendChild(idInput);
+
+    // Wire primary btn dataset
+    const primaryBtn = card.querySelector('.primary-btn');
+    if (primaryBtn) primaryBtn.dataset.primaryInput = `id_${prefix}-${idx}-is_primary`;
+
+    container.appendChild(card);
+    totalInput.value = idx + 1;
+    initCard(card);
+  });
+});
+</script>
+{% endblock %}

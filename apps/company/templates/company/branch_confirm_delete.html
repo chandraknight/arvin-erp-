@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Delete Branch{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Delete Branch</h1>
+
+    <p class="text-lg text-gray-700 mb-4">
+        Are you sure you want to delete the branch "<strong class="font-semibold">{{ branch.name }}</strong>" from "<strong class="font-semibold">{{ branch.company.name }}</strong>"?
+    </p>
+    <p class="text-sm text-red-600 mb-6">
+        This action cannot be undone.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-200 ease-in-out">Confirm Delete</button>
+
+    </form>
+</div>
+{% endblock content %} 

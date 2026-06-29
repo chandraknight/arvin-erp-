@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SacredCart - Multi-Faith Religious Essentials</title>
+  
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            saffron: '#800000',        /* Deep Premium Maroon */
+            'saffron-dark': '#500000',   /* Rich Crimson Core */
+            gold: '#D97706',           /* Deep Amber Gold Accent */
+            'gold-light': '#FEF3C7',     /* Warm Premium Cream Tint */
+            cream: '#FAFAF9',          /* Elegant Stone Off-White */
+            slate: '#1C1917'           /* Warm Stone Charcoal for high readability */
+          },
+          fontFamily: {
+            sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    html, body { min-height: 100%; margin: 0; background-color: #FAFAF9; color: #1C1917; font-family: 'DM Sans', sans-serif; }
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+    .page { display: none; flex: 0 0 auto; }
+    .page.active { display: block; flex: 1 0 auto; }
+    .page-shell { min-height: calc(100vh - 5rem - 9.5rem - 5rem); }
+    .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Premium Responsive Elevation Hover Card Mechanics */
+    .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(128, 0, 0, 0.1), 0 10px 10px -5px rgba(128, 0, 0, 0.04); border-color: #D97706; }
+    
+    .progress-step.completed .step-circle { background: #800000; color: white; }
+    .progress-step.active .step-circle { background: #800000; color: white; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(128,0,0,0.4); } 50% { box-shadow: 0 0 0 10px rgba(128,0,0,0); } }
+    .nav-btn.active { background-color: #FEF3C7; color: #800000; border-bottom: 2px solid #800000; border-radius: 8px 8px 0 0; }
+  </style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="min-h-screen bg-cream text-slate overflow-x-hidden">
+  
+  <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-stone-100 shadow-sm">
+   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-20">
+     <div class="flex items-center space-x-2 cursor-pointer" onclick="navigate('home')">
+      <div class="w-10 h-10 bg-[#800000] rounded-full flex items-center justify-center text-amber-400 text-xl shadow">
+        <i class="fa-solid fa-hands-praying"></i>
+      </div>
+      <span class="text-2xl font-bold tracking-wide text-[#6b0000]">Sacred<span class="text-amber-600">Cart</span></span>
+     </div>
+     
+     <div class="hidden md:flex items-center gap-1 font-medium">
+      <button onclick="navigate('home')" id="nav-home" class="nav-btn nav-link px-4 py-2 text-sm font-medium hover:bg-stone-50 hover:text-saffron transition">Home</button> 
+      <button onclick="navigate('bundles')" id="nav-bundles" class="nav-btn nav-link px-4 py-2 text-sm font-medium hover:bg-stone-50 hover:text-saffron transition">Faith Kits</button> 
+      <button onclick="navigate('orders')" id="nav-orders" class="nav-btn nav-link px-4 py-2 text-sm font-medium hover:bg-stone-50 hover:text-saffron transition">Orders</button> 
+      <button onclick="navigate('dashboard')" id="nav-dashboard" class="nav-btn nav-link px-4 py-2 text-sm font-medium hover:bg-stone-50 hover:text-saffron transition">Dashboard</button> 
+      <button onclick="navigate('admin')" id="nav-admin" class="nav-btn nav-link px-4 py-2 text-sm font-medium hover:bg-stone-50 hover:text-saffron transition">Admin Portal</button>
+     </div>
+     
+     <div class="flex items-center gap-4">
+      <button onclick="navigate('checkout')" class="relative p-2 text-stone-600 hover:text-saffron transition"> 
+       <i data-lucide="shopping-cart" class="w-6 h-6"></i> 
+       <span id="cart-badge" class="absolute -top-1 -right-1 bg-amber-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span> 
+      </button> 
+      <button class="md:hidden p-2 text-stone-600" onclick="toggleMobileMenu()"> 
+       <i data-lucide="menu" class="w-6 h-6"></i> 
+      </button>
+     </div>
+    </div>
+   </div>
+   
+   <div id="mobile-menu" class="hidden md:hidden border-t border-stone-100 bg-white px-4 py-3 space-y-1">
+    <button onclick="navigate('home')" class="block w-full text-left px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-50">Home</button> 
+    <button onclick="navigate('bundles')" class="block w-full text-left px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-50">Faith Kits</button> 
+    <button onclick="navigate('orders')" class="block w-full text-left px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-50">Orders</button> 
+    <button onclick="navigate('dashboard')" class="block w-full text-left px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-50">Dashboard</button> 
+    <button onclick="navigate('admin')" class="block w-full text-left px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-50">Admin Portal</button>
+   </div>
+  </nav>
+
+  <div id="page-home" class="page active">
+   <section class="relative overflow-hidden bg-gradient-to-r from-[#500000] to-[#800000] text-white py-20 lg:py-28">
+    <div class="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:16px_16px]"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+     <div class="space-y-6 text-center lg:text-left fade-in">
+      <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#300000]/60 text-amber-300 text-sm font-medium border border-white/10">
+        <i class="fa-solid fa-circle-check"></i> Respectfully curated for every tradition
+      </span>
+      <h1 id="hero-title" class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+        Religious essentials for <span class="text-amber-400">every home</span>
+      </h1>
+      <p id="hero-subtitle" class="text-lg text-stone-200 max-w-xl mx-auto lg:mx-0">
+        Shop prayer, worship, meditation, festival, and memorial items across Hindu, Buddhist, Christian, Islamic, Sikh, and interfaith needs.
+      </p>
+      <div class="pt-4 flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
+       <button onclick="navigate('bundles')" class="px-8 py-4 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-lg shadow-lg hover:shadow-amber-500/20 transition-all">Shop Faith Kits</button> 
+       <button onclick="document.getElementById('all-items-section').scrollIntoView({ behavior: 'smooth' });" class="px-8 py-4 bg-transparent border-2 border-white/80 hover:border-white hover:bg-white/10 font-semibold rounded-lg transition">Browse All Products</button>
+      </div>
+     </div>
+     
+     <div class="relative flex justify-center">
+      <div class="absolute inset-0 bg-amber-500 rounded-full blur-3xl opacity-20 transform scale-75"></div>
+      <div class="relative bg-[#6b0000] p-4 rounded-2xl shadow-2xl border border-white/10 max-w-md w-full overflow-hidden aspect-square flex items-center justify-center">
+        <div class="text-center p-6 space-y-2">
+          <div class="flex items-center justify-center gap-5 text-5xl text-amber-400">
+            <i class="fa-solid fa-hands-praying"></i>
+            <i class="fa-solid fa-book-open"></i>
+            <i class="fa-solid fa-dove"></i>
+          </div>
+          <p class="text-xs tracking-widest uppercase text-amber-300 font-semibold mt-4">[ Multi-faith essentials, gifts, and ceremony kits ]</p>
+        </div>
+      </div>
+     </div>
+    </div>
+   </section>
+
+   <section class="bg-amber-50 border-y border-amber-200 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+     <div class="flex items-center space-x-4 text-center md:text-left">
+      <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-2xl flex-shrink-0">
+        <i class="fa-solid fa-percent"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-[#6b0000]">Festival & Holy Season Offers</h3>
+        <p class="text-sm text-stone-600">Get <span class="font-bold text-[#800000]">20% off</span> on selected prayer, worship, and celebration bundles.</p>
+      </div>
+     </div>
+     <button onclick="navigate('bundles')" class="px-6 py-2.5 bg-[#800000] hover:bg-[#6b0000] text-white font-semibold rounded-md shadow transition whitespace-nowrap">Shop Now</button>
+    </div>
+   </section>
+
+   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="text-center max-w-xl mx-auto mb-10">
+      <h2 class="text-3xl font-bold text-[#6b0000]">Browse by Faith & Occasion</h2>
+      <div class="h-1 w-16 bg-amber-500 mx-auto mt-3 rounded"></div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+     <div onclick="quickFilterRitual('hindu')" class="card-hover cursor-pointer bg-white rounded-2xl p-6 text-center border border-stone-200/60 shadow-sm">
+      <div class="text-4xl mb-3">🪔</div>
+      <h3 class="font-bold text-stone-800 text-sm">Hindu Worship</h3>
+     </div>
+     <div onclick="quickFilterRitual('buddhist')" class="card-hover cursor-pointer bg-white rounded-2xl p-6 text-center border border-stone-200/60 shadow-sm">
+      <div class="text-4xl mb-3">📿</div>
+      <h3 class="font-bold text-stone-800 text-sm">Buddhist Practice</h3>
+     </div>
+     <div onclick="quickFilterRitual('christian')" class="card-hover cursor-pointer bg-white rounded-2xl p-6 text-center border border-stone-200/60 shadow-sm">
+      <div class="text-4xl mb-3">🕯️</div>
+      <h3 class="font-bold text-stone-800 text-sm">Christian Devotional</h3>
+     </div>
+     <div onclick="quickFilterRitual('islamic')" class="card-hover cursor-pointer bg-white rounded-2xl p-6 text-center border border-stone-200/60 shadow-sm">
+      <div class="text-4xl mb-3">☪️</div>
+      <h3 class="font-bold text-stone-800 text-sm">Islamic Essentials</h3>
+     </div>
+     <div onclick="quickFilterRitual('sikh')" class="card-hover cursor-pointer bg-white rounded-2xl p-6 text-center border border-stone-200/60 shadow-sm">
+      <div class="text-4xl mb-3">🧡</div>
+      <h3 class="font-bold text-stone-800 text-sm">Sikh Devotional</h3>
+     </div>
+     <div onclick="quickFilterRitual('home')" class="card-hover cursor-pointer bg-white rounded-2xl p-6 text-center border border-stone-200/60 shadow-sm">
+      <div class="text-4xl mb-3">🏠</div>
+      <h3 class="font-bold text-stone-800 text-sm">Home Blessing</h3>
+     </div>
+     <div onclick="quickFilterRitual('memorial')" class="card-hover cursor-pointer bg-white rounded-2xl p-6 text-center border border-stone-200/60 shadow-sm">
+      <div class="text-4xl mb-3">🤍</div>
+      <h3 class="font-bold text-stone-800 text-sm">Memorial & Remembrance</h3>
+     </div>
+     <div onclick="quickFilterRitual('all')" class="card-hover cursor-pointer bg-white rounded-2xl p-6 text-center border border-stone-200/60 shadow-sm">
+      <div class="text-4xl mb-3">✨</div>
+      <h3 class="font-bold text-stone-800 text-sm">View All Packages</h3>
+     </div>
+    </div>
+   </section>
+
+   <section class="bg-white py-16 border-t border-stone-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+     <div class="text-center max-w-xl mx-auto mb-12">
+       <h2 class="text-3xl font-bold text-[#6b0000]">Popular Faith Bundles</h2>
+       <div class="h-1 w-16 bg-amber-500 mx-auto mt-3 rounded"></div>
+       <p class="text-stone-600 mt-2">Most ordered prayer, worship, and celebration collections this month.</p>
+     </div>
+     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="popular-bundles"></div>
+    </div>
+   </section>
+
+   <section id="all-items-section" class="bg-stone-50 py-16 border-t border-stone-200/60">
+     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+       <div class="text-center max-w-xl mx-auto mb-12">
+         <h2 class="text-3xl font-bold text-[#6b0000]">All Individual Items</h2>
+         <div class="h-1 w-16 bg-amber-500 mx-auto mt-3 rounded"></div>
+         <p class="text-stone-600 mt-2">Find individual devotional items, decor, books, candles, prayer beads, incense, and gift pieces.</p>
+       </div>
+
+       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6" id="products-lazy-grid">
+         </div>
+
+       <div class="text-center mt-12">
+         <button id="load-more-btn" onclick="loadMoreProducts()" class="inline-flex items-center gap-2 px-8 py-3.5 bg-white border border-stone-300 text-stone-800 font-bold rounded-xl shadow-sm hover:border-saffron hover:bg-amber-50/40 transition-all duration-200">
+           <span>Load More Products</span>
+           <i data-lucide="chevron-down" class="w-4 h-4 text-stone-500"></i>
+         </button>
+         <div id="no-more-msg" class="hidden text-sm font-semibold text-stone-400 py-2">
+           <i class="fa-solid fa-circle-check text-green-600 mr-1"></i> All products loaded
+         </div>
+       </div>
+     </div>
+   </section>
+  </div>
+
+  <div id="page-bundles" class="page">
+   <div class="page-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
+    <h1 class="text-3xl font-black text-[#6b0000] mb-6">All Curated Faith Kits</h1>
+    <div class="flex flex-col lg:flex-row gap-8">
+     <aside class="lg:w-64 flex-shrink-0">
+      <div class="bg-white rounded-2xl p-6 border border-stone-200/70 shadow-sm sticky top-24">
+       <h3 class="font-bold text-stone-900 border-b border-stone-100 pb-2 mb-4">Filter Parameters</h3>
+       <div class="mb-4"><label class="text-xs font-bold text-stone-500 tracking-wider block mb-2 uppercase">Keyword Search</label>
+        <div class="relative"><i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-stone-400"></i> 
+         <input type="text" placeholder="Search kits..." class="w-full pl-9 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-saffron focus:bg-white transition" id="bundle-search" oninput="filterBundles()">
+        </div>
+       </div>
+       <div class="mb-4"><label class="text-xs font-bold text-stone-500 tracking-wider block mb-2 uppercase">Tradition / Occasion</label> 
+        <select class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-saffron focus:bg-white transition" id="ritual-filter" onchange="filterBundles()"> 
+         <option value="all">All Traditions</option> 
+         <option value="hindu">Hindu Worship</option> 
+         <option value="buddhist">Buddhist Practice</option> 
+         <option value="christian">Christian Devotional</option> 
+         <option value="islamic">Islamic Essentials</option> 
+         <option value="sikh">Sikh Devotional</option> 
+         <option value="home">Home Blessing</option> 
+         <option value="memorial">Memorial</option> 
+        </select>
+       </div>
+       <div><label class="text-xs font-bold text-stone-500 tracking-wider block mb-2 uppercase">Price Brackets Logic</label> 
+        <select class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-saffron focus:bg-white transition" id="price-filter" onchange="filterBundles()"> 
+         <option value="all">All Price Ranges</option> 
+         <option value="under-2000">Under Rs. 2,000</option> 
+         <option value="2000-5000">Rs. 2,000 - 5,000</option> 
+         <option value="above-5000">Above Rs. 5,000</option> 
+        </select>
+       </div>
+      </div>
+     </aside>
+     
+     <div class="flex-1">
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" id="bundle-grid"></div>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <div id="page-customize" class="page">
+   <div class="page-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
+    <button onclick="navigate('bundles')" class="flex items-center gap-2 text-sm font-bold text-[#800000] hover:text-[#500000] mb-6 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to All Kits</button>
+    <div class="flex flex-col lg:flex-row gap-8">
+     <div class="flex-1">
+      <h1 class="text-3xl font-black text-stone-900 mb-1" id="customize-title">Loading Parameters...</h1>
+      <p class="text-stone-500 mb-6 text-sm">Personalize the kit by selecting optional items, quantities, and thoughtful add-ons.</p>
+      
+      <div class="bg-white rounded-2xl border border-stone-200/60 p-6 mb-5 shadow-sm">
+       <h3 class="font-bold text-stone-900 mb-4 flex items-center gap-2 text-base"><i data-lucide="lock" class="w-4 h-4 text-saffron"></i> Core Kit Items</h3>
+       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="mandatory-items"></div>
+      </div>
+      
+      <div class="bg-white rounded-2xl border border-stone-200/60 p-6 mb-5 shadow-sm">
+       <h3 class="font-bold text-stone-900 mb-4 flex items-center gap-2 text-base"><i data-lucide="settings" class="w-4 h-4 text-amber-500"></i> Optional Items</h3>
+       <div class="space-y-3" id="optional-items"></div>
+      </div>
+      
+      <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-sm">
+       <h3 class="font-bold text-stone-900 mb-4 flex items-center gap-2 text-base"><i data-lucide="plus-circle" class="w-4 h-4 text-green-600"></i> Premium Add-ons</h3>
+       <div class="space-y-3" id="addon-items"></div>
+      </div>
+     </div>
+     
+     <div class="lg:w-80 flex-shrink-0">
+      <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-md sticky top-24">
+       <h3 class="font-bold text-stone-900 border-b border-stone-100 pb-2 mb-4">Pricing Breakdown</h3>
+       <div id="summary-items" class="space-y-3 mb-4 max-h-60 overflow-y-auto text-xs font-medium text-stone-600"></div>
+       <div class="border-t border-stone-100 pt-4 space-y-2">
+        <div class="flex justify-between text-sm font-medium">
+         <span>Raw Subtotal</span><span id="summary-subtotal" class="text-stone-900">Rs. 0</span>
+        </div>
+        <div class="flex justify-between text-sm font-medium text-green-600">
+         <span>Festive Reward Code</span><span>-Rs. 200</span>
+        </div>
+        <div class="flex justify-between font-black text-xl border-t border-stone-100 pt-3 mt-3 text-stone-900">
+         <span>Grand Total</span><span id="summary-total" class="text-[#6b0000]">Rs. 0</span>
+        </div>
+       </div>
+       <button onclick="addCurrentToCheckout()" class="w-full bg-saffron hover:bg-saffron-dark text-white font-bold py-3.5 rounded-xl mt-6 transition shadow-md active:scale-[0.99]">Proceed to Checkout</button>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <div id="page-checkout" class="page">
+   <div class="page-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
+    <h1 class="text-3xl font-black text-stone-900 mb-6">Secure Checkout</h1>
+    <div class="flex flex-col lg:flex-row gap-8">
+     <div class="flex-1 space-y-6">
+      <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-sm">
+       <h3 class="font-bold text-stone-900 text-base mb-4 border-b border-stone-100 pb-2">Delivery Details</h3>
+       <form id="checkout-form" class="space-y-4" onsubmit="event.preventDefault()">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+         <div>
+          <label for="fname" class="text-xs font-bold text-stone-500 uppercase block mb-1">Full Name</label>
+          <input id="fname" type="text" required class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-saffron focus:bg-white transition" placeholder="Full name">
+         </div>
+         <div>
+          <label for="phone" class="text-xs font-bold text-stone-500 uppercase block mb-1">Primary Phone Number</label>
+          <input id="phone" type="tel" required class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-saffron focus:bg-white transition" placeholder="98XXXXXXXX">
+         </div>
+        </div>
+        <div>
+         <label for="address" class="text-xs font-bold text-stone-500 uppercase block mb-1">Delivery Street Address</label>
+         <input id="address" type="text" required class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-saffron focus:bg-white transition" placeholder="Kathmandu, Ward 10, Tole...">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+         <div>
+          <label for="ddate" class="text-xs font-bold text-stone-500 uppercase block mb-1">Needed By Date</label>
+          <input id="ddate" type="date" required class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-saffron focus:bg-white transition">
+         </div>
+         <div>
+          <label for="dtime" class="text-xs font-bold text-stone-500 uppercase block mb-1">Preferred Arrival Slot</label>
+          <select id="dtime" class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-saffron focus:bg-white transition">
+           <option>Early Morning (6:00 AM - 9:00 AM)</option>
+           <option>Morning (9:00 AM - 12:00 PM)</option>
+           <option>Afternoon (12:00 PM - 4:00 PM)</option>
+          </select>
+         </div>
+        </div>
+       </form>
+      </div>
+      
+      <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-sm">
+       <h3 class="font-bold text-stone-900 text-base mb-4 border-b border-stone-100 pb-2">Payment Method</h3>
+       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="flex items-center gap-3 p-4 border border-stone-200 rounded-xl cursor-pointer hover:border-saffron bg-stone-50/50 transition">
+         <input type="radio" name="payment-method" id="pay-cod" checked class="accent-[#800000] w-4 h-4">
+         <span class="font-bold text-stone-800 text-sm">Cash on Delivery (COD)</span>
+        </label> 
+        <label class="flex items-center gap-3 p-4 border border-stone-200 rounded-xl cursor-pointer hover:border-saffron bg-stone-50/50 transition">
+         <input type="radio" name="payment-method" id="pay-qr" class="accent-[#800000] w-4 h-4">
+         <span class="font-bold text-stone-800 text-sm">Instant Digital QR (eSewa / Khalti)</span>
+        </label>
+       </div>
+      </div>
+     </div>
+     
+     <div class="lg:w-80 flex-shrink-0">
+      <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-md sticky top-24">
+       <h3 class="font-bold text-stone-900 border-b border-stone-100 pb-2 mb-4">Review Order</h3>
+       <div class="space-y-4 text-sm mb-4" id="checkout-summary-view"></div>
+       <div class="border-t border-stone-100 pt-3 flex justify-between font-black text-lg text-stone-900">
+        <span>Final Total</span><span id="checkout-final-total" class="text-[#6b0000]">Rs. 0</span>
+       </div>
+       <button onclick="validateAndPlaceOrder()" class="w-full bg-amber-500 hover:bg-amber-600 text-stone-950 font-black py-4 rounded-xl mt-6 transition shadow-md active:scale-[0.98]">Confirm & Place Order</button>
+       <p class="text-[11px] text-stone-400 text-center mt-3 leading-relaxed">We pack items with respect and verify product quality before dispatch.</p>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <div id="page-orders" class="page">
+   <div class="page-shell max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
+    <h1 class="text-3xl font-black text-stone-900 mb-6">Order Tracking</h1>
+    <div id="tracking-container">
+      <div class="bg-white rounded-2xl border border-stone-200/60 p-6 mb-6 shadow-sm">
+       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-stone-100">
+        <div>
+         <p class="text-xs font-mono font-bold text-stone-400">TRACKING REFERENCE ID: #SC-2026-1847</p>
+         <h3 class="font-black text-xl text-[#6b0000]" id="tracking-bundle-title">Interfaith Home Blessing Kit</h3>
+        </div>
+        <span class="inline-block self-start sm:self-center bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 uppercase tracking-wider">Out with Rider</span>
+       </div>
+       
+       <div class="flex items-center justify-between mb-8 overflow-x-auto pt-2">
+        <div class="progress-step completed text-center flex-1 min-w-[70px]">
+         <div class="step-circle w-10 h-10 rounded-full bg-stone-100 mx-auto flex items-center justify-center mb-2 font-bold"><i data-lucide="check" class="w-4 h-4"></i></div>
+         <p class="text-[11px] font-bold text-stone-700">Confirmed</p>
+        </div>
+        <div class="flex-1 h-1 bg-[#800000] rounded -mt-5"></div>
+        <div class="progress-step completed text-center flex-1 min-w-[70px]">
+         <div class="step-circle w-10 h-10 rounded-full bg-stone-100 mx-auto flex items-center justify-center mb-2 font-bold"><i data-lucide="check" class="w-4 h-4"></i></div>
+         <p class="text-[11px] font-bold text-stone-700">Assembling</p>
+        </div>
+        <div class="flex-1 h-1 bg-[#800000] rounded -mt-5"></div>
+        <div class="progress-step active text-center flex-1 min-w-[70px]">
+         <div class="step-circle w-10 h-10 rounded-full bg-stone-100 mx-auto flex items-center justify-center mb-2 font-bold"><i data-lucide="truck" class="w-4 h-4"></i></div>
+         <p class="text-[11px] font-bold text-[#800000]">In Transit</p>
+        </div>
+        <div class="flex-1 h-1 bg-stone-200 rounded -mt-5"></div>
+        <div class="progress-step text-center flex-1 min-w-[70px]">
+         <div class="step-circle w-10 h-10 rounded-full bg-stone-100 mx-auto flex items-center justify-center mb-2 text-stone-400 font-bold"><i data-lucide="package" class="w-4 h-4"></i></div>
+         <p class="text-[11px] font-bold text-stone-400">Delivered</p>
+        </div>
+       </div>
+       
+       <div class="bg-stone-50 rounded-xl p-4 flex items-center justify-between border border-stone-200/50">
+        <div class="flex items-center gap-3">
+         <div class="w-12 h-12 rounded-full bg-[#800000] text-white font-black flex items-center justify-center text-base shadow shadow-maroon/20">RP</div>
+         <div>
+          <p class="font-bold text-stone-800 text-sm">Rajesh Paswan (Delivery Partner)</p>
+          <p class="text-xs text-stone-500 font-mono">+977 9851XXXXX2</p>
+         </div>
+        </div>
+        <button onclick="alert('Initiating call connection to Rajesh (+977 9851XXXXX2)...')" class="bg-white border border-stone-200 px-4 py-2 rounded-lg text-xs font-bold text-stone-700 hover:border-saffron hover:text-saffron transition shadow-sm">Call Dispatcher</button>
+       </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-sm">
+     <h3 class="font-bold text-stone-900 mb-2">Need Help With Your Order?</h3>
+     <p class="text-xs text-stone-500 mb-4 leading-relaxed">Our support team can help adjust quantities, delivery timing, substitutions, and gift packaging before dispatch.</p>
+     <button onclick="alert('SacredCart support line initialized.')" class="bg-stone-900 text-white font-bold px-5 py-2.5 rounded-xl text-xs hover:bg-stone-800 transition">Contact Support Line</button>
+    </div>
+   </div>
+  </div>
+
+  <div id="page-dashboard" class="page">
+   <div class="page-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
+    <h1 class="text-3xl font-black text-stone-900 mb-6">Customer Dashboard</h1>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+     <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-sm">
+      <p class="text-xs font-bold text-stone-400 uppercase tracking-wider">Past Orders</p>
+      <p class="text-3xl font-black text-[#800000] mt-1" id="dash-total-orders-count">12</p>
+     </div>
+     <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-sm">
+      <p class="text-xs font-bold text-stone-400 uppercase tracking-wider">Reminder Alerts</p>
+      <p class="text-3xl font-black text-amber-600 mt-1">3</p>
+     </div>
+     <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-sm">
+      <p class="text-xs font-bold text-stone-400 uppercase tracking-wider">Saved Addresses</p>
+      <p class="text-3xl font-black text-stone-700 mt-1">2</p>
+     </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl border border-stone-200/60 p-6 mb-6 shadow-sm">
+     <h3 class="font-bold text-stone-900 text-base mb-4 border-b border-stone-100 pb-2">Completed Purchases</h3>
+     <div class="space-y-3" id="dashboard-history-list">
+      <div class="flex items-center justify-between p-4 bg-stone-50 rounded-xl border border-stone-100">
+       <div>
+        <p class="font-bold text-stone-800 text-sm">Interfaith Home Blessing Kit</p>
+        <p class="text-xs font-mono text-stone-400">Oct 15, 2026</p>
+       </div>
+       <div class="flex items-center gap-4">
+         <button onclick="openInspectModal('Interfaith Home Blessing Kit', 'Candles, incense, prayer beads, blessing bowl, fresh cloth, keepsake card', 'Rs. 3,600')" class="text-xs font-bold text-[#800000] hover:underline flex items-center gap-1"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Inspect Items</button>
+         <span class="text-xs font-bold text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200">Delivered</span>
+       </div>
+      </div>
+      <div class="flex items-center justify-between p-4 bg-stone-50 rounded-xl border border-stone-100">
+       <div>
+        <p class="font-bold text-stone-800 text-sm">Christian Devotional Candle Set</p>
+        <p class="text-xs font-mono text-stone-400">Sep 28, 2026</p>
+       </div>
+       <div class="flex items-center gap-4">
+         <button onclick="openInspectModal('Christian Devotional Candle Set', 'Prayer candles, rosary, scripture card, brass candle holder, gift wrap', 'Rs. 2,500')" class="text-xs font-bold text-[#800000] hover:underline flex items-center gap-1"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Inspect Items</button>
+         <span class="text-xs font-bold text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200">Delivered</span>
+       </div>
+      </div>
+     </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-sm">
+     <h3 class="font-bold text-stone-900 text-base mb-4 border-b border-stone-100 pb-2">Saved Reminders</h3>
+     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="flex items-center justify-between p-4 border border-stone-200 rounded-xl bg-stone-50/40">
+       <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-purple-50 rounded-full flex items-center justify-center text-purple-700 font-bold"><i data-lucide="bell" class="w-4 h-4"></i></div>
+        <div>
+         <p class="font-bold text-stone-800 text-sm">Memorial Remembrance</p>
+         <p class="text-xs text-stone-400">Reminder: Jan 15, 2027</p>
+        </div>
+       </div>
+       <button onclick="quickReorder(7)" class="text-xs font-bold text-amber-600 hover:text-amber-700 border border-amber-200 bg-white px-3 py-1.5 rounded-lg hover:bg-amber-50 shadow-sm transition">Quick Reorder</button>
+      </div>
+      <div class="flex items-center justify-between p-4 border border-stone-200 rounded-xl bg-stone-50/40">
+       <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-blue-50 rounded-full flex items-center justify-center text-blue-700 font-bold"><i data-lucide="bell" class="w-4 h-4"></i></div>
+        <div>
+         <p class="font-bold text-stone-800 text-sm">Monthly Prayer Refill</p>
+         <p class="text-xs text-stone-400">Recurring incense, candles, and oil</p>
+        </div>
+       </div>
+       <button onclick="quickReorder(6)" class="text-xs font-bold text-amber-600 hover:text-amber-700 border border-amber-200 bg-white px-3 py-1.5 rounded-lg hover:bg-amber-50 shadow-sm transition">Quick Reorder</button>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <div id="page-admin" class="page">
+   <div class="page-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
+    <h1 class="text-3xl font-black text-stone-900 mb-6">Operations Admin Control Panel</h1>
+    
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+     <div class="bg-white rounded-2xl border border-stone-200/60 p-5 shadow-sm">
+      <p class="text-xs font-bold text-stone-400 uppercase tracking-wider">Inbound Queue Today</p>
+      <p class="text-2xl font-black text-[#800000] mt-1" id="admin-today-orders-count">24</p>
+     </div>
+     <div class="bg-white rounded-2xl border border-stone-200/60 p-5 shadow-sm">
+      <p class="text-xs font-bold text-stone-400 uppercase tracking-wider">Gross Settlement Revenue</p>
+      <p class="text-2xl font-black text-green-700 mt-1">Rs. 48,200</p>
+     </div>
+     <div class="bg-white rounded-2xl border border-stone-200/60 p-5 shadow-sm">
+      <p class="text-xs font-bold text-stone-400 uppercase tracking-wider">Active Platform Bundles</p>
+      <p class="text-2xl font-black text-amber-600 mt-1">9</p>
+     </div>
+     <div class="bg-white rounded-2xl border border-stone-200/60 p-5 shadow-sm">
+      <p class="text-xs font-bold text-stone-400 uppercase tracking-wider">Pending Couriers Assigned</p>
+      <p class="text-2xl font-black text-stone-700 mt-1">7</p>
+     </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl border border-stone-200/60 p-6 mb-6 shadow-sm">
+     <h3 class="font-bold text-stone-900 text-base mb-4 border-b border-stone-100 pb-2">Live Fulfillment Queue</h3>
+     <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+       <thead>
+        <tr class="text-left text-stone-400 border-b border-stone-100 uppercase text-xs tracking-wider">
+         <th class="pb-3 font-bold">Order Code</th>
+         <th class="pb-3 font-bold">Customer Identifier</th>
+         <th class="pb-3 font-bold">Target Bundle</th>
+         <th class="pb-3 font-bold">Settlement Value</th>
+         <th class="pb-3 font-bold">Granular Inventory</th>
+         <th class="pb-3 font-bold">Pipeline Status</th>
+        </tr>
+       </thead>
+       <tbody class="divide-y divide-stone-100 font-medium text-stone-800" id="admin-orders-rows">
+        <tr>
+         <td class="py-3 font-mono text-xs font-bold text-stone-600">#SC-1847</td>
+         <td class="py-3">Ram Sharma</td>
+         <td class="py-3">Interfaith Home Blessing Kit</td>
+         <td class="py-3 text-stone-900 font-bold">Rs. 3,600</td>
+         <td class="py-3">
+           <button onclick="openInspectModal('Order #SC-1847 Breakdown', 'Candles, incense, prayer beads, blessing bowl, fresh cloth, keepsake card', 'Rs. 3,600')" class="text-saffron text-xs font-bold hover:underline flex items-center gap-1"><i data-lucide="info" class="w-3.5 h-3.5"></i> View Items</button>
+         </td>
+         <td class="py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold border border-amber-200">In Transit</span></td>
+        </tr>
+        <tr>
+         <td class="py-3 font-mono text-xs font-bold text-stone-600">#SC-1846</td>
+         <td class="py-3">Sita Devi</td>
+         <td class="py-3">Buddhist Meditation Starter Set</td>
+         <td class="py-3 text-stone-900 font-bold">Rs. 2,800</td>
+         <td class="py-3">
+           <button onclick="openInspectModal('Order #SC-1846 Breakdown', 'Mala beads, butter lamp cups, incense, offering bowls, meditation cloth', 'Rs. 2,800')" class="text-saffron text-xs font-bold hover:underline flex items-center gap-1"><i data-lucide="info" class="w-3.5 h-3.5"></i> View Items</button>
+         </td>
+         <td class="py-3"><span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-bold border border-blue-200">Packing Unit</span></td>
+        </tr>
+        <tr>
+         <td class="py-3 font-mono text-xs font-bold text-stone-600">#SC-1845</td>
+         <td class="py-3">Hari Bahadur</td>
+         <td class="py-3">Islamic Prayer Essentials Kit</td>
+         <td class="py-3 text-stone-900 font-bold">Rs. 3,200</td>
+         <td class="py-3">
+           <button onclick="openInspectModal('Order #SC-1845 Breakdown', 'Prayer mat, tasbih beads, attar, gift box, modest storage pouch', 'Rs. 3,200')" class="text-saffron text-xs font-bold hover:underline flex items-center gap-1"><i data-lucide="info" class="w-3.5 h-3.5"></i> View Items</button>
+         </td>
+         <td class="py-3"><span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-bold border border-green-200">Dispatched</span></td>
+        </tr>
+       </tbody>
+      </table>
+     </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl border border-stone-200/60 p-6 shadow-sm">
+     <h3 class="font-bold text-stone-900 text-base mb-4 border-b border-stone-100 pb-2">Low Stock Supply Alerts</h3>
+     <div class="space-y-3">
+      <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
+       <div class="flex items-center gap-3">
+         <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600"></i>
+         <span class="text-sm font-bold text-stone-800">Unscented Prayer Candles</span>
+       </div><span class="text-xs font-black text-red-700 bg-white border border-red-200 px-2 py-0.5 rounded">3 Units Left</span>
+      </div>
+      <div class="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-200/60">
+       <div class="flex items-center gap-3">
+         <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i>
+         <span class="text-sm font-bold text-stone-800">Natural Incense Variety Packs</span>
+       </div><span class="text-xs font-black text-amber-800 bg-white border border-amber-200 px-2 py-0.5 rounded">8 Units Left</span>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <div id="inspect-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4 transition-all">
+    <div class="bg-white rounded-3xl max-w-lg w-full border border-stone-200 p-6 shadow-2xl relative fade-in">
+       <button onclick="closeInspectModal()" class="absolute top-5 right-5 p-2 text-stone-400 hover:text-stone-900 rounded-lg hover:bg-stone-50 transition">
+         <i data-lucide="x" class="w-5 h-5"></i>
+       </button>
+       <h3 class="text-xl font-black text-stone-900 mb-2" id="modal-struct-title">Itemized Product Details</h3>
+       <div class="bg-amber-50/50 rounded-2xl p-5 my-4 border border-amber-100">
+         <p class="text-[10px] font-black text-[#800000] uppercase tracking-widest mb-2">Assembled Kit Breakdown</p>
+         <p class="text-sm text-stone-700 leading-relaxed font-medium" id="modal-struct-content">Loading metadata...</p>
+       </div>
+       <div class="flex items-center justify-between pt-3 border-t border-stone-100 text-sm font-bold">
+         <span class="text-stone-500">Package Value</span>
+         <span class="text-[#6b0000] font-black text-xl" id="modal-struct-price">Rs. 0</span>
+       </div>
+       <button onclick="closeInspectModal()" class="w-full mt-5 bg-stone-900 hover:bg-stone-800 text-white font-bold py-3.5 rounded-xl text-sm transition shadow shadow-stone-900/10">Close</button>
+    </div>
+  </div>
+
+  <div id="order-toast" class="fixed bottom-6 right-6 bg-green-700 text-white px-6 py-4 rounded-2xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3 border border-green-800"><i data-lucide="check-circle" class="w-5 h-5 text-green-300"></i> <span class="font-bold text-sm" id="toast-message">Order placed successfully!</span></div>
+  
+  <section class="bg-gradient-to-br from-[#300000] to-[#500000] text-white py-16 relative overflow-hidden mt-12">
+    <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:20px_20px]"></div>
+    <div class="max-w-4xl mx-auto px-4 text-center space-y-6 relative z-10">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/10 text-amber-400 text-2xl mb-2 border border-white/10 shadow-inner">
+        <i class="fa-regular fa-bell animate-bounce"></i>
+      </div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">Never Miss A Meaningful Date</h2>
+      <p class="text-stone-200 max-w-md mx-auto text-sm sm:text-base leading-relaxed font-medium">Get festival reminders, restock alerts, gift ideas, and seasonal offers across faith traditions.</p>
+      <form class="max-w-md mx-auto flex flex-col sm:flex-row items-stretch justify-center gap-2 pt-2" onsubmit="event.preventDefault(); alert('Subscribed successfully to SacredCart updates!');">
+        <div class="relative flex-grow">
+          <input type="email" placeholder="yourname@gmail.com" required class="w-full h-12 px-4 rounded-lg bg-white/10 border border-white/30 text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white/20 transition text-sm">
+        </div>
+        <button type="submit" class="h-12 px-8 bg-amber-500 hover:bg-amber-600 text-[#200000] font-bold rounded-lg shadow-md whitespace-nowrap transition-all duration-200 text-sm active:scale-[0.98]">Subscribe</button>
+      </form>
+    </div>
+  </section>
+
+  <footer class="bg-stone-900 text-stone-500 text-xs py-8 border-t border-stone-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p>&copy; 2026 SacredCart Pvt. Ltd. All rights reserved.</p>
+      <div class="flex space-x-6 font-medium">
+        <a href="#" class="hover:text-stone-300 transition">Privacy Policy</a>
+        <a href="#" class="hover:text-stone-300 transition">Terms of Service</a>
+        <a href="#" class="hover:text-stone-300 transition">Concierge Support</a>
+      </div>
+    </div>
+  </footer>
+  
+  <script>
+// Master Data Repositories
+const bundles = [
+  { id: 1, name: 'Hindu Daily Worship Essentials Kit', ritual: 'hindu', emoji: '🪔', items: 24, price: 2400, popular: true },
+  { id: 2, name: 'Hindu Festival Celebration Pack', ritual: 'hindu', emoji: '🌺', items: 34, price: 3800, popular: false },
+  { id: 3, name: 'Buddhist Meditation Starter Set', ritual: 'buddhist', emoji: '📿', items: 18, price: 2800, popular: true },
+  { id: 4, name: 'Christian Devotional Candle Set', ritual: 'christian', emoji: '🕯️', items: 16, price: 2500, popular: true },
+  { id: 5, name: 'Islamic Prayer Essentials Kit', ritual: 'islamic', emoji: '☪️', items: 14, price: 3200, popular: false },
+  { id: 6, name: 'Sikh Devotional Care Pack', ritual: 'sikh', emoji: '🧡', items: 15, price: 2600, popular: false },
+  { id: 7, name: 'Interfaith Home Blessing Kit', ritual: 'home', emoji: '🏠', items: 22, price: 3600, popular: true },
+  { id: 8, name: 'Memorial & Remembrance Set', ritual: 'memorial', emoji: '🤍', items: 20, price: 3000, popular: false },
+  { id: 9, name: 'Premium Gift Hamper for Religious Occasions', ritual: 'home', emoji: '🎁', items: 28, price: 5200, popular: false },
+];
+
+const individualProducts = [
+  // Standalone multi-faith essentials
+  { id: 101, name: 'Natural Sandalwood Incense Sticks', price: 120, category: 'incense', graphic: '🪵', type: 'Standalone' },
+  { id: 102, name: 'Unscented White Prayer Candles - 12pc', price: 180, category: 'candles', graphic: '🕯️', type: 'Standalone' },
+  { id: 103, name: 'Mala / Prayer Beads', price: 350, category: 'beads', graphic: '📿', type: 'Standalone' },
+  { id: 104, name: 'Compact Prayer Mat', price: 650, category: 'textiles', graphic: '☪️', type: 'Standalone' },
+  { id: 105, name: 'Small Brass Diya Lamp', price: 250, category: 'lamps', graphic: '🪔', type: 'Standalone' },
+  { id: 106, name: 'Rosary Gift Box', price: 550, category: 'devotional', graphic: '🕊️', type: 'Standalone' },
+  { id: 107, name: 'Butter Lamp Cups - 24pc', price: 220, category: 'lamps', graphic: '💛', type: 'Standalone' },
+  { id: 108, name: 'Tasbih Beads', price: 300, category: 'beads', graphic: '☪️', type: 'Standalone' },
+  
+  // Bundle savers
+  { id: 201, name: 'Daily Prayer Refill Pack', price: 899, category: 'bundle', graphic: '✨', type: 'Bundle Saver' },
+  { id: 202, name: 'Meditation & Incense Combo', price: 1250, category: 'bundle', graphic: '🧘', type: 'Bundle Saver' },
+  { id: 203, name: 'Festival Decor Starter Box', price: 1450, category: 'bundle', graphic: '🎁', type: 'Bundle Saver' },
+  { id: 204, name: 'Memorial Candle & Flower Set', price: 1100, category: 'bundle', graphic: '🤍', type: 'Bundle Saver' },
+  
+  // Extra standalone inventory
+  { id: 109, name: 'Attar Fragrance Roll-on', price: 420, category: 'fragrance', graphic: '🌙', type: 'Standalone' },
+  { id: 110, name: 'Decorative Door Hanging', price: 180, category: 'decor', graphic: '🍃', type: 'Standalone' },
+  { id: 111, name: 'Offering Bowl Set', price: 450, category: 'serveware', graphic: '🥣', type: 'Standalone' },
+  { id: 112, name: 'Pocket Scripture Notebook', price: 220, category: 'books', graphic: '📖', type: 'Standalone' }
+];
+
+const customizeItems = {
+  mandatory: [
+    { name: 'Primary Prayer / Worship Item', price: 650 }, { name: 'Respectful Storage Pouch', price: 180 }, { name: 'Fresh Cloth Wrap', price: 220 },
+    { name: 'Instruction & Care Card', price: 80 }, { name: 'Gift-ready Packaging', price: 300 }, { name: 'Quality Check Seal', price: 70 },
+  ],
+  optional: [
+    { name: 'Natural Incense Sticks', price: 120, included: true }, { name: 'Unscented Prayer Candles', price: 180, included: true },
+    { name: 'Fresh Flower Garland', price: 200, included: false }, { name: 'Printed Greeting / Blessing Card', price: 90, included: false },
+  ],
+  addons: [
+    { name: 'Premium Keepsake Box', price: 900, included: false }, { name: 'Brass Candle / Lamp Holder', price: 450, included: false },
+    { name: 'Monthly Refill Pack', price: 500, included: false }, { name: 'Polished Wooden Display Stand', price: 350, included: false },
+  ]
+};
+
+// Global App States
+let selectedBundle = bundles[0];
+let cartState = null; 
+let currentProductPageSize = 8; // Sets default to show exactly 8 items (2 rows on large screens)
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  
+  const targetingPage = document.getElementById('page-' + page);
+  if(targetingPage) targetingPage.classList.add('active');
+  
+  const activeNavButton = document.getElementById('nav-' + page);
+  if(activeNavButton) activeNavButton.classList.add('active');
+  
+  window.scrollTo(0, 0);
+  
+  if (page === 'home') renderLazyProductGrid();
+  if (page === 'bundles') renderBundles();
+  if (page === 'customize') renderCustomize();
+  if (page === 'checkout') syncCheckoutView();
+  
+  document.getElementById('mobile-menu').classList.add('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+
+function toggleMobileMenu() {
+  document.getElementById('mobile-menu').classList.toggle('hidden');
+}
+
+// Lazy Loading Engine Logic with default 2 Rows Structure
+function renderLazyProductGrid() {
+  const targetGrid = document.getElementById('products-lazy-grid');
+  if(!targetGrid) return;
+  
+  const visibleProducts = individualProducts.slice(0, currentProductPageSize);
+  
+  targetGrid.innerHTML = visibleProducts.map(p => {
+    const isBundle = p.type === 'Bundle Saver';
+    return `
+      <div class="card-hover bg-white rounded-2xl border ${isBundle ? 'border-purple-200 border-l-4 border-l-purple-600' : 'border-stone-200/60'} p-4 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="w-full aspect-square ${isBundle ? 'bg-purple-50/50' : 'bg-stone-50'} rounded-xl flex items-center justify-center text-4xl mb-3 border border-stone-100">
+            ${p.graphic}
+          </div>
+          <span class="inline-block px-2 py-0.5 text-[10px] font-bold rounded mb-2 ${isBundle ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}">
+            ${p.type}
+          </span>
+          <h4 class="font-bold text-sm text-stone-900 leading-tight">${p.name}</h4>
+          <p class="text-[11px] font-medium text-stone-400 capitalize mt-0.5">${p.category} essentials</p>
+        </div>
+        <div class="flex items-center justify-between pt-3 mt-3 border-t border-stone-100">
+          <span class="font-black text-[#800000] text-sm">Rs. ${p.price}</span>
+          <button onclick="addSingleProductToCart('${p.name}', ${p.price})" class="p-2 ${isBundle ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-amber-500 hover:bg-amber-600 text-stone-950'} rounded-lg shadow-sm transition">
+            <i data-lucide="plus" class="w-3.5 h-3.5 stroke-[3]"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  const btn = document.getElementById('load-more-btn');
+  const msg = document.getElementById('no-more-msg');
+  if(currentProductPageSize >= individualProducts.length) {
+    if(btn) btn.classList.add('hidden');
+    if(msg) msg.classList.remove('hidden');
+  } else {
+    if(btn) btn.classList.remove('hidden');
+    if(msg) msg.classList.add('hidden');
+  }
+  if (window.lucide) lucide.createIcons();
+}
+
+function loadMoreProducts() {
+  // Increments by 4 items (adds another complete row to the grid layout)
+  currentProductPageSize += 4;
+  renderLazyProductGrid();
+}
+
+function addSingleProductToCart(name, price) {
+  cartState = {
+    subtotal: price + 200, 
+    discount: 200,
+    total: price,
+    itemDescriptionString: `Single product: ${name}`
+  };
+  document.getElementById('cart-badge').textContent = "1";
+  document.getElementById('toast-message').textContent = `Added ${name} directly to checkout configurations.`;
+  
+  const toast = document.getElementById('order-toast');
+  toast.style.transform = 'translateY(0)';
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.transform = 'translateY(20px)'; toast.style.opacity = '0'; }, 2500);
+}
+
+function selectBundleForCustomization(id) {
+  const found = bundles.find(b => b.id === id);
+  if (found) {
+    selectedBundle = found;
+    customizeItems.optional.forEach(i => i.included = (i.name.includes('Incense') || i.name.includes('Candles')));
+    customizeItems.addons.forEach(i => i.included = false);
+    navigate('customize');
+  }
+}
+
+function renderBundleCard(b) {
+  return `<div class="card-hover bg-white rounded-2xl border border-stone-200/70 overflow-hidden shadow-sm flex flex-col justify-between">
+    <div class="h-36 bg-gradient-to-br from-amber-50 to-[#FEF3C7] flex items-center justify-center text-5xl relative">
+       ${b.emoji}
+       ${b.popular ? '<span class="absolute top-2 right-2 bg-[#800000] text-amber-300 text-[10px] tracking-wider uppercase font-black px-2 py-0.5 rounded shadow-sm">Popular Choice</span>' : ''}
+    </div>
+    <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+      <div>
+        <h3 class="font-bold text-base text-stone-900 transition">${b.name}</h3>
+        <p class="text-xs text-stone-500 mt-1">${b.items} carefully sourced components included</p>
+      </div>
+      <div class="flex items-center justify-between pt-2 border-t border-stone-100">
+        <span class="font-black text-[#6b0000] text-base">Rs. ${b.price.toLocaleString()}</span>
+        <button onclick="selectBundleForCustomization(${b.id})" class="bg-[#800000]/10 text-[#800000] text-xs font-bold px-3.5 py-2 rounded-lg hover:bg-[#800000] hover:text-white transition-all">Customize Kit</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderBundles(filtered) {
+  const data = filtered || bundles;
+  document.getElementById('bundle-grid').innerHTML = data.map(renderBundleCard).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+function filterBundles() {
+  const search = document.getElementById('bundle-search').value.toLowerCase();
+  const ritual = document.getElementById('ritual-filter').value;
+  const priceRange = document.getElementById('price-filter').value;
+  
+  let filtered = bundles;
+  if (ritual !== 'all') filtered = filtered.filter(b => b.ritual === ritual);
+  if (search) filtered = filtered.filter(b => b.name.toLowerCase().includes(search));
+  
+  if (priceRange === 'under-2000') {
+    filtered = filtered.filter(b => b.price < 2000);
+  } else if (priceRange === '2000-5000') {
+    filtered = filtered.filter(b => b.price >= 2000 && b.price <= 5000);
+  } else if (priceRange === 'above-5000') {
+    filtered = filtered.filter(b => b.price > 5000);
+  }
+  
+  renderBundles(filtered);
+}
+
+function quickFilterRitual(ritualKey) {
+  navigate('bundles');
+  const ritualSelector = document.getElementById('ritual-filter');
+  if (ritualSelector) {
+    ritualSelector.value = ritualKey;
+    filterBundles();
+  }
+}
+
+function renderPopularBundles() {
+  document.getElementById('popular-bundles').innerHTML = bundles.filter(b => b.popular).map(renderBundleCard).join('');
+}
+
+function renderCustomize() {
+  document.getElementById('customize-title').textContent = selectedBundle.name;
+  
+  const mandEl = document.getElementById('mandatory-items');
+  const optEl = document.getElementById('optional-items');
+  const addEl = document.getElementById('addon-items');
+
+  mandEl.innerHTML = customizeItems.mandatory.map(i => `<div class="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100"><div class="flex items-center gap-2"><i data-lucide="lock" class="w-3.5 h-3.5 text-stone-400"></i><span class="text-xs font-bold text-stone-700">${i.name}</span></div><span class="text-xs font-mono font-bold text-stone-500">Rs. ${i.price}</span></div>`).join('');
+
+  optEl.innerHTML = customizeItems.optional.map((i, idx) => `<div class="flex items-center justify-between p-3 rounded-xl border ${i.included ? 'border-amber-400 bg-amber-50/20' : 'border-stone-200'} transition"><span class="text-xs font-bold text-stone-800">${i.name}</span><div class="flex items-center gap-3"><span class="text-xs font-mono font-bold text-stone-500">Rs. ${i.price}</span><button onclick="toggleOptional(${idx})" class="w-8 h-8 rounded-lg flex items-center justify-center ${i.included ? 'bg-[#800000] text-white' : 'bg-stone-100 text-stone-400'} transition"><i data-lucide="${i.included ? 'check' : 'plus'}" class="w-4 h-4"></i></button></div></div>`).join('');
+
+  addEl.innerHTML = customizeItems.addons.map((i, idx) => `<div class="flex items-center justify-between p-3 rounded-xl border ${i.included ? 'border-green-500 bg-green-50/20' : 'border-stone-200'} transition"><span class="text-xs font-bold text-stone-800">${i.name}</span><div class="flex items-center gap-3"><span class="text-xs font-mono font-bold text-stone-500">Rs. ${i.price}</span><button onclick="toggleAddon(${idx})" class="w-8 h-8 rounded-lg flex items-center justify-center ${i.included ? 'bg-green-600 text-white' : 'bg-stone-100 text-stone-400'} transition"><i data-lucide="${i.included ? 'check' : 'plus'}" class="w-4 h-4"></i></button></div></div>`).join('');
+
+  updateSummary();
+  if (window.lucide) lucide.createIcons();
+}
+
+function toggleOptional(idx) { customizeItems.optional[idx].included = !customizeItems.optional[idx].included; renderCustomize(); }
+function toggleAddon(idx) { customizeItems.addons[idx].included = !customizeItems.addons[idx].included; renderCustomize(); }
+
+function calculateCurrentConfigTotals() {
+  const chosenOptional = customizeItems.optional.filter(i => i.included);
+  const chosenAddons = customizeItems.addons.filter(i => i.included);
+  
+  const subtotal = selectedBundle.price + chosenAddons.reduce((acc, curr) => acc + curr.price, 0) - customizeItems.optional.filter(i => !i.included).reduce((acc, curr) => acc + curr.price, 0);
+  const baselineTotal = Math.max(subtotal, 500); 
+  const discountedFinal = Math.max(baselineTotal - 200, 300);
+
+  return {
+    subtotal: baselineTotal,
+    discount: 200,
+    total: discountedFinal,
+    itemDescriptionString: "Custom kit selection: " + chosenOptional.map(o => o.name).concat(chosenAddons.map(a => a.name)).join(', ')
+  };
+}
+
+function updateSummary() {
+  const totals = calculateCurrentConfigTotals();
+  
+  let itemizedRowsHTML = `<div class="flex justify-between font-bold text-stone-800"><span>Core Kit</span><span>Rs. ${selectedBundle.price.toLocaleString()}</span></div>`;
+  customizeItems.optional.filter(i => !i.included).forEach(i => {
+    itemizedRowsHTML += `<div class="flex justify-between text-red-600 font-bold"><span>Removed: ${i.name}</span><span>-Rs. ${i.price}</span></div>`;
+  });
+  customizeItems.addons.filter(i => i.included).forEach(i => {
+    itemizedRowsHTML += `<div class="flex justify-between text-green-600 font-bold"><span>Add-on: ${i.name}</span><span>+Rs. ${i.price}</span></div>`;
+  });
+
+  document.getElementById('summary-items').innerHTML = itemizedRowsHTML;
+  document.getElementById('summary-subtotal').textContent = `Rs. ${totals.subtotal.toLocaleString()}`;
+  document.getElementById('summary-total').textContent = `Rs. ${totals.total.toLocaleString()}`;
+}
+
+function addCurrentToCheckout() {
+  cartState = calculateCurrentConfigTotals();
+  document.getElementById('cart-badge').textContent = "1";
+  navigate('checkout');
+}
+
+function syncCheckoutView() {
+  if (!cartState) {
+    cartState = {
+      subtotal: selectedBundle.price,
+      discount: 200,
+      total: selectedBundle.price - 200,
+      itemDescriptionString: "Standard religious essentials kit"
+    };
+  }
+  
+  const checkoutSummaryEl = document.getElementById('checkout-summary-view');
+  checkoutSummaryEl.innerHTML = `
+    <div class="flex justify-between font-bold text-stone-900 text-sm">
+     <span>${selectedBundle.name}</span>
+     <span>Rs. ${selectedBundle.price.toLocaleString()}</span>
+    </div>
+    <div class="text-[11px] font-medium text-stone-500 bg-stone-50 p-2.5 rounded-lg border border-stone-200/50 mt-1">
+      ${cartState.itemDescriptionString}
+    </div>
+    <div class="flex justify-between text-xs font-bold border-t border-stone-100 pt-3 mt-3 text-green-700">
+     <span>Festive Rewards Applied</span><span>-Rs. 200</span>
+    </div>
+    <div class="flex justify-between text-xs font-bold text-stone-600">
+     <span>Priority Delivery</span><span class="text-green-600">Free</span>
+    </div>
+  `;
+  document.getElementById('checkout-final-total').textContent = `Rs. ${cartState.total.toLocaleString()}`;
+}
+
+function validateAndPlaceOrder() {
+  const nameVal = document.getElementById('fname').value.trim();
+  const phoneVal = document.getElementById('phone').value.trim();
+  const addressVal = document.getElementById('address').value.trim();
+  const dateVal = document.getElementById('ddate').value;
+  
+  if(!nameVal || !phoneVal || !addressVal || !dateVal) {
+    alert("Please fill out the delivery details before placing your order.");
+    return;
+  }
+  
+  document.getElementById('tracking-bundle-title').textContent = selectedBundle.name;
+  
+  const currentTotalOrders = parseInt(document.getElementById('dash-total-orders-count').textContent) || 12;
+  document.getElementById('dash-total-orders-count').textContent = currentTotalOrders + 1;
+  
+  const currentAdminCount = parseInt(document.getElementById('admin-today-orders-count').textContent) || 24;
+  document.getElementById('admin-today-orders-count').textContent = currentAdminCount + 1;
+
+  const adminTableBody = document.getElementById('admin-orders-rows');
+  const newRowHTML = `
+    <tr class="bg-amber-50/30">
+     <td class="py-3 font-mono text-xs font-bold text-[#800000]">#SC-2026-NEW</td>
+     <td class="py-3 font-bold">${nameVal}</td>
+     <td class="py-3">${selectedBundle.name}</td>
+     <td class="py-3 text-stone-900 font-bold">Rs. ${cartState.total.toLocaleString()}</td>
+     <td class="py-3">
+       <button onclick="openInspectModal('Order #SC-2026-NEW - ${nameVal}', '${cartState.itemDescriptionString}', 'Rs. ${cartState.total.toLocaleString()}')" class="text-saffron text-xs font-bold hover:underline flex items-center gap-1"><i data-lucide="info" class="w-3.5 h-3.5"></i> View Items</button>
+     </td>
+     <td class="py-3"><span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold border border-amber-200">Received</span></td>
+    </tr>
+  `;
+  adminTableBody.innerHTML = newRowHTML + adminTableBody.innerHTML;
+
+  const userDashHistoryEl = document.getElementById('dashboard-history-list');
+  const userHistoryRowHTML = `
+    <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-amber-200 shadow-sm">
+       <div>
+        <p class="font-black text-stone-900 text-sm">${selectedBundle.name}</p>
+        <p class="text-xs text-amber-600 font-bold">Just now (Processing)</p>
+       </div>
+       <div class="flex items-center gap-4">
+         <button onclick="openInspectModal('${selectedBundle.name}', '${cartState.itemDescriptionString}', 'Rs. ${cartState.total.toLocaleString()}')" class="text-xs font-bold text-stone-500 hover:text-saffron transition flex items-center gap-1"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Inspect Items</button>
+         <span class="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">Pending</span>
+       </div>
+    </div>
+  `;
+  userDashHistoryEl.innerHTML = userHistoryRowHTML + userDashHistoryEl.innerHTML;
+
+  placeOrder();
+}
+
+function placeOrder() {
+  const toast = document.getElementById('order-toast');
+  toast.style.transform = 'translateY(0)';
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.transform = 'translateY(20px)'; toast.style.opacity = '0'; }, 3000);
+  setTimeout(() => navigate('orders'), 1200);
+}
+
+function quickReorder(bundleId) {
+  selectBundleForCustomization(bundleId);
+  addCurrentToCheckout();
+  document.getElementById('toast-message').textContent = "Reorder added. Please verify checkout details.";
+  const toast = document.getElementById('order-toast');
+  toast.style.transform = 'translateY(0)';
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.transform = 'translateY(20px)'; toast.style.opacity = '0'; }, 2500);
+}
+
+function openInspectModal(title, details, allocations) {
+  document.getElementById('modal-struct-title').textContent = title;
+  document.getElementById('modal-struct-content').textContent = details;
+  document.getElementById('modal-struct-price').textContent = allocations;
+  
+  const modalObj = document.getElementById('inspect-modal');
+  modalObj.classList.remove('hidden');
+  modalObj.classList.add('flex');
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeInspectModal() {
+  const modalObj = document.getElementById('inspect-modal');
+  modalObj.classList.add('hidden');
+  modalObj.classList.remove('flex');
+}
+
+// SDK Capabilities Initialization
+const defaultConfig = {
+  hero_title: 'Religious essentials for every home',
+  hero_subtitle: "Shop prayer, worship, meditation, festival, and memorial items across Hindu, Buddhist, Christian, Islamic, Sikh, and interfaith needs.",
+  background_color: '#FAFAF9',
+  surface_color: '#FFFFFF',
+  text_color: '#1C1917',
+  primary_color: '#800000',
+  accent_color: '#D97706',
+  font_family: 'DM Sans',
+  font_size: 16
+};
+
+function applyConfig(config) {
+  const t = document.getElementById('hero-title');
+  const s = document.getElementById('hero-subtitle');
+  if (t) t.innerHTML = config.hero_title || defaultConfig.hero_title;
+  if (s) s.textContent = config.hero_subtitle || defaultConfig.hero_subtitle;
+  document.body.style.fontFamily = `${config.font_family || defaultConfig.font_family}, sans-serif`;
+}
+
+if (window.elementSdk) {
+  window.elementSdk.init({
+    defaultConfig,
+    onConfigChange: async (config) => applyConfig(config),
+    mapToCapabilities: (config) => ({
+      recolorables: [
+        { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
+        { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
+        { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
+        { get: () => config.primary_color || defaultConfig.primary_color, set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); } },
+        { get: () => config.accent_color || defaultConfig.accent_color, set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } },
+      ],
+      borderables: [],
+      fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
+      fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } },
+    }),
+    mapToEditPanelValues: (config) => new Map([
+      ['hero_title', config.hero_title || defaultConfig.hero_title],
+      ['hero_subtitle', config.hero_subtitle || defaultConfig.hero_subtitle],
+    ])
+  });
+}
+
+// App Initialization Bootstrap
+renderPopularBundles();
+renderLazyProductGrid();
+if (window.lucide) lucide.createIcons();
+</script>
+ </body>
+</html>

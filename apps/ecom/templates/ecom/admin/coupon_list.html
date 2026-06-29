@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Discount Coupons{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">Discount Coupons</h1>
+    <div class="flex gap-3">
+      <button
+        hx-get="{% url 'ecom:coupon_create' %}?modal=1"
+        hx-target="#app-modal-content"
+        hx-swap="innerHTML"
+        @click="modalOpen = true"
+        class="px-4 py-2 text-sm font-semibold bg-green-700 text-white hover:bg-green-800 rounded">
+        <i class="fas fa-plus mr-1"></i> New Coupon
+      </button>
+      <a href="{% url 'ecom:admin_dashboard' %}" class="text-sm text-gray-500 self-center"><i class="fas fa-arrow-left mr-1"></i>Dashboard</a>
+    </div>
+  </div>
+
+  {% include 'includes/toast.html' %}
+
+  <div class="bg-white border border-gray-200 overflow-hidden rounded-lg">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+        <tr>
+          <th class="px-5 py-3 text-left">Code</th>
+          <th class="px-5 py-3 text-left">Type</th>
+          <th class="px-5 py-3 text-left">Value</th>
+          <th class="px-5 py-3 text-left">Min Order</th>
+          <th class="px-5 py-3 text-left">Uses</th>
+          <th class="px-5 py-3 text-left">Valid Until</th>
+          <th class="px-5 py-3 text-left">Status</th>
+          <th class="px-5 py-3 text-left">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for coupon in coupons %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-5 py-3 font-mono font-semibold text-gray-900">{{ coupon.code }}</td>
+          <td class="px-5 py-3 text-gray-600">{{ coupon.get_discount_type_display }}</td>
+          <td class="px-5 py-3 text-gray-900">
+            {% if coupon.discount_type == 'PERCENT' %}{{ coupon.value }}%{% else %}Rs.{{ coupon.value }}{% endif %}
+          </td>
+          <td class="px-5 py-3 text-gray-600">Rs.{{ coupon.min_order_amount }}</td>
+          <td class="px-5 py-3 text-gray-600">
+            {{ coupon.uses_count }}{% if coupon.max_uses %} / {{ coupon.max_uses }}{% else %} / ∞{% endif %}
+          </td>
+          <td class="px-5 py-3 text-gray-600">{{ coupon.valid_until|default:"—" }}</td>
+          <td class="px-5 py-3">
+            {% if coupon.is_active %}
+              <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3">
+            <form method="post" action="{% url 'ecom:coupon_toggle' coupon.id %}">
+              {% csrf_token %}
+              <button type="submit" class="text-xs px-3 py-1 border rounded {% if coupon.is_active %}border-red-300 text-red-600 hover:bg-red-50{% else %}border-green-300 text-green-700 hover:bg-green-50{% endif %}">
+                {% if coupon.is_active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="px-5 py-8 text-center text-gray-400">No coupons yet. <a href="{% url 'ecom:coupon_create' %}" class="text-green-700 hover:underline">Create one</a>.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

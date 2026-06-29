@@ -1,0 +1,67 @@
+{% load humanize %}
+<div class="overflow-x-auto bg-white border border-gray-200 shadow-sm">
+    <table class="min-w-full text-sm">
+        <thead class="bg-green-600 text-white text-xs uppercase">
+            <tr>
+                <th class="px-4 py-3 text-left border border-green-700">Order #</th>
+                <th class="px-4 py-3 text-left border border-green-700">Customer</th>
+                <th class="px-4 py-3 text-left border border-green-700">Date</th>
+                <th class="px-4 py-3 text-center border border-green-700">Priority</th>
+                <th class="px-4 py-3 text-center border border-green-700">Status</th>
+                <th class="px-4 py-3 text-right border border-green-700">Total</th>
+                <th class="px-4 py-3 text-center border border-green-700">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50 transition-colors">
+                <td class="px-4 py-2 border border-gray-200 font-semibold">
+                    <a href="{% url 'orders:order_detail' order.pk %}" class="text-green-700 hover:underline">{{ order.order_number }}</a>
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-700">{{ order.customer.name|default:"Walk-in" }}</td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-500 whitespace-nowrap">{{ order.order_date|date:"Y-m-d" }}</td>
+                <td class="px-4 py-2 border border-gray-200 text-center">
+                    <span class="px-2 py-0.5 text-xs font-semibold
+                        {% if order.priority == 'URGENT' %}bg-red-100 text-red-800
+                        {% elif order.priority == 'HIGH' %}bg-orange-100 text-orange-800
+                        {% elif order.priority == 'NORMAL' %}bg-blue-100 text-blue-800
+                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {{ order.get_priority_display }}
+                    </span>
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-center">
+                    <span class="px-2 py-0.5 text-xs font-semibold
+                        {% if order.status == 'DELIVERED' %}bg-green-100 text-green-800
+                        {% elif order.status == 'DISPATCHED' %}bg-blue-100 text-blue-800
+                        {% elif order.status == 'CANCELLED' %}bg-red-100 text-red-800
+                        {% elif order.status == 'CONFIRMED' %}bg-purple-100 text-purple-800
+                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                        {{ order.get_status_display }}
+                    </span>
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-right font-mono font-semibold">{{ order.total|floatformat:2|intcomma }}</td>
+                <td class="px-4 py-2 border border-gray-200 text-center">
+                    <div class="flex items-center justify-center gap-2">
+                        <a href="{% url 'orders:order_detail' order.pk %}" class="text-blue-600 hover:text-blue-800" title="View"><i class="fas fa-eye"></i></a>
+                        {% if order.status == 'DRAFT' %}
+                        <a href="{% url 'orders:order_update' order.pk %}" class="text-amber-600 hover:text-amber-800" title="Edit"><i class="fas fa-edit"></i></a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="px-4 py-12 text-center text-gray-400"><i class="fas fa-shopping-cart text-3xl mb-2 block"></i>No orders found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-between px-1">
+    <p class="text-sm text-gray-500">{{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</p>
+    <nav class="flex items-center gap-1">
+        {% if page_obj.has_previous %}<a hx-get="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status }}" hx-target="#order-list-container" hx-swap="innerHTML" hx-push-url="true" class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">‹ Prev</a>{% endif %}
+        <span class="px-3 py-1 text-sm bg-green-600 text-white font-bold">{{ page_obj.number }}</span>
+        {% if page_obj.has_next %}<a hx-get="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status }}" hx-target="#order-list-container" hx-swap="innerHTML" hx-push-url="true" class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">Next ›</a>{% endif %}
+    </nav>
+</div>
+{% endif %}

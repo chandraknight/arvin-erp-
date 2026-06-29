@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+    <c-card_title_button
+            title="Branches Management"
+            descriptions="Manage Branches efficiently with full control"
+            info="Manage Branches efficiently with full control!"
+            create_link="company:branch_create"
+            button_name="Create New Branch">
+    </c-card_title_button>
+    {% if user.is_superuser %}
+        <c-table_options
+                :th_list="['Company Name','Branch Name', 'Email', 'Phone', 'Address' , 'Is Main Branch?']"
+                :td_list="['company_name', 'name', 'email', 'phone','address','is_main_branch']"
+                edit_url="company:branch_update"
+                view_url="company:branch_detail"
+                delete_url="company:branch_delete"
+                name="No Branch Found !"
+        >
+        </c-table_options>
+    {% else %}
+        <c-table_options
+                :th_list="['Branch Name', 'Email', 'Phone', 'Address' , 'Is Main Branch?']"
+                :td_list="['name', 'email', 'phone','address','is_main_branch']"
+                edit_url="company:branch_update"
+                view_url="company:branch_detail"
+                delete_url="company:branch_delete"
+                name="No Branch Found !"
+        >
+        </c-table_options>
+    {% endif %}
+
+
+
+{% endblock %}

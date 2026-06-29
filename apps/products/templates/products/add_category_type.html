@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add New Category Type{% endblock %}
+
+{% block content %}
+ {% include 'includes/toast.html' %}
+    <c-card_title_simple
+            title="Manage Category Type"
+            icon="fas fa-tags text-green-700"
+            info="Create and manage your category type"
+    ></c-card_title_simple>
+
+    <c-section_options title="Add New Category Type" >
+    <c-slot name="body">
+         <c-form_simple
+        title="New Category Type"
+        back_link="products:inventory_management"
+      ></c-form_simple>
+    </c-slot>
+    </c-section_options>
+
+    <c-section_options title="Existing Category Type" >
+    <c-slot name="body">
+          <c-table_options
+        :th_list="['Name','Created At']"
+        :td_list="['name', 'created_at']"
+        edit_url="products:edit_category_type"
+        view_url="products:edit_category"
+        delete_url="products:edit_category"
+        name="No Category Type Found!"
+      >
+      </c-table_options>
+    </c-slot>
+    </c-section_options>
+
+{% endblock %}

@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if purchase_order %}Update{% else %}Create{% endif %} Purchase Order{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-3">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+    {# ── Main form (3/4) ── #}
+    <div class="lg:col-span-3 bg-white border border-gray-200 shadow-sm p-5">
+
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3 border-b border-gray-100 pb-4">
+        <h2 class="text-2xl font-bold text-gray-800 tracking-tight">
+          {% if purchase_order %}Update Purchase Order{% else %}Create Purchase Order{% endif %}
+        </h2>
+        <div class="flex gap-2">
+          {% if purchase_order %}
+            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium border border-dashed border-green-300">#{{ purchase_order.purchase_order_number }}</span>
+          {% elif next_po_number %}
+            <span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm font-medium border border-dashed border-gray-300" title="Preview — assigned on save">{{ next_po_number }}</span>
+          {% endif %}
+          <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium">{{ user.company.name }}</span>
+        </div>
+      </div>
+
+      <form method="post" novalidate class="space-y-6" id="purchase-order-form">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        {% if form.errors %}
+        <div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 text-sm">
+          <strong>Please fix the errors below:</strong>
+          {{ form.non_field_errors }}
+          {% for field in form %}{% if field.errors %}<div>{{ field.label }}: {{ field.errors }}</div>{% endif %}{% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- PO Header Fields -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PO Number</label>
+            {{ form.purchase_order_number|add_class:"w-full border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-600"|attr:"readonly:readonly" }}
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Vendor <span class="text-red-500">*</span></label>
+            {{ form.vendor|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+            {% if form.vendor.errors %}<p class="text-red-500 text-xs mt-1">{{ form.vendor.errors }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Date <span class="text-red-500">*</span></label>
+            <div class="relative">
+              {{ form.date|add_class:"nepali-datepicker w-full border border-gray-300 px-3 py-2 pr-9 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <i class="fas fa-calendar-alt text-gray-400 text-xs"></i>
+              </div>
+            </div>
+            {% if form.date.errors %}<p class="text-red-500 text-xs mt-1">{{ form.date.errors }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</label>
+            {{ form.status|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500" }}
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Total Amount</label>
+            {{ form.total_amount|add_class:"w-full border border-gray-300 px-3 py-2 text-sm bg-gray-50 font-semibold text-gray-700"|attr:"id:id_total_amount"|attr:"readonly:readonly" }}
+          </div>
+        </div>
+
+        <!-- Line Items -->
+        <div class="mt-4">
+          <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3">
+            <h3 class="text-base font-bold text-green-800">Line Items</h3>
+            <button type="button" id="add-item"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition">
+              <i class="fas fa-plus text-xs"></i> Add Line
+            </button>
+          </div>
+
+          <div class="overflow-x-auto border border-gray-200">
+            <table class="min-w-full text-sm">
+              <thead class="bg-green-700 text-white text-xs uppercase">
+                <tr>
+                  <th class="px-3 py-2.5 text-left border-r border-green-800">Product</th>
+                  <th class="px-3 py-2.5 text-left border-r border-green-800 w-24">HS Code</th>
+                  <th class="px-3 py-2.5 text-center border-r border-green-800 w-20">Qty</th>
+                  <th class="px-3 py-2.5 text-right border-r border-green-800 w-24">Price</th>
+                  <th class="px-3 py-2.5 text-right border-r border-green-800 w-24">Total</th>
+                  <th class="px-3 py-2.5 w-10"></th>
+                </tr>
+              </thead>
+              <tbody id="items-container">
+                {% for item_form in formset %}
+                <tr class="item-form {% cycle 'bg-white' 'bg-gray-50' %} border-b border-gray-200">
+                  {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+                  {# item_type always STOCK — hidden, not shown as a column #}
+                  <input type="hidden" name="{{ item_form.item_type.html_name }}" value="STOCK">
+                  {% if item_form.instance.pk %}{{ item_form.DELETE }}{% endif %}
+                  <td class="px-2 py-2 border-r border-gray-200">
+                    <div class="product-field">
+                      {{ item_form.product|add_class:"product-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                    </div>
+                    <div class="description-field hidden">
+                      {{ item_form.description|add_class:"description-input w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 border-r border-gray-200">
+                    {{ item_form.hscode|add_class:"hscode-input w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                  </td>
+                  <td class="px-2 py-2 border-r border-gray-200">
+                    {{ item_form.quantity|add_class:"quantity-input w-full border border-gray-300 px-2 py-1.5 text-sm text-center text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                    {% if item_form.quantity.errors %}<p class="text-red-500 text-xs mt-1">{{ item_form.quantity.errors }}</p>{% endif %}
+                  </td>
+                  <td class="px-2 py-2 border-r border-gray-200">
+                    {{ item_form.price|add_class:"price-input w-full border border-gray-300 px-2 py-1.5 text-sm text-right text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                    {% if item_form.price.errors %}<p class="text-red-500 text-xs mt-1">{{ item_form.price.errors }}</p>{% endif %}
+                  </td>
+                  <td class="px-2 py-2 border-r border-gray-200">
+                    <input type="text" class="item-total w-full border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-right font-semibold text-gray-700" readonly>
+                  </td>
+                  <td class="px-2 py-2 text-center">
+                    <button type="button" class="remove-item text-red-500 hover:text-red-700 transition">
+                      <i class="fas fa-trash-alt text-sm"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="bg-gray-100 border-t-2 border-gray-300">
+                  <td colspan="4" class="px-3 py-2.5 text-right text-sm font-semibold text-gray-700">Grand Total</td>
+                  <td class="px-3 py-2.5 text-right text-sm font-bold text-green-800" id="grand-total-display">0.00</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="mt-6">
+          <button type="submit"
+                  class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 shadow-sm transition duration-150">
+            {% if purchase_order %}Update Purchase Order{% else %}Create Purchase Order{% endif %}
+          </button>
+        </div>
+      </form>
+
+      <c-back-link>
+        <c-slot name="url">{% url 'reports:print_purchase_order_list_report' %}</c-slot>
+      </c-back-link>
+    </div>{# end main col #}
+
+    {# ── Sidebar (1/4) ── #}
+    <div class="lg:col-span-1 space-y-4">
+
+      {# Vendor info card #}
+      <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-building text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Vendor Info</h3>
+        </div>
+        <div id="vendor-info-panel" class="p-5 text-sm text-gray-500 italic">
+          Select a vendor to see details
+        </div>
+      </div>
+
+      {# PO Summary card #}
+      <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="px-4 py-3 border-b border-gray-200">
+          <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">PO Summary</h3>
+        </div>
+        <div class="p-5 space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500 font-medium">Lines</span>
+            <span id="po-summary-lines" class="font-semibold text-gray-800">0</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500 font-medium">Total Qty</span>
+            <span id="po-summary-qty" class="font-semibold text-gray-800">0</span>
+          </div>
+          <div class="flex justify-between border-t border-gray-100 pt-2 mt-2">
+            <span class="font-bold text-gray-800">Grand Total</span>
+            <span id="po-summary-total" class="font-bold text-green-800 font-mono">₹ 0.00</span>
+          </div>
+        </div>
+      </div>
+
+    </div>{# end sidebar #}
+
+  </div>{# end grid #}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container     = document.getElementById('items-container');
+    const addButton     = document.getElementById('add-item');
+    const totalForms    = document.getElementById('id_items-TOTAL_FORMS');
+    const grandTotalEl  = document.getElementById('grand-total-display');
+    const totalAmountInput = document.getElementById('id_total_amount');
+
+    let formCount = parseInt(totalForms.value) || 0;
+
+    // ── Select2 init (must run AFTER row is visible) ───────────────────
+    function initProductSelect2(scope) {
+        (scope || document).querySelectorAll('.product-select').forEach(function (el) {
+            if ($(el).hasClass('select2-hidden-accessible')) {
+                $(el).select2('destroy');
+            }
+            $(el).select2({
+                width: '100%',
+                placeholder: 'Search by name or SKU…',
+                allowClear: true,
+                dropdownParent: $('body'),
+            });
+        });
+    }
+
+    // ── Initial setup ──────────────────────────────────────────────────
+    container.querySelectorAll('.item-form').forEach(row => {
+        addRowListeners(row);
+        updateRowTotal(row);
+    });
+    initProductSelect2(container);
+    updateGrandTotal();
+    updateSidebar();
+
+    // ── Add new row ────────────────────────────────────────────────────
+    addButton.addEventListener('click', function () {
+        const row = buildEmptyRow(formCount);
+        container.appendChild(row);
+        formCount++;
+        totalForms.value = formCount;
+        addRowListeners(row);
+        initProductSelect2(row);
+        updateGrandTotal();
+        updateSidebar();
+    });
+
+    // ── Remove row ─────────────────────────────────────────────────────
+    container.addEventListener('click', function (e) {
+        const btn = e.target.closest('.remove-item');
+        if (!btn) return;
+        const row = btn.closest('.item-form');
+        const idInput  = row.querySelector('[name$="-id"]');
+        const delInput = row.querySelector('[name$="-DELETE"]');
+        if (idInput && idInput.value && delInput) {
+            delInput.checked = true;
+            row.style.display = 'none';
+        } else {
+            row.remove();
+            formCount--;
+            totalForms.value = formCount;
+        }
+        updateGrandTotal();
+        updateSidebar();
+    });
+
+    function addRowListeners(row) {
+        const productSelect = row.querySelector('.product-select');
+        if (productSelect) {
+            // Must use jQuery .on() — Select2 fires change via jQuery's event system;
+            // native addEventListener never receives Select2 selections.
+            $(productSelect).on('change', function () {
+                if (!this.value) return;
+                const priceInput  = row.querySelector('.price-input');
+                const hscodeInput = row.querySelector('.hscode-input');
+                fetch(`/api/products/${this.value}/price/`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (priceInput && data.price) priceInput.value = data.price;
+                        if (hscodeInput) hscodeInput.value = data.hscode || '';
+                        updateRowTotal(row);
+                        updateGrandTotal();
+                        updateSidebar();
+                    })
+                    .catch(() => {});
+            });
+        }
+
+        row.querySelector('.quantity-input')?.addEventListener('input', () => { updateRowTotal(row); updateGrandTotal(); updateSidebar(); });
+        row.querySelector('.price-input')?.addEventListener('input', () => { updateRowTotal(row); updateGrandTotal(); updateSidebar(); });
+    }
+
+    function updateRowTotal(row) {
+        const qty   = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+        const price = parseFloat(row.querySelector('.price-input')?.value) || 0;
+        const el    = row.querySelector('.item-total');
+        if (el) el.value = (qty * price).toFixed(2);
+    }
+
+    function updateGrandTotal() {
+        let total = 0;
+        container.querySelectorAll('.item-form').forEach(row => {
+            if (row.style.display === 'none') return;
+            total += parseFloat(row.querySelector('.item-total')?.value) || 0;
+        });
+        if (grandTotalEl)     grandTotalEl.textContent = total.toFixed(2);
+        if (totalAmountInput) totalAmountInput.value   = total.toFixed(2);
+    }
+
+    // ── Sidebar ────────────────────────────────────────────────────────
+    function updateSidebar() {
+        let lines = 0, totalQty = 0, grandTotal = 0;
+
+        container.querySelectorAll('.item-form').forEach(row => {
+            if (row.style.display === 'none') return;
+            lines++;
+            totalQty   += parseFloat(row.querySelector('.quantity-input')?.value) || 0;
+            grandTotal += parseFloat(row.querySelector('.item-total')?.value) || 0;
+        });
+
+        document.getElementById('po-summary-lines').textContent = lines;
+        document.getElementById('po-summary-qty').textContent   = totalQty;
+        document.getElementById('po-summary-total').textContent = '₹ ' + grandTotal.toFixed(2);
+    }
+
+    // ── Vendor info panel ──────────────────────────────────────────────
+    const vendorSelect = document.querySelector('[name="vendor"]');
+    const vendorPanel  = document.getElementById('vendor-info-panel');
+
+    function loadVendorInfo(id) {
+        if (!id) {
+            vendorPanel.innerHTML = '<span class="italic text-gray-400">Select a vendor to see details</span>';
+            return;
+        }
+        fetch(`/customers/api/${id}/json/`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) { vendorPanel.innerHTML = '<span class="text-red-500 text-xs">Could not load vendor info.</span>'; return; }
+                vendorPanel.innerHTML = `<div class="space-y-2">
+                    <div class="font-bold text-gray-800 text-sm">${data.name}</div>
+                    ${data.email   ? `<div class="flex items-center gap-2 text-gray-600 text-sm"><i class="fas fa-envelope w-4 text-gray-400 text-xs"></i>${data.email}</div>` : ''}
+                    ${data.phone   ? `<div class="flex items-center gap-2 text-gray-600 text-sm"><i class="fas fa-phone w-4 text-gray-400 text-xs"></i>${data.phone}</div>` : ''}
+                    ${data.address ? `<div class="flex items-center gap-2 text-gray-500 text-xs"><i class="fas fa-map-marker-alt w-4 text-gray-400 text-xs"></i>${data.address}</div>` : ''}
+                </div>`;
+            })
+            .catch(() => { vendorPanel.innerHTML = '<span class="text-red-500 text-xs">Error loading vendor.</span>'; });
+    }
+
+    if (vendorSelect) {
+        vendorSelect.addEventListener('change', function () { loadVendorInfo(this.value); });
+        if (vendorSelect.value) loadVendorInfo(vendorSelect.value);
+    }
+
+    // ── Build empty row ────────────────────────────────────────────────
+    function buildEmptyRow(idx) {
+        const row = document.createElement('tr');
+        row.className = 'item-form bg-white border-b border-gray-200';
+
+        row.innerHTML = `
+            <input type="hidden" name="items-${idx}-id" value="">
+            <input type="hidden" name="items-${idx}-item_type" value="STOCK">
+            <td class="px-2 py-2 border-r border-gray-200">
+                <select name="items-${idx}-product" class="product-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500">
+                    <option value="">— select product —</option>
+                    ${getProductOptions()}
+                </select>
+            </td>
+            <td class="px-2 py-2 border-r border-gray-200">
+                <input type="text" name="items-${idx}-hscode"
+                       class="hscode-input w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500"
+                       placeholder="HS Code">
+            </td>
+            <td class="px-2 py-2 border-r border-gray-200">
+                <input type="number" name="items-${idx}-quantity" value="1" min="1"
+                       class="quantity-input w-full border border-gray-300 px-2 py-1.5 text-sm text-center text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500">
+            </td>
+            <td class="px-2 py-2 border-r border-gray-200">
+                <input type="number" name="items-${idx}-price" value="" min="0" step="0.01"
+                       class="price-input w-full border border-gray-300 px-2 py-1.5 text-sm text-right text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500"
+                       placeholder="0.00">
+            </td>
+            <td class="px-2 py-2 border-r border-gray-200">
+                <input type="text" class="item-total w-full border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-right font-semibold text-gray-700" readonly value="0.00">
+            </td>
+            <td class="px-2 py-2 text-center">
+                <button type="button" class="remove-item text-red-500 hover:text-red-700 transition">
+                    <i class="fas fa-trash-alt text-sm"></i>
+                </button>
+            </td>`;
+        return row;
+    }
+
+    function getProductOptions() {
+        const existing = container.querySelector('.product-select');
+        if (!existing) return '';
+        return Array.from(existing.options).map(o => `<option value="${o.value}">${o.text}</option>`).join('');
+    }
+
+});
+</script>
+
+<style>
+input[type="checkbox"][name$="-DELETE"] { display: none; }
+.item-form { transition: opacity 0.2s; }
+
+/* form-styles.css now handles compact Select2 inside <tr> globally */
+.item-form .select2-container { vertical-align: middle; }
+</style>
+{% endblock %}

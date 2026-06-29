@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Expenses{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-3" x-data="expenseBatch()" x-cloak>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+    {# ── Main form ── #}
+    <div class="lg:col-span-3 bg-white border border-gray-200 shadow-sm p-5">
+
+      <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+        <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Add Expenses</h2>
+        <a href="{% url 'payments:expense_list' %}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-semibold transition">
+          <i class="fas fa-arrow-left text-xs"></i> Back
+        </a>
+      </div>
+
+      <form method="post" id="expense-batch-form" @submit="onSubmit">
+        {% csrf_token %}
+
+        <!-- Batch Date -->
+        <div class="mb-6">
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+            Date (BS) <span class="text-red-500">*</span>
+          </label>
+          <input type="text" name="batch_date" id="batch_date"
+                 value="{{ today_bs }}"
+                 class="nepali-datepicker w-full sm:w-64 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                 autocomplete="off" placeholder="YYYY-MM-DD" required>
+        </div>
+
+        <!-- Expense Lines Header -->
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold text-gray-600 uppercase tracking-wide">Expense Lines</span>
+          <button type="button" @click="addRow()"
+                  class="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold transition">
+            <i class="fas fa-plus text-xs"></i> Add Line
+          </button>
+        </div>
+
+        <!-- Expense Rows -->
+        <div class="space-y-4">
+          <template x-for="(row, i) in rows" :key="i">
+            <div class="border border-gray-200 bg-gray-50">
+
+              <!-- Line Header -->
+              <div class="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
+                <span class="text-xs font-bold text-green-800 uppercase tracking-wide"
+                      x-text="'Line ' + (i + 1)"></span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500 font-mono"
+                        x-show="parseFloat(row.amount) > 0"
+                        x-text="'Rs. ' + (parseFloat(row.amount) || 0).toFixed(2)"></span>
+                  <button type="button" @click="removeRow(i)"
+                          x-show="rows.length > 1"
+                          class="text-red-400 hover:text-red-600 transition text-xs flex items-center gap-1 px-2 py-1 border border-red-200 hover:border-red-400">
+                    <i class="fas fa-trash-alt"></i> Remove
+                  </button>
+                </div>
+              </div>
+
+              <div class="p-4 space-y-3">
+
+                <!-- Title + Amount -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Title <span class="text-red-500">*</span></label>
+                    <input type="text" :name="'row_title_' + i" x-model="row.title"
+                           placeholder="e.g. Office Rent, Fuel, Utilities"
+                           class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Amount <span class="text-red-500">*</span></label>
+                    <input type="number" step="0.01" min="0.01"
+                           :name="'row_amount_' + i" x-model="row.amount"
+                           @input="recalc()"
+                           placeholder="0.00"
+                           class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+                  </div>
+                </div>
+
+                <!-- Expense Account -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1">Expense Account <span class="text-red-500">*</span></label>
+                  <select :name="'row_expense_account_' + i" x-model="row.expense_account"
+                          class="w-full border border-gray-300 px-2 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="">— Select Expense Account —</option>
+                    {% for acc in expense_accounts %}
+                    <option value="{{ acc.pk }}">{{ acc.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <!-- Payment Methods for this line -->
+                <div class="border border-gray-200 bg-white">
+                  <div class="flex items-center justify-between px-3 py-2 bg-green-50 border-b border-gray-200">
+                    <span class="text-xs font-bold text-green-800 uppercase tracking-wide">
+                      <i class="fas fa-credit-card text-xs mr-1"></i> Payment Method(s)
+                    </span>
+                    <button type="button" @click="addPayment(i)"
+                            class="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold transition">
+                      <i class="fas fa-plus text-xs"></i> Add
+                    </button>
+                  </div>
+
+                  <div class="p-3 space-y-2">
+                    <template x-for="(pay, pi) in row.payments" :key="pi">
+                      <div>
+                        <!-- Hidden fields for this payment row -->
+                        <!-- For single-payment lines, use the direct field names the view expects -->
+                        <input type="hidden"
+                               :name="row.payments.length === 1 ? 'row_payment_account_' + i : 'pay_multi_account_' + i + '_' + pi"
+                               :value="pay.account">
+                        <input type="hidden"
+                               :name="row.payments.length === 1 ? 'row_payment_method_' + i : 'pay_multi_method_' + i + '_' + pi"
+                               :value="pay.method">
+                        <input type="hidden"
+                               :name="row.payments.length === 1 ? '' : 'pay_multi_amount_' + i + '_' + pi"
+                               :value="pay.amount">
+
+                        <div class="grid grid-cols-12 gap-2 items-start">
+                          <!-- Payment Account -->
+                          <div class="col-span-5">
+                            <select x-model="pay.account"
+                                    class="w-full border border-gray-300 px-2 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-green-500">
+                              <option value="">— Account —</option>
+                              {% for acc in asset_accounts %}
+                              <option value="{{ acc.pk }}">{{ acc.name }}</option>
+                              {% endfor %}
+                            </select>
+                          </div>
+
+                          <!-- Method -->
+                          <div class="col-span-3">
+                            <select x-model="pay.method"
+                                    class="w-full border border-gray-300 px-2 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-green-500">
+                              <option value="CASH">Cash</option>
+                              <option value="BANK_TRANSFER">Bank Transfer</option>
+                              <option value="CHEQUE">Cheque</option>
+                              <option value="OTHER">Other</option>
+                            </select>
+                          </div>
+
+                          <!-- Amount (only shown when multiple payments) -->
+                          <div class="col-span-3" x-show="row.payments.length > 1">
+                            <input type="number" step="0.01" min="0"
+                                   x-model="pay.amount"
+                                   placeholder="0.00"
+                                   class="w-full border border-gray-300 px-2 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500">
+                          </div>
+
+                          <!-- Remove payment row -->
+                          <div class="col-span-1 flex justify-center pt-1.5" x-show="row.payments.length > 1">
+                            <button type="button" @click="removePayment(i, pi)"
+                                    class="text-red-400 hover:text-red-600 transition">
+                              <i class="fas fa-times text-xs"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Other: specify note -->
+                        <div x-show="pay.method === 'OTHER'" class="mt-1.5">
+                          <input type="text"
+                                 :name="'row_reference_' + i"
+                                 x-model="pay.otherNote"
+                                 placeholder="Specify: e.g. Mobile Banking, QR Code, eSewa, Wallet…"
+                                 class="w-full border border-orange-300 px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-orange-400 bg-orange-50">
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Balance indicator for multi-payment lines -->
+                    <div x-show="row.payments.length > 1"
+                         class="flex justify-between text-xs pt-2 border-t border-gray-100"
+                         :class="lineBalanced(row) ? 'text-green-700' : 'text-red-600'">
+                      <span>Payment Total</span>
+                      <span x-text="'Rs. ' + linePayTotal(row).toFixed(2) + (lineBalanced(row) ? ' ✓' : ' (must equal Rs. ' + (parseFloat(row.amount) || 0).toFixed(2) + ')')"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Reference (shown when single payment + not OTHER) -->
+                <div x-show="row.payments.length === 1 && row.payments[0].method !== 'OTHER'">
+                  <label class="block text-xs font-medium text-gray-500 mb-1">Reference No.</label>
+                  <input type="text" :name="'row_reference_' + i" x-model="row.reference"
+                         placeholder="Voucher / cheque no."
+                         class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+                </div>
+
+                <!-- Description -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1">Description</label>
+                  <input type="text" :name="'row_description_' + i" x-model="row.description"
+                         placeholder="Optional notes"
+                         class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
+                </div>
+
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Grand Total -->
+        <div class="flex justify-between items-center mt-5 py-3 px-4 bg-green-50 border border-green-200">
+          <span class="text-sm font-bold text-green-800">Total Expenses</span>
+          <span class="text-sm font-bold text-green-900 font-mono" x-text="'Rs. ' + grandTotal.toFixed(2)"></span>
+        </div>
+
+        <!-- Validation error -->
+        <div x-show="submitError" class="mt-3 bg-red-50 border border-red-300 text-red-700 px-4 py-3 text-sm">
+          <span x-text="submitError"></span>
+        </div>
+
+        <button type="submit"
+                class="mt-4 w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 shadow-sm transition text-sm">
+          <i class="fas fa-check mr-2"></i> Record <span x-text="rows.length"></span> Expense(s)
+        </button>
+      </form>
+    </div>
+
+    {# ── Sidebar ── #}
+    <div class="lg:col-span-1 space-y-4">
+
+      <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-list-alt text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Summary</h3>
+        </div>
+        <div class="p-4 space-y-2 text-xs">
+          <div class="flex justify-between text-gray-600 border-b pb-2">
+            <span>Lines</span>
+            <span class="font-semibold" x-text="rows.length"></span>
+          </div>
+          <div class="flex justify-between font-bold text-green-800 pt-1">
+            <span>Total</span>
+            <span class="font-mono" x-text="'Rs. ' + grandTotal.toFixed(2)"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-book text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Journal Entry</h3>
+        </div>
+        <div class="p-4 text-xs text-gray-500 space-y-2">
+          <p>Each expense line posts:</p>
+          <div class="border border-gray-200">
+            <div class="flex justify-between px-3 py-2 bg-gray-50 border-b font-semibold text-gray-600">
+              <span>Account</span><span>Type</span>
+            </div>
+            <div class="flex justify-between px-3 py-2 border-b border-gray-100">
+              <span>Expense Account</span>
+              <span class="text-red-600 font-semibold">DR</span>
+            </div>
+            <div class="flex justify-between px-3 py-2">
+              <span>Payment Account</span>
+              <span class="text-blue-600 font-semibold">CR</span>
+            </div>
+          </div>
+          <p class="text-blue-700 mt-2 text-xs"><i class="fas fa-info-circle"></i> Cancellation auto-reverses the journal.</p>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 p-4 text-xs text-blue-800 space-y-1">
+        <p class="font-semibold"><i class="fas fa-info-circle"></i> Tips</p>
+        <ul class="list-disc pl-4 space-y-1 text-blue-700">
+          <li>Click <strong>+ Add Line</strong> for bulk entry</li>
+          <li>Click <strong>+ Add</strong> on a line to split payment across multiple accounts</li>
+          <li>Choose <strong>Other</strong> method to specify a custom payment type</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  [x-cloak] { display: none !important; }
+</style>
+
+<script>
+function expenseBatch() {
+    function newPayment() {
+        return { account: '', method: 'CASH', amount: '', otherNote: '' };
+    }
+    function newRow() {
+        return {
+            title: '', expense_account: '', amount: '',
+            reference: '', description: '',
+            payments: [newPayment()],
+        };
+    }
+    return {
+        rows: [newRow()],
+        submitError: '',
+
+        get grandTotal() {
+            return this.rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+        },
+
+        addRow() { this.rows.push(newRow()); },
+
+        removeRow(i) {
+            if (this.rows.length > 1) this.rows.splice(i, 1);
+        },
+
+        addPayment(i) { this.rows[i].payments.push(newPayment()); },
+
+        removePayment(i, pi) {
+            if (this.rows[i].payments.length > 1) this.rows[i].payments.splice(pi, 1);
+        },
+
+        linePayTotal(row) {
+            return row.payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+        },
+
+        lineBalanced(row) {
+            const exp = parseFloat(row.amount) || 0;
+            return exp > 0 && Math.abs(this.linePayTotal(row) - exp) < 0.01;
+        },
+
+        recalc() { /* grandTotal is computed */ },
+
+        onSubmit(e) {
+            this.submitError = '';
+            for (let i = 0; i < this.rows.length; i++) {
+                const row = this.rows[i];
+                if (row.payments.length > 1 && !this.lineBalanced(row)) {
+                    e.preventDefault();
+                    this.submitError = `Line ${i + 1}: payment total (Rs. ${this.linePayTotal(row).toFixed(2)}) must equal expense amount (Rs. ${(parseFloat(row.amount) || 0).toFixed(2)}).`;
+                    return;
+                }
+                // For single-payment OTHER, copy otherNote → reference hidden field
+                if (row.payments.length === 1 && row.payments[0].method === 'OTHER') {
+                    row.reference = row.payments[0].otherNote;
+                }
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

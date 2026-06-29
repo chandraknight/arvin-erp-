@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Contact Messages — Ecom CMS{% endblock %}
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Contact Messages</h1>
+    {% with unread=messages|length %}
+    {% if unread %}
+    <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
+      {{ unread }} message{{ unread|pluralize }}
+    </span>
+    {% endif %}
+    {% endwith %}
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Subject</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for msg in messages %}
+        <tr class="hover:bg-gray-50 {% if not msg.is_read %}font-semibold{% endif %}">
+          <td class="px-4 py-3 text-gray-800">{{ msg.name }}</td>
+          <td class="px-4 py-3 text-gray-500 text-xs">
+            {% if msg.email %}<div>{{ msg.email }}</div>{% endif %}
+            {% if msg.phone %}<div>{{ msg.phone }}</div>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-gray-600">{{ msg.subject|default:"—" }}</td>
+          <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ msg.created_at|date:"d M Y H:i" }}</td>
+          <td class="px-4 py-3">
+            {% if msg.is_read %}
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">Read</span>
+            {% else %}
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">New</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <a href="{% url 'ecom:cms_contact_detail' msg.id %}" class="text-xs font-medium text-indigo-600 hover:text-indigo-900">View</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-10 text-center text-gray-400">No messages yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

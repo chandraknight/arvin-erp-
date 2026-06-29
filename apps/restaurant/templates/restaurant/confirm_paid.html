@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Mark Paid — {{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+  <div class="bg-white border border-gray-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-green-700 text-white rounded-t">
+      <h1 class="text-lg font-bold"><i class="fas fa-check-circle mr-2"></i>Mark Order Paid</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="text-sm text-gray-700 space-y-1">
+        <p><strong>Order:</strong> {{ order.order_number }}</p>
+        <p><strong>Table:</strong> {{ order.table.label }}</p>
+        {% if order.invoice %}<p><strong>Invoice:</strong> {{ order.invoice.invoice_number }}</p>{% endif %}
+        <p><strong>Total:</strong> {{ order.total }}</p>
+      </div>
+      <p class="text-sm text-gray-500">
+        Marking as paid will set this order to PAID and make the table available for new guests.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <div class="flex gap-3">
+          <button type="submit" class="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold">
+            Confirm Paid
+          </button>
+          <a href="{% url 'restaurant:order_detail' order.pk %}"
+             class="px-5 py-2 border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">Back</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

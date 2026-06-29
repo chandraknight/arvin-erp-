@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load global_filter %}
+
+{% block title %}Restaurant — Floor Plan{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-utensils text-green-600 mr-2"></i>Floor Plan</h1>
+    <p class="text-sm text-gray-500 mt-1">{{ open_count }} open order{{ open_count|pluralize }} right now</p>
+  </div>
+  <div class="flex gap-2 flex-wrap">
+    {% if user|group_has_perm:'restaurant.add_restauranttable' %}
+    <a href="{% url 'restaurant:table_create' %}"
+       class="px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold rounded shadow transition">
+      <i class="fas fa-plus mr-1"></i>Add Table
+    </a>
+    {% endif %}
+    {% if user|group_has_perm:'restaurant.add_tablesection' %}
+    <a href="{% url 'restaurant:section_create' %}"
+       class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded transition">
+      <i class="fas fa-layer-group mr-1"></i>Add Section
+    </a>
+    {% endif %}
+    <a href="{% url 'restaurant:order_list' %}"
+       class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded transition">
+      <i class="fas fa-list mr-1"></i>All Orders
+    </a>
+    {% if user|group_has_perm:'restaurant.view_printerstation' %}
+    <a href="{% url 'restaurant:printer_list' %}"
+       class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded transition">
+      <i class="fas fa-print mr-1"></i>Printers
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="flex flex-wrap gap-4 mb-6 text-xs font-medium">
+  <span class="flex items-center gap-1"><span class="w-4 h-4 rounded bg-green-500 inline-block"></span> Available</span>
+  <span class="flex items-center gap-1"><span class="w-4 h-4 rounded bg-red-500 inline-block"></span> Occupied</span>
+  <span class="flex items-center gap-1"><span class="w-4 h-4 rounded bg-yellow-400 inline-block"></span> Reserved</span>
+  <span class="flex items-center gap-1"><span class="w-4 h-4 rounded bg-gray-400 inline-block"></span> Cleaning</span>
+</div>
+
+{% for section in sections %}
+<div class="mb-8">
+  <div class="flex items-center gap-2 mb-3">
+    <h2 class="text-base font-bold text-gray-700 uppercase tracking-wide">{{ section.name }}</h2>
+    {% if user|group_has_perm:'restaurant.change_tablesection' %}
+    <a href="{% url 'restaurant:section_update' pk=section.pk %}"
+       class="text-xs text-gray-400 hover:text-gray-600"><i class="fas fa-edit"></i></a>
+    {% endif %}
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+    {% for table in section.tables.all %}
+      {% if table.is_active %}
+        {% include 'restaurant/partials/table_card.html' with table=table %}
+      {% endif %}
+    {% empty %}
+      <p class="text-sm text-gray-400 col-span-full">No tables in this section.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+{% if unsectioned %}
+<div class="mb-8">
+  <h2 class="text-base font-bold text-gray-700 uppercase tracking-wide mb-3">Other Tables</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+    {% for table in unsectioned %}
+      {% include 'restaurant/partials/table_card.html' with table=table %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if not sections and not unsectioned %}
+<div class="text-center py-16 text-gray-400">
+  <i class="fas fa-chair text-5xl mb-4"></i>
+  <p class="text-lg font-medium">No tables set up yet.</p>
+  <a href="{% url 'restaurant:table_create' %}" class="mt-4 inline-block px-6 py-2 bg-green-700 text-white rounded hover:bg-green-800 transition text-sm font-semibold">
+    Add your first table
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}IATA Airports{% endblock %}
+{% block content %}
+<div class="w-full mt-2">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+      <i class="fas fa-map-marker-alt text-green-600"></i> IATA Airports
+    </h2>
+    <a href="{% url 'tours:airport_import' %}"
+       class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 transition duration-150">
+      <i class="fas fa-file-csv mr-1"></i> Import CSV
+    </a>
+  </div>
+  <form method="get" class="flex gap-2 mb-4">
+    <input type="text" name="q" value="{{ q }}" placeholder="Code, name or city..."
+           class="border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 w-64">
+    <button type="submit" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 px-4 py-2 text-sm text-gray-700">Search</button>
+    <a href="{% url 'tours:airport_list' %}" class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-4 py-2 text-sm">Clear</a>
+  </form>
+  <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+    <table class="min-w-full text-sm text-gray-700">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">IATA</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">ICAO</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Airport Name</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">City</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Country</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for ap in page_obj.object_list %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-2 font-bold font-mono text-gray-800">{{ ap.iata_code }}</td>
+            <td class="px-4 py-2 font-mono text-gray-500">{{ ap.icao_code|default:"—" }}</td>
+            <td class="px-4 py-2">{{ ap.name }}</td>
+            <td class="px-4 py-2 text-gray-500">{{ ap.city }}</td>
+            <td class="px-4 py-2 text-gray-500">{{ ap.country }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No airports found. Import from OurAirports CSV.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-xs text-gray-400 mt-3">{{ page_obj.paginator.count }} airports. Free dataset: <a href="https://ourairports.com/data/" class="underline" target="_blank">ourairports.com</a></p>
+</div>
+{% endblock %}

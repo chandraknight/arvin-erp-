@@ -1,0 +1,34 @@
+{% load global_filter %}
+<div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 border-b border-gray-200 pb-6">
+
+    <div class="flex items-center gap-4">
+        <div class="w-14 h-14 bg-green-50 flex items-center justify-center text-green-600 shadow-sm border border-green-100">
+            <i class="fas fa-file-excel text-2xl"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight">
+                {{ title }}
+            </h1>
+            <p class="text-sm text-gray-500 font-medium mt-1">
+                {{ descriptions }}
+            </p>
+        </div>
+    </div>
+    {% if modal_create %}
+        <button type="button"
+                hx-get="{% url create_link %}?modal=1"
+                hx-target="#app-modal-content"
+                hx-swap="innerHTML"
+                @click="modalOpen = true"
+                class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold shadow bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition duration-150">
+            <i class="fas fa-plus text-lg"></i>
+            <span>{{ button_name }}</span>
+        </button>
+    {% else %}
+        <a href="{% url create_link %}"
+           class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold shadow bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition duration-150">
+            <i class="fas fa-plus text-lg"></i>
+            <span>{{ button_name }}</span>
+        </a>
+    {% endif %}
+</div>

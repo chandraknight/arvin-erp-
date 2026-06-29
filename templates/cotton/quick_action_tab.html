@@ -1,0 +1,10 @@
+<a href="{% url link %}"
+   class="flex items-center p-4 bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all duration-150 group">
+    <div class="bg-green-50 p-3 mr-4 group-hover:bg-green-100 transition-colors duration-150">
+        <i class="{{ icon }} text-green-600 fa-fw"></i>
+    </div>
+    <div>
+        <h4 class="font-semibold text-gray-800 group-hover:text-green-700 transition-colors duration-150">{{ title }}</h4>
+        <p class="text-sm text-gray-600">{{ message }}</p>
+    </div>
+</a>

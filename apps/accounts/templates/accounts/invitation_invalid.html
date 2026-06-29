@@ -1,0 +1,14 @@
+{% extends 'login_base.html' %}
+{% block title %}Invalid Invitation{% endblock %}
+{% block content %}
+<div class="flex w-full min-h-screen items-center justify-center bg-gray-50">
+  <div class="w-full max-w-md bg-white rounded-xl shadow-md px-8 py-10 text-center">
+    <div class="text-red-500 text-5xl mb-4">✕</div>
+    <h1 class="text-2xl font-bold text-gray-800 mb-2">Link Invalid or Expired</h1>
+    <p class="text-gray-500 mb-6">This invitation link has already been used or has expired. Contact your administrator to resend it.</p>
+    <a href="{% url 'accounts:login' %}" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-lg transition">
+      Go to Login
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Upload BSP File{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'tours:reconciliation_list' %}" class="text-gray-400 hover:text-gray-600 transition">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <h2 class="text-2xl font-bold text-gray-800">Upload IATA BSP File</h2>
+  </div>
+
+  <!-- Info box -->
+  <div class="bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800 mb-5">
+    <p class="font-semibold mb-1"><i class="fas fa-info-circle mr-1"></i> Supported Formats</p>
+    <ul class="list-disc list-inside space-y-0.5 text-blue-700">
+      <li>CSV (.csv) — comma-separated with a header row</li>
+      <li>Excel (.xlsx / .xls) — first sheet used, first row is the header</li>
+    </ul>
+    <p class="mt-2 font-semibold">Expected columns (names are flexible):</p>
+    <p class="font-mono text-xs mt-1 text-blue-600">
+      ticket_number, passenger_name, issue_date, airline_code, routing,<br>
+      fare, tax, fuel_surcharge, gross, commission, net, bsp_reference
+    </p>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="bg-white border border-gray-200 shadow-sm p-6 space-y-4">
+    {% csrf_token %}
+    {% if form.errors %}
+      <div class="bg-red-50 border border-red-200 p-4 text-sm text-red-700">Please correct the errors below.</div>
+    {% endif %}
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">BSP File <span class="text-red-500">*</span></label>
+      {{ form.file }}
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Period From</label>
+        {{ form.period_from }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Period To</label>
+        {{ form.period_to }}
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+      {{ form.description }}
+    </div>
+
+    <div class="flex gap-3 pt-2 border-t border-gray-100">
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 transition duration-150">
+        <i class="fas fa-upload mr-1"></i> Upload
+      </button>
+      <a href="{% url 'tours:reconciliation_list' %}" class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium px-6 py-2 transition duration-150">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

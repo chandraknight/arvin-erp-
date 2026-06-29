@@ -1,0 +1,225 @@
+{% extends "ecom/storefront/base.html" %}
+{% load static %}
+
+{% block page_title %}Cart{% endblock %}
+
+{% block content %}
+
+
+<section class="section-box shop-template mt-15 mb-15">
+  <div class="container">
+    {% if cart_items %}
+    <div class="row">
+
+      {# Left: cart table #}
+      <div class="col-lg-8 mb-40">
+        <div class="table-responsive">
+          <table class="table shopping-summery">
+            <thead>
+              <tr class="main-heading">
+                <th class="start pl-30">Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+                <th class="end">Remove</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in cart_items %}
+              <tr>
+                {# Product image + name #}
+                <td class="image product-thumbnail pl-30">
+                  <div class="d-flex align-items-center">
+                    {% with item.product.images.first as img %}
+                    {% if img %}
+                      <img src="{{ img.image.url }}" alt="{{ item.product.name }}"
+                           style="width:80px;height:80px;object-fit:cover;border-radius:4px;margin-right:15px;flex-shrink:0;">
+                    {% else %}
+                      <img src="{% static 'ecom/assets/imgs/template/devices.svg' %}" alt="{{ item.product.name }}"
+                           style="width:80px;height:80px;object-fit:contain;padding:10px;border-radius:4px;margin-right:15px;background:#f8f8fb;flex-shrink:0;">
+                    {% endif %}
+                    {% endwith %}
+                    <div>
+                      <a class="color-brand-3 font-sm-bold" href="{% url 'ecom:product_detail' item.product.id %}">
+                        {{ item.product.name }}
+                      </a>
+                      {% if item.product.category %}
+                      <br><span class="font-xs color-gray-500">{{ item.product.category.name }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+
+                {# Price #}
+                <td class="price" data-title="Price">
+                  <span class="font-md color-brand-3 font-medium">Rs.{{ item.product.price|floatformat:"2" }}</span>
+                </td>
+
+                {# Quantity: DPSdabu input-quantity stepper + update form #}
+                <td data-title="Quantity">
+                  <form method="post" action="{% url 'ecom:update_cart' item.product.id %}"
+                        class="d-flex align-items-center" style="gap:8px;">
+                    {% csrf_token %}
+                    <div class="input-quantity" style="display:inline-flex;align-items:center;">
+                      <span class="minus-cart" style="cursor:pointer;"></span>
+                      <input class="font-xl color-brand-3 text-center" type="text"
+                             name="quantity" value="{{ item.quantity }}"
+                             style="width:50px;border:none;text-align:center;background:transparent;">
+                      <span class="plus-cart" style="cursor:pointer;"></span>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-buy">Update</button>
+                  </form>
+                </td>
+
+                {# Line subtotal #}
+                <td class="price" data-title="Subtotal">
+                  <span class="font-md color-brand-3 font-medium">Rs.{{ item.line_total|floatformat:"2" }}</span>
+                </td>
+
+                {# Remove #}
+                <td class="action" data-title="Remove">
+                  <form method="post" action="{% url 'ecom:remove_from_cart' item.product.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-delete" title="Remove item"></button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="divider-2 mb-30 mt-10"></div>
+        <div class="cart-action d-flex justify-content-between align-items-center">
+          <a href="{% url 'ecom:product_list' %}" class="btn btn-md">← Continue Shopping</a>
+        </div>
+      </div>
+
+      {# Right: totals + checkout #}
+      <div class="col-lg-4">
+        <div class="border p-md-4 cart-totals">
+          <div class="table-responsive">
+            <table class="table no-border">
+              <tbody>
+                <tr>
+                  <td class="cart_total_label">
+                    <h6 class="color-gray-600 font-sm">Subtotal</h6>
+                  </td>
+                  <td class="cart_total_amount text-end">
+                    <h5 class="color-brand-3 font-md-bold">Rs.<span id="cart-subtotal">{{ subtotal|floatformat:"2" }}</span></h5>
+                  </td>
+                </tr>
+                {# Coupon row — hidden until applied #}
+                <tr id="cart-discount-row" style="display:none;">
+                  <td class="cart_total_label">
+                    <h6 class="font-sm" style="color:#3bb77e;">Discount (<span id="cart-coupon-label"></span>)</h6>
+                  </td>
+                  <td class="cart_total_amount text-end">
+                    <h6 class="font-sm-bold" style="color:#3bb77e;">- Rs.<span id="cart-discount-amt">0</span></h6>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="cart_total_label">
+                    <h6 class="color-gray-600 font-sm">Delivery Charge</h6>
+                  </td>
+                  <td class="cart_total_amount text-end">
+                    {% if delivery_charge %}
+                    <span class="font-sm color-brand-3">Rs.{{ delivery_charge|floatformat:"0" }}</span>
+                    {% else %}
+                    <span class="font-sm color-success">Free</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% if delivery_charge and free_shipping_threshold %}
+                <tr>
+                  <td colspan="2" style="font-size:11px;color:#888;padding-top:2px;">
+                    Free delivery on orders above Rs.{{ free_shipping_threshold }}
+                  </td>
+                </tr>
+                {% endif %}
+                <tr>
+                  <td class="cart_total_label">
+                    <h6 class="color-gray-600 font-sm-bold">Total</h6>
+                  </td>
+                  <td class="cart_total_amount text-end">
+                    <h4 class="color-brand-3 font-xl-bold">Rs.<span id="cart-total">{{ order_total|floatformat:"2" }}</span></h4>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {# Coupon input #}
+          <div class="mb-15">
+            <div class="d-flex gap-2">
+              <input type="text" id="cart-coupon-input" placeholder="Have a coupon?" style="flex:1;padding:7px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+              <button type="button" onclick="cartApplyCoupon()" style="padding:7px 14px;background:#3bb77e;color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;">Apply</button>
+            </div>
+            <div id="cart-coupon-msg" style="font-size:12px;margin-top:4px;"></div>
+          </div>
+
+          <a class="btn btn-md btn-buy w-100 text-center mt-20"
+             href="{% url 'ecom:checkout' %}">Proceed To CheckOut →</a>
+        </div>
+      </div>
+
+      <script>
+      var _cartSubtotal = {{ subtotal }};
+      var _cartDelivery = {{ delivery_charge|default:"0" }};
+      function cartApplyCoupon() {
+        var code = document.getElementById('cart-coupon-input').value.trim();
+        var msgEl = document.getElementById('cart-coupon-msg');
+        if (!code) { msgEl.style.color='#e74c3c'; msgEl.textContent='Enter a coupon code.'; return; }
+        fetch('{% url "ecom:validate_coupon" %}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+          body: JSON.stringify({code: code, subtotal: _cartSubtotal})
+        }).then(r => r.json()).then(data => {
+          if (data.ok) {
+            document.getElementById('cart-coupon-label').textContent = code;
+            document.getElementById('cart-discount-amt').textContent = parseFloat(data.discount).toFixed(2);
+            document.getElementById('cart-total').textContent = (parseFloat(data.final_total) + _cartDelivery).toFixed(2);
+            document.getElementById('cart-discount-row').style.display = '';
+            msgEl.style.color = '#3bb77e';
+            msgEl.textContent = '✓ Coupon valid! Apply it at checkout.';
+          } else {
+            document.getElementById('cart-discount-row').style.display = 'none';
+            document.getElementById('cart-total').textContent = parseFloat(_cartSubtotal).toFixed(2);
+            msgEl.style.color = '#e74c3c';
+            msgEl.textContent = data.error;
+          }
+        });
+      }
+      </script>
+
+    </div>
+    {% else %}
+    <div class="cart-empty-state text-center">
+      <img src="{% static 'ecom/assets/imgs/template/cart.svg' %}" alt=""
+           style="height:70px;opacity:0.3;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto;">
+      <h3 class="color-gray-500 mb-20">Your cart is empty</h3>
+      <a href="{% url 'ecom:product_list' %}" class="btn btn-brand-2">Start Shopping</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function () {
+  // +/- quantity inside cart rows
+  $('.plus-cart').on('click', function () {
+    var $input = $(this).siblings('input[name="quantity"]');
+    var val = parseInt($input.val()) || 1;
+    $input.val(val + 1);
+  });
+  $('.minus-cart').on('click', function () {
+    var $input = $(this).siblings('input[name="quantity"]');
+    var val = parseInt($input.val()) || 1;
+    if (val > 1) $input.val(val - 1);
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% load static %}
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="product-grid">
+  {% for product in page_obj.object_list %}
+    <button class="bg-white border border-gray-200 hover:border-green-500 hover:shadow-md p-3 text-left transition duration-150 add-product-btn{% if not product.is_service and product.current_stock|default:0 <= 0 %} opacity-50 cursor-not-allowed{% endif %}"
+            data-product-id="{{ product.id }}"
+            data-product-name="{{ product.name }}"
+            data-product-price="{{ product.price }}"
+            {% if not product.is_service and product.current_stock|default:0 <= 0 %}disabled{% endif %}>
+      <div class="w-full h-24 bg-gray-50 flex items-center justify-center mb-2 overflow-hidden relative">
+        {% if product.primary_image_url %}
+          <img src="{{ product.primary_image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+        {% else %}
+          <i class="fas fa-box text-gray-300 text-2xl"></i>
+        {% endif %}
+      </div>
+      <div class="text-sm font-medium text-gray-800 truncate">{{ product.name }}</div>
+      <div class="text-base font-bold text-green-600 mt-1">NPR {{ product.price }}</div>
+      <div class="flex items-center justify-between mt-0.5">
+        {% if product.barcode %}
+          <span class="text-xs text-gray-400">{{ product.barcode }}</span>
+        {% else %}
+          <span></span>
+        {% endif %}
+        {% if not product.is_service %}
+          {% if product.current_stock|default:0 <= 0 %}
+            <span class="text-xs font-semibold text-red-600">Out of stock</span>
+          {% else %}
+            <span class="text-xs text-gray-500">Stock: {{ product.current_stock }}</span>
+          {% endif %}
+        {% endif %}
+      </div>
+    </button>
+  {% empty %}
+    <div class="col-span-4 text-center py-16 text-gray-400">
+      <i class="fas fa-search text-4xl mb-3 block"></i>
+      <p class="text-lg">No products found.</p>
+    </div>
+  {% endfor %}
+</div>
+
+{% if page_obj.has_other_pages %}
+  <div class="mt-4 flex flex-wrap items-center justify-center gap-1">
+
+    {% comment %}Prev{% endcomment %}
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+         hx-get="{{ request.path }}?partial=products&page={{ page_obj.previous_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+         hx-target="#product-grid" hx-swap="outerHTML"
+         class="inline-flex items-center justify-center w-7 h-7 text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+        <i class="fas fa-chevron-left"></i>
+      </a>
+    {% else %}
+      <span class="inline-flex items-center justify-center w-7 h-7 text-xs border border-gray-200 text-gray-300 cursor-not-allowed"><i class="fas fa-chevron-left"></i></span>
+    {% endif %}
+
+    {% comment %}Page 1 + ellipsis{% endcomment %}
+    {% if page_obj.number > 3 %}
+      <a href="?page=1{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+         hx-get="{{ request.path }}?partial=products&page=1{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+         hx-target="#product-grid" hx-swap="outerHTML"
+         class="inline-flex items-center justify-center w-7 h-7 text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 transition">1</a>
+      {% if page_obj.number > 4 %}
+        <span class="inline-flex items-center justify-center w-5 h-7 text-xs text-gray-400">…</span>
+      {% endif %}
+    {% endif %}
+
+    {% comment %}Window ±2{% endcomment %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+        {% if page_obj.number == num %}
+          <span class="inline-flex items-center justify-center w-7 h-7 text-xs border bg-green-600 border-green-600 text-white font-semibold">{{ num }}</span>
+        {% else %}
+          <a href="?page={{ num }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+             hx-get="{{ request.path }}?partial=products&page={{ num }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+             hx-target="#product-grid" hx-swap="outerHTML"
+             class="inline-flex items-center justify-center w-7 h-7 text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 transition">{{ num }}</a>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+
+    {% comment %}Ellipsis + last page{% endcomment %}
+    {% if page_obj.number < page_obj.paginator.num_pages|add:"-2" %}
+      {% if page_obj.number < page_obj.paginator.num_pages|add:"-3" %}
+        <span class="inline-flex items-center justify-center w-5 h-7 text-xs text-gray-400">…</span>
+      {% endif %}
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+         hx-get="{{ request.path }}?partial=products&page={{ page_obj.paginator.num_pages }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+         hx-target="#product-grid" hx-swap="outerHTML"
+         class="inline-flex items-center justify-center w-7 h-7 text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 transition">{{ page_obj.paginator.num_pages }}</a>
+    {% endif %}
+
+    {% comment %}Next{% endcomment %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+         hx-get="{{ request.path }}?partial=products&page={{ page_obj.next_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+         hx-target="#product-grid" hx-swap="outerHTML"
+         class="inline-flex items-center justify-center w-7 h-7 text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+        <i class="fas fa-chevron-right"></i>
+      </a>
+    {% else %}
+      <span class="inline-flex items-center justify-center w-7 h-7 text-xs border border-gray-200 text-gray-300 cursor-not-allowed"><i class="fas fa-chevron-right"></i></span>
+    {% endif %}
+
+    <span class="ml-2 text-xs text-gray-400">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  </div>
+{% endif %}

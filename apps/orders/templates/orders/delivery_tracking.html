@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Track {{ delivery.delivery_number }}{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">{{ delivery.delivery_number }}</h1>
+            <p class="text-sm text-gray-500">Order: {{ delivery.sales_order.order_number }} — {{ delivery.get_status_display }}</p>
+        </div>
+        {% if delivery.status != 'DELIVERED' %}
+        <form method="post" action="{% url 'orders:delivery_mark_delivered' delivery.pk %}">
+            {% csrf_token %}
+            <input type="text" name="received_by" placeholder="Received by…" class="border border-gray-300 px-3 py-2 text-sm mr-2">
+            <button type="submit" class="px-4 py-2 bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition">Mark Delivered</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Carrier info -->
+    {% if delivery.carrier_name or delivery.tracking_number %}
+    <div class="bg-white border border-gray-200 shadow-sm p-4 mb-6 flex flex-wrap gap-6 text-sm">
+        {% if delivery.carrier_name %}<div><span class="text-gray-500">Carrier:</span> <span class="font-medium">{{ delivery.carrier_name }}</span></div>{% endif %}
+        {% if delivery.tracking_number %}<div><span class="text-gray-500">Tracking #:</span> <span class="font-mono font-medium">{{ delivery.tracking_number }}</span></div>{% endif %}
+        {% if delivery.driver_name %}<div><span class="text-gray-500">Driver:</span> <span class="font-medium">{{ delivery.driver_name }}</span></div>{% endif %}
+        {% if delivery.vehicle_number %}<div><span class="text-gray-500">Vehicle:</span> <span class="font-medium">{{ delivery.vehicle_number }}</span></div>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Add tracking event -->
+    {% if delivery.status != 'DELIVERED' %}
+    <div class="bg-white border border-gray-200 shadow-sm p-5 mb-6">
+        <h3 class="text-sm font-bold text-gray-700 mb-3">Add Tracking Event</h3>
+        <form method="post" action="{% url 'orders:delivery_add_event' delivery.pk %}" class="flex flex-wrap gap-3 items-end">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Status</label>
+                {{ form.status|add_class:"border border-gray-300 px-3 py-2 text-sm bg-white" }}
+            </div>
+            <div class="flex-1 min-w-48">
+                <label class="block text-xs text-gray-500 mb-1">Location</label>
+                {{ form.location|add_class:"w-full border border-gray-300 px-3 py-2 text-sm" }}
+            </div>
+            <div class="flex-1 min-w-48">
+                <label class="block text-xs text-gray-500 mb-1">Notes</label>
+                {{ form.notes|add_class:"w-full border border-gray-300 px-3 py-2 text-sm" }}
+            </div>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition">Add Event</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Timeline -->
+    <div class="bg-white border border-gray-200 shadow-sm p-5">
+        <h3 class="text-sm font-bold text-gray-700 mb-4">Tracking Timeline</h3>
+        <div class="space-y-4">
+            {% for event in events %}
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="w-3 h-3 {% if event.status == 'DELIVERED' %}bg-green-500{% elif event.status == 'FAILED' %}bg-red-500{% else %}bg-blue-500{% endif %} mt-1 flex-shrink-0"></div>
+                    {% if not forloop.last %}<div class="w-0.5 bg-gray-200 flex-1 mt-1"></div>{% endif %}
+                </div>
+                <div class="pb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-semibold text-gray-800">{{ event.get_status_display }}</span>
+                        <span class="text-xs text-gray-400">{{ event.event_time|date:"Y-m-d H:i" }}</span>
+                    </div>
+                    {% if event.location %}<p class="text-xs text-gray-600 mt-0.5"><i class="fas fa-map-marker-alt mr-1 text-red-400"></i>{{ event.location }}</p>{% endif %}
+                    {% if event.notes %}<p class="text-xs text-gray-500 mt-0.5">{{ event.notes }}</p>{% endif %}
+                    {% if event.updated_by_name %}<p class="text-xs text-gray-400 mt-0.5">By: {{ event.updated_by_name }}</p>{% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-400">No tracking events yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

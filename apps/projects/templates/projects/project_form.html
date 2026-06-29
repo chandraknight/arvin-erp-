@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if object %}Edit Project{% else %}New Project{% endif %}{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+  <div class="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
+    <h1 class="text-2xl font-bold text-gray-800">
+      {% if object %}Edit Project: {{ object.name }}{% else %}New Project{% endif %}
+    </h1>
+    <a href="{% url 'projects:project_list' %}" class="text-sm text-gray-500 hover:text-gray-700">← Back</a>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 mb-4 text-sm">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <!-- Section: Core Details -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded mb-4">
+      <div class="px-5 py-3 bg-green-700 text-white text-xs font-bold uppercase tracking-wide rounded-t">
+        <i class="fas fa-project-diagram mr-1"></i>Project Details
+      </div>
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.name.label }} *</label>
+          {{ form.name|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-green-600 mt-1" }}
+          {% if form.name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.name.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.code.label }}</label>
+          {{ form.code|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-green-600 mt-1" }}
+          {% if form.code.errors %}<p class="text-red-600 text-xs mt-1">{{ form.code.errors|striptags }}</p>{% endif %}
+          <p class="text-gray-400 text-xs mt-0.5">{{ form.code.help_text }}</p>
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.status.label }}</label>
+          {{ form.status|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-green-600 mt-1 bg-white" }}
+          {% if form.status.errors %}<p class="text-red-600 text-xs mt-1">{{ form.status.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.priority.label }}</label>
+          {{ form.priority|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-green-600 mt-1 bg-white" }}
+          {% if form.priority.errors %}<p class="text-red-600 text-xs mt-1">{{ form.priority.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.cost_centre.label }}</label>
+          {{ form.cost_centre|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-green-600 mt-1 bg-white" }}
+          {% if form.cost_centre.errors %}<p class="text-red-600 text-xs mt-1">{{ form.cost_centre.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.project_manager.label }}</label>
+          {{ form.project_manager|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-green-600 mt-1 bg-white" }}
+          {% if form.project_manager.errors %}<p class="text-red-600 text-xs mt-1">{{ form.project_manager.errors|striptags }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-sm font-semibold text-gray-700">{{ form.description.label }}</label>
+          {{ form.description|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-green-600 mt-1" }}
+          {% if form.description.errors %}<p class="text-red-600 text-xs mt-1">{{ form.description.errors|striptags }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Timeline & Budget -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded mb-4">
+      <div class="px-5 py-3 bg-blue-700 text-white text-xs font-bold uppercase tracking-wide rounded-t">
+        <i class="fas fa-calendar-alt mr-1"></i>Timeline & Budget
+      </div>
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.start_date.label }}</label>
+          {{ form.start_date|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-blue-600 mt-1 nepali-datepicker"|attr:"autocomplete:off"|attr:"placeholder:YYYY-MM-DD" }}
+          {% if form.start_date.errors %}<p class="text-red-600 text-xs mt-1">{{ form.start_date.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.end_date.label }}</label>
+          {{ form.end_date|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-blue-600 mt-1 nepali-datepicker"|attr:"autocomplete:off"|attr:"placeholder:YYYY-MM-DD" }}
+          {% if form.end_date.errors %}<p class="text-red-600 text-xs mt-1">{{ form.end_date.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.budget_amount.label }}</label>
+          {{ form.budget_amount|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-blue-600 mt-1" }}
+          {% if form.budget_amount.errors %}<p class="text-red-600 text-xs mt-1">{{ form.budget_amount.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.currency.label }}</label>
+          {{ form.currency|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-blue-600 mt-1" }}
+          {% if form.currency.errors %}<p class="text-red-600 text-xs mt-1">{{ form.currency.errors|striptags }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Client -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded mb-4">
+      <div class="px-5 py-3 bg-amber-600 text-white text-xs font-bold uppercase tracking-wide rounded-t">
+        <i class="fas fa-user-tie mr-1"></i>Client Information
+      </div>
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.client_name.label }}</label>
+          {{ form.client_name|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-amber-500 mt-1" }}
+          {% if form.client_name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.client_name.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.client_contact.label }}</label>
+          {{ form.client_contact|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-amber-500 mt-1" }}
+          {% if form.client_contact.errors %}<p class="text-red-600 text-xs mt-1">{{ form.client_contact.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.client_email.label }}</label>
+          {{ form.client_email|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-amber-500 mt-1" }}
+          {% if form.client_email.errors %}<p class="text-red-600 text-xs mt-1">{{ form.client_email.errors|striptags }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="bg-white border border-gray-200 shadow-sm rounded mb-4">
+      <div class="px-5 py-3 bg-gray-600 text-white text-xs font-bold uppercase tracking-wide rounded-t">
+        <i class="fas fa-sticky-note mr-1"></i>Notes
+      </div>
+      <div class="p-5">
+        {{ form.notes|add_class:"w-full border border-gray-300 px-3 py-2 text-sm rounded focus:ring-2 focus:ring-gray-500" }}
+        {% if form.notes.errors %}<p class="text-red-600 text-xs mt-1">{{ form.notes.errors|striptags }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="flex gap-4 mt-2">
+      <button type="submit" class="px-8 py-3 bg-green-700 hover:bg-green-800 text-white font-semibold rounded shadow transition">
+        {% if object %}Update Project{% else %}Create Project{% endif %}
+      </button>
+      <a href="{% url 'projects:project_list' %}" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded transition">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

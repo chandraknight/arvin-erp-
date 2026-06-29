@@ -1,0 +1,56 @@
+{# ── Collapsible HTMX filter panel ───────────────────────────────────────────
+   Wraps filter form fields in a collapsible Alpine.js panel.
+   The form submits via HTMX on change.
+
+   Usage:
+     <c-filter_panel target="#list-container" action="{% url 'app:list' %}">
+       <c-slot name="filters">
+         <select name="status" data-filter ...>...</select>
+       </c-slot>
+     </c-filter_panel>
+#}
+<div x-data="{ open: false }" class="mb-4">
+
+    <!-- Toggle button -->
+    <button type="button"
+            @click="open = !open"
+            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition">
+        <i class="fas fa-filter text-green-600 text-xs"></i>
+        <span>Filters</span>
+        <i class="fas text-xs text-gray-400 transition-transform duration-200"
+           :class="open ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+    </button>
+
+    <!-- Filter fields -->
+    <div x-show="open"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 -translate-y-1"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="mt-2 p-4 bg-white border border-gray-200 shadow-sm"
+         style="display:none">
+
+        <form hx-get="{{ action|default:request.path }}"
+              hx-target="{{ target|default:'#list-container' }}"
+              hx-swap="innerHTML"
+              hx-trigger="change"
+              class="flex flex-wrap gap-3 items-end">
+
+            {{ filters }}
+
+            <button type="submit"
+                    class="px-4 py-3 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition">
+                Apply
+            </button>
+            <a href="{{ action|default:request.path }}"
+               hx-get="{{ action|default:request.path }}"
+               hx-target="{{ target|default:'#list-container' }}"
+               hx-swap="innerHTML"
+               class="px-4 py-3 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition border border-gray-300">
+                Clear
+            </a>
+        </form>
+    </div>
+</div>

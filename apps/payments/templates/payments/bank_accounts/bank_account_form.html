@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if is_edit %}Edit Bank Account{% else %}Add Bank Account{% endif %}{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-3 max-w-2xl">
+
+  <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+    <h2 class="text-2xl font-bold text-gray-800 tracking-tight">
+      {% if is_edit %}Edit Bank Account{% else %}Add Bank Account{% endif %}
+    </h2>
+    <a href="{% url 'payments:bank_account_list' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-semibold transition">
+      <i class="fas fa-arrow-left text-xs"></i> Back
+    </a>
+  </div>
+
+  <form method="post" class="bg-white border border-gray-200 shadow-sm p-5 space-y-4">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 text-sm">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          Bank Name <span class="text-red-500">*</span>
+        </label>
+        {{ form.bank_name|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500" }}
+        {% for e in form.bank_name.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          Account Number <span class="text-red-500">*</span>
+        </label>
+        {{ form.account_number|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500" }}
+        {% for e in form.account_number.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          Account Name <span class="text-red-500">*</span>
+        </label>
+        {{ form.account_name|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500" }}
+        {% for e in form.account_name.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Branch</label>
+        {{ form.branch_name|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500" }}
+        {% for e in form.branch_name.errors %}<p class="text-red-600 text-xs mt-1">{{ e }}</p>{% endfor %}
+      </div>
+    </div>
+
+    {% if is_edit %}
+    <div class="flex items-center gap-2">
+      {{ form.is_active }}
+      <label class="text-sm text-gray-700">Active</label>
+    </div>
+    {% endif %}
+
+    {% if account.ledger_account %}
+      <p class="text-xs text-gray-400">
+        Ledger account: <span class="font-mono">{{ account.ledger_account.name }}</span>
+        — <a href="{% url 'bookkeeping:ledger_report' account.ledger_account.id %}" class="text-indigo-600 hover:underline">View ledger</a>
+      </p>
+    {% else %}
+      <p class="text-xs text-gray-400">A dedicated ledger account is created automatically when you save.</p>
+    {% endif %}
+
+    <div class="pt-2">
+      <button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 shadow-md transition">
+        <i class="fas fa-check mr-1"></i> {% if is_edit %}Save Changes{% else %}Add Bank Account{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

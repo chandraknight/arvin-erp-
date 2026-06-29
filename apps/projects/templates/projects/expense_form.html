@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block title %}Log Project Expense{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2 bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+    <h1 class="text-xl font-bold text-gray-800 mb-6 border-b pb-4">
+        {% if object %}Edit Expense{% else %}Log Project Expense{% endif %}
+    </h1>
+    <form method="post" novalidate class="space-y-4">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="sm:flex">
+            <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-48 w-full text-sm">
+                {{ field.label }}{% if field.field.required %} *{% endif %}
+            </span>
+            {{ field|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+        </div>
+        {% if field.errors %}<p class="text-red-600 text-xs ml-48 mt-1">{{ field.errors|striptags }}</p>{% endif %}
+        {% endfor %}
+        <div class="flex gap-3 pt-4">
+            <button type="submit" class="px-6 py-2 bg-amber-600 text-white font-semibold hover:bg-amber-700 transition shadow">Save Expense</button>
+            <a href="{% url 'projects:expense_list' %}" class="px-6 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

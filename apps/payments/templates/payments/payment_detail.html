@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Detail{% endblock %}
+
+{% block content %}
+
+<div class="w-full mt-2">
+    <div class="w-full bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold">Payment Detail</h3>
+            <div class="flex space-x-2">
+                <a href="{% url 'payments:payment_receipt' payment.pk %}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition" target="_blank">
+                    📄 Print Receipt
+                </a>
+                <a href="{% url 'payments:payment_list' %}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition">
+                    &larr; Back to List
+                </a>
+            </div>
+        </div>
+
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <div>
+                <dt class="font-semibold text-gray-700">Date</dt>
+                <dd class="mt-1 text-gray-900">{{ payment.date }}</dd>
+            </div>
+            <div>
+                <dt class="font-semibold text-gray-700">Payment Type</dt>
+                <dd class="mt-1 text-gray-900">{{ payment.get_payment_type_display }}</dd>
+            </div>
+            <div>
+                <dt class="font-semibold text-gray-700">Amount</dt>
+                <dd class="mt-1 text-gray-900">NPR {{ payment.amount }}</dd>
+            </div>
+            <div>
+                <dt class="font-semibold text-gray-700">Method</dt>
+                <dd class="mt-1 text-gray-900">{{ payment.get_method_display }}</dd>
+            </div>
+            <div>
+                <dt class="font-semibold text-gray-700">Invoice</dt>
+                <dd class="mt-1 text-gray-900">
+                    {% if payment.invoice %}
+                        <a href="#" class="text-blue-600 hover:underline">{{ payment.invoice.invoice_number }}</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </dd>
+            </div>
+            <div>
+                <dt class="font-semibold text-gray-700">Payment/Bill Number</dt>
+                <dd class="mt-1 text-gray-900">{{ payment.payment_number }}</dd>
+            </div>
+            <div>
+                <dt class="font-semibold text-gray-700">Reference Number</dt>
+                <dd class="mt-1 text-gray-900">{{ payment.reference_number|default:"-" }}</dd>
+            </div>
+            <div>
+                <dt class="font-semibold text-gray-700">Status</dt>
+                <dd class="mt-1">
+                    {% if payment.journal_entry %}
+                        <span class="inline-block bg-green-200 text-green-800 px-2 py-1 rounded text-xs font-semibold">Processed</span>
+                    {% else %}
+                        <span class="inline-block bg-yellow-200 text-yellow-800 px-2 py-1 rounded text-xs font-semibold">Pending</span>
+                    {% endif %}
+                </dd>
+            </div>
+        </dl>
+    </div>
+</div>
+{% endblock %}

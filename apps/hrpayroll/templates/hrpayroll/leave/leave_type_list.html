@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Leave Types{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-calendar-alt text-orange-500 mr-2"></i>Leave Types</h1>
+  <a href="{% url 'hrpayroll:leave_type_create' %}" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded shadow transition"><i class="fas fa-plus mr-1"></i>Add Leave Type</a>
+</div>
+
+<div class="bg-white border border-gray-200 shadow-sm rounded overflow-hidden">
+  {% if leave_types %}
+  <table class="w-full text-sm">
+    <thead class="bg-orange-600 text-white text-xs uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">Name</th>
+        <th class="px-4 py-3 text-center">Days/Year</th>
+        <th class="px-4 py-3 text-center">Paid</th>
+        <th class="px-4 py-3 text-center">Carry Forward</th>
+        <th class="px-4 py-3 text-center">Requires Approval</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lt in leave_types %}
+      <tr class="border-t border-gray-100 hover:bg-gray-50">
+        <td class="px-4 py-3 font-semibold text-gray-800">{{ lt.name }}</td>
+        <td class="px-4 py-3 text-center">{{ lt.days_allowed_per_year }}</td>
+        <td class="px-4 py-3 text-center">{% if lt.is_paid %}<i class="fas fa-check text-green-600"></i>{% else %}<i class="fas fa-times text-gray-400"></i>{% endif %}</td>
+        <td class="px-4 py-3 text-center">{% if lt.carry_forward %}<i class="fas fa-check text-green-600"></i>{% else %}<i class="fas fa-times text-gray-400"></i>{% endif %}</td>
+        <td class="px-4 py-3 text-center">{% if lt.requires_approval %}<i class="fas fa-check text-green-600"></i>{% else %}<i class="fas fa-times text-gray-400"></i>{% endif %}</td>
+        <td class="px-4 py-3 text-center">
+          <a href="{% url 'hrpayroll:leave_type_update' pk=lt.pk %}" class="text-orange-600 hover:text-orange-800 text-xs font-medium">Edit</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="text-center py-12 text-gray-400">
+    <i class="fas fa-calendar-alt text-4xl mb-3"></i>
+    <p class="text-sm">No leave types configured yet.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Order {{ order.order_number }}{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-200 pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">{{ order.order_number }}</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ order.order_date|date:"Y-m-d" }} — {{ order.get_priority_display }} priority</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 text-sm font-semibold
+                {% if order.status == 'DELIVERED' %}bg-green-100 text-green-800
+                {% elif order.status == 'DISPATCHED' %}bg-blue-100 text-blue-800
+                {% elif order.status == 'CANCELLED' %}bg-red-100 text-red-800
+                {% elif order.status == 'CONFIRMED' %}bg-purple-100 text-purple-800
+                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                {{ order.get_status_display }}
+            </span>
+            {% if order.status == 'DRAFT' %}
+                <a href="{% url 'orders:order_confirm' order.pk %}" class="px-4 py-1.5 text-sm bg-green-600 text-white hover:bg-green-700 transition">Confirm</a>
+                <a href="{% url 'orders:order_update' order.pk %}" class="px-4 py-1.5 text-sm bg-amber-600 text-white hover:bg-amber-700 transition">Edit</a>
+            {% endif %}
+            {% if order.status in 'CONFIRMED,PROCESSING' %}
+                <a href="{% url 'orders:delivery_create' order.pk %}" class="px-4 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 transition">Create Delivery Note</a>
+            {% endif %}
+            {% if order.status != 'CANCELLED' and not order.invoice %}
+                <a href="{% url 'orders:order_to_invoice' order.pk %}" class="px-4 py-1.5 text-sm bg-purple-600 text-white hover:bg-purple-700 transition">Convert to Invoice</a>
+            {% endif %}
+            {% if order.status in 'DRAFT,CONFIRMED,PROCESSING' %}
+                <a href="{% url 'orders:order_cancel' order.pk %}" class="px-4 py-1.5 text-sm bg-red-600 text-white hover:bg-red-700 transition" onclick="return confirm('Cancel this order? This cannot be undone.')">Cancel</a>
+            {% endif %}
+            <a href="{% url 'orders:order_print_receipt' order.pk %}?mode=a4" target="_blank"
+               class="px-4 py-1.5 text-sm bg-gray-700 text-white hover:bg-gray-800 transition">
+               <i class="fas fa-print mr-1"></i>Print Receipt
+            </a>
+            <a href="{% url 'orders:order_print_receipt' order.pk %}?mode=thermal" target="_blank"
+               class="px-4 py-1.5 text-sm bg-gray-600 text-white hover:bg-gray-700 transition">
+               <i class="fas fa-receipt mr-1"></i>Thermal
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Order Info -->
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+            <h3 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Order Details</h3>
+            <dl class="space-y-2 text-sm">
+                <div class="flex justify-between"><dt class="text-gray-500">Customer</dt><dd class="font-medium">{{ order.customer.name|default:"Walk-in" }}</dd></div>
+                <div class="flex justify-between"><dt class="text-gray-500">Order Date</dt><dd>{{ order.order_date|date:"Y-m-d" }}</dd></div>
+                <div class="flex justify-between"><dt class="text-gray-500">Expected Delivery</dt><dd>{{ order.expected_delivery_date|date:"Y-m-d"|default:"—" }}</dd></div>
+                {% if order.branch %}<div class="flex justify-between"><dt class="text-gray-500">Branch</dt><dd>{{ order.branch.name }}</dd></div>{% endif %}
+                {% if order.invoice %}<div class="flex justify-between"><dt class="text-gray-500">Invoice</dt><dd><a href="{% url 'billing:view_invoice_detail' order.invoice.pk %}" class="text-green-600 hover:underline">{{ order.invoice.invoice_number }}</a></dd></div>{% endif %}
+            </dl>
+        </div>
+        <!-- Delivery Address -->
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+            <h3 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Delivery Address</h3>
+            <p class="text-sm text-gray-700">{{ order.delivery_address|default:"Same as customer address"|linebreaksbr }}</p>
+            {% if order.delivery_contact %}<p class="text-sm text-gray-600 mt-2"><i class="fas fa-user mr-1"></i>{{ order.delivery_contact }}</p>{% endif %}
+            {% if order.delivery_phone %}<p class="text-sm text-gray-600"><i class="fas fa-phone mr-1"></i>{{ order.delivery_phone }}</p>{% endif %}
+        </div>
+        <!-- Financials -->
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+            <h3 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Financials</h3>
+            <dl class="space-y-2 text-sm">
+                <div class="flex justify-between"><dt class="text-gray-500">Subtotal</dt><dd>{{ order.subtotal|floatformat:2|intcomma }}</dd></div>
+                <div class="flex justify-between"><dt class="text-gray-500">Discount</dt><dd class="text-red-600">-{{ order.discount_amount|floatformat:2|intcomma }}</dd></div>
+                <div class="flex justify-between"><dt class="text-gray-500">Tax</dt><dd>{{ order.tax_amount|floatformat:2|intcomma }}</dd></div>
+                <div class="flex justify-between border-t pt-2 font-bold"><dt>Total</dt><dd class="text-green-700">{{ order.total|floatformat:2|intcomma }}</dd></div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Order Items -->
+    <div class="bg-white border border-gray-200 shadow-sm mb-6">
+        <div class="px-6 py-3 bg-gray-50 border-b border-gray-200"><h2 class="text-sm font-bold text-gray-700">Order Items</h2></div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-green-600 text-white text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-2 text-left border border-green-700">Product / Description</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Qty</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Unit Price</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Disc%</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Tax%</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Line Total</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Delivered</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Pending</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items.all %}
+                    <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                        <td class="px-4 py-2 border border-gray-200 font-medium">{{ item.product.name|default:item.description|default:"—" }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ item.quantity }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ item.unit_price|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ item.discount_percent }}%</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ item.tax_percent }}%</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right font-mono font-semibold">{{ item.line_total|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right text-green-700">{{ item.quantity_delivered }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right {% if item.quantity_pending > 0 %}text-amber-600 font-semibold{% else %}text-gray-400{% endif %}">{{ item.quantity_pending }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Delivery Notes -->
+    {% if delivery_notes %}
+    <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="px-6 py-3 bg-gray-50 border-b border-gray-200"><h2 class="text-sm font-bold text-gray-700">Delivery Notes</h2></div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-amber-600 text-white text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-2 text-left border border-amber-700">DN #</th>
+                        <th class="px-4 py-2 text-left border border-amber-700">Dispatch Date</th>
+                        <th class="px-4 py-2 text-center border border-amber-700">Status</th>
+                        <th class="px-4 py-2 text-left border border-amber-700">Carrier</th>
+                        <th class="px-4 py-2 text-left border border-amber-700">Tracking #</th>
+                        <th class="px-4 py-2 text-center border border-amber-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dn in delivery_notes %}
+                    <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-amber-50">
+                        <td class="px-4 py-2 border border-gray-200 font-medium text-amber-700">
+                            <a href="{% url 'orders:delivery_detail' dn.pk %}" class="hover:underline">{{ dn.delivery_number }}</a>
+                        </td>
+                        <td class="px-4 py-2 border border-gray-200">{{ dn.dispatch_date|date:"Y-m-d" }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-center">
+                            <span class="px-2 py-0.5 text-xs font-semibold
+                                {% if dn.status == 'DELIVERED' %}bg-green-100 text-green-800
+                                {% elif dn.status == 'IN_TRANSIT' %}bg-blue-100 text-blue-800
+                                {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                {{ dn.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-2 border border-gray-200 text-gray-600">{{ dn.carrier_name|default:"—" }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-gray-600 font-mono text-xs">{{ dn.tracking_number|default:"—" }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-center">
+                            <a href="{% url 'orders:delivery_track' dn.pk %}" class="text-blue-600 hover:text-blue-800 text-xs"><i class="fas fa-map-marker-alt mr-1"></i>Track</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

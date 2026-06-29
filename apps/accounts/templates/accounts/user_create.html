@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+
+    <div class="border-b border-gray-200 pb-4 mb-8">
+        <h1 class="text-2xl font-bold text-gray-800">Create User</h1>
+        <p class="text-sm text-gray-500 mt-1">
+            {% if user.is_superuser %}
+                Superadmin — can create users for any company with any role.
+            {% else %}
+                Create a staff member for <strong>{{ user.company.name }}</strong>.
+                Assign Staff or Manager role — the menus they see are determined by your company's active modules.
+            {% endif %}
+        </p>
+    </div>
+
+    <form method="post" novalidate class="space-y-0">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="mb-4 bg-red-50 border border-red-200 p-4">
+            {% for error in form.non_field_errors %}
+                <p class="text-red-700 text-sm">{{ error|striptags }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="bg-white border border-gray-200 shadow-sm">
+            <div class="px-6 py-3 bg-green-700 text-white">
+                <h2 class="text-sm font-bold uppercase tracking-wide">
+                    <i class="fas fa-user mr-2"></i>User Details
+                </h2>
+            </div>
+            <div class="p-6 space-y-4">
+
+                <!-- Name row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <div class="sm:flex">
+                            <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full text-sm">First Name</span>
+                            {{ form.first_name|add_class:"w-full border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-green-600" }}
+                        </div>
+                        {% if form.first_name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.first_name.errors|striptags }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <div class="sm:flex">
+                            <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full text-sm">Last Name</span>
+                            {{ form.last_name|add_class:"w-full border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-green-600" }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full text-sm">Email *</span>
+                    {{ form.email|add_class:"w-full border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-green-600" }}
+                </div>
+                {% if form.email.errors %}<p class="text-red-600 text-xs mt-1">{{ form.email.errors|striptags }}</p>{% endif %}
+
+                <!-- Company -->
+                {% if user.is_superuser %}
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full text-sm">Company</span>
+                    {{ form.company|add_class:"w-full border border-gray-300 px-4 py-2 bg-white text-sm focus:ring-2 focus:ring-green-600" }}
+                </div>
+                {% if form.company.errors %}<p class="text-red-600 text-xs mt-1">{{ form.company.errors|striptags }}</p>{% endif %}
+                {% else %}
+                {# Company is auto-assigned — show as read-only info, hidden field handles the value #}
+                {{ form.company.as_hidden }}
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full text-sm">Company</span>
+                    <span class="flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-gray-50 w-full text-sm">
+                        {{ user.company.name }}
+                        <span class="ml-2 text-xs text-gray-400">(auto-assigned)</span>
+                    </span>
+                </div>
+                {% endif %}
+
+                <!-- Role -->
+                <div class="sm:flex items-start">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full text-sm">Role</span>
+                    {{ form.role|add_class:"w-full border border-gray-300 px-4 py-2 bg-white text-sm focus:ring-2 focus:ring-green-600" }}
+                </div>
+                {% if form.role.errors %}<p class="text-red-600 text-xs mt-1">{{ form.role.errors|striptags }}</p>{% endif %}
+                {% if not user.is_superuser %}
+                <p class="text-xs text-gray-500 pl-1">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Staff can view records. Manager can view and edit. Admin role is assigned by the superadmin only.
+                </p>
+                {% endif %}
+
+                <!-- Passwords -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <div class="sm:flex">
+                            <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full text-sm">Password *</span>
+                            {{ form.password1|add_class:"w-full border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-green-600" }}
+                        </div>
+                        {% if form.password1.errors %}<p class="text-red-600 text-xs mt-1">{{ form.password1.errors|striptags }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <div class="sm:flex">
+                            <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full text-sm">Confirm *</span>
+                            {{ form.password2|add_class:"w-full border border-gray-300 px-4 py-2 text-sm focus:ring-2 focus:ring-green-600" }}
+                        </div>
+                        {% if form.password2.errors %}<p class="text-red-600 text-xs mt-1">{{ form.password2.errors|striptags }}</p>{% endif %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {% if not user.is_superuser and user.company %}
+        <!-- Active modules info panel for company admins -->
+        <div class="bg-white border border-gray-200 shadow-sm">
+            <div class="px-6 py-3 bg-blue-700 text-white">
+                <h2 class="text-sm font-bold uppercase tracking-wide">
+                    <i class="fas fa-toggle-on mr-2"></i>Modules this user will have access to
+                </h2>
+            </div>
+            <div class="p-4">
+                <p class="text-xs text-gray-500 mb-3">
+                    Based on <strong>{{ user.company.get_organisation_type_display }}</strong> organisation type.
+                    The user's role determines what they can do within each module.
+                </p>
+                <div class="flex flex-wrap gap-2">
+                    {% if user.company.enable_inventory %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-boxes"></i> Inventory
+                    </span>
+                    {% endif %}
+                    {% if user.company.enable_purchasing %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-file-signature"></i> Purchasing
+                    </span>
+                    {% endif %}
+                    {% if user.company.enable_hr_payroll %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-user-tie"></i> HR &amp; Payroll
+                    </span>
+                    {% endif %}
+                    {% if user.company.enable_order_management %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-shopping-cart"></i> Orders
+                    </span>
+                    {% endif %}
+                    {% if user.company.enable_project_tracking %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-project-diagram"></i> Projects
+                    </span>
+                    {% endif %}
+                    {% if user.company.enable_manufacturing %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-industry"></i> Manufacturing
+                    </span>
+                    {% endif %}
+                    {% if user.company.enable_restaurant %}
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-utensils"></i> Restaurant
+                    </span>
+                    {% endif %}
+                    <!-- Always-on modules -->
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-file-invoice-dollar"></i> Billing
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-book"></i> Bookkeeping
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                        <i class="fas fa-chart-bar"></i> Reports
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="flex items-center gap-3 pt-4">
+            <button type="submit"
+                    class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-6 py-3 shadow transition">
+                <i class="fas fa-user-plus mr-2"></i>Create User
+            </button>
+            <a href="{% url 'accounts:user_list' %}"
+               class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-6 py-3 border border-gray-300 transition">
+                Cancel
+            </a>
+        </div>
+
+    </form>
+</div>
+{% endblock %}

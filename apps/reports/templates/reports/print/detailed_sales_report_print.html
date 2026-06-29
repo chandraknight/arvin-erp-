@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Detailed Sales Report - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #aaa; padding: 3px 6px; text-align: left; font-size: 8.5pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+.tot td { font-weight: bold; border-top: 2px solid #555; background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.summary { margin-top: 10px; padding: 6px 10px; border: 1px solid #aaa; font-size: 9pt; }
+.summary .row { display: flex; justify-content: space-between; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Detailed Sales Report</h1>
+  <div class="sub">
+    Period: {% if start_date %}{{ start_date }}{% else %}All Time{% endif %} to {% if end_date %}{{ end_date }}{% else %}Present{% endif %}
+    &nbsp;|&nbsp; Printed: {% now "Y-m-d" %}
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Invoice #</th><th>Date</th><th>Customer</th>
+      <th>Due Date</th><th class="tr">Subtotal</th><th class="tr">Tax</th><th class="tr">Total</th><th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for inv in invoices %}
+    <tr>
+      <td>{{ inv.invoice_number|default:inv.id }}</td>
+      <td>{{ inv.date|date:"Y-m-d"|default:"-" }}</td>
+      <td>{{ inv.customer.name|default:"N/A" }}</td>
+      <td>{{ inv.due_date|date:"Y-m-d" }}</td>
+      <td class="tr">{{ inv.subtotal|floatformat:2 }}</td>
+      <td class="tr">{{ inv.tax_amount|floatformat:2 }}</td>
+      <td class="tr">{{ inv.total|floatformat:2 }}</td>
+      <td>{{ inv.get_status_display|default:inv.status|default:"-" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8" class="tc">No invoices found.</td></tr>
+    {% endfor %}
+    {% if invoices %}
+    <tr class="tot">
+      <td colspan="6">Total Sales</td>
+      <td class="tr">{{ total_sales|floatformat:2 }}</td>
+      <td></td>
+    </tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<div class="summary">
+  <div class="row"><span>Total Invoices:</span><span>{{ invoices|length }}</span></div>
+  <div class="row"><span>Total Items Sold:</span><span>{{ total_items_sold }}</span></div>
+  <div class="row"><strong>Total Sales:</strong><strong>NPR {{ total_sales|floatformat:2 }}</strong></div>
+</div>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

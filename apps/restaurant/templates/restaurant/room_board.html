@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load global_filter %}
+
+{% block title %}Room Status Board{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-bed text-indigo-600 mr-2"></i>Room Status Board</h1>
+  <div class="flex gap-2">
+    <a href="{% url 'restaurant:room_booking_create' %}"
+       class="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-semibold shadow transition">
+      <i class="fas fa-plus mr-1"></i>New Booking
+    </a>
+    <a href="{% url 'restaurant:room_list' %}"
+       class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold shadow transition">
+      <i class="fas fa-list mr-1"></i>Manage Rooms
+    </a>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="flex flex-wrap gap-3 mb-6 text-xs font-medium">
+  <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full">● Available</span>
+  <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full">● Occupied</span>
+  <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full">● Reserved</span>
+  <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full">● Maintenance</span>
+  <span class="px-3 py-1 bg-orange-100 text-orange-800 rounded-full">● Pending Checkout</span>
+</div>
+
+{% regroup rooms by floor as rooms_by_floor %}
+{% for floor_group in rooms_by_floor %}
+<div class="mb-8">
+  <h2 class="text-base font-semibold text-gray-600 mb-3">{{ floor_group.grouper|default:"No Floor" }}</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+    {% for room in floor_group.list %}
+    {% with bk=room.active_booking %}
+    <div class="
+      relative rounded-lg border-2 p-3 text-center shadow-sm cursor-pointer transition hover:shadow-md
+      {% if room.status == 'AVAILABLE' %}border-green-400 bg-green-50
+      {% elif room.status == 'OCCUPIED' %}border-red-400 bg-red-50
+      {% elif room.status == 'RESERVED' %}border-yellow-400 bg-yellow-50
+      {% elif room.status == 'MAINTENANCE' %}border-gray-300 bg-gray-50
+      {% else %}border-orange-400 bg-orange-50{% endif %}
+    ">
+      <div class="text-lg font-bold text-gray-800">{{ room.room_number }}</div>
+      <div class="text-xs text-gray-500">{{ room.room_type.name }}</div>
+      <div class="text-xs font-semibold mt-1
+        {% if room.status == 'AVAILABLE' %}text-green-700
+        {% elif room.status == 'OCCUPIED' %}text-red-700
+        {% elif room.status == 'RESERVED' %}text-yellow-700
+        {% elif room.status == 'MAINTENANCE' %}text-gray-500
+        {% else %}text-orange-700{% endif %}
+      ">{{ room.get_status_display }}</div>
+      {% if bk %}
+      <div class="text-xs text-gray-600 truncate mt-1">{{ bk.guest_name }}</div>
+      <a href="{% url 'restaurant:room_booking_detail' bk.pk %}"
+         class="absolute inset-0 rounded-lg" aria-label="View booking"></a>
+      {% elif room.status == 'AVAILABLE' %}
+      <a href="{% url 'restaurant:room_booking_create' %}?room={{ room.pk }}"
+         class="absolute inset-0 rounded-lg" aria-label="Book room"></a>
+      {% endif %}
+    </div>
+    {% endwith %}
+    {% endfor %}
+  </div>
+</div>
+{% empty %}
+<p class="text-gray-500 py-10 text-center">No rooms configured. <a href="{% url 'restaurant:room_create' %}" class="text-indigo-600 underline">Add rooms</a>.</p>
+{% endfor %}
+{% endblock %}

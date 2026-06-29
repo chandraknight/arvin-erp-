@@ -1,0 +1,461 @@
+{% load crispy_forms_tags %}
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ERP Billing Engine{% endblock %}{% if user.is_authenticated and user.company %} | {{ user.company.name }}{% endif %}</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+     <!-- Nepali Datepicker JS -->
+    <script src="{% static 'calender/nepali.datepicker.v5.0.4.min.js' %}"></script>
+    <link href="https://fonts.cdnfonts.com/css/ogirema" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Nepali Datepicker CSS -->
+    <link href="{% static 'calender/nepali.datepicker.v5.0.4.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/form-styles.css' %}" rel="stylesheet">
+    <!-- Select2 — loaded before no-rounded so overrides apply correctly -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <!-- no-rounded.css must load LAST — after all other stylesheets — so its
+         border-radius:0 !important rules win every specificity conflict -->
+    <link href="{% static 'css/no-rounded.css' %}" rel="stylesheet">
+
+
+    <!-- Alpine.js — pinned to exact version -->
+    <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <script>
+        // ── HTMX global configuration ──────────────────────────────────────
+        // 1. Send CSRF token on every non-GET HTMX request
+        document.addEventListener('DOMContentLoaded', function () {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (csrfToken) {
+                document.body.setAttribute('hx-headers',
+                    JSON.stringify({'X-CSRFToken': csrfToken})
+                );
+            }
+        });
+
+        // 2. Re-initialise Nepali datepickers after any HTMX swap
+        document.addEventListener('htmx:afterSwap', function (e) {
+            if (typeof initNepaliDatePickers === 'function') {
+                initNepaliDatePickers(e.detail.target);
+            }
+        });
+
+        // 3. Show toast from HX-Trigger response header
+        //    Views can send:  HX-Trigger: {"showToast": {"level":"success","message":"Saved!"}}
+        document.addEventListener('showToast', function (e) {
+            const { level, message } = e.detail;
+            const container = document.getElementById('htmx-toast-container');
+            if (!container || !message) return;
+            const colours = {
+                success: 'border-green-500',
+                error:   'border-red-500',
+                warning: 'border-amber-500',
+                info:    'border-blue-500',
+            };
+            const icons = {
+                success: '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>',
+                error:   '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z"/>',
+                warning: '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM10 15a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm1-4a1 1 0 0 1-2 0V6a1 1 0 0 1 2 0v5Z"/>',
+                info:    '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9 13.5V9a1 1 0 0 1 2 0v4.5a1 1 0 0 1-2 0ZM10 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/>',
+            };
+            const colour = colours[level] || colours.info;
+            const icon   = icons[level]   || icons.info;
+            const div = document.createElement('div');
+            div.className = `pointer-events-auto flex items-start gap-3 w-full bg-white border-l-4 ${colour} shadow-md px-4 py-3`;
+            div.setAttribute('role', 'alert');
+            div.innerHTML = `
+                <div class="flex-shrink-0 mt-0.5">
+                    <svg class="w-5 h-5 text-current" fill="currentColor" viewBox="0 0 20 20">${icon}</svg>
+                </div>
+                <div class="flex-1 text-sm text-gray-800 font-medium">${message}</div>
+                <button onclick="this.closest('[role=alert]').remove()" type="button"
+                        class="flex-shrink-0 text-gray-400 hover:text-gray-700" aria-label="Close">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                    </svg>
+                </button>`;
+            container.appendChild(div);
+            setTimeout(() => div.remove(), level === 'error' ? 7000 : 5000);
+        });
+    </script>
+    <style>
+        @media print {
+            #main-sidebar, header.md\:hidden, #htmx-loading-bar,
+            #htmx-full-loader, #htmx-toast-container { display: none !important; }
+            .ml-0.md\:ml-64 { margin-left: 0 !important; }
+            .no-print { display: none !important; }
+            body { background: white !important; }
+        }
+        :root {
+            --primary-50: #ecf8f1;
+            --primary-100: #d4f0e1;
+            --primary-200: #a9e1c3;
+            --primary-500: #2e8b57; /* SeaGreen */
+            --primary-600: #277a4c;
+            --primary-700: #206a41;
+            --primary-800: #1a5936;
+            --primary-900: #134229;
+        }
+
+        /* Theme override: treat Tailwind green as "primary" */
+        .bg-green-50 { background-color: var(--primary-50) !important; }
+        .bg-green-100 { background-color: var(--primary-100) !important; }
+        .bg-green-500 { background-color: var(--primary-500) !important; }
+        .bg-green-600 { background-color: var(--primary-600) !important; }
+        .bg-green-700 { background-color: var(--primary-700) !important; }
+        .bg-green-800 { background-color: var(--primary-800) !important; }
+
+        .text-green-200 { color: var(--primary-200) !important; }
+        .text-green-500 { color: var(--primary-500) !important; }
+        .text-green-600 { color: var(--primary-600) !important; }
+        .text-green-700 { color: var(--primary-700) !important; }
+        .text-green-800 { color: var(--primary-800) !important; }
+        .text-green-900 { color: var(--primary-900) !important; }
+
+        .border-green-200 { border-color: var(--primary-200) !important; }
+        .border-green-500 { border-color: var(--primary-500) !important; }
+        .border-green-600 { border-color: var(--primary-600) !important; }
+        .border-green-700 { border-color: var(--primary-700) !important; }
+        .border-green-800 { border-color: var(--primary-800) !important; }
+
+        .hover\:bg-green-100:hover { background-color: var(--primary-100) !important; }
+        .hover\:bg-green-700:hover { background-color: var(--primary-700) !important; }
+        .hover\:bg-green-800:hover { background-color: var(--primary-800) !important; }
+
+        .hover\:text-green-500:hover { color: var(--primary-500) !important; }
+        .hover\:text-green-700:hover { color: var(--primary-700) !important; }
+        .hover\:text-green-800:hover { color: var(--primary-800) !important; }
+        .hover\:text-green-900:hover { color: var(--primary-900) !important; }
+
+        .focus\:ring-green-400:focus {
+            --tw-ring-color: var(--primary-500) !important;
+        }
+        .focus\:ring-green-500:focus {
+            --tw-ring-color: var(--primary-500) !important;
+        }
+        .focus\:ring-green-600:focus {
+            --tw-ring-color: var(--primary-600) !important;
+        }
+        .focus\:border-green-600:focus { border-color: var(--primary-600) !important; }
+
+        .from-green-700 {
+            --tw-gradient-from: var(--primary-700) !important;
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgb(32 106 65 / 0)) !important;
+        }
+        .to-green-500 { --tw-gradient-to: var(--primary-500) !important; }
+
+        .even\:bg-green-50:nth-child(even) { background-color: var(--primary-50) !important; }
+        .hover\:bg-green-100:hover { background-color: var(--primary-100) !important; }
+
+        .fas:hover {
+            color: var(--primary-500) !important;
+        }
+
+        html, body {
+            font-family: 'Ogirema', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        input[type="checkbox"] {
+            accent-color: #16a34a; /* Tailwind's green-600 */
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+
+        .excel-green {
+            background-color: #217346;
+            color: white;
+        }
+
+        .excel-light-bg {
+            background-color: #e6f2ed;
+        }
+
+        .excel-border {
+            border-color: #d0d7e5;
+        }
+
+        .flatpickr-calendar {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+
+        .flatpickr-day.selected {
+            background-color: #38a169;
+            border-color: #38a169;
+        }
+
+        .flatpickr-day.today {
+            border-color: #38a169;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+{% block extra_styles %}{% endblock %}
+</head>
+
+<body x-data="{ sidebarOpen: false, modalOpen: false }"
+      x-effect="
+        const s = document.getElementById('main-sidebar');
+        if (s) { sidebarOpen ? s.classList.add('sidebar-open') : s.classList.remove('sidebar-open'); }
+      ">
+{% include "includes/sidebar.html" %}
+
+<!-- HTMX global loading bar -->
+<div id="htmx-loading-bar"
+     class="fixed top-0 left-0 right-0 h-0.5 bg-green-500 z-[10000] origin-left scale-x-0 transition-transform duration-300"
+     style="display:none"></div>
+
+<!-- HTMX full-page loader overlay -->
+<div id="htmx-full-loader"
+     class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+     style="display:none">
+    <div class="bg-white shadow-2xl p-8 flex flex-col items-center gap-4 border border-gray-200">
+        <i class="fas fa-spinner fa-spin text-green-600 text-3xl"></i>
+        <p class="text-sm font-semibold text-gray-700">Loading…</p>
+    </div>
+</div>
+
+<!-- HTMX-triggered toast container (separate from Django messages toasts) -->
+<div id="htmx-toast-container"
+     class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 w-full max-w-sm pointer-events-none"></div>
+
+<!-- Mobile top bar -->
+<header class="md:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200">
+    <div class="flex items-center gap-3 px-4 py-3">
+        <button type="button"
+                class="inline-flex items-center justify-center w-10 h-10 border border-gray-200 text-gray-700 hover:bg-gray-50"
+                @click="sidebarOpen = !sidebarOpen"
+                aria-label="Toggle menu"
+                :aria-expanded="sidebarOpen">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="min-w-0">
+            <div class="text-sm font-semibold text-gray-800 truncate">
+                {% if user.is_authenticated and user.company %}{{ user.company.name }}{% else %}ERP Billing Engine{% endif %}
+            </div>
+            <div class="text-xs text-gray-500 truncate">
+                {% block mobile_subtitle %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="ml-0 md:ml-64 pt-16 md:pt-0 min-h-screen transition-all duration-300 bg-gray-50/50">
+    {% include 'includes/toast.html' %}
+    <main class="max-w-screen-2xl mx-auto px-1 sm:px-2 lg:px-4">
+        {% block content %}
+            <section id="messages" class="mb-6">
+            </section>
+        {% endblock %}
+    </main>
+</div>
+
+{% block extra_js %}{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<style>
+/* ── Global Select2 ERP theme ───────────────────────────────────────── */
+.select2-container { width: 100% !important; }
+.select2-container--default .select2-selection--single {
+    height: auto;
+    border: 1px solid #d1d5db;
+    border-radius: 0 !important;
+    padding: 5px 10px;
+    font-size: 0.875rem;
+    color: #111827;
+    background-color: #fff;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 1.5;
+    padding-left: 0;
+    color: #111827;
+}
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #9ca3af;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100%;
+    top: 0;
+    right: 8px;
+}
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: #16a34a;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(22,163,74,0.25);
+}
+.select2-dropdown {
+    border: 1px solid #d1d5db;
+    border-radius: 0 !important;
+    font-size: 0.875rem;
+}
+.select2-container--default .select2-results__option--highlighted {
+    background-color: #16a34a !important;
+    color: #fff !important;
+}
+.select2-container--default .select2-results__option--selected {
+    background-color: #f0fdf4;
+    color: #15803d;
+}
+.select2-search--dropdown .select2-search__field {
+    border: 1px solid #d1d5db;
+    border-radius: 0 !important;
+    padding: 4px 8px;
+    font-size: 0.875rem;
+}
+.select2-search--dropdown .select2-search__field:focus {
+    outline: none;
+    border-color: #16a34a;
+}
+/* ─────────────────────────────────────────────────────────────────── */
+</style>
+<script>
+    const sidebar = document.getElementById('sidebar-nav');
+    document.addEventListener("DOMContentLoaded", function () {
+        const scrollPosition = localStorage.getItem("sidebar-scroll");
+        if (scrollPosition) {
+            sidebar.scrollTop = parseInt(scrollPosition, 10);
+        }
+    });
+    sidebar?.addEventListener("scroll", function () {
+        localStorage.setItem("sidebar-scroll", sidebar.scrollTop);
+    });
+
+    // ── HTMX loading bar & full overlay ─────────────────────────────────────
+    const loadingBar = document.getElementById('htmx-loading-bar');
+    const fullLoader = document.getElementById('htmx-full-loader');
+    document.addEventListener('htmx:beforeRequest', function () {
+        if (!loadingBar) return;
+        loadingBar.style.display = 'block';
+        loadingBar.style.transform = 'scaleX(0.3)';
+        loadingBar.style.transition = 'transform 2s ease';
+        requestAnimationFrame(() => { loadingBar.style.transform = 'scaleX(0.8)'; });
+        if (fullLoader) fullLoader.style.display = 'flex';
+    });
+    document.addEventListener('htmx:afterRequest', function () {
+        if (!loadingBar) return;
+        loadingBar.style.transition = 'transform 0.2s ease';
+        loadingBar.style.transform = 'scaleX(1)';
+        setTimeout(() => {
+            loadingBar.style.display = 'none';
+            loadingBar.style.transform = 'scaleX(0)';
+        }, 250);
+        if (fullLoader) fullLoader.style.display = 'none';
+    });
+
+
+    function initFlatpickrs(root) {
+        root = root || document;
+        root.querySelectorAll('.flatpickr:not([data-fp-init])').forEach(function(el) {
+            el.setAttribute('data-fp-init', '1');
+            // static:true clips inside overflow:hidden modals — disable it there
+            var inModal = !!el.closest('#app-modal-content');
+            flatpickr(el, {
+                dateFormat: "Y-m-d",
+                allowInput: true,
+                minDate: el.dataset.noMin ? null : "today",
+                static: !inModal,
+                disableMobile: true,
+                locale: { firstDayOfWeek: 1 },
+                appendTo: inModal ? document.body : undefined,
+            });
+        });
+    }
+    document.addEventListener('DOMContentLoaded', function () { initFlatpickrs(document); });
+    document.addEventListener('htmx:afterSettle', function(e) { initFlatpickrs(e.detail.target); });
+
+    function initNepaliDatePickers(root = document) {
+        const inputs = root.querySelectorAll?.(".nepali-datepicker") || [];
+        inputs.forEach((el) => {
+            if (el.dataset.npInit === "1") return;
+            try {
+                if (typeof el.NepaliDatePicker !== "function") return;
+                const opts = { dateFormat: "YYYY-MM-DD", miniEnglishDates: true };
+                // 'value' option (not 'currentDate') is what v5 uses to set inputElement.value
+                const dateVal = el.value && /^\d{4}-\d{2}-\d{2}$/.test(el.value)
+                    ? el.value
+                    : (el.dataset.defaultDate || null);
+                if (dateVal) opts.value = dateVal;
+                if (el.dataset.fyStart) opts.minDate = el.dataset.fyStart;
+                if (el.dataset.fyEnd)   opts.maxDate = el.dataset.fyEnd;
+                el.NepaliDatePicker(opts);
+                el.dataset.npInit = "1";
+            } catch (e) {
+                // ignore init errors for non-input elements
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => initNepaliDatePickers(document));
+    document.addEventListener("htmx:afterSettle", (e) => initNepaliDatePickers(e.target));
+
+    // ── Global Select2 init ──────────────────────────────────────────────────
+    function initSelect2(root) {
+        // Skip if jQuery / Select2 not loaded yet
+        if (typeof $ === 'undefined' || typeof $.fn.select2 === 'undefined') return;
+
+        var $root = root === document ? $(document) : $(root);
+        var $selects = $root.find('select').addBack('select');
+
+        $selects.each(function () {
+            var $el = $(this);
+            // Skip: already initialised, explicitly opted out, or hidden inputs
+            if (
+                $el.hasClass('select2-hidden-accessible') ||
+                $el.data('no-select2') !== undefined ||
+                $el.attr('data-no-select2') !== undefined ||
+                $el.attr('type') === 'hidden'
+            ) return;
+
+            var placeholder = $el.find('option[value=""]').first().text() ||
+                              $el.attr('placeholder') || '— Select —';
+
+            $el.select2({
+                placeholder: placeholder,
+                allowClear: !!$el.find('option[value=""]').length,
+                width: '100%',
+                dropdownParent: $('body'),
+            });
+        });
+    }
+
+    $(function () { initSelect2(document); });
+    document.addEventListener('htmx:afterSettle', function (e) { initSelect2(e.target); });
+    // ────────────────────────────────────────────────────────────────────────
+</script>
+
+<!-- Global modal (HTMX content) -->
+<div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    x-show="modalOpen"
+    x-transition.opacity
+    @click.self="modalOpen = false"
+    @keydown.escape.window="modalOpen = false"
+    style="display: none;"
+>
+    <div class="w-full max-w-2xl bg-white shadow-xl border border-gray-200 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <div class="text-sm font-semibold text-gray-800">Quick Create</div>
+            <button type="button"
+                    class="inline-flex items-center justify-center w-9 h-9 border border-gray-200 text-gray-700 hover:bg-gray-50"
+                    @click="modalOpen = false"
+                    aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="app-modal-content" class="p-4 sm:p-6">
+            <div class="text-sm text-gray-500">Loading…</div>
+        </div>
+    </div>
+</div>
+</body>
+
+</html>

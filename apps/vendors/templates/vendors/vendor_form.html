@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title|default:"Create Vendor" }}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <div class="w-full bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-3">
+            <h2 class="text-2xl font-extrabold text-green-800">{{ title|default:"Create Vendor" }}</h2>
+            <a href="{% url 'vendors:vendor_dashboard' %}" class="text-sm text-gray-500 hover:text-gray-700">← Back to Vendors</a>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 p-4">
+                    <h3 class="text-sm font-semibold text-red-800 mb-1">Please correct the following errors:</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-sm text-red-700">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <!-- Vendor Information -->
+            <div class="bg-gray-50 border border-gray-200 p-4">
+                <h3 class="text-sm font-bold uppercase tracking-wide text-green-800 mb-4">Vendor Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label for="{{ form.name.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            {{ form.name.label }}{% if form.name.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ form.name|add_class:'block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150' }}
+                        {% for error in form.name.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.contact_person.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            {{ form.contact_person.label }}{% if form.contact_person.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ form.contact_person|add_class:'block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150' }}
+                        {% for error in form.contact_person.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            {{ form.email.label }}{% if form.email.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ form.email|add_class:'block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150' }}
+                        {% for error in form.email.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                        {% if form.email.help_text %}<p class="mt-1 text-sm text-gray-500">{{ form.email.help_text }}</p>{% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.phone.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            {{ form.phone.label }}{% if form.phone.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ form.phone|add_class:'block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150' }}
+                        {% for error in form.phone.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                        {% if form.phone.help_text %}<p class="mt-1 text-sm text-gray-500">{{ form.phone.help_text }}</p>{% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.pan_number.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            {{ form.pan_number.label }}
+                        </label>
+                        {{ form.pan_number|add_class:'block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150' }}
+                        {% for error in form.pan_number.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                        {% if form.pan_number.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.pan_number.help_text }}</p>{% endif %}
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="{{ form.address.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            {{ form.address.label }}{% if form.address.field.required %} <span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ form.address|add_class:'block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150' }}
+                        {% for error in form.address.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Opening Balance -->
+            <div class="bg-gray-50 border border-gray-200 p-4">
+                <h3 class="text-sm font-bold uppercase tracking-wide text-green-800 mb-4">Opening Balance <span class="text-gray-400 font-normal normal-case">(Optional)</span></h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label for="{{ form.opening_balance_amount.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            {{ form.opening_balance_amount.label }}
+                        </label>
+                        {{ form.opening_balance_amount|add_class:'block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150' }}
+                        {% for error in form.opening_balance_amount.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                        {% if form.opening_balance_amount.help_text %}<p class="mt-1 text-sm text-gray-500">{{ form.opening_balance_amount.help_text }}</p>{% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.opening_balance_type.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            {{ form.opening_balance_type.label }}
+                        </label>
+                        {{ form.opening_balance_type|add_class:'block w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 bg-white' }}
+                        {% for error in form.opening_balance_type.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                        {% if form.opening_balance_type.help_text %}<p class="mt-1 text-sm text-gray-500">{{ form.opening_balance_type.help_text }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="flex justify-end gap-4 pt-2">
+                <a href="{% url 'vendors:vendor_dashboard' %}"
+                   class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-6 shadow-md hover:shadow-lg transition duration-150">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 shadow-md hover:shadow-lg transition duration-150">
+                    {% if is_update %}Update Vendor{% else %}Create Vendor{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}

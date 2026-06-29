@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Tour Packages{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+      <i class="fas fa-box-open text-green-600"></i> Tour Packages
+    </h2>
+    <a href="{% url 'tours:package_create' %}"
+       class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 transition duration-150">
+      <i class="fas fa-plus"></i> Add Package
+    </a>
+  </div>
+
+  <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+    <table class="min-w-full text-sm text-gray-700">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Package</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Destination</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Type</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Duration</th>
+          <th class="px-4 py-3 text-right font-semibold text-gray-600">Adult Price</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for pkg in page_obj.object_list %}
+          <tr class="hover:bg-gray-50 transition duration-100">
+            <td class="px-4 py-3 font-medium text-gray-800">{{ pkg.name }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ pkg.destination }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ pkg.get_package_type_display }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ pkg.duration_days }}D / {{ pkg.duration_nights }}N</td>
+            <td class="px-4 py-3 text-right font-semibold text-gray-800">NPR {{ pkg.price_per_adult|floatformat:2 }}</td>
+            <td class="px-4 py-3">
+              {% if pkg.is_active %}
+                <span class="text-xs px-2 py-0.5 bg-green-100 text-green-700 font-medium">Active</span>
+              {% else %}
+                <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 font-medium">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <a href="{% url 'tours:package_edit' pkg.pk %}"
+                 class="text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 px-3 py-1 transition duration-150">Edit</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-10 text-center text-gray-400">
+              <i class="fas fa-box-open text-3xl mb-2 block"></i>No packages yet. Add your first tour package.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

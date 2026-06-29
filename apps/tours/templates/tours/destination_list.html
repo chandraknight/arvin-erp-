@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Destinations{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+      <i class="fas fa-globe-asia text-green-600"></i> Destinations
+    </h2>
+    <a href="{% url 'tours:destination_create' %}"
+       class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 transition duration-150">
+      <i class="fas fa-plus"></i> Add Destination
+    </a>
+  </div>
+
+  <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+    <table class="min-w-full text-sm text-gray-700">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Destination</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Country</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+          <th class="px-4 py-3 text-left font-semibold text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for dest in page_obj.object_list %}
+          <tr class="hover:bg-gray-50 transition duration-100">
+            <td class="px-4 py-3 font-medium text-gray-800">{{ dest.name }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ dest.country }}</td>
+            <td class="px-4 py-3">
+              {% if dest.is_active %}
+                <span class="text-xs px-2 py-0.5 bg-green-100 text-green-700 font-medium">Active</span>
+              {% else %}
+                <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 font-medium">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <a href="{% url 'tours:destination_edit' dest.pk %}"
+                 class="text-xs border border-gray-300 text-gray-600 hover:bg-gray-50 px-3 py-1 transition duration-150">Edit</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="px-4 py-10 text-center text-gray-400">
+              <i class="fas fa-globe text-3xl mb-2 block"></i>No destinations yet. Add your first destination.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

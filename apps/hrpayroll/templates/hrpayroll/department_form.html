@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit Department{% else %}Create Department{% endif %}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2 bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+    <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+        <h2 class="text-2xl font-extrabold text-green-800">
+            {% if form.instance.pk %}Edit Department{% else %}Create Department{% endif %}
+        </h2>
+    </div>
+
+    <form method="post" id="department-form" class="space-y-6">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="bg-red-50 border border-red-200 p-4">
+                <p class="text-sm text-red-700">{{ form.non_field_errors }}</p>
+            </div>
+        {% endif %}
+
+        <!-- Name -->
+        <div class="flex items-stretch">
+            <span class="inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                Name
+            </span>
+            <div class="flex-1">
+                {{ form.name|add_class:"flex-1 w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                {% if form.name.errors %}
+                    <p class="text-red-600 text-sm mt-1">{% for e in form.name.errors %}{{ e }}{% endfor %}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="flex items-stretch">
+            <span class="inline-flex items-start px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap pt-3">
+                Description
+            </span>
+            <div class="flex-1">
+                {{ form.description|add_class:"flex-1 w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150"|attr:"rows:3" }}
+                {% if form.description.errors %}
+                    <p class="text-red-600 text-sm mt-1">{% for e in form.description.errors %}{{ e }}{% endfor %}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-4 pt-2">
+            <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 shadow-md hover:shadow-lg transition duration-150">
+                {% if form.instance.pk %}Update Department{% else %}Create Department{% endif %}
+            </button>
+            <a href="{% url 'hrpayroll:department_list' %}" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 shadow-md hover:shadow-lg transition duration-150 text-center">
+                Cancel
+            </a>
+        </div>
+    </form>
+
+    <div class="mt-4">
+        <a href="{% url 'hrpayroll:department_list' %}" class="text-sm text-gray-500 hover:text-gray-700">← Back to Departments</a>
+    </div>
+</div>
+{% endblock %}

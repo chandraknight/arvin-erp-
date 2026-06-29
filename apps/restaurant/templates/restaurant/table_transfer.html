@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Transfer Table — {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-2">
+  <div class="bg-white border border-gray-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-blue-700 text-white rounded-t">
+      <h1 class="text-lg font-bold"><i class="fas fa-exchange-alt mr-2"></i>Transfer Table</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <p class="text-sm text-gray-700">
+        Moving order <strong>{{ order.order_number }}</strong> from
+        <strong>{{ order.table.label }}</strong> to another table.
+      </p>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="space-y-3">
+          <div>
+            <label class="text-sm font-semibold text-gray-700">Target Table</label>
+            {{ form.target_table }}
+            {% if form.target_table.errors %}
+              <p class="text-red-600 text-xs mt-1">{{ form.target_table.errors|striptags }}</p>
+            {% endif %}
+          </div>
+          <div class="flex gap-3 pt-2">
+            <button type="submit"
+                    class="px-6 py-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded shadow transition">
+              <i class="fas fa-check mr-1"></i>Transfer
+            </button>
+            <a href="{% url 'restaurant:order_detail' pk=order.pk %}"
+               class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded transition">
+              Cancel
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

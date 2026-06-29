@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Payslip Details{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Payslip Details</h1>
+
+    <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Employee: {{ payslip.employee.first_name }} {{ payslip.employee.last_name }}</h2>
+        <p class="text-gray-700 mb-2"><strong>Payroll Period:</strong> {{ payslip.payroll_run.period_start_date|date:"M d, Y" }} - {{ payslip.payroll_run.period_end_date|date:"M d, Y" }}</p>
+        <p class="text-gray-700 mb-2"><strong>Issue Date:</strong> {{ payslip.issue_date|date:"M d, Y" }}</p>
+        <p class="text-gray-700 mb-2"><strong>Status:</strong> {{ payslip.payroll_run.status }}</p>
+        <p class="text-gray-700 mb-4"><strong>Finalized:</strong> {% if payslip.is_finalized %}Yes{% else %}No{% endif %}</p>
+
+        <h3 class="text-xl font-semibold text-gray-800 mb-3">Earnings</h3>
+        {% if earnings %}
+            <ul class="list-disc pl-5 mb-4">
+                {% for earning in earnings %}
+                    <li>{{ earning.earning.name }}: {{ earning.amount }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-gray-600 mb-4">No earnings recorded for this payslip.</p>
+        {% endif %}
+
+        <h3 class="text-xl font-semibold text-gray-800 mb-3">Deductions</h3>
+        {% if deductions %}
+            <ul class="list-disc pl-5 mb-4">
+                {% for deduction in deductions %}
+                    <li>{{ deduction.deduction.name }}: {{ deduction.amount }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-gray-600 mb-4">No deductions recorded for this payslip.</p>
+        {% endif %}
+
+        <div class="mt-6 pt-4 border-t border-gray-200">
+            <p class="text-xl font-bold text-gray-800 mb-2">Gross Pay: {{ payslip.gross_pay }}</p>
+            <p class="text-xl font-bold text-red-600 mb-2">Total Deductions: {{ payslip.total_deductions }}</p>
+            <p class="text-2xl font-bold text-green-600">Net Pay: {{ payslip.net_pay }}</p>
+        </div>
+
+        <div class="mt-6">
+            <a href="{% url 'hrpayroll:payslip_list' %}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                Back to Payslips
+            </a>
+            <a href="{% url 'hrpayroll:payslip_update' payslip.pk %}" class="ml-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+                Edit Payslip
+            </a>
+            <a href="{% url 'hrpayroll:download_payslip_pdf' payslip.pk %}" class="ml-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                Download Payslip (PDF)
+            </a>
+            <a href="{% url 'hrpayroll:payslip_delete' payslip.pk %}" class="ml-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                Delete Payslip
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

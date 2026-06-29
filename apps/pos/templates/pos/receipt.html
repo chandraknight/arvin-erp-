@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Receipt - POS Sale #{{ sale.id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="card mx-auto" style="max-width: 400px;">
+    <div class="card-header bg-blue-600 text-white text-center">
+      <h4 class="mb-0"><i class="fas fa-receipt mr-2"></i>POS Receipt</h4>
+    </div>
+
+    <div class="card-body">
+
+      <!-- Receipt header -->
+      <div class="text-center mb-4 pb-3 border-b">
+        <h5 class="font-bold text-sm">{{ sale.company.name }}</h5>
+        <p class="text-xs text-gray-600 mb-1">{{ sale.company.address|default:"Address not set" }}</p>
+        <p class="text-xs text-gray-600">Tel: {{ sale.company.phone|default:"N/A" }}</p>
+        <hr>
+        <div class="d-flex justify-content-between text-xs">
+          <span>Receipt No:</span>
+          <span class="font-mono">{{ sale.invoice.invoice_number }}</span>
+        </div>
+        <div class="d-flex justify-content-between text-xs">
+          <span>Date:</span>
+          <span>{{ sale.created_at|date:"Y-m-d H:i" }}</span>
+        </div>
+        {% if sale.customer %}
+          <div class="d-flex justify-content-between text-xs">
+            <span>Customer:</span>
+            <span>{{ sale.customer.name }}</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Line items -->
+      <div class="mb-4 text-xs">
+        {% for item in sale.invoice.items.all %}
+          <div class="border-b py-1.5">
+            <div class="font-medium">{{ item.product.name }}</div>
+            <div class="d-flex justify-content-between text-gray-500">
+              <span>{{ item.quantity }} &times; NPR {{ item.price|floatformat:2 }}</span>
+              <span class="font-medium text-gray-800">NPR {{ item.line_total|floatformat:2 }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Totals -->
+      <div class="border-t pt-3 text-xs">
+        <div class="d-flex justify-content-between">
+          <span>Subtotal:</span>
+          <span>NPR {{ sale.subtotal|floatformat:2 }}</span>
+        </div>
+        {% if sale.discount_amount > 0 %}
+          <div class="d-flex justify-content-between text-green-600">
+            <span>Discount:</span>
+            <span>-NPR {{ sale.discount_amount|floatformat:2 }}</span>
+          </div>
+        {% endif %}
+        {% if sale.company.vat_registered %}
+          <div class="d-flex justify-content-between">
+            <span>Tax:</span>
+            <span>NPR {{ sale.tax_amount|floatformat:2 }}</span>
+          </div>
+        {% endif %}
+        <div class="d-flex justify-content-between text-base font-bold mt-2">
+          <span>TOTAL:</span>
+          <span class="text-blue-600">NPR {{ sale.total|floatformat:2 }}</span>
+        </div>
+        {% if amount_in_words %}
+          <div class="text-xs text-gray-500 italic mt-1 pt-1 border-t border-dashed">
+            In Words: {{ amount_in_words }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Payment info -->
+      <div class="border-t pt-3 mt-3 text-xs">
+        <div class="d-flex justify-content-between">
+          <span>Payment Method:</span>
+          <span class="font-medium">{{ sale.get_payment_method_display|default:sale.payment_method }}</span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span>Amount Tendered:</span>
+          <span>NPR {{ sale.amount_tendered|floatformat:2 }}</span>
+        </div>
+        <div class="d-flex justify-content-between font-bold">
+          <span>Change Given:</span>
+          <span class="text-green-600">NPR {{ sale.change_given|floatformat:2 }}</span>
+        </div>
+      </div>
+
+      {% if sale.notes %}
+        <div class="border-t pt-3 mt-3 text-xs text-gray-600">
+          <strong>Notes:</strong> {{ sale.notes }}
+        </div>
+      {% endif %}
+
+      <div class="text-center mt-4 text-muted small">
+        <p>Thank you for your business!</p>
+        <p>{{ sale.created_at|date:"F j, Y" }}</p>
+      </div>
+    </div>
+
+    <div class="card-footer text-center">
+      <a href="{% url 'pos:terminal' %}" class="btn btn-primary">
+        <i class="fas fa-arrow-left mr-2"></i>Back to POS
+      </a>
+      <button class="btn btn-outline-secondary ml-2" onclick="window.print()">
+        <i class="fas fa-print mr-2"></i>Print
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Print styles -->
+<style>
+@media print {
+  /* Hide specific UI components that shouldn't be on a receipt */
+  #main-sidebar, 
+  header, 
+  .card-footer, 
+  .btn, 
+  #htmx-toast-container, 
+  #htmx-loading-bar, 
+  #htmx-full-loader,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset the main layout wrapper from base.html */
+  /* We must NOT use display:none on these as they contain the receipt */
+  body, html {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Target the main content wrapper div from base.html */
+  .ml-0.md\:ml-64, 
+  .pt-16.md\:pt-6,
+  main.max-w-7xl {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    position: static !important;
+  }
+
+  /* Style the receipt card for thermal printers (80mm) */
+  .card {
+    display: block !important;
+    visibility: visible !important;
+    width: 80mm !important;
+    margin: 0 auto !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    color: black !important;
+  }
+
+  .card-header {
+    display: none !important; /* Hide blue header on print */
+  }
+
+  .card-body {
+    padding: 5mm !important;
+    width: 100% !important;
+  }
+
+  /* Ensure text colors are black for printing */
+  .text-blue-600, .text-green-600, .text-gray-600 {
+    color: black !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    font-size: 9pt !important;
+  }
+}
+
+@page {
+  size: 80mm auto;
+  margin: 0;
+}
+</style>
+{% endblock %}

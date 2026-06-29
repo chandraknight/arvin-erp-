@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Announcements — Ecom CMS{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">Announcements</h1>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'ecom:cms_dashboard' %}" class="text-sm text-gray-500"><i class="fas fa-arrow-left mr-1"></i>CMS</a>
+      <a href="{% url 'ecom:cms_announcement_create' %}" class="bg-indigo-600 text-white px-4 py-2 text-sm font-medium">
+        <i class="fas fa-plus mr-1"></i>New
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-white border border-gray-200 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+        <tr>
+          <th class="px-5 py-3 text-left">Text</th>
+          <th class="px-5 py-3 text-left">Type</th>
+          <th class="px-5 py-3 text-left">Color</th>
+          <th class="px-5 py-3 text-left">Expires</th>
+          <th class="px-5 py-3 text-left">Status</th>
+          <th class="px-5 py-3 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for ann in announcements %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-5 py-3 max-w-xs">
+            <p class="font-medium text-gray-800 truncate">{{ ann.text }}</p>
+            {% if ann.link_url %}<p class="text-xs text-gray-400 truncate">{{ ann.link_url }}</p>{% endif %}
+          </td>
+          <td class="px-5 py-3 text-gray-500">{{ ann.get_announcement_type_display }}</td>
+          <td class="px-5 py-3">
+            <span class="px-2 py-0.5 text-xs font-semibold bg-{{ ann.bg_color }}-100 text-{{ ann.bg_color }}-700">{{ ann.bg_color }}</span>
+          </td>
+          <td class="px-5 py-3 text-xs text-gray-400">{{ ann.expires_at|date:"d M Y"|default:"—" }}</td>
+          <td class="px-5 py-3">
+            {% if ann.is_visible %}
+            <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 font-semibold">Visible</span>
+            {% else %}
+            <span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 font-semibold">Hidden</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 flex items-center space-x-2">
+            <form method="post" action="{% url 'ecom:cms_announcement_toggle' ann.id %}">
+              {% csrf_token %}
+              <button class="text-xs px-2 py-1 border {% if ann.is_active %}border-gray-300 text-gray-500{% else %}border-green-300 text-green-600{% endif %}">
+                {% if ann.is_active %}Hide{% else %}Show{% endif %}
+              </button>
+            </form>
+            <a href="{% url 'ecom:cms_announcement_edit' ann.id %}" class="text-xs text-indigo-600">Edit</a>
+            <form method="post" action="{% url 'ecom:cms_announcement_delete' ann.id %}"
+              onsubmit="return confirm('Delete this announcement?')">
+              {% csrf_token %}
+              <button class="text-xs text-red-500">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-5 py-10 text-center text-gray-400">No announcements. <a href="{% url 'ecom:cms_announcement_create' %}" class="text-indigo-600">Create one →</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

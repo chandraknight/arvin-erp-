@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Cancel Booking — {{ booking.guest_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+  <div class="bg-white border border-red-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-red-700 text-white rounded-t">
+      <h1 class="text-lg font-bold"><i class="fas fa-times-circle mr-2"></i>Cancel Booking</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+        This will cancel the booking and free the room. This cannot be undone.
+      </div>
+      <div class="text-sm text-gray-700 space-y-1">
+        <p><strong>Guest:</strong> {{ booking.guest_name }}</p>
+        <p><strong>Room:</strong> {{ booking.room.room_number }} — {{ booking.room.room_type.name }}</p>
+        <p><strong>Check-in:</strong> {{ booking.check_in }}</p>
+        <p><strong>Check-out:</strong> {{ booking.check_out }}</p>
+        <p><strong>Status:</strong> {{ booking.get_status_display }}</p>
+      </div>
+      <form method="post" class="flex gap-3">
+        {% csrf_token %}
+        <button type="submit"
+                class="px-6 py-2 bg-red-700 hover:bg-red-800 text-white text-sm font-semibold shadow transition">
+          Yes, Cancel Booking
+        </button>
+        <a href="{% url 'restaurant:room_booking_detail' booking.pk %}"
+           class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold shadow transition">
+          Go Back
+        </a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

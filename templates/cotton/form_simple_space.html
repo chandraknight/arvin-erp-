@@ -1,0 +1,66 @@
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+<div class="w-full mt-2 bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+
+    <h2 class="text-xl sm:text-2xl font-extrabold text-center text-green-800 mb-5 tracking-tight">
+        {{ title }}
+    </h2>
+
+    <form method="post" novalidate class="space-y-4"
+        {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}
+        {% for attr, value in attrs.items %}
+            {% if attr != "element_id" %}{{ attr }}="{{ value }}"{% endif %}
+        {% endfor %}
+    >
+        {% include 'includes/toast.html' %}
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="mb-3">
+                <div class="bg-red-50 border border-red-200 p-3">
+                    {% for error in form.non_field_errors %}
+                        <p class="text-red-700 text-sm">{{ error|striptags }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+        {% for field in form %}
+            <div class="mb-4">
+                {% if field.field.widget.input_type == "checkbox" %}
+                    <div class="flex items-start gap-3">
+                        {{ field }}
+                        <label for="{{ field.id_for_label }}"
+                               class="text-gray-700 font-medium leading-normal mt-0.5">{{ field.label }}</label>
+                    </div>
+                    {% if field.help_text %}
+                        <p class="text-gray-500 text-xs mt-1 ml-6">{{ field.help_text }}</p>
+                    {% endif %}
+                {% else %}
+                    <label for="{{ field.id_for_label }}"
+                           class="block text-sm font-semibold text-gray-700 mb-1">
+                        {{ field.label }}
+                        {% if field.field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+                    </label>
+                    {{ field|add_class:"block w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                    {% if field.help_text %}
+                        <p class="text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
+                    {% endif %}
+                {% endif %}
+                {% if field.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ field.errors|striptags }}</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div class="pt-2">
+            <button type="submit"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 shadow-md hover:shadow-lg transition duration-150">
+                Submit
+            </button>
+        </div>
+        <c-back-link>
+            <c-slot name="url">
+                {% url back_link %}
+            </c-slot>
+        </c-back-link>
+    </form>
+</div>

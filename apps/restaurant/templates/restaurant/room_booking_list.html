@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load global_filter %}
+
+{% block title %}Room Bookings{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-calendar-check text-indigo-600 mr-2"></i>Room Bookings</h1>
+  <a href="{% url 'restaurant:room_booking_create' %}"
+     class="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-semibold shadow transition">
+    <i class="fas fa-plus mr-1"></i>New Booking
+  </a>
+</div>
+
+<!-- Status filter -->
+<div class="flex flex-wrap gap-2 mb-4">
+  {% for val, label in booking_statuses %}
+  <a href="?status={{ val }}"
+     class="px-3 py-1 rounded-full text-xs font-medium border transition
+       {% if status == val %}bg-indigo-700 text-white border-indigo-700{% else %}bg-white text-gray-600 border-gray-300 hover:bg-gray-50{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+  <a href="?" class="px-3 py-1 rounded-full text-xs font-medium border bg-white text-gray-600 border-gray-300 hover:bg-gray-50 transition">All</a>
+</div>
+
+<div class="overflow-x-auto bg-white shadow rounded-lg">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+      <tr>
+        <th class="px-4 py-3 text-left">Room</th>
+        <th class="px-4 py-3 text-left">Guest</th>
+        <th class="px-4 py-3 text-left">Check-in</th>
+        <th class="px-4 py-3 text-left">Check-out</th>
+        <th class="px-4 py-3 text-left">Nights</th>
+        <th class="px-4 py-3 text-left">Total</th>
+        <th class="px-4 py-3 text-left">Status</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for bk in bookings %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 font-medium text-gray-800">{{ bk.room.room_number }} <span class="text-gray-400 text-xs">({{ bk.room.room_type.name }})</span></td>
+        <td class="px-4 py-3">{{ bk.guest_name }}<br><span class="text-xs text-gray-400">{{ bk.guest_phone }}</span></td>
+        <td class="px-4 py-3">{{ bk.check_in }}</td>
+        <td class="px-4 py-3">{{ bk.check_out }}</td>
+        <td class="px-4 py-3">{{ bk.nights }}</td>
+        <td class="px-4 py-3 font-semibold">Rs {{ bk.grand_total }}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-1 rounded-full text-xs font-semibold
+            {% if bk.status == 'CONFIRMED' %}bg-yellow-100 text-yellow-800
+            {% elif bk.status == 'CHECKED_IN' %}bg-green-100 text-green-800
+            {% elif bk.status == 'CHECKED_OUT' %}bg-blue-100 text-blue-800
+            {% else %}bg-gray-100 text-gray-600{% endif %}">
+            {{ bk.get_status_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-right">
+          <a href="{% url 'restaurant:room_booking_detail' bk.pk %}"
+             class="text-indigo-600 hover:underline text-xs font-medium">View →</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">No bookings found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% load humanize billing_filters %}
+
+{% if object_list %}
+<div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600">Invoice #</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600">Customer</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Date</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Due</th>
+          <th class="text-right px-4 py-3 font-semibold text-gray-600">Amount</th>
+          <th class="text-right px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Outstanding</th>
+          <th class="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for inv in object_list %}
+        <tr class="hover:bg-gray-50 transition-colors">
+
+          <td class="px-4 py-3">
+            <a href="{% url 'billing:view_invoice_detail' inv.pk %}"
+               class="font-semibold text-blue-700 hover:underline">
+              {{ inv.invoice_number|default:"DRAFT" }}
+            </a>
+          </td>
+
+          <td class="px-4 py-3 text-gray-700 max-w-[160px] truncate">
+            {{ inv.customer.name|default:"Walk-in" }}
+          </td>
+
+          <td class="px-4 py-3 text-gray-500 hidden sm:table-cell whitespace-nowrap">
+            {{ inv.transaction_date|to_bs }}
+          </td>
+
+          <td class="px-4 py-3 hidden md:table-cell whitespace-nowrap">
+            {% if inv.due_date %}
+              {% if inv.outstanding_balance > 0 and inv.due_date < today %}
+                <span class="text-red-600 font-medium">{{ inv.due_date|to_bs }}</span>
+              {% else %}
+                <span class="text-gray-500">{{ inv.due_date|to_bs }}</span>
+              {% endif %}
+            {% else %}—{% endif %}
+          </td>
+
+          <td class="px-4 py-3 text-right font-semibold text-gray-800 whitespace-nowrap">
+            {{ rupee }} {{ inv.total|floatformat:2|intcomma }}
+          </td>
+
+          <td class="px-4 py-3 text-right hidden sm:table-cell whitespace-nowrap">
+            {% if inv.outstanding_balance > 0 %}
+              <span class="text-orange-600 font-medium">{{ rupee }} {{ inv.outstanding_balance|floatformat:2|intcomma }}</span>
+            {% elif inv.status == 'ISSUED' %}
+              <span class="text-green-600">Paid</span>
+            {% else %}—{% endif %}
+          </td>
+
+          <td class="px-4 py-3">
+            {% if inv.status == 'DRAFT' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Draft</span>
+            {% elif inv.status == 'ISSUED' and inv.outstanding_balance == 0 %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid</span>
+            {% elif inv.status == 'ISSUED' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Issued</span>
+            {% elif inv.status == 'CANCELLED' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelled</span>
+            {% endif %}
+          </td>
+
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2 justify-end">
+              <a href="{% url 'billing:view_invoice_detail' inv.pk %}"
+                 class="text-gray-400 hover:text-blue-600 transition-colors" title="View">
+                <i class="fas fa-eye text-sm"></i>
+              </a>
+              {% if inv.status == 'DRAFT' %}
+              <a href="{% url 'billing:invoice_update' inv.pk %}"
+                 class="text-gray-400 hover:text-yellow-600 transition-colors" title="Edit">
+                <i class="fas fa-edit text-sm"></i>
+              </a>
+              {% endif %}
+              {% if inv.invoice_number %}
+              <a href="{% url 'billing:invoice_pdf' inv.pk %}" target="_blank"
+                 class="text-gray-400 hover:text-red-600 transition-colors" title="PDF">
+                <i class="fas fa-file-pdf text-sm"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between text-sm text-gray-600">
+    <span>
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      &nbsp;·&nbsp; {{ page_obj.paginator.count }} total
+    </span>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?{% if q %}q={{ q }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% if start %}start={{ start }}&{% endif %}{% if end %}end={{ end }}&{% endif %}page={{ page_obj.previous_page_number }}"
+         class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50">‹ Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?{% if q %}q={{ q }}&{% endif %}{% if status %}status={{ status }}&{% endif %}{% if start %}start={{ start }}&{% endif %}{% if end %}end={{ end }}&{% endif %}page={{ page_obj.next_page_number }}"
+         class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50">Next ›</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="bg-white border border-gray-200 rounded-xl shadow-sm text-center py-16 text-gray-400">
+  <i class="fas fa-file-invoice text-4xl mb-3 block"></i>
+  <p class="text-base font-medium text-gray-500">No invoices found</p>
+  {% if q or status or start or end %}
+  <p class="text-sm mt-1">Try clearing the filters.</p>
+  {% else %}
+  <a href="{% url 'billing:invoice_create' %}" class="mt-3 inline-block text-green-600 hover:underline font-medium">
+    Create your first invoice →
+  </a>
+  {% endif %}
+</div>
+{% endif %}

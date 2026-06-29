@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{% if post %}Edit{% else %}New{% endif %} Blog Post — Ecom CMS{% endblock %}
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'ecom:cms_blog_list' %}"
+       class="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition">
+      <i class="fas fa-arrow-left text-xs"></i> Back
+    </a>
+    <h1 class="text-2xl font-bold text-gray-800">{% if post %}Edit Post{% else %}New Blog Post{% endif %}</h1>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-red-500">*</span></label>
+        <input type="text" name="title" value="{{ post.title|default:'' }}" required
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Slug <span class="text-red-500">*</span></label>
+        <div class="flex gap-2">
+          <input type="text" name="slug" id="id_slug" value="{{ post.slug|default:'' }}" placeholder="url-friendly-title" required
+                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <button type="button" onclick="generateSlug()"
+                  class="px-3 py-2 text-xs bg-gray-100 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 whitespace-nowrap">
+            Auto-generate
+          </button>
+        </div>
+        <p class="mt-1 text-xs text-gray-400">Used in the URL. Letters, numbers, hyphens only.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Excerpt</label>
+        <textarea name="excerpt" rows="2" placeholder="Short summary shown in blog list..."
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">{{ post.excerpt|default:'' }}</textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Content <span class="text-red-500">*</span></label>
+        <textarea name="content" rows="14" required
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 font-mono">{{ post.content|default:'' }}</textarea>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Author Name</label>
+          <input type="text" name="author_name" value="{{ post.author_name|default:'' }}"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Published At</label>
+          <input type="datetime-local" name="published_at"
+                 value="{{ post.published_at|date:'Y-m-d' }}T{{ post.published_at|date:'H:i'|default:'00:00' }}"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Cover Image</label>
+        {% if post and post.cover_image %}
+        <div class="mb-2">
+          <img src="{{ post.cover_image.url }}" alt="" class="h-20 rounded-lg border border-gray-200 object-cover">
+        </div>
+        {% endif %}
+        <input type="file" name="cover_image" accept="image/*"
+               class="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:border file:border-gray-300 file:rounded-lg file:text-sm file:bg-gray-50 file:hover:bg-gray-100">
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="checkbox" name="is_published" id="is_published"
+               {% if not post or post.is_published %}checked{% endif %}
+               class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-400 cursor-pointer">
+        <label for="is_published" class="text-sm text-gray-700 cursor-pointer">Published (visible on storefront)</label>
+      </div>
+
+      <div class="flex gap-3 pt-2 flex-wrap">
+        <button type="submit"
+                class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+          {% if post %}Save Changes{% else %}Create Post{% endif %}
+        </button>
+        {% if post and post.is_published %}
+        <a href="{% url 'ecom:blog_detail' post.slug %}" target="_blank"
+           class="px-5 py-2 border border-indigo-300 text-indigo-600 text-sm font-medium rounded-lg hover:bg-indigo-50 transition">
+          <i class="fas fa-external-link-alt mr-1"></i> View Live
+        </a>
+        {% endif %}
+        <a href="{% url 'ecom:cms_blog_list' %}"
+           class="px-5 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function generateSlug() {
+  const title = document.querySelector('input[name="title"]').value;
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+  document.getElementById('id_slug').value = slug;
+}
+// Auto-fill slug from title only when slug is empty (new post)
+document.querySelector('input[name="title"]').addEventListener('blur', function() {
+  const slugField = document.getElementById('id_slug');
+  if (!slugField.value) generateSlug();
+});
+</script>
+{% endblock %}

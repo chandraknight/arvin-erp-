@@ -1,0 +1,12 @@
+Hi {{ user.email }},
+
+{{ inviter.email }} has added you to {{ company_name }} ERP.
+
+Click the link below to set your password and activate your account.
+This link is valid for 24 hours.
+
+{{ invitation_url }}
+
+If you were not expecting this invitation, you can safely ignore this email.
+
+— {{ company_name }} Team

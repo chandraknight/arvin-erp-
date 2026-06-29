@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Hire{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+  <div class="bg-white border border-gray-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-green-700 text-white rounded-t">
+      <h1 class="text-lg font-bold"><i class="fas fa-user-check mr-2"></i>Confirm Hire</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <p class="text-sm text-gray-700">
+        You are about to create an employee record for
+        <strong>{{ application.candidate_name }}</strong> ({{ application.candidate_email }})
+        for the position <strong>{{ application.position.title }}</strong>.
+      </p>
+      <p class="text-xs text-gray-500">
+        This will create a new Employee record and mark the application as Hired.
+        You can update the employee's full profile afterwards.
+      </p>
+      <div class="flex gap-3 pt-2">
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="px-6 py-2 bg-green-700 hover:bg-green-800 text-white font-semibold rounded shadow transition">
+            <i class="fas fa-check mr-1"></i>Confirm Hire
+          </button>
+        </form>
+        <a href="{% url 'hrpayroll:application_detail' pk=application.pk %}"
+           class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded transition">Cancel</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

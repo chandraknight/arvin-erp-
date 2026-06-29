@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Cancel Work Order — {{ wo.work_order_number }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+  <div class="bg-white border border-red-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-red-700 text-white rounded-t">
+      <h1 class="text-lg font-bold">Cancel Work Order</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+        Cancelling a work order cannot be undone. No inventory changes will be made.
+      </div>
+      <div class="text-sm text-gray-700 space-y-1">
+        <p><strong>WO Number:</strong> {{ wo.work_order_number }}</p>
+        <p><strong>Product:</strong> {{ wo.bom.finished_product.name }}</p>
+        <p><strong>Planned Qty:</strong> {{ wo.planned_quantity }}</p>
+        <p><strong>Status:</strong> {{ wo.status }}</p>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Reason for cancellation</label>
+          <input type="text" name="reason" required maxlength="255"
+                 class="w-full border border-gray-300 px-3 py-2 text-sm"
+                 placeholder="e.g. Materials unavailable, design change...">
+        </div>
+        <div class="flex gap-3">
+          <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">
+            Cancel Work Order
+          </button>
+          <a href="{% url 'manufacturing:workorder_detail' wo.pk %}"
+             class="px-5 py-2 border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">Back</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

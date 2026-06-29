@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit Employee{% else %}Add Employee{% endif %}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+  {% include 'includes/toast.html' %}
+
+  <div class="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
+    <h1 class="text-2xl font-bold text-gray-800">
+      {% if form.instance.pk %}Edit Employee{% else %}Add Employee{% endif %}
+    </h1>
+    <a href="{% url 'hrpayroll:employee_list' %}" class="text-sm text-gray-500 hover:text-gray-700">← Back</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 mb-4 text-sm">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <!-- Personal Information -->
+    <div class="bg-white border border-gray-200 shadow-sm mb-4">
+      <div class="px-5 py-3 bg-green-700 text-white text-xs font-bold uppercase tracking-wide">
+        <i class="fas fa-id-card mr-1"></i>Personal Information
+      </div>
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.employee_id.label }}</label>
+          {{ form.employee_id|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.employee_id.errors %}<p class="text-red-600 text-xs mt-1">{{ form.employee_id.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.first_name.label }}</label>
+          {{ form.first_name|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.first_name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.first_name.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.last_name.label }}</label>
+          {{ form.last_name|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.last_name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.last_name.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.email.label }}</label>
+          {{ form.email|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.email.errors %}<p class="text-red-600 text-xs mt-1">{{ form.email.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.phone_number.label }}</label>
+          {{ form.phone_number|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.phone_number.errors %}<p class="text-red-600 text-xs mt-1">{{ form.phone_number.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.gender.label }}</label>
+          {{ form.gender|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1 bg-white" }}
+          {% if form.gender.errors %}<p class="text-red-600 text-xs mt-1">{{ form.gender.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.date_of_birth.label }}</label>
+          {{ form.date_of_birth|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1 nepali-datepicker"|attr:"autocomplete:off"|attr:"placeholder:YYYY-MM-DD" }}
+          {% if form.date_of_birth.errors %}<p class="text-red-600 text-xs mt-1">{{ form.date_of_birth.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.profile_photo.label }}</label>
+          {{ form.profile_photo|add_class:"w-full border border-gray-300 px-3 py-2 text-sm mt-1" }}
+          {% if form.profile_photo.errors %}<p class="text-red-600 text-xs mt-1">{{ form.profile_photo.errors|striptags }}</p>{% endif %}
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-sm font-semibold text-gray-700">{{ form.address.label }}</label>
+          {{ form.address|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.address.errors %}<p class="text-red-600 text-xs mt-1">{{ form.address.errors|striptags }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Employment Details -->
+    <div class="bg-white border border-gray-200 shadow-sm mb-4">
+      <div class="px-5 py-3 bg-green-700 text-white text-xs font-bold uppercase tracking-wide">
+        <i class="fas fa-briefcase mr-1"></i>Employment Details
+      </div>
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.department.label }}</label>
+          {{ form.department|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1 bg-white" }}
+          {% if form.department.errors %}<p class="text-red-600 text-xs mt-1">{{ form.department.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.position.label }}</label>
+          {{ form.position|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.position.errors %}<p class="text-red-600 text-xs mt-1">{{ form.position.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.hire_date.label }}</label>
+          {{ form.hire_date|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1 nepali-datepicker"|attr:"autocomplete:off"|attr:"placeholder:YYYY-MM-DD" }}
+          {% if form.hire_date.errors %}<p class="text-red-600 text-xs mt-1">{{ form.hire_date.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.employment_type.label }}</label>
+          {{ form.employment_type|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1 bg-white" }}
+          {% if form.employment_type.errors %}<p class="text-red-600 text-xs mt-1">{{ form.employment_type.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.probation_end_date.label }}</label>
+          {{ form.probation_end_date|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1 nepali-datepicker"|attr:"autocomplete:off"|attr:"placeholder:YYYY-MM-DD" }}
+          {% if form.probation_end_date.errors %}<p class="text-red-600 text-xs mt-1">{{ form.probation_end_date.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.salary.label }}</label>
+          {{ form.salary|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.salary.errors %}<p class="text-red-600 text-xs mt-1">{{ form.salary.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.hourly_rate.label }}</label>
+          {{ form.hourly_rate|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.hourly_rate.errors %}<p class="text-red-600 text-xs mt-1">{{ form.hourly_rate.errors|striptags }}</p>{% endif %}
+        </div>
+        <div class="flex items-center gap-3 mt-2">
+          {{ form.is_active }}
+          <label class="text-sm font-semibold text-gray-700">{{ form.is_active.label }}</label>
+          {% if form.is_active.errors %}<p class="text-red-600 text-xs">{{ form.is_active.errors|striptags }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Emergency Contact -->
+    <div class="bg-white border border-gray-200 shadow-sm mb-4">
+      <div class="px-5 py-3 bg-green-700 text-white text-xs font-bold uppercase tracking-wide">
+        <i class="fas fa-phone-alt mr-1"></i>Emergency Contact
+      </div>
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.emergency_contact_name.label }}</label>
+          {{ form.emergency_contact_name|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.emergency_contact_name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.emergency_contact_name.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.emergency_contact_phone.label }}</label>
+          {{ form.emergency_contact_phone|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.emergency_contact_phone.errors %}<p class="text-red-600 text-xs mt-1">{{ form.emergency_contact_phone.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-semibold text-gray-700">{{ form.emergency_contact_relation.label }}</label>
+          {{ form.emergency_contact_relation|add_class:"w-full border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 mt-1" }}
+          {% if form.emergency_contact_relation.errors %}<p class="text-red-600 text-xs mt-1">{{ form.emergency_contact_relation.errors|striptags }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-4 mt-2">
+      <button type="submit" class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold shadow transition">
+        {% if form.instance.pk %}Update Employee{% else %}Add Employee{% endif %}
+      </button>
+      <a href="{% url 'hrpayroll:employee_list' %}" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium transition">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payslip for {{ payslip.employee.first_name }} {{ payslip.employee.last_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            font-size: 12px;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header, .footer {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 24px;
+            color: #0056b3;
+            margin-bottom: 5px;
+        }
+        .header p {
+            margin: 0;
+            font-size: 10px;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #eee;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .total-section {
+            border-top: 2px solid #333;
+            padding-top: 10px;
+            margin-top: 20px;
+            text-align: right;
+        }
+        .total-section p {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .net-pay {
+            font-size: 16px;
+            color: #28a745;
+        }
+        .info-box {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+        .info-box p {
+            margin: 0;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PAYSLIP</h1>
+            <p>{{ payslip.payroll_run.company.name }}</p>
+            <p>{{ payslip.payroll_run.company.address }}</p>
+        </div>
+
+        <div class="info-box">
+            <p><strong>Employee Name:</strong> {{ payslip.employee.first_name }} {{ payslip.employee.last_name }}</p>
+            <p><strong>Employee Email:</strong> {{ payslip.employee.email }}</p>
+            <p><strong>Position:</strong> {{ payslip.employee.position|default:"N/A" }}</p>
+            <p><strong>Payroll Period:</strong> {{ payslip.payroll_run.period_start_date|date:"M d, Y" }} - {{ payslip.payroll_run.period_end_date|date:"M d, Y" }}</p>
+            <p><strong>Issue Date:</strong> {{ payslip.issue_date|date:"M d, Y" }}</p>
+        </div>
+
+        <div class="section-title">Earnings</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for earning in payslip.payslip_earnings.all %}
+                <tr>
+                    <td>{{ earning.earning.name }}</td>
+                    <td>{{ earning.amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-title">Deductions</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for deduction in payslip.payslip_deductions.all %}
+                <tr>
+                    <td>{{ deduction.deduction.name }}</td>
+                    <td>{{ deduction.amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="total-section">
+            <p><strong>Total Gross Pay:</strong> {{ payslip.gross_pay }}</p>
+            <p><strong>Total Deductions:</strong> {{ payslip.total_deductions }}</p>
+            <p class="net-pay"><strong>Net Pay:</strong> {{ payslip.net_pay }}</p>
+        </div>
+
+        <div class="footer">
+            <p>This is an electronically generated payslip and does not require a signature.</p>
+        </div>
+    </div>
+</body>
+</html> 

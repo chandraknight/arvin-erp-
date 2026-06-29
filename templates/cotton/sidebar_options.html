@@ -1,0 +1,64 @@
+<!-- Mobile backdrop -->
+<div
+    class="fixed inset-0 bg-black/40 z-40 md:hidden"
+    x-show="sidebarOpen"
+    x-transition.opacity
+    @click="sidebarOpen = false"
+    aria-hidden="true"
+    style="display:none"
+></div>
+
+<aside
+    id="main-sidebar"
+    class="fixed top-0 left-0 h-full w-64 bg-gray-50 text-gray-800 border-r border-gray-200 shadow-sm flex flex-col z-50"
+    @keydown.escape.window="sidebarOpen = false"
+>
+    <div class="bg-green-700 text-white p-4 border-b border-green-800 flex justify-between items-center gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="flex items-center justify-center w-8 h-8 bg-white text-green-700 font-bold text-lg flex-shrink-0">
+                E
+            </div>
+            <div class="block min-w-0">
+                {% if user.company %}
+                <h2 class="text-base font-bold leading-tight truncate max-w-[140px]">{{ user.company.name }}</h2>
+                <p class="text-green-200 text-xs">ERP System</p>
+                {% else %}
+                <h2 class="text-base font-bold leading-tight">ERP System</h2>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Close button — mobile only -->
+        <button type="button"
+                class="md:hidden flex-shrink-0 text-green-200 hover:text-white p-1"
+                @click="sidebarOpen = false"
+                aria-label="Close menu">
+            <i class="fas fa-times text-lg"></i>
+        </button>
+    </div>
+
+    <nav id="sidebar-nav" class="flex-1 overflow-y-auto px-2 py-4">
+        <a href="{% url link %}"
+           class="flex items-center py-2 px-3 hover:bg-green-100 transition mb-1 text-gray-700"
+           @click="sidebarOpen = false">
+            <i class="fas fa-tachometer-alt w-5 mr-3 text-center text-green-600"></i>
+            <span>Dashboard</span>
+        </a>
+        {{ sections }}
+    </nav>
+</aside>
+
+<style>
+/* Sidebar slide animation — pure CSS, no Tailwind JIT dependency */
+#main-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+}
+@media (min-width: 768px) {
+    #main-sidebar {
+        transform: translateX(0) !important;
+    }
+}
+#main-sidebar.sidebar-open {
+    transform: translateX(0);
+}
+</style>

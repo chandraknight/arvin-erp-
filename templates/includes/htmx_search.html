@@ -1,0 +1,43 @@
+{# ── Reusable HTMX live-search bar ──────────────────────────────────────────
+   Parameters (passed via cotton or template include):
+     search_url   — URL to hit (defaults to current page)
+     target       — CSS selector of the element to replace (e.g. "#table-body")
+     placeholder  — Input placeholder text
+     param_name   — Query param name (default: "q")
+     current_q    — Current search value (for re-display)
+#}
+{% with param=param_name|default:"q" %}
+<div class="flex items-center gap-2 mb-4"
+     x-data="{ loading: false }"
+     @htmx:before-request="loading = true"
+     @htmx:after-request="loading = false">
+
+    <div class="relative flex-1">
+        <input type="text"
+               name="{{ param }}"
+               value="{{ current_q|default:'' }}"
+               placeholder="{{ placeholder|default:'Search…' }}"
+               class="w-full border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
+               hx-get="{{ search_url|default:request.path }}"
+               hx-target="{{ target|default:'#list-container' }}"
+               hx-swap="innerHTML"
+               hx-trigger="input changed delay:400ms, search"
+               hx-include="[data-filter]"
+               autocomplete="off">
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <i class="fas fa-search text-gray-400 text-xs" x-show="!loading"></i>
+            <i class="fas fa-spinner fa-spin text-green-600 text-xs" x-show="loading" style="display:none"></i>
+        </div>
+    </div>
+
+    {% if show_clear %}
+    <a href="{{ search_url|default:request.path }}"
+       class="px-3 py-2 text-sm text-gray-500 border border-gray-300 hover:bg-gray-50 transition"
+       hx-get="{{ search_url|default:request.path }}"
+       hx-target="{{ target|default:'#list-container' }}"
+       hx-swap="innerHTML">
+        <i class="fas fa-times text-xs"></i>
+    </a>
+    {% endif %}
+</div>
+{% endwith %}

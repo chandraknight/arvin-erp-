@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Close Fiscal Year — {{ fy.name }}{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 border-b-4 border-green-600 pb-5">
+    <div class="flex items-start gap-3">
+        <i class="fas fa-lock text-green-600 text-4xl mt-1"></i>
+        <div>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-700 tracking-wide">Close Fiscal Year</h1>
+            <p class="text-sm text-green-700 font-medium mt-2">{{ fy.name }} &nbsp;·&nbsp; {{ fy.bs_date }}</p>
+        </div>
+    </div>
+    <a href="{% url 'company:fiscalyear_list' %}"
+       class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+        <i class="fas fa-arrow-left"></i> Back to Fiscal Years
+    </a>
+</div>
+
+<!-- Period Summary -->
+<c-section_options title="Period Summary">
+    <c-slot name="body">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Period (BS)</p>
+                <p class="font-semibold text-gray-800">{{ fy.bs_date }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Period (AD)</p>
+                <p class="font-semibold text-gray-800">{{ fy.ad_date }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Total Invoices</p>
+                <p class="font-semibold text-gray-800">{{ validation.stats.total_invoices }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Journal Entries</p>
+                <p class="font-semibold text-gray-800">{{ validation.stats.total_journal_entries }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 md:col-span-2">
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Outstanding Invoices</p>
+                <p class="font-semibold {% if validation.stats.outstanding_invoices > 0 %}text-amber-600{% else %}text-green-600{% endif %}">
+                    {{ validation.stats.outstanding_invoices }}
+                    {% if validation.stats.outstanding_invoices > 0 %}
+                    <span class="text-gray-500 font-normal text-sm">(NPR {{ validation.stats.outstanding_total|floatformat:2 }})</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </c-slot>
+</c-section_options>
+
+<!-- Blocking Errors -->
+{% if validation.errors %}
+<div class="mt-5 bg-red-50 border border-red-200 rounded-2xl p-5">
+    <div class="flex items-center gap-2 mb-3">
+        <i class="fas fa-times-circle text-red-600 text-lg"></i>
+        <span class="text-sm font-semibold text-red-700">Cannot Close — Fix These Issues First</span>
+    </div>
+    <ul class="space-y-2">
+        {% for err in validation.errors %}
+        <li class="flex items-start gap-2 text-sm text-red-700">
+            <i class="fas fa-exclamation-circle mt-0.5 flex-shrink-0"></i>
+            <span>{{ err }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Warnings -->
+{% if validation.warnings %}
+<div class="mt-5 bg-amber-50 border border-amber-200 rounded-2xl p-5">
+    <div class="flex items-center gap-2 mb-3">
+        <i class="fas fa-exclamation-triangle text-amber-600 text-lg"></i>
+        <span class="text-sm font-semibold text-amber-700">Advisory — will be handled automatically</span>
+    </div>
+    <ul class="space-y-2">
+        {% for w in validation.warnings %}
+        <li class="flex items-start gap-2 text-sm text-amber-700">
+            <i class="fas fa-arrow-right mt-0.5 flex-shrink-0"></i>
+            <span>
+                {{ w }}
+                <span class="block text-amber-600 mt-1 text-xs">
+                    ✓ The AR balance will be carried forward as an opening balance in the next fiscal year.
+                    Payments can still be collected after closing.
+                </span>
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- All clear -->
+{% if not validation.errors and not validation.warnings %}
+<div class="mt-5 bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3 text-sm text-green-700">
+    <i class="fas fa-check-circle text-green-600 text-lg"></i>
+    <span class="font-medium">All checks passed. This fiscal year is ready to close.</span>
+</div>
+{% endif %}
+
+<!-- What closing does -->
+<c-section_options title="What Happens When You Close">
+    <c-slot name="body">
+        <div class="space-y-4">
+            <div class="flex items-start gap-3">
+                <span class="w-7 h-7 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold flex-shrink-0 text-sm">1</span>
+                <div>
+                    <p class="font-semibold text-gray-800 text-sm">Year-End Closing Journal Entry</p>
+                    <p class="text-gray-600 text-sm mt-0.5">Revenue and expense accounts are zeroed out. The net profit/loss is transferred to <strong>Retained Earnings</strong>.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="w-7 h-7 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold flex-shrink-0 text-sm">2</span>
+                <div>
+                    <p class="font-semibold text-gray-800 text-sm">Balance Sheet Carry-Forward</p>
+                    <p class="text-gray-600 text-sm mt-0.5">
+                        All <strong>Asset, Liability, and Equity</strong> account closing balances are automatically set as
+                        <strong>opening balances</strong> in the next fiscal year — including
+                        <strong>Accounts Receivable (NPR {{ validation.stats.outstanding_total|floatformat:2 }})</strong>
+                        from {{ validation.stats.outstanding_invoices }} unpaid invoice(s).
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="w-7 h-7 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold flex-shrink-0 text-sm">3</span>
+                <div>
+                    <p class="font-semibold text-gray-800 text-sm">Next Fiscal Year Created / Activated</p>
+                    <p class="text-gray-600 text-sm mt-0.5">If no next fiscal year exists, one is created automatically starting the day after this year ends.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold flex-shrink-0 text-sm">!</span>
+                <div>
+                    <p class="font-semibold text-red-700 text-sm">This period becomes permanently read-only</p>
+                    <p class="text-gray-600 text-sm mt-0.5">No new invoices, payments, or journal entries can be created or edited for this period.</p>
+                </div>
+            </div>
+        </div>
+    </c-slot>
+</c-section_options>
+
+<!-- Confirmation form -->
+{% if not validation.errors %}
+<c-section_options title="Confirm Close — This Cannot Be Undone">
+    <c-slot name="body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-5">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Type <strong class="text-red-600">CLOSE</strong> to confirm
+                </label>
+                <input type="text" name="confirm" id="confirmInput"
+                       placeholder="CLOSE"
+                       autocomplete="off"
+                       class="w-full sm:w-72 px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400"
+                       oninput="toggleBtn(this.value)">
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{% url 'company:fiscalyear_list' %}"
+                   class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                    <i class="fas fa-arrow-left"></i> Cancel
+                </a>
+                <button type="submit" id="closeBtn" disabled
+                        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                    <i class="fas fa-lock"></i> Close Fiscal Year {{ fy.name }}
+                </button>
+            </div>
+        </form>
+    </c-slot>
+</c-section_options>
+{% else %}
+<div class="mt-5">
+    <a href="{% url 'company:fiscalyear_list' %}"
+       class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+        <i class="fas fa-arrow-left"></i> Back to Fiscal Years
+    </a>
+</div>
+{% endif %}
+
+<script>
+function toggleBtn(val) {
+    document.getElementById('closeBtn').disabled = val !== 'CLOSE';
+}
+</script>
+{% endblock %}

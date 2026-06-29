@@ -1,0 +1,10 @@
+<div class="bg-red-50 border border-red-300 rounded p-3 text-sm text-red-700">
+  {% for field in form %}
+    {% for error in field.errors %}
+      <p><strong>{{ field.label }}:</strong> {{ error }}</p>
+    {% endfor %}
+  {% endfor %}
+  {% for error in form.non_field_errors %}
+    <p>{{ error }}</p>
+  {% endfor %}
+</div>

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Access — {{ target.email }}{% endblock %}
+
+{% block content %}
+    <c-card_title
+            title="Staff Access"
+            descriptions="What can {{ target.get_full_name|default:target.email }} do? Modules not enabled for your company are not shown.">
+    </c-card_title>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Module</th>
+                        {% for value, label in levels %}
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">{{ label }}</th>
+                        {% endfor %}
+                    </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                    {% for module in modules %}
+                        <tr class="hover:bg-green-50 transition-colors duration-150">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{{ module.label }}</td>
+                            {% for value, label in levels %}
+                                <td class="px-4 py-2 text-center">
+                                    <label class="inline-flex items-center justify-center w-11 h-11 cursor-pointer" title="{{ module.label }} — {{ label }}">
+                                        <input type="radio" name="level_{{ module.key }}" value="{{ value }}"
+                                               {% if module.current == value %}checked{% endif %}
+                                               class="h-5 w-5 text-green-600 border-gray-300 focus:ring-2 focus:ring-green-400 cursor-pointer">
+                                    </label>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                <a href="{% url 'accounts:user_list' %}"
+                   class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold border border-gray-300 text-gray-600 hover:bg-gray-100 transition duration-150">
+                    <i class="fas fa-arrow-left"></i> Back to Users
+                </a>
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold shadow bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 transition duration-150">
+                    <i class="fas fa-shield-alt"></i> Save Access
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500">
+        <span><span class="font-semibold text-gray-700">View only</span> — can open and read</span>
+        <span><span class="font-semibold text-gray-700">View &amp; create</span> — can also add new entries</span>
+        <span><span class="font-semibold text-gray-700">Full control</span> — can also edit and delete</span>
+    </div>
+{% endblock %}

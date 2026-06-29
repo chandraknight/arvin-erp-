@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Profitability Report{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <h1 class="text-2xl font-semibold mb-4 text-gray-800">Profitability Report</h1>
+
+    {# Filtering Form #}
+    <form method="get" class="mb-6 p-4 bg-white rounded shadow-md">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date:</label>
+                <input type="text" name="start_date" id="start_date" value="{{ selected_start_date }}" placeholder="YYYY-MM-DD" autocomplete="off" class="nepali-datepicker mt-1 block w-full p-2 border border-gray-300">
+            </div>
+            <div>
+                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date:</label>
+                <input type="text" name="end_date" id="end_date" value="{{ selected_end_date }}" placeholder="YYYY-MM-DD" autocomplete="off" class="nepali-datepicker mt-1 block w-full p-2 border border-gray-300">
+            </div>
+             <div>
+                <label for="product" class="block text-sm font-medium text-gray-700">Product:</label>
+                <select name="product" id="product" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option value="">-- Select Product --</option>
+                    {% for product in all_products %}
+                        <option value="{{ product.id }}" {% if selected_product|stringformat:'s' == product.id|stringformat:'s' %}selected{% endif %}>{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+             <div>
+                <label for="category" class="block text-sm font-medium text-gray-700">Category:</label>
+                <select name="category" id="category" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option value="">-- Select Category --</option>
+                    {% for category in all_categories %}
+                        <option value="{{ category.id }}" {% if selected_category|stringformat:'s' == category.id|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Filter Report</button>
+             <a href="{% url 'reports:profitability_report' %}" class="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Clear Filter</a>
+        </div>
+    </form>
+
+    {# Profitability Summary #}
+    <div class="mb-6 p-4 bg-green-100 text-green-800 rounded shadow-md">
+        <h2 class="text-xl font-semibold mb-2">Profitability Summary</h2>
+        <p><strong>Total Sales Revenue:</strong> NPR {{ total_revenue|floatformat:'2' }}</p>
+        <p><strong>Total Cost of Goods Sold (COGS):</strong> NPR {{ total_cogs|floatformat:'2' }}</p>
+        <p><strong>Gross Profit:</strong> NPR {{ gross_profit|floatformat:'2' }}</p>
+    </div>
+
+    {# Optional: Add a chart here to visualize gross profit over time or by category/product #}
+
+</div>
+{% endblock %} 

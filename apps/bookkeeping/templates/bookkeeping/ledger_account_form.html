@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block title %}
+    {% if form.instance.pk %}Edit Ledger{% else %}Add Ledger{% endif %}
+{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block content %}
+    <div class="w-full mt-2 bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+        <h2 class="text-xl sm:text-2xl font-extrabold text-center text-green-800 mb-5 tracking-tight">
+            Add Ledger Entry
+        </h2>
+        <form method="post" novalidate class="space-y-4">
+            {% include 'includes/toast.html' %}
+            {% csrf_token %}
+
+            <div class="hidden">
+                {{ form.company }}
+            </div>
+
+            {% for field in form %}
+                {% if field.name != 'company' and field.name != 'parent_account' and field.name != 'account_type' %}
+                    <div class="mb-4">
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
+                            {{ field.label }}
+                        </label>
+                        {{ field|add_class:"block w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                        {% if field.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ field.errors|striptags }}</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            {# Account type with Select2 #}
+            <div class="mb-4">
+                <label for="{{ form.account_type.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
+                    {{ form.account_type.label }}
+                </label>
+                {{ form.account_type }}
+                {% if form.account_type.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ form.account_type.errors|striptags }}</p>
+                {% endif %}
+            </div>
+
+            {# Parent account with Select2 — options carry data-account-type for JS filtering #}
+            <div class="mb-4">
+                <label for="id_parent_account" class="block text-sm font-semibold text-gray-700 mb-1">
+                    {{ form.parent_account.label }}
+                </label>
+                <select name="parent_account" id="id_parent_account" class="block w-full border border-gray-300 px-3 py-2 text-gray-900">
+                    <option value="">---------</option>
+                    {% for account in form.fields.parent_account.queryset %}
+                        <option value="{{ account.pk }}"
+                                data-account-type="{{ account.account_type }}"
+                                {% if form.parent_account.value == account.pk %}selected{% endif %}>
+                            {{ account.name }}{% if account.code %} ({{ account.code }}){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+                {% if form.parent_account.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ form.parent_account.errors|striptags }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <button type="submit"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 shadow-md transition duration-150">
+                    Submit
+                </button>
+            </div>
+
+            <c-back-link>
+                <c-slot name="url">
+                    {% url 'bookkeeping:ledger_account_list' %}
+                </c-slot>
+            </c-back-link>
+        </form>
+    </div>
+
+    <script>
+    $(function () {
+        const validParents = {
+            'ASSET':     ['ASSET'],
+            'LIABILITY': ['LIABILITY'],
+            'EQUITY':    ['EQUITY'],
+            'REVENUE':   ['REVENUE', 'EQUITY'],
+            'EXPENSE':   ['EXPENSE', 'EQUITY']
+        };
+
+        const allParentOptions = $('#id_parent_account option').map(function () {
+            return {
+                value: $(this).val(),
+                text:  $(this).text(),
+                type:  $(this).data('account-type') || null
+            };
+        }).get();
+
+        $('#id_account_type').select2({
+            placeholder: '---------',
+            allowClear: true
+        });
+
+        function rebuildParent(selectedType) {
+            const $parent = $('#id_parent_account');
+            const currentVal = $parent.val();
+
+            $parent.empty();
+            $parent.append('<option value="">---------</option>');
+
+            const allowed = validParents[selectedType] || [];
+
+            $.each(allParentOptions, function (_, opt) {
+                if (!opt.value) return;
+                if (!selectedType || allowed.includes(opt.type)) {
+                    $parent.append(
+                        $('<option>', { value: opt.value, 'data-account-type': opt.type }).text(opt.text)
+                    );
+                }
+            });
+
+            const stillValid = $parent.find('option[value="' + currentVal + '"]').length > 0;
+            $parent.val(stillValid ? currentVal : '').trigger('change');
+        }
+
+        $('#id_parent_account').select2({
+            placeholder: '---------',
+            allowClear: true
+        });
+
+        rebuildParent($('#id_account_type').val());
+
+        $('#id_account_type').on('change', function () {
+            rebuildParent($(this).val());
+        });
+    });
+    </script>
+
+{% endblock content %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+    <c-form_simple_space title="Fiscal Year Entry Form" back_link="company:fiscalyear_list"></c-form_simple_space>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var startDate = document.getElementById('start_date_bs');
+            var endDate = document.getElementById('end_date_bs');
+
+            startDate.NepaliDatePicker({
+                "dateFormat": "YYYY-MM-DD","miniEnglishDates": true
+            });
+
+            endDate.NepaliDatePicker({
+              "dateFormat": "YYYY-MM-DD","miniEnglishDates": true
+            });
+        });
+    </script>
+{% endblock %}

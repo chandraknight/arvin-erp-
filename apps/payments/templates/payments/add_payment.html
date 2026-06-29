@@ -1,0 +1,586 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Add Payment{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-3">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+    {# ── Main form (3/4) ── #}
+    <div class="lg:col-span-3 bg-white border border-gray-200 shadow-sm p-5">
+
+      <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+        <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Add New Payment</h2>
+        <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium">{{ user.company.name }}</span>
+      </div>
+
+      <!-- Payment Number -->
+      <div class="mb-5">
+        <div class="flex">
+          <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 w-44 shrink-0 text-sm">
+            Payment Number
+          </span>
+          <input type="text" value="{{ auto_payment_number }}" readonly
+                 class="flex-1 border border-gray-300 px-4 py-2 text-gray-900 bg-gray-50 font-semibold cursor-not-allowed text-sm">
+        </div>
+        <p class="mt-1 text-xs text-gray-400">Auto-assigned on save</p>
+      </div>
+
+      <form method="post" id="payment-form" class="space-y-4"
+            x-data="paymentFormData()"
+            x-init="init()">
+        {% csrf_token %}
+        <input type="hidden" name="split_enabled" value="true">
+        <input type="hidden" name="amount" id="id_amount" value="">
+        <input type="hidden" name="method" id="id_method" value="">
+
+        {% if form.non_field_errors %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 text-sm">
+          {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <!-- Payment Type + Date -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Payment Type <span class="text-red-500">*</span></label>
+            <select name="payment_type" id="id_payment_type"
+                    onchange="paymentToggleFields(this.value)"
+                    class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600">
+              {% for val, label in form.payment_type.field.choices %}
+              <option value="{{ val }}" {% if form.payment_type.value == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if form.payment_type.errors %}<p class="text-red-500 text-xs mt-1">{{ form.payment_type.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Date (BS) <span class="text-red-500">*</span></label>
+            {{ form.date|add_class:"nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"|attr:"autocomplete:off"|attr:"placeholder:YYYY-MM-DD" }}
+            {% if form.date.errors %}<p class="text-red-500 text-xs mt-1">{{ form.date.errors|join:", " }}</p>{% endif %}
+          </div>
+        </div>
+
+        <!-- Customer + Invoice — CUSTOMER only — hidden by default, shown via JS -->
+        <div id="div_id_invoice" style="display:none">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Customer <span class="text-red-500">*</span></label>
+              <select id="customer-select" name="customer_id"
+                      class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600">
+                <option value="">— Select Customer —</option>
+                {% for c in customers %}
+                <option value="{{ c.id }}"
+                        data-name="{{ c.name }}"
+                        data-phone="{{ c.phone|default:'' }}"
+                        data-email="{{ c.email|default:'' }}"
+                        data-pan="{{ c.pan_number|default:'' }}"
+                        data-address="{{ c.address|default:'' }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Invoice <span class="text-gray-400 font-normal">(optional)</span></label>
+              <select id="invoice-select" name="invoice"
+                      class="invoice-select w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600">
+                <option value="">— Select Invoice —</option>
+                {% for inv in outstanding_invoices %}
+                <option value="{{ inv.id }}"
+                        data-customer="{{ inv.customer.id|default:'' }}"
+                        data-number="{{ inv.invoice_number }}"
+                        data-date="{{ inv.transaction_date }}"
+                        data-total="{{ inv.total }}"
+                        data-outstanding="{{ inv.outstanding_balance }}">
+                  {{ inv.invoice_number }} — {{ inv.customer.name|default:"Cash" }} — NPR {{ inv.outstanding_balance }}
+                </option>
+                {% endfor %}
+              </select>
+              {% if form.invoice.errors %}<p class="text-red-500 text-xs mt-1">{{ form.invoice.errors|join:", " }}</p>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Vendor — VENDOR only — hidden by default, shown via JS -->
+        <div id="div_id_vendor" style="display:none">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Vendor <span class="text-red-500">*</span></label>
+              <select id="vendor-select" name="vendor_id"
+                      class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600">
+                <option value="">— Select Vendor —</option>
+                {% for v in vendors %}
+                <option value="{{ v.id }}" data-name="{{ v.name }}" data-phone="{{ v.phone|default:'' }}" data-email="{{ v.email|default:'' }}" data-pan="{{ v.pan_number|default:'' }}" data-address="{{ v.address|default:'' }}">{{ v.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Vendor Bill <span class="text-gray-400 font-normal">(optional)</span></label>
+              <select id="vendor-bill-select" name="vendor_bill_id"
+                      class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600">
+                <option value="">— Select Bill —</option>
+                {% for bill in unpaid_bills %}
+                <option value="{{ bill.id }}" data-vendor="{{ bill.vendor.id }}" data-amount="{{ bill.total_amount }}" data-number="{{ bill.bill_number }}" data-date="{{ bill.bill_date }}">
+                  {{ bill.bill_number }} — {{ bill.vendor.name }} — NPR {{ bill.total_amount }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ledger Account — EXPENSE / SALARY / OTHER only -->
+        <div id="div_id_ledger_account" style="display:none">
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Ledger Account <span class="text-red-500">*</span></label>
+          {{ form.ledger_account|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600" }}
+          {% if form.ledger_account.errors %}<p class="text-red-500 text-xs mt-1">{{ form.ledger_account.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Bank Account — shown when any selected method is Bank Transfer / Cheque -->
+        <div x-show="rows.some(r => r.method === 'BANK_TRANSFER' || r.method === 'CHEQUE')" x-cloak>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Bank Account</label>
+          {{ form.bank_account|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600" }}
+          <p class="text-xs text-gray-400 mt-1">Which bank account this payment was received into / sent from</p>
+          {% if form.bank_account.errors %}<p class="text-red-500 text-xs mt-1">{{ form.bank_account.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <!-- Discount (customer only) -->
+        <div id="div_id_discount" style="display:none">
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Discount Amount</label>
+          {{ form.discount_amount|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600" }}
+        </div>
+
+        <!-- Payment Method rows -->
+        <div class="border border-gray-200 bg-gray-50 p-4 space-y-3">
+
+          <template x-for="(row, idx) in rows" :key="idx">
+            <div class="space-y-2">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-600 mb-1">
+                    Payment Method <span class="text-red-500">*</span>
+                  </label>
+                  <input type="hidden" :name="'split_method_' + idx" :value="row.method">
+                  <input type="hidden" :name="'split_amount_' + idx" :value="row.amount">
+                  <select x-model="row.method" @change="syncTotals()"
+                          class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600">
+                    <option value="">Select Payment Method</option>
+                    <option value="CASH">Cash</option>
+                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                    <option value="CHEQUE">Cheque</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div class="flex gap-2 items-end">
+                  <div class="flex-1">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">
+                      Amount <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" step="0.01" min="0"
+                           x-model="row.amount" @input="syncTotals()"
+                           placeholder="0.00"
+                           class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600">
+                  </div>
+                  <button type="button" @click="removeRow(idx)"
+                          x-show="rows.length > 1"
+                          class="mb-0.5 px-2 py-2 text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 transition">
+                    <i class="fas fa-trash-alt text-xs"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Other: specify -->
+              <div x-show="row.method === 'OTHER'" x-transition>
+                <input type="text" :name="'split_other_note_' + idx" x-model="row.otherNote"
+                       placeholder="Specify: e.g. Mobile Banking, QR Code, eSewa, Wallet…"
+                       class="w-full border border-orange-300 bg-orange-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-400">
+              </div>
+
+              <!-- Ref no for bank/cheque -->
+              <div x-show="row.method === 'BANK_TRANSFER' || row.method === 'CHEQUE'" x-transition>
+                <input type="text" :name="'split_ref_' + idx" x-model="row.ref"
+                       placeholder="Reference / cheque no."
+                       class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600">
+              </div>
+            </div>
+          </template>
+
+          <!-- Add Another -->
+          <button type="button" @click="addRow()"
+                  class="flex items-center gap-2 px-4 py-2 border border-green-600 text-green-700 hover:bg-green-50 text-sm font-semibold transition">
+            <i class="fas fa-plus text-xs"></i> Add Another Payment Method
+          </button>
+
+          <!-- Multi-row total -->
+          <div x-show="rows.length > 1"
+               class="flex justify-between text-sm pt-2 border-t border-gray-200">
+            <span class="text-gray-600 font-medium">Total</span>
+            <span class="font-bold font-mono text-green-800" x-text="rowTotal.toFixed(2)"></span>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Payment Description</label>
+          {{ form.description|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"|attr:"rows:3"|attr:"placeholder:Enter payment description (optional)" }}
+        </div>
+
+        <!-- Buttons -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <button type="submit"
+                  class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 text-sm shadow-md transition">
+            Save Payment
+          </button>
+          <a href="{% url 'payments:payment_list' %}"
+             class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 text-sm shadow-md transition text-center flex items-center justify-center">
+            Cancel
+          </a>
+        </div>
+
+        <div class="mt-2">
+          <a href="{% url 'payments:payment_list' %}" class="text-sm text-gray-500 hover:text-gray-700">← Back to Overview</a>
+        </div>
+      </form>
+    </div>
+
+    {# ── Sidebar (1/4) ── #}
+    <div class="lg:col-span-1 space-y-4">
+
+      <!-- Summary -->
+      <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-list-alt text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Summary</h3>
+        </div>
+        <div class="p-4 space-y-2 text-xs" x-data>
+          <div class="flex justify-between text-gray-600 border-b border-gray-100 pb-2">
+            <span>Payment Type</span>
+            <span class="font-semibold" id="sidebar-type-label">—</span>
+          </div>
+          <div class="flex justify-between text-gray-600 border-b border-gray-100 pb-2">
+            <span>Methods</span>
+            <span class="font-semibold" id="sidebar-method-count">1</span>
+          </div>
+          <div class="flex justify-between font-bold text-green-800 pt-1">
+            <span>Total Amount</span>
+            <span class="font-mono" id="sidebar-total">Rs. 0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Info card — shown only when Customer payment type selected -->
+      <div id="customer-info-card" class="bg-white border border-gray-200 shadow-sm" style="display:none">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-user text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Customer Info</h3>
+        </div>
+        <div id="customer-info-body" class="p-4 text-xs text-gray-500 italic">
+          Select a customer to see details
+        </div>
+      </div>
+
+      <!-- Invoice Summary card — shown when invoice selected -->
+      <div id="invoice-summary-card" class="bg-white border border-gray-200 shadow-sm" style="display:none">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-file-invoice text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Invoice Summary</h3>
+        </div>
+        <div id="invoice-summary-body" class="p-4 text-xs space-y-2"></div>
+      </div>
+
+      <!-- Vendor Info card — shown only when Vendor payment type selected -->
+      <div id="vendor-info-card" class="bg-white border border-gray-200 shadow-sm" style="display:none">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-truck text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Vendor Info</h3>
+        </div>
+        <div id="vendor-info-body" class="p-4 text-xs text-gray-500 italic">
+          Select a vendor to see details
+        </div>
+      </div>
+
+      <!-- Vendor Bill Summary card -->
+      <div id="vendor-bill-summary-card" class="bg-white border border-gray-200 shadow-sm" style="display:none">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-receipt text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Bill Summary</h3>
+        </div>
+        <div id="vendor-bill-summary-body" class="p-4 text-xs space-y-2"></div>
+      </div>
+
+      <!-- Payment Type guide -->
+      <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+          <i class="fas fa-info-circle text-green-200 text-sm"></i>
+          <h3 class="text-sm font-bold uppercase tracking-wide">Payment Types</h3>
+        </div>
+        <div class="p-4 text-xs space-y-2">
+          <div class="flex items-start gap-2 py-1 border-b border-gray-100">
+            <span class="w-2 h-2 mt-1 rounded-full bg-blue-400 shrink-0"></span>
+            <div><span class="font-semibold text-gray-700">Customer</span><br><span class="text-gray-500">Select customer; invoice optional</span></div>
+          </div>
+          <div class="flex items-start gap-2 py-1 border-b border-gray-100">
+            <span class="w-2 h-2 mt-1 rounded-full bg-purple-400 shrink-0"></span>
+            <div><span class="font-semibold text-gray-700">Vendor</span><br><span class="text-gray-500">Select vendor; bill optional</span></div>
+          </div>
+          <div class="flex items-start gap-2 py-1 border-b border-gray-100">
+            <span class="w-2 h-2 mt-1 rounded-full bg-orange-400 shrink-0"></span>
+            <div><span class="font-semibold text-gray-700">Expense / Salary</span><br><span class="text-gray-500">Requires ledger account</span></div>
+          </div>
+          <div class="flex items-start gap-2 py-1">
+            <span class="w-2 h-2 mt-1 rounded-full bg-gray-400 shrink-0"></span>
+            <div><span class="font-semibold text-gray-700">Other</span><br><span class="text-gray-500">Requires ledger account</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <div class="bg-blue-50 border border-blue-200 p-4 text-xs text-blue-800 space-y-1">
+        <p class="font-semibold"><i class="fas fa-lightbulb"></i> Tips</p>
+        <ul class="list-disc pl-4 space-y-1 text-blue-700">
+          <li>Click <strong>+ Add Another Payment Method</strong> to split across Cash + Bank etc.</li>
+          <li>Choose <strong>Other</strong> to specify a custom method (eSewa, Wallet…)</li>
+          <li>A journal entry is auto-posted on save</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+function paymentFormData() {
+    return {
+        rows: [{ method: '', amount: '', otherNote: '', ref: '' }],
+
+        get rowTotal() {
+            return this.rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+        },
+
+        init() {},
+
+        addRow() {
+            this.rows.push({ method: '', amount: '', otherNote: '', ref: '' });
+            this.syncTotals();
+        },
+
+        removeRow(idx) {
+            if (this.rows.length > 1) { this.rows.splice(idx, 1); this.syncTotals(); }
+        },
+
+        syncTotals() {
+            const total = this.rowTotal;
+            // Keep hidden amount field in sync
+            const amtField = document.getElementById('id_amount');
+            if (amtField) amtField.value = total.toFixed(2);
+            // Keep sidebar total in sync
+            const el = document.getElementById('sidebar-total');
+            if (el) el.textContent = 'Rs. ' + total.toFixed(2);
+            const cnt = document.getElementById('sidebar-method-count');
+            if (cnt) cnt.textContent = this.rows.length;
+        },
+    };
+}
+
+// Global so inline onchange="paymentToggleFields()" can call it before DOMContentLoaded
+function paymentToggleFields(type) {
+    if (type === undefined) {
+        const sel = document.getElementById('id_payment_type');
+        type = sel ? sel.value : '';
+    }
+    const invoiceDiv  = document.getElementById('div_id_invoice');
+    const ledgerDiv   = document.getElementById('div_id_ledger_account');
+    const discountDiv = document.getElementById('div_id_discount');
+    const typeLabel   = document.getElementById('sidebar-type-label');
+
+    function show(el) { if (el) el.style.display = ''; }
+    function hide(el) { if (el) el.style.display = 'none'; }
+
+    const vendorDiv       = document.getElementById('div_id_vendor');
+    const vendorInfoCard  = document.getElementById('vendor-info-card');
+    const vendorBillCard  = document.getElementById('vendor-bill-summary-card');
+    const customerInfoCard   = document.getElementById('customer-info-card');
+    const invoiceSummaryCard = document.getElementById('invoice-summary-card');
+
+    function hideAll() {
+        hide(invoiceDiv); hide(discountDiv); hide(ledgerDiv);
+        hide(vendorDiv); hide(vendorInfoCard); hide(vendorBillCard);
+        hide(customerInfoCard); hide(invoiceSummaryCard);
+    }
+
+    hideAll();
+    if (type === 'CUSTOMER') {
+        show(invoiceDiv); show(discountDiv); show(customerInfoCard);
+    } else if (['EXPENSE', 'SALARY', 'OTHER'].includes(type)) {
+        show(ledgerDiv);
+    } else if (type === 'VENDOR') {
+        show(vendorDiv); show(vendorInfoCard);
+    }
+
+    if (typeLabel) {
+        const sel = document.getElementById('id_payment_type');
+        const opt = sel ? sel.options[sel.selectedIndex] : null;
+        typeLabel.textContent = opt ? opt.text : '—';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Run on load to match whatever type is already selected
+    paymentToggleFields();
+
+    // Initialize Select2 AFTER toggle
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        $('.invoice-select').select2({ width: '100%', placeholder: 'Select an invoice', allowClear: true });
+    }
+
+    // Vendor select → show info + filter bills
+    const vendorBillCard = document.getElementById('vendor-bill-summary-card');
+    const vendorBillBody = document.getElementById('vendor-bill-summary-body');
+    const vendorInfoBody = document.getElementById('vendor-info-body');
+    const allBillOptions = $('#vendor-bill-select option').toArray();
+
+    $('#vendor-select').on('select2:select select2:unselect change', function () {
+        const id  = $(this).val();
+        const opt = $(this).find(':selected')[0];
+
+        // Filter bill dropdown to this vendor then refresh Select2
+        const $billSel = $('#vendor-bill-select');
+        $billSel.empty().append('<option value="">— Select Bill —</option>');
+        allBillOptions.forEach(o => {
+            if (o.value && o.dataset.vendor === id) $billSel.append($(o).clone());
+        });
+        $billSel.val('').trigger('change.select2');
+        vendorBillCard.style.display = 'none';
+        vendorBillBody.innerHTML = '';
+
+        if (!id) {
+            vendorInfoBody.innerHTML = '<span class="italic text-gray-400">Select a vendor to see details</span>';
+            return;
+        }
+
+        const name    = opt.dataset.name    || '—';
+        const phone   = opt.dataset.phone;
+        const email   = opt.dataset.email;
+        const pan     = opt.dataset.pan;
+        const address = opt.dataset.address;
+        vendorInfoBody.innerHTML = `
+          <div class="space-y-1.5">
+            <div class="font-bold text-gray-800 text-sm">${name}</div>
+            ${phone   ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-phone w-3 text-gray-400 text-xs"></i>${phone}</div>` : ''}
+            ${email   ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-envelope w-3 text-gray-400 text-xs"></i>${email}</div>` : ''}
+            ${pan     ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-id-card w-3 text-gray-400 text-xs"></i>PAN: ${pan}</div>` : ''}
+            ${address ? `<div class="flex gap-2 text-gray-500"><i class="fas fa-map-marker-alt w-3 text-gray-400 text-xs"></i>${address}</div>` : ''}
+          </div>`;
+    });
+
+    $('#vendor-bill-select').on('select2:select select2:unselect change', function () {
+        const val = $(this).val();
+        const opt = $(this).find(':selected')[0];
+        if (!val) { vendorBillCard.style.display = 'none'; vendorBillBody.innerHTML = ''; return; }
+        vendorBillCard.style.display = '';
+        vendorBillBody.innerHTML = `
+          <div class="flex justify-between border-b border-gray-100 pb-1">
+            <span class="text-gray-500">Bill No.</span>
+            <span class="font-semibold">${opt.dataset.number}</span>
+          </div>
+          <div class="flex justify-between border-b border-gray-100 pb-1">
+            <span class="text-gray-500">Date</span>
+            <span class="font-semibold">${opt.dataset.date}</span>
+          </div>
+          <div class="flex justify-between pt-1 font-bold text-green-800">
+            <span>Total</span>
+            <span class="font-mono">NPR ${parseFloat(opt.dataset.amount || 0).toFixed(2)}</span>
+          </div>`;
+    });
+
+    // Customer select → show info + filter invoices
+    const customerInfoBody   = document.getElementById('customer-info-body');
+    const invoiceSummaryCard = document.getElementById('invoice-summary-card');
+    const invoiceSummaryBody = document.getElementById('invoice-summary-body');
+    const allInvoiceOptions  = $('#invoice-select option').toArray();
+
+    $('#customer-select').on('select2:select select2:unselect change', function () {
+        const id  = $(this).val();
+        const opt = $(this).find(':selected')[0];
+
+        // Filter invoice dropdown to this customer then refresh Select2
+        const $invSel = $('#invoice-select');
+        $invSel.empty().append('<option value="">— Select Invoice —</option>');
+        allInvoiceOptions.forEach(o => {
+            if (o.value && o.dataset.customer === id) $invSel.append($(o).clone());
+        });
+        $invSel.val('').trigger('change.select2');
+        invoiceSummaryCard.style.display = 'none';
+        invoiceSummaryBody.innerHTML = '';
+
+        if (!id) {
+            customerInfoBody.innerHTML = '<span class="italic text-gray-400">Select a customer to see details</span>';
+            return;
+        }
+
+        const name    = opt.dataset.name    || '—';
+        const phone   = opt.dataset.phone;
+        const email   = opt.dataset.email;
+        const pan     = opt.dataset.pan;
+        const address = opt.dataset.address;
+        customerInfoBody.innerHTML = `
+          <div class="space-y-1.5">
+            <div class="font-bold text-gray-800 text-sm">${name}</div>
+            ${phone   ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-phone w-3 text-gray-400 text-xs"></i>${phone}</div>` : ''}
+            ${email   ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-envelope w-3 text-gray-400 text-xs"></i>${email}</div>` : ''}
+            ${pan     ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-id-card w-3 text-gray-400 text-xs"></i>PAN: ${pan}</div>` : ''}
+            ${address ? `<div class="flex gap-2 text-gray-500"><i class="fas fa-map-marker-alt w-3 text-gray-400 text-xs"></i>${address}</div>` : ''}
+          </div>`;
+    });
+
+    $('#invoice-select').on('select2:select select2:unselect change', function () {
+        const val = $(this).val();
+        const opt = $(this).find(':selected')[0];
+        if (!val) { invoiceSummaryCard.style.display = 'none'; invoiceSummaryBody.innerHTML = ''; return; }
+        invoiceSummaryCard.style.display = '';
+        const outstanding = parseFloat(opt.dataset.outstanding || 0);
+        const total       = parseFloat(opt.dataset.total || 0);
+        invoiceSummaryBody.innerHTML = `
+          <div class="flex justify-between border-b border-gray-100 pb-1">
+            <span class="text-gray-500">Invoice No.</span>
+            <span class="font-semibold">${opt.dataset.number}</span>
+          </div>
+          <div class="flex justify-between border-b border-gray-100 pb-1">
+            <span class="text-gray-500">Date</span>
+            <span class="font-semibold">${opt.dataset.date}</span>
+          </div>
+          <div class="flex justify-between border-b border-gray-100 pb-1">
+            <span class="text-gray-500">Total</span>
+            <span class="font-mono">NPR ${total.toFixed(2)}</span>
+          </div>
+          <div class="flex justify-between pt-1 font-bold text-green-800">
+            <span>Outstanding</span>
+            <span class="font-mono">NPR ${outstanding.toFixed(2)}</span>
+          </div>`;
+    });
+
+    // Submit: sync total amount and validate
+    document.getElementById('payment-form')?.addEventListener('submit', function (e) {
+        let sum = 0, i = 0;
+        while (true) {
+            const a = this.querySelector('[name="split_amount_' + i + '"]');
+            if (!a) break;
+            sum += parseFloat(a.value) || 0;
+            i++;
+        }
+        if (sum <= 0) {
+            e.preventDefault();
+            alert('Enter a payment amount.');
+            return;
+        }
+        const amtField = document.getElementById('id_amount');
+        if (amtField) amtField.value = sum.toFixed(2);
+    });
+});
+</script>
+{% endblock %}

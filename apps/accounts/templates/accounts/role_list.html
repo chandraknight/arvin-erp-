@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+
+    <c-card_title
+            title="Role-Based Access Control"
+            descriptions="Manage RBAC efficiently with full control"
+            info="It's a security approach that restricts access to resources within an organization based on the roles of individual users.">
+    </c-card_title>
+
+    <form method="get" class="mb-6 bg-white border border-gray-200 shadow-sm p-4 flex flex-wrap gap-4 items-end">
+        {% include 'includes/toast.html' %}
+        <div class="flex items-stretch">
+            <label for="role"
+                   class="inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 text-sm font-semibold border border-gray-300 border-r-0 whitespace-nowrap">
+                Role
+            </label>
+            <select name="role" id="role" onchange="this.form.submit()"
+                    class="border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 w-44">
+                <option value="">All Roles</option>
+                {% for role in roles %}
+                    <option value="{{ role.id }}" {% if role.id|stringformat:"s" == selected_role %}selected{% endif %}>
+                        {{ role.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex items-stretch">
+            <label for="app"
+                   class="inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 text-sm font-semibold border border-gray-300 border-r-0 whitespace-nowrap">
+                App
+            </label>
+            <select name="app" id="app" onchange="this.form.submit()"
+                    class="border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 w-44">
+                <option value="">All Apps</option>
+                {% for app in apps %}
+                    <option value="{{ app }}" {% if selected_app_name == app %}selected{% endif %}>{{ app }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex items-stretch">
+            <label for="model"
+                   class="inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 text-sm font-semibold border border-gray-300 border-r-0 whitespace-nowrap">
+                Model
+            </label>
+            <select name="model" id="model" onchange="this.form.submit()"
+                    class="border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 w-44">
+                <option value="">All Models</option>
+                {% for model in models %}
+                    <option value="{{ model.id }}"
+                            {% if model.id|stringformat:"s" == selected_model %}selected{% endif %}>
+                        {{ model.model|title }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit"
+                class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-5 py-3 shadow transition duration-150">
+            <i class="fas fa-search mr-1"></i> Filter
+        </button>
+    </form>
+
+    <c-table_options_simple>
+        <c-slot name="th">
+            <c-table_th value="#"></c-table_th>
+            <c-table_th value="Role (Group)"></c-table_th>
+            <c-table_th value="Model (ContentType)"></c-table_th>
+            <c-table_th value="Can View"></c-table_th>
+            <c-table_th value="Can Add"></c-table_th>
+            <c-table_th value="Can Change"></c-table_th>
+            <c-table_th value="Can Delete"></c-table_th>
+        </c-slot>
+        <c-slot name="tbody">
+            {% for item in object_list %}
+                <c-table_tr custom_css="{% cycle 'bg-white' 'bg-gray-50' %}">
+                    <c-slot name="td">
+                        <c-table_td value="{{ forloop.counter0|add:page_obj.start_index }}"></c-table_td>
+                        <c-table_td value="{{ item.group.name }}"></c-table_td>
+                        <c-table_td custom_css="capitalize" value="{{ item.content_type.model }}"></c-table_td>
+                        <c-table_td custom_css="text-center">
+                            <c-slot name="value">
+                                <label>
+                                    <input type="checkbox"
+                                           {% if item.can_view %}checked{% endif %}
+                                           onchange="togglePermission('{{ item.id }}', 'can_view', this.checked)"
+                                           class="accent-green-600 w-5 h-5 cursor-pointer">
+                                </label>
+                            </c-slot>
+                        </c-table_td>
+                        <c-table_td custom_css="text-center">
+                            <c-slot name="value">
+                                <label>
+                                    <input type="checkbox"
+                                           {% if item.can_add %}checked{% endif %}
+                                           onchange="togglePermission('{{ item.id }}', 'can_add', this.checked)"
+                                           class="accent-green-600 w-5 h-5 cursor-pointer">
+                                </label>
+                            </c-slot>
+                        </c-table_td>
+                        <c-table_td custom_css="text-center">
+                            <c-slot name="value">
+                                <label>
+                                    <input type="checkbox"
+                                           {% if item.can_change %}checked{% endif %}
+                                           onchange="togglePermission('{{ item.id }}', 'can_change', this.checked)"
+                                           class="accent-green-600 w-5 h-5 cursor-pointer">
+                                </label>
+                            </c-slot>
+                        </c-table_td>
+                        <c-table_td custom_css="text-center">
+                            <c-slot name="value">
+                                <label>
+                                    <input type="checkbox"
+                                           {% if item.can_delete %}checked{% endif %}
+                                           onchange="togglePermission('{{ item.id }}', 'can_delete', this.checked)"
+                                           class="accent-green-600 w-5 h-5 cursor-pointer">
+                                </label>
+                            </c-slot>
+                        </c-table_td>
+                    </c-slot>
+                </c-table_tr>
+                <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                    {{ td }}
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-gray-500">No Role Permission Found!</td>
+                </tr>
+            {% endfor %}
+        </c-slot>
+    </c-table_options_simple>
+
+    <c-pagination></c-pagination>
+
+    <script>
+        function getCSRFToken() {
+            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        }
+
+        async function togglePermission(id, field, value) {
+            try {
+                const response = await fetch(`/accounts/rbac/update/${id}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({field, value})
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Error updating permission:', errorData);
+
+                    // Show more detailed error message to user
+                    let errorMessage = 'Failed to update permission';
+                    if (errorData.error) {
+                        errorMessage += `: ${errorData.error}`;
+                    }
+                    if (errorData.details) {
+                        console.error('Error details:', errorData.details);
+                    }
+
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+                console.log('Permission updated successfully:', data);
+
+                // Optional: Update UI to reflect the change immediately
+                const checkbox = document.querySelector(`[data-id="${id}"][data-field="${field}"]`);
+                if (checkbox) {
+                    checkbox.checked = value;
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showToast(error.message, 'error');
+            }
+
+        }
+    </script>
+{% endblock %}

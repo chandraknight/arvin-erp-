@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{% if banner %}Edit Banner{% else %}Add Banner{% endif %} — Ecom CMS{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">{% if banner %}Edit Banner{% else %}Add Banner{% endif %}</h1>
+    <a href="{% url 'ecom:cms_banner_list' %}" class="text-sm text-gray-500"><i class="fas fa-arrow-left mr-1"></i>Banners</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+
+    <div class="bg-white border border-gray-200 p-5 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Banner Type <span class="text-red-500">*</span></label>
+        <select name="banner_type" class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+          <option value="HERO" {% if not banner or banner.banner_type == 'HERO' %}selected{% endif %}>Hero Slider (main homepage slider)</option>
+          <option value="PROMO" {% if banner and banner.banner_type == 'PROMO' %}selected{% endif %}>Promo Box (right-side feature box)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Image {% if not banner %}<span class="text-red-500">*</span>{% endif %}</label>
+        {% if banner and banner.image %}
+        <img src="{{ banner.image.url }}" class="h-32 object-cover w-full mb-2">
+        <p class="text-xs text-gray-400 mb-1">Upload new to replace</p>
+        {% endif %}
+        <input type="file" name="image" accept="image/*" {% if not banner %}required{% endif %} class="text-sm text-gray-600">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+        <input type="text" name="title" value="{{ banner.title|default:'' }}"
+          class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
+        <input type="text" name="subtitle" value="{{ banner.subtitle|default:'' }}"
+          class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Link URL <span class="text-gray-400 text-xs">(optional)</span></label>
+        <input type="text" name="link_url" value="{{ banner.link_url|default:'' }}"
+          class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          placeholder="/store/?category=...">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Link Label <span class="text-gray-400 text-xs">(button text)</span></label>
+        <input type="text" name="link_label" value="{{ banner.link_label|default:'' }}"
+          class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          placeholder="Shop Now">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
+          <input type="number" name="sort_order" value="{{ banner.sort_order|default:0 }}" min="0"
+            class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+        </div>
+        <div class="flex items-end pb-1">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" name="is_active" {% if not banner or banner.is_active %}checked{% endif %} class="h-4 w-4">
+            <span class="text-sm font-medium text-gray-700">Active</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 font-medium text-sm">
+      <i class="fas fa-save mr-1"></i>{% if banner %}Update{% else %}Add{% endif %} Banner
+    </button>
+  </form>
+</div>
+{% endblock %}

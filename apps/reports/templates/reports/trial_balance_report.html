@@ -1,0 +1,173 @@
+<!-- reports/templates/reports/trial_balance_report.html -->
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Trial Balance Report{% endblock %}
+
+{% block content %}
+    <div class="w-full mt-2">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Trial Balance Report</h1>
+            <a href="{% url 'reports:report_dashboard' %}" class="inline-block bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200 ease-in-out text-sm">Back to Reports Dashboard</a>
+        </div>
+
+        {% if fiscal_year %}
+        <div class="alert alert-info mb-4">
+            Showing trial balance for fiscal year:
+            <strong>{{ fiscal_year.start_date }} to {{ fiscal_year.end_date }}</strong>
+        </div>
+        {% endif %}
+
+        {# Messages are handled in base.html #}
+
+        <form method="post" class="mb-6 space-y-4">
+            {% csrf_token %}
+            <div class="flex flex-wrap items-center space-y-4 md:space-y-0 md:space-x-4">
+                <div>
+                    <label for="report_date" class="block text-sm font-medium text-gray-700">As of Date:</label>
+                    <input type="text" name="report_date" id="report_date" value="{{ report_date_bs|default:'' }}" placeholder="YYYY-MM-DD" autocomplete="off" class="nepali-datepicker mt-1 block w-full px-3 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                </div>
+                <div class="flex items-end space-x-2">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200 ease-in-out text-sm">Generate Report</button>
+                    <button type="button" onclick="window.print()" class="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition duration-200 ease-in-out text-sm">Print Report</button>
+                </div>
+            </div>
+        </form>
+
+        <h2 class="text-2xl font-semibold mb-4 text-gray-700">As of {{ report_date|date:"Y-m-d" }}</h2>
+
+        {% if trial_balance_data %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white shadow-md rounded">
+                    <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                        <tr>
+                            <th class="py-3 px-6 text-left">Account Name</th>
+                            <th class="py-3 px-6 text-left">Account Type</th>
+                            <th class="py-3 px-6 text-right">Debit Balance</th>
+                            <th class="py-3 px-6 text-right">Credit Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        {% for item in trial_balance_data %}
+                            <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                <td class="py-3 px-6 text-left whitespace-nowrap">{{ item.account.name }}</td>
+                                <td class="py-3 px-6 text-left">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if item.account.account_type == 'ASSET' %}bg-blue-100 text-blue-800{% endif %}
+                                        {% if item.account.account_type == 'LIABILITY' %}bg-red-100 text-red-800{% endif %}
+                                        {% if item.account.account_type == 'EQUITY' %}bg-green-100 text-green-800{% endif %}
+                                        {% if item.account.account_type == 'REVENUE' %}bg-yellow-100 text-yellow-800{% endif %}
+                                        {% if item.account.account_type == 'EXPENSE' %}bg-purple-100 text-purple-800{% endif %}
+                                    ">
+                                        {{ item.account.get_account_type_display }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-6 text-right whitespace-nowrap">
+                                    {% if item.debit_balance > 0 %}
+                                        {{ item.debit_balance|floatformat:2|intcomma }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-6 text-right whitespace-nowrap">
+                                    {% if item.credit_balance > 0 %}
+                                        {{ item.credit_balance|floatformat:2|intcomma }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-100 text-gray-800 font-bold">
+                        <tr>
+                            <td class="py-3 px-6 text-left" colspan="2">Total</td>
+                            <td class="py-3 px-6 text-right">{{ total_debits|floatformat:2|intcomma }}</td>
+                            <td class="py-3 px-6 text-right">{{ total_credits|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-gray-600 italic">No accounts found with balances for the selected date.</p>
+        {% endif %}
+
+        <div class="mt-8 text-center">
+            {% if is_balanced %}
+                <p class="text-green-600 font-bold">Trial Balance is balanced (Total Debits = Total Credits).</p>
+                <p class="text-sm text-gray-600">Difference: {{ total_debits|floatformat:2|intcomma }} - {{ total_credits|floatformat:2|intcomma }} = 0.00</p>
+            {% else %}
+                <p class="text-red-600 font-bold">Trial Balance is NOT balanced. Please check entries.</p>
+                <p class="text-sm text-gray-600">Difference: {{ total_debits|floatformat:2|intcomma }} - {{ total_credits|floatformat:2|intcomma }} = {{ difference|floatformat:2|intcomma }}</p>
+            {% endif %}
+        </div>
+
+        {% if trial_balance_data %}
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-blue-800 mb-2">Summary by Account Type</h3>
+                <div class="space-y-2 text-sm">
+                    {% regroup trial_balance_data by account.account_type as account_types %}
+                    {% for account_type in account_types %}
+                        <div class="flex justify-between">
+                            <span class="font-medium">{{ account_type.grouper|title }} Accounts:</span>
+                            <span>{{ account_type.list|length }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="bg-green-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-green-800 mb-2">Balance Summary</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="font-medium">Total Debit Balances:</span>
+                        <span>{{ total_debits|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-medium">Total Credit Balances:</span>
+                        <span>{{ total_credits|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between border-t pt-2">
+                        <span class="font-bold">Balance Status:</span>
+                        <span class="{% if is_balanced %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if is_balanced %}Balanced{% else %}Not Balanced{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <style>
+        @media print {
+            .container {
+                box-shadow: none;
+                margin: 0;
+                padding: 20px;
+            }
+            
+            .no-print {
+                display: none;
+            }
+            
+            table {
+                page-break-inside: auto;
+            }
+            
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            
+            .text-3xl {
+                font-size: 24px;
+            }
+            
+            .text-2xl {
+                font-size: 20px;
+            }
+        }
+    </style>
+{% endblock %}

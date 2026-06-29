@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Tax Invoice {{ invoice.invoice_number }}</title>
+  <style>
+    @page { size: A4; margin: 1cm 1.2cm; }
+    body { font-family: sans-serif; font-size: 10pt; color: #000; line-height: 1.35; margin: 0; }
+
+    /* ── copy separator ─────────────────────────────────────────── */
+    .copy-block { page-break-after: always; padding-bottom: 6px; }
+    .copy-block:last-child { page-break-after: auto; }
+
+    /* ── copy label banner ──────────────────────────────────────── */
+    .copy-label {
+      text-align: center;
+      font-size: 9pt;
+      font-weight: bold;
+      letter-spacing: 1px;
+      border: 1px solid #000;
+      padding: 2px 0;
+      margin-bottom: 6px;
+      background: #f0f0f0;
+    }
+
+    /* ── invoice title ──────────────────────────────────────────── */
+    .invoice-title {
+      text-align: center;
+      font-size: 13pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 4px 0 6px;
+      letter-spacing: 1px;
+      border-bottom: 2px solid #000;
+      padding-bottom: 4px;
+    }
+
+    /* ── header table ───────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; }
+    .header-td-left { text-align: left; vertical-align: top; width: 60%; }
+    .header-td-right { text-align: right; vertical-align: top; width: 40%; }
+
+    .company-name { font-size: 13pt; font-weight: bold; }
+    .company-meta { font-size: 8.5pt; }
+    .inv-meta { font-size: 9pt; }
+    .inv-meta td { padding: 1px 4px; }
+
+    /* ── customer block ─────────────────────────────────────────── */
+    .customer-block {
+      border: 1px solid #aaa;
+      padding: 5px 8px;
+      margin: 6px 0;
+      font-size: 9pt;
+    }
+    .customer-block strong { font-size: 9.5pt; }
+
+    /* ── items table ─────────────────────────────────────────────── */
+    .items-table { border: 1px solid #000; margin-top: 6px; font-size: 9pt; }
+    .items-table th, .items-table td { border: 1px solid #000; padding: 3px 5px; }
+    .items-table th { background: #e8e8e8; font-weight: bold; text-align: center; }
+    .items-table td.right { text-align: right; }
+    .items-table td.center { text-align: center; }
+
+    /* ── totals ──────────────────────────────────────────────────── */
+    .totals-wrap { margin-top: 6px; }
+    .totals-table { width: 46%; margin-left: auto; border: 1px solid #000; font-size: 9pt; }
+    .totals-table td { padding: 3px 6px; border: 1px solid #000; }
+    .totals-table td.right { text-align: right; }
+    .totals-table tr.total-row td { font-weight: bold; border-top: 2px solid #000; }
+
+    /* ── amount in words ─────────────────────────────────────────── */
+    .aow { font-size: 8.5pt; padding: 4px 6px; border-left: 3px solid #000; margin: 6px 0; }
+
+    /* ── VAT summary (required for Tax Invoice) ──────────────────── */
+    .vat-summary { font-size: 8.5pt; margin-top: 4px; }
+    .vat-summary td { padding: 2px 6px; border: 1px solid #aaa; }
+    .vat-summary .label { font-weight: bold; width: 55%; }
+
+    /* ── signature + footer ──────────────────────────────────────── */
+    .sig-row { margin-top: 24px; }
+    .sig-box { display: inline-block; width: 45%; text-align: center; }
+    .sig-line { border-top: 1px solid #000; margin-top: 20px; padding-top: 3px; font-size: 8.5pt; }
+    .footer {
+      font-size: 8pt; text-align: center;
+      border-top: 1px solid #000;
+      margin-top: 12px; padding-top: 4px;
+    }
+
+    /* ── dashed cut line between copies ─────────────────────────── */
+    .cut-line { border-top: 1px dashed #888; margin: 4px 0 2px; font-size: 7pt; color: #888; text-align: center; }
+  </style>
+</head>
+<body>
+
+{% for copy_label in copy_labels %}
+
+<div class="copy-block">
+  <!-- Copy banner -->
+  <div class="copy-label">{{ copy_label }}</div>
+
+  <!-- Invoice title -->
+  <div class="invoice-title">
+    {% if vat_registered and forloop.first %}Tax Invoice{% else %}Invoice{% endif %}
+  </div>
+
+  <!-- Header: company left, invoice meta right -->
+  <table>
+    <tr>
+      <td class="header-td-left">
+        <div class="company-name">{{ company_name }}</div>
+        <div class="company-meta">{{ address }}</div>
+        <div class="company-meta">Tel: {{ tel }}{% if email %} | Email: {{ email }}{% endif %}</div>
+        {% if vat_number %}<div class="company-meta"><strong>PAN/VAT:</strong> {{ vat_number }}</div>{% endif %}
+      </td>
+      <td class="header-td-right">
+        <table class="inv-meta" style="margin-left:auto;">
+          <tr><td><strong>Invoice No:</strong></td><td><strong>{{ invoice.invoice_number }}</strong></td></tr>
+          <tr><td>Date:</td><td>{{ invoice.transaction_date|date:"Y-m-d" }}</td></tr>
+          {% if invoice.due_date %}<tr><td>Due:</td><td>{{ invoice.due_date|date:"Y-m-d" }}</td></tr>{% endif %}
+          <tr><td>Status:</td><td>{{ invoice.get_status_display }}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Customer / Bill To -->
+  <div class="customer-block">
+    <strong>Bill To: {{ customer_name }}</strong>
+    {% if customer_phone %} &nbsp;|&nbsp; Tel: {{ customer_phone }}{% endif %}
+    {% if customer_pan %} &nbsp;|&nbsp; <strong>PAN:</strong> {{ customer_pan }}{% endif %}
+  </div>
+
+  <!-- Items -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width:4%">#</th>
+        <th style="width:22%">Item</th>
+        <th style="width:24%">Description</th>
+        <th style="width:7%" class="right">Qty</th>
+        <th style="width:11%" class="right">Rate</th>
+        <th style="width:9%" class="right">Disc</th>
+        <th style="width:{% if vat_registered %}13%{% else %}23%{% endif %}" class="right">Amount</th>
+        {% if vat_registered %}<th style="width:10%" class="right">VAT 13%</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for item in items %}
+      <tr>
+        <td class="center">{{ forloop.counter }}</td>
+        <td>{% if item.product %}{{ item.product.name }}{% elif item.package %}{{ item.package.name }}{% else %}{{ item.description|default:"-" }}{% endif %}</td>
+        <td>{{ item.description|default:"-" }}</td>
+        <td class="right">{{ item.quantity }}</td>
+        <td class="right">{{ item.price }}</td>
+        <td class="right">{% if item.discount_percent > 0 %}{{ item.discount_percent }}%{% elif item.discount_amount > 0 %}{{ item.discount_amount }}{% else %}-{% endif %}</td>
+        <td class="right">{{ item.total_price }}</td>
+        {% if vat_registered %}<td class="right">{% if invoice.tax_percent > 0 %}{{ item.total_price|floatformat:2 }}{% else %}-{% endif %}</td>{% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Amount in Words -->
+  <div class="aow"><strong>Amount in words:</strong> {{ amount_in_words }}</div>
+
+  <!-- Totals + VAT summary side by side -->
+  <table class="totals-wrap" style="margin-top:6px;">
+    <tr>
+      {% if vat_registered %}
+      <!-- VAT summary (left, ~50%) -->
+      <td style="width:52%; vertical-align:top;">
+        <table class="vat-summary">
+          <tr>
+            <td class="label">Taxable Amount (excl. VAT)</td>
+            <td style="text-align:right;">{{ invoice.subtotal|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td class="label">Discount</td>
+            <td style="text-align:right;">({{ invoice.discount_amount|floatformat:2 }})</td>
+          </tr>
+          <tr>
+            <td class="label">Net Taxable</td>
+            <td style="text-align:right;">{{ invoice.subtotal|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td class="label">VAT @ {{ invoice.tax_percent }}%</td>
+            <td style="text-align:right;">{{ invoice.tax_amount|floatformat:2 }}</td>
+          </tr>
+        </table>
+      </td>
+      <!-- Totals (right, ~48%) -->
+      <td style="width:48%; vertical-align:top;">
+        <table class="totals-table">
+          <tr><td>Subtotal</td><td class="right">{{ invoice.subtotal|floatformat:2 }}</td></tr>
+          <tr><td>Discount</td><td class="right">({{ invoice.discount_amount|floatformat:2 }})</td></tr>
+          <tr><td>VAT ({{ invoice.tax_percent }}%)</td><td class="right">{{ invoice.tax_amount|floatformat:2 }}</td></tr>
+          <tr class="total-row"><td><strong>Total</strong></td><td class="right"><strong>NPR {{ invoice.total|floatformat:2 }}</strong></td></tr>
+        </table>
+      </td>
+      {% else %}
+      <!-- Totals only (no VAT) -->
+      <td style="width:100%; vertical-align:top;">
+        <table class="totals-table" style="margin-left:auto;">
+          <tr><td>Subtotal</td><td class="right">{{ invoice.subtotal|floatformat:2 }}</td></tr>
+          {% if invoice.discount_amount > 0 %}<tr><td>Discount</td><td class="right">({{ invoice.discount_amount|floatformat:2 }})</td></tr>{% endif %}
+          <tr class="total-row"><td><strong>Total</strong></td><td class="right"><strong>NPR {{ invoice.total|floatformat:2 }}</strong></td></tr>
+        </table>
+      </td>
+      {% endif %}
+    </tr>
+  </table>
+
+  <!-- Signature row -->
+  <table class="sig-row">
+    <tr>
+      <td style="width:45%; text-align:center;">
+        <div class="sig-line">Customer Signature</div>
+      </td>
+      <td style="width:10%;"></td>
+      <td style="width:45%; text-align:center;">
+        <div class="sig-line">Authorized Signature / Stamp</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Footer -->
+  <div class="footer">{{ company_name }} | {{ address }} | Tel: {{ tel }}{% if vat_registered and vat_number %} | PAN: {{ vat_number }}{% endif %}</div>
+
+  {% if not forloop.last %}<div class="cut-line">✂ &nbsp; Cut Here &nbsp; ✂</div>{% endif %}
+</div>
+
+{% endfor %}
+
+</body>
+</html>

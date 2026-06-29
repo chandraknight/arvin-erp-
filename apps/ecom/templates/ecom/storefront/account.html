@@ -1,0 +1,87 @@
+{% extends "ecom/storefront/base.html" %}
+{% load static %}
+
+{% block page_title %}My Account{% endblock %}
+
+{% block content %}
+
+<section class="customer-dashboard-page">
+  <div class="container">
+    <div class="dashboard-stats-grid">
+      <div class="dashboard-stat-card">
+        <span>Past Orders</span>
+        <strong class="dashboard-stat-maroon">{{ order_count|default:0 }}</strong>
+      </div>
+      <div class="dashboard-stat-card">
+        <span>Reminder Alerts</span>
+        <strong class="dashboard-stat-gold">{{ reminder_count|default:3 }}</strong>
+      </div>
+      <div class="dashboard-stat-card">
+        <span>Saved Addresses</span>
+        <strong>{{ saved_address_count|default:2 }}</strong>
+      </div>
+    </div>
+
+    <div class="dashboard-panel">
+      <div class="dashboard-panel-heading">
+        <h2>Completed Purchases</h2>
+      </div>
+
+      {% if orders %}
+      <div class="dashboard-order-list">
+        {% for order in orders %}
+        <div class="dashboard-order-row">
+          <div class="dashboard-order-main">
+            <h3>{% with first_item=order.items.first %}{% if first_item %}{{ first_item.product.name }}{% else %}Order {{ order.order_number }}{% endif %}{% endwith %}</h3>
+            <p>{{ order.created_at|date:"M d, Y" }}</p>
+          </div>
+          <div class="dashboard-order-actions">
+            <a href="{% url 'ecom:track_order' %}?order_number={{ order.order_number }}&phone={{ order.customer_phone }}" class="dashboard-inspect-link">
+              <span aria-hidden="true">⊙</span> Inspect Items
+            </a>
+            <span class="dashboard-status-pill {% if order.status == 'DELIVERED' %}is-delivered{% elif order.status == 'CANCELLED' %}is-cancelled{% else %}is-processing{% endif %}">
+              {{ order.get_status_display }}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="dashboard-empty-orders">
+        <img src="{% static 'ecom/assets/imgs/template/cart.svg' %}" alt="">
+        <h3>No orders yet</h3>
+        <p>Your completed purchases will appear here.</p>
+        <a href="{% url 'ecom:product_list' %}" class="dashboard-shop-link">Start Shopping</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="dashboard-panel">
+      <div class="dashboard-panel-heading">
+        <h2>Saved Reminders</h2>
+      </div>
+
+      <div class="dashboard-reminder-grid">
+        <div class="dashboard-reminder-card">
+          <div class="dashboard-reminder-icon dashboard-reminder-maroon" aria-hidden="true">⌂</div>
+          <div class="dashboard-reminder-copy">
+            <h3>Memorial Remembrance</h3>
+            <p>Reminder: Jan 15, 2027</p>
+          </div>
+          <a href="{% url 'ecom:product_list' %}" class="dashboard-reorder-btn">Quick Reorder</a>
+        </div>
+
+        <div class="dashboard-reminder-card">
+          <div class="dashboard-reminder-icon dashboard-reminder-gold" aria-hidden="true">⌁</div>
+          <div class="dashboard-reminder-copy">
+            <h3>Monthly Prayer Refill</h3>
+            <p>Recurring incense, candles, and oil</p>
+          </div>
+          <a href="{% url 'ecom:product_list' %}" class="dashboard-reorder-btn">Quick Reorder</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

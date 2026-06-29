@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Tax Report{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-3 border-b border-gray-200 pb-2">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">VAT / Tax Report</h1>
+            <p class="text-sm text-gray-500 mt-1">
+                {{ company.name }} — {{ start_date|date:"Y-m-d" }} to {{ end_date|date:"Y-m-d" }}
+                (Tax Rate: {{ tax_rate }}%)
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'reports:export_tax_report_excel' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition shadow">
+                <i class="fas fa-file-excel"></i> Export
+            </a>
+            <button onclick="window.print()"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition shadow">
+                <i class="fas fa-print"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Date filter -->
+    <form method="get" class="bg-white border border-gray-200 shadow-sm p-4 mb-6">
+        <div class="flex flex-wrap items-end gap-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Start Date (BS)</label>
+                <input type="text" name="start_date" value="{{ start_date|date:'Y-m-d' }}"
+                       class="nepali-datepicker border border-gray-300 px-3 py-2 text-sm" autocomplete="off">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">End Date (BS)</label>
+                <input type="text" name="end_date" value="{{ end_date|date:'Y-m-d' }}"
+                       class="nepali-datepicker border border-gray-300 px-3 py-2 text-sm" autocomplete="off">
+            </div>
+            <button type="submit"
+                    class="px-4 py-2 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition">
+                Apply
+            </button>
+        </div>
+    </form>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Output Tax (Collected)</p>
+            <p class="text-2xl font-bold text-green-700">{{ output_tax|floatformat:2|intcomma }}</p>
+            <p class="text-xs text-gray-400 mt-1">VAT collected on sales invoices</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Input Tax (Paid)</p>
+            <p class="text-2xl font-bold text-red-600">{{ input_tax|floatformat:2|intcomma }}</p>
+            <p class="text-xs text-gray-400 mt-1">VAT paid on purchases (estimated)</p>
+        </div>
+        <div class="bg-white border border-l-4 {% if net_tax_payable >= 0 %}border-l-red-500{% else %}border-l-green-500{% endif %} border-gray-200 shadow-sm p-5">
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Net Tax Payable</p>
+            <p class="text-2xl font-bold {% if net_tax_payable >= 0 %}text-red-700{% else %}text-green-700{% endif %}">
+                {{ net_tax_payable|floatformat:2|intcomma }}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+                {% if net_tax_payable >= 0 %}Amount owed to tax authority{% else %}Tax credit / refund due{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Invoice breakdown -->
+    <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="px-6 py-3 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-sm font-bold text-gray-700">Invoice Tax Breakdown</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-green-600 text-white text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 text-left border border-green-700">Invoice #</th>
+                        <th class="px-4 py-3 text-left border border-green-700">Date</th>
+                        <th class="px-4 py-3 text-right border border-green-700">Subtotal</th>
+                        <th class="px-4 py-3 text-right border border-green-700">Discount</th>
+                        <th class="px-4 py-3 text-right border border-green-700">Tax %</th>
+                        <th class="px-4 py-3 text-right border border-green-700">Tax Amount</th>
+                        <th class="px-4 py-3 text-right border border-green-700">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in invoices %}
+                    <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50">
+                        <td class="px-4 py-2 border border-gray-200 font-medium text-green-700">{{ inv.invoice_number }}</td>
+                        <td class="px-4 py-2 border border-gray-200 whitespace-nowrap">{{ inv.transaction_date|date:"Y-m-d" }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ inv.subtotal|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right text-red-600">{{ inv.discount_amount|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ inv.tax_percent }}%</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right font-semibold text-amber-700">{{ inv.tax_amount|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right font-bold">{{ inv.total|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-12 text-center text-gray-400">
+                            No taxable invoices found for this period.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

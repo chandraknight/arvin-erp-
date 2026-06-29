@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment History Report{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <h1 class="text-2xl font-semibold mb-4 text-gray-800">Payment History Report</h1>
+
+    {# Filtering Form #}
+    <form method="get" class="mb-6 p-4 bg-white rounded shadow-md">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date:</label>
+                <input type="text" name="start_date" id="start_date" value="{{ selected_start_date }}" class="nepali-datepicker mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date:</label>
+                <input type="text" name="end_date" id="end_date" value="{{ selected_end_date }}" class="nepali-datepicker mt-1 block w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="customer" class="block text-sm font-medium text-gray-700">Customer:</label>
+                <select name="customer" id="customer" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option value="">-- Select Customer --</option>
+                    {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if selected_customer|stringformat:"s" == customer.id|stringformat:"s" %}selected{% endif %}>{{ customer.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="method" class="block text-sm font-medium text-gray-700">Payment Method:</label>
+                <select name="method" id="method" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                     <option value="">-- Select Method --</option>
+                    {% for method_value, method_display in payment_methods %}
+                        <option value="{{ method_value }}" {% if selected_payment_method == method_value %}selected{% endif %}>{{ method_display }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Filter Report</button>
+             <a href="{% url 'reports:payment_history_report' %}" class="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Clear Filter</a>
+        </div>
+    </form>
+
+    {# Export and Print Buttons #}
+    <div class="mb-4 flex space-x-2">
+        <a href="{% url 'reports:export_payment_history_report_excel' %}{{ request.GET.urlencode|add:'&' }}" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200 ease-in-out text-sm">Export to Excel</a>
+        <a href="{% url 'reports:export_payment_history_report_pdf' %}{{ request.GET.urlencode|add:'&' }}" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200 ease-in-out text-sm">Export to PDF</a>
+        <a href="{% url 'reports:print_payment_history_report' %}{{ request.GET.urlencode|add:'&' }}" class="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition duration-200 ease-in-out text-sm">Print Report</a>
+    </div>
+
+    {# Payment History Chart #}
+     <div class="mb-6 p-4 bg-white rounded shadow-md">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Payment Amount Over Time</h2>
+        <canvas id="paymentHistoryChart" width="400" height="200"></canvas>
+    </div>
+
+    {# Payment History Table #}
+    <div class="bg-white rounded shadow-md overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Date</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for payment in payments %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ payment.date|date:"Y-m-d" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">NPR {{ payment.amount|floatformat:"2" }}</td>
+                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payment.get_method_display }}</td>
+                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {% if payment.invoice %}
+                                <a href="{% url 'billing:view_invoice_detail' payment.invoice.id %}" class="text-blue-600 hover:underline">#{{ payment.invoice.invoice_number|default:payment.invoice.id }}</a>
+                             {% else %}
+                                 N/A
+                             {% endif %}
+                         </td>
+                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {% if payment.invoice and payment.invoice.customer %}
+                                 {{ payment.invoice.customer.name }}
+                             {% else %}
+                                 N/A
+                             {% endif %}
+                         </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No payment history found for the selected criteria.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const paymentHistoryChartCanvas = document.getElementById('paymentHistoryChart');
+
+        // Data for the chart (assuming the view provides aggregated data like labels and values)
+        // Example structure:
+        // const chartLabels = ['2023-01-01', '2023-01-02', ...];
+        // const chartData = [150.00, 200.50, ...];
+
+        // Replace with actual data from the Django view context
+        // You'll need to pass aggregated data from the view, for example:
+        // context = {
+        //    ...
+        //    'payment_dates': ['date1', 'date2', ...],
+        //    'payment_amounts': [amount1, amount2, ...],
+        // }
+        // And then use Django template tags like this:
+         const chartLabels = [];
+         const chartData = [];
+
+        if (paymentHistoryChartCanvas && chartLabels.length > 0) {
+            new Chart(paymentHistoryChartCanvas, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Total Payment Amount',
+                        data: chartData,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day' // Or 'month', depending on aggregation
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Amount'
+                            }
+                        }
+                    },
+                     plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                         title: {
+                            display: true,
+                            text: 'Total Payment Amount Over Time'
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

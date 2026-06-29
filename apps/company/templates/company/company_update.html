@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Edit {{ company.name }}{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+
+    <div class="border-b border-gray-200 pb-4 mb-8">
+        <h1 class="text-2xl font-bold text-gray-800">Edit Company</h1>
+        <p class="text-sm text-gray-500 mt-1">
+            {% if user.is_superuser %}
+                Superadmin — all fields are editable.
+            {% else %}
+                You can update your company's basic contact and VAT information.
+                Organisation type and module settings are managed by the superadmin.
+            {% endif %}
+        </p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate class="space-y-8">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="bg-red-50 border border-red-400 text-red-700 px-4 py-3">
+            {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ── Section 1: Basic Company Info ──────────────────────────── -->
+        <div class="bg-white border border-gray-200 shadow-sm">
+            <div class="px-6 py-3 bg-green-700 text-white">
+                <h2 class="text-sm font-bold uppercase tracking-wide">
+                    <i class="fas fa-building mr-2"></i>Company Details
+                </h2>
+            </div>
+            <div class="p-6 space-y-4">
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-48 w-full">Company Name *</span>
+                    {{ form.name|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 focus:ring-2 focus:ring-green-600" }}
+                </div>
+                {% if form.name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.name.errors|striptags }}</p>{% endif %}
+
+                {% if user.is_superuser %}
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-48 w-full">Organisation Type *</span>
+                    {{ form.organisation_type|add_class:"w-full border border-gray-300 px-4 py-2 bg-white focus:ring-2 focus:ring-green-600"|attr:"id:id_organisation_type" }}
+                </div>
+                {% if form.organisation_type.errors %}<p class="text-red-600 text-xs mt-1">{{ form.organisation_type.errors|striptags }}</p>{% endif %}
+
+                <!-- Org-type module preview (superadmin only) -->
+                <div id="org-type-preview" class="hidden border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p class="text-xs font-semibold text-amber-800 mb-2">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Changing org type will reset module flags to these defaults when you save:
+                    </p>
+                    <div id="org-type-tags" class="flex flex-wrap gap-1"></div>
+                </div>
+                {% else %}
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-48 w-full">Organisation Type</span>
+                    <span class="flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-gray-50 w-full">
+                        {{ company.get_organisation_type_display }}
+                        <span class="ml-2 text-xs text-gray-400">(contact superadmin to change)</span>
+                    </span>
+                </div>
+                {% endif %}
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-48 w-full">Address</span>
+                    {{ form.address|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 focus:ring-2 focus:ring-green-600" }}
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:flex">
+                        <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full">Phone</span>
+                        {{ form.phone|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                    </div>
+                    <div class="sm:flex">
+                        <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full">Email</span>
+                        {{ form.email|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                    </div>
+                </div>
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-48 w-full">Logo</span>
+                    <div class="w-full border border-gray-300 px-4 py-2">
+                        {% if company.logo %}
+                        <div class="flex items-center gap-3 mb-2">
+                            <img src="{{ company.logo.url }}" alt="Current logo"
+                                 class="h-10 w-10 rounded object-cover border border-gray-200">
+                            <span class="text-xs text-gray-500">Current logo</span>
+                        </div>
+                        {% endif %}
+                        {{ form.logo|add_class:"w-full" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Section 2: VAT / Tax Configuration ─────────────────────── -->
+        <div class="bg-white border border-gray-200 shadow-sm">
+            <div class="px-6 py-3 bg-green-700 text-white flex items-center justify-between">
+                <h2 class="text-sm font-bold uppercase tracking-wide">
+                    <i class="fas fa-receipt mr-2"></i>VAT / Tax Configuration
+                </h2>
+                {% if not user.is_superuser %}
+                <span class="text-xs bg-yellow-400 text-yellow-900 font-semibold px-2 py-0.5 rounded"><i class="fas fa-lock mr-1"></i>Managed by Superadmin</span>
+                {% endif %}
+            </div>
+            <div class="p-6 space-y-4">
+                {% if user.is_superuser %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:flex">
+                        <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full">Tax Rate %</span>
+                        {{ form.tax_rate|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                    </div>
+                    <div class="sm:flex">
+                        <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full">VAT Number</span>
+                        {{ form.vat_number|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-6 pt-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        {{ form.vat_registered }}
+                        <span class="text-sm font-medium text-gray-700">VAT Registered</span>
+                        <span class="text-xs text-gray-400">(PAN/VAT registered)</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        {{ form.vat_inclusive }}
+                        <span class="text-sm font-medium text-gray-700">VAT-Inclusive Pricing</span>
+                        <span class="text-xs text-gray-400">(prices include tax)</span>
+                    </label>
+                </div>
+                {% else %}
+                <div class="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
+                    <p class="text-xs text-gray-500 mb-2">These settings are controlled by your system administrator and cannot be changed here.</p>
+                    <div class="flex flex-wrap gap-6">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-gray-600">VAT Number:</span>
+                            <span class="text-sm text-gray-800 font-mono">{{ company.vat_number|default:"—" }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if company.vat_registered %}
+                            <i class="fas fa-check-circle text-green-600"></i>
+                            <span class="text-sm text-gray-700">VAT Registered</span>
+                            {% else %}
+                            <i class="fas fa-times-circle text-gray-400"></i>
+                            <span class="text-sm text-gray-400">Not VAT Registered</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if company.vat_inclusive %}
+                            <i class="fas fa-check-circle text-green-600"></i>
+                            <span class="text-sm text-gray-700">VAT-Inclusive Pricing</span>
+                            {% else %}
+                            <i class="fas fa-times-circle text-gray-400"></i>
+                            <span class="text-sm text-gray-400">VAT-Exclusive Pricing</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── Section 3: Feature Flags (superuser only) ──────────────── -->
+        {% if user.is_superuser %}
+        <div class="bg-white border border-gray-200 shadow-sm">
+            <div class="px-6 py-3 bg-green-700 text-white">
+                <h2 class="text-sm font-bold uppercase tracking-wide">
+                    <i class="fas fa-toggle-on mr-2"></i>Module Feature Flags
+                </h2>
+            </div>
+            <div class="p-6">
+                <p class="text-xs text-gray-500 mb-4">
+                    Changing Organisation Type above will reset these flags to their defaults on save.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_inventory }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Inventory</p>
+                            <p class="text-xs text-gray-500">Products, stock levels, stock movements, COGS reports.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_purchasing }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Purchasing</p>
+                            <p class="text-xs text-gray-500">Purchase orders, vendor bills, vendor payments.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_hr_payroll }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">HR &amp; Payroll</p>
+                            <p class="text-xs text-gray-500">Employees, attendance, payroll runs, payslips.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_order_management }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Orders &amp; Delivery</p>
+                            <p class="text-xs text-gray-500">Sales orders, delivery notes, order tracking.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_project_tracking }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Project Tracking</p>
+                            <p class="text-xs text-gray-500">Projects, cost centres, project expenses and revenue.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_forecasting }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Forecasting</p>
+                            <p class="text-xs text-gray-500">Budget vs Actual, revenue and expense forecasts.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_manufacturing }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Manufacturing</p>
+                            <p class="text-xs text-gray-500">BOM, work orders, production runs, QC, machines.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_branch_accounting }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Branch Accounting</p>
+                            <p class="text-xs text-gray-500">Tag invoices/payments to branches. Branch-wise reports.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_restaurant }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Restaurant</p>
+                            <p class="text-xs text-gray-500">Tables, KOT/BOT, dining orders, printer stations.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_pos }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Point of Sale</p>
+                            <p class="text-xs text-gray-500">Quick retail/counter sales terminal and POS receipts.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {{ form.enable_tours }}
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Tours &amp; Ticketing</p>
+                            <p class="text-xs text-gray-500">Tour packages, air files, bookings, and IATA data.</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-indigo-200 bg-indigo-50 cursor-pointer hover:bg-indigo-100">
+                        {{ form.enable_ecom }}
+                        <div>
+                            <p class="text-sm font-semibold text-indigo-800">E-Commerce Store</p>
+                            <p class="text-xs text-indigo-600">Public storefront at /store/ — product listings, cart, COD checkout, order tracking.</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Read-only module status for company admins -->
+        <div class="bg-white border border-gray-200 shadow-sm">
+            <div class="px-6 py-3 bg-green-700 text-white">
+                <h2 class="text-sm font-bold uppercase tracking-wide">
+                    <i class="fas fa-toggle-on mr-2"></i>Active Modules
+                    <span class="ml-2 text-xs font-normal opacity-75">(managed by superadmin)</span>
+                </h2>
+            </div>
+            <div class="p-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {% for label, flag in module_flags %}
+                {% if flag %}
+                <div class="flex items-center gap-2 p-3 rounded border border-green-300 bg-green-50">
+                    <i class="fas fa-circle text-xs text-green-500"></i>
+                    <div>
+                        <p class="text-xs font-semibold text-green-800">{{ label }}</p>
+                        <p class="text-xs text-green-600">Enabled</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Submit -->
+        <div class="flex gap-3">
+            <button type="submit"
+                    class="px-4 py-2 text-sm bg-green-700 hover:bg-green-800 text-white font-semibold shadow transition">
+                <i class="fas fa-save mr-1"></i>Save Changes
+            </button>
+            <a href="{% url 'company:company_detail' id=company.pk %}"
+               class="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium transition">
+                Cancel
+            </a>
+        </div>
+
+    </form>
+</div>
+
+{% if user.is_superuser %}
+<script>
+const ORG_FIELD_MAP = {
+    TRADING:          {inventory:1, purchasing:1, hr_payroll:1, order_management:1, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0},
+    SERVICE:          {inventory:0, purchasing:0, hr_payroll:1, order_management:1, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0},
+    PROJECT:          {inventory:0, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:1, forecasting:1, manufacturing:0, branch_accounting:0, restaurant:0},
+    NGO:              {inventory:0, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:1, forecasting:1, manufacturing:0, branch_accounting:0, restaurant:0},
+    MANUFACTURING:    {inventory:1, purchasing:1, hr_payroll:1, order_management:1, pos:0, project_tracking:0, forecasting:0, manufacturing:1, branch_accounting:0, restaurant:0},
+    RESTAURANT:       {inventory:1, purchasing:1, hr_payroll:1, order_management:1, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:1},
+    SMALL_ENTERPRISE: {inventory:0, purchasing:0, hr_payroll:0, order_management:0, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0},
+    OTHER:            {inventory:1, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0},
+};
+const ORG_LABEL_MAP = {
+    inventory:'Inventory', purchasing:'Purchasing', hr_payroll:'HR & Payroll',
+    order_management:'Orders & Delivery', pos:'Point of Sale',
+    project_tracking:'Project Tracking', forecasting:'Forecasting',
+    manufacturing:'Manufacturing', branch_accounting:'Branch Accounting',
+    restaurant:'Restaurant',
+};
+
+const originalOrgType = document.getElementById('id_organisation_type')
+    ? document.getElementById('id_organisation_type').value : '';
+
+document.getElementById('id_organisation_type')?.addEventListener('change', function() {
+    const type = this.value;
+    const flags = ORG_FIELD_MAP[type];
+    const preview = document.getElementById('org-type-preview');
+    const tags    = document.getElementById('org-type-tags');
+
+    if (!flags || type === originalOrgType) {
+        preview.classList.add('hidden');
+        return;
+    }
+
+    preview.classList.remove('hidden');
+    tags.innerHTML = Object.entries(flags).map(([key, val]) =>
+        `<span class="px-2 py-0.5 text-xs font-semibold ${val ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500 line-through'}">${ORG_LABEL_MAP[key]}</span>`
+    ).join('');
+});
+</script>
+{% endif %}
+{% endblock %}

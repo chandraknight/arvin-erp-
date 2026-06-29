@@ -1,0 +1,20 @@
+{% extends "ecom/storefront/base.html" %}
+{% load static %}
+
+{% block page_title %}{{ page.title }}{% endblock %}
+
+{% block content %}
+
+<section class="mb-60">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-9">
+        <h2 class="mb-30 color-brand-3">{{ page.title }}</h2>
+        <div class="content-page font-sm color-gray-900" style="line-height:1.8;">
+          {{ page.content|linebreaks }}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

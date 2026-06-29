@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{% if page %}Edit Page{% else %}New Page{% endif %} — Ecom CMS{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">{% if page %}Edit: {{ page.title }}{% else %}New Page{% endif %}</h1>
+    <a href="{% url 'ecom:cms_page_list' %}" class="text-sm text-gray-500"><i class="fas fa-arrow-left mr-1"></i>Pages</a>
+  </div>
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+
+    <div class="bg-white border border-gray-200 p-5 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Page Type</label>
+          <select name="slug_type" class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+            {% for val, label in slug_choices %}
+            <option value="{{ val }}" {% if page and page.slug_type == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">URL Slug {% if page %}<span class="text-gray-400 text-xs">(cannot change)</span>{% endif %}</label>
+          {% if page %}
+          <input type="text" value="{{ page.slug }}" disabled
+            class="w-full border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500">
+          {% else %}
+          <input type="text" name="slug" placeholder="about (auto-generated if blank)"
+            class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+          {% endif %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-red-500">*</span></label>
+        <input type="text" name="title" value="{{ page.title|default:'' }}" required
+          class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Content <span class="text-red-500">*</span></label>
+        <p class="text-xs text-gray-400 mb-2">Supports basic HTML. Templates can override how this is displayed.</p>
+        <textarea name="content" rows="16" required
+          class="w-full border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-indigo-400">{{ page.content|default:'' }}</textarea>
+      </div>
+
+      <div class="flex items-center space-x-6">
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <input type="checkbox" name="is_published" {% if not page or page.is_published %}checked{% endif %} class="h-4 w-4">
+          <span class="text-sm font-medium text-gray-700">Published</span>
+        </label>
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <input type="checkbox" name="show_in_footer" {% if not page or page.show_in_footer %}checked{% endif %} class="h-4 w-4">
+          <span class="text-sm font-medium text-gray-700">Show in footer</span>
+        </label>
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <input type="checkbox" name="show_in_nav" {% if page and page.show_in_nav %}checked{% endif %} class="h-4 w-4">
+          <span class="text-sm font-medium text-gray-700">Show in top nav</span>
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 font-medium text-sm">
+      <i class="fas fa-save mr-1"></i>{% if page %}Update{% else %}Create{% endif %} Page
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% load static %}
+<div id="product-grid">
+
+  {# Active filter tags — inside swap target so they update on every HTMX request #}
+  {% if price_min or price_max or selected_colors or search or selected_category %}
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+    <span style="font-size:0.8rem;color:#6b7280;font-weight:600;">Active:</span>
+    {% if search %}<span class="active-filter-tag">Search: "{{ search }}" <button onclick="removeParam('q')">×</button></span>{% endif %}
+    {% if selected_category %}<span class="active-filter-tag">{{ selected_category_name }} <button onclick="removeParam('category')">×</button></span>{% endif %}
+    {% if price_min or price_max %}<span class="active-filter-tag">Price: Rs.{{ price_min|default:"0" }}–Rs.{{ price_max|default:"∞" }} <button onclick="removeParam('price_min');removeParam('price_max')">×</button></span>{% endif %}
+    {% for c in selected_colors %}<span class="active-filter-tag">{{ c }} <button onclick="removeColor('{{ c }}')">×</button></span>{% endfor %}
+    <a href="{% url 'ecom:product_list' %}" class="clear-all-btn">Clear All</a>
+  </div>
+  {% endif %}
+
+  {# Topbar — sort / per-page / view toggle #}
+  <div class="grid-topbar">
+    <span class="topbar-count">
+      <strong>{{ products.paginator.count }}</strong> product{{ products.paginator.count|pluralize }}
+      {% if selected_category_name %} in <strong>{{ selected_category_name }}</strong>{% endif %}
+    </span>
+
+    <select class="sort-select"
+            hx-get="{% url 'ecom:product_list' %}"
+            hx-trigger="change"
+            hx-target="#product-grid"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            hx-include="#filter-form"
+            hx-params="*"
+            name="sort">
+      <option value="newest"    {% if sort == 'newest'    %}selected{% endif %}>Newest First</option>
+      <option value="oldest"    {% if sort == 'oldest'    %}selected{% endif %}>Oldest First</option>
+      <option value="az"        {% if sort == 'az'        %}selected{% endif %}>From A–Z</option>
+      <option value="za"        {% if sort == 'za'        %}selected{% endif %}>From Z–A</option>
+      <option value="cheapest"  {% if sort == 'cheapest'  %}selected{% endif %}>Cheapest First</option>
+      <option value="expensive" {% if sort == 'expensive' %}selected{% endif %}>Expensive First</option>
+    </select>
+
+    <select class="per-page-select"
+            hx-get="{% url 'ecom:product_list' %}"
+            hx-trigger="change"
+            hx-target="#product-grid"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            hx-include="#filter-form"
+            hx-params="*"
+            name="per_page">
+      <option value="8"  {% if per_page == 8  %}selected{% endif %}>8</option>
+      <option value="12" {% if per_page == 12 %}selected{% endif %}>12</option>
+      <option value="16" {% if per_page == 16 %}selected{% endif %}>16</option>
+      <option value="24" {% if per_page == 24 %}selected{% endif %}>24</option>
+    </select>
+
+    <button type="button" class="view-btn {% if view_mode == 'grid' %}active{% endif %}"
+            hx-get="{% url 'ecom:product_list' %}?view=grid"
+            hx-trigger="click"
+            hx-target="#product-grid"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            hx-include="#filter-form"
+            title="Grid view">⊞</button>
+
+    <button type="button" class="view-btn {% if view_mode == 'list' %}active{% endif %}"
+            hx-get="{% url 'ecom:product_list' %}?view=list"
+            hx-trigger="click"
+            hx-target="#product-grid"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            hx-include="#filter-form"
+            title="List view">☰</button>
+  </div>
+
+  {# Loading indicator — shown by HTMX during requests #}
+  <div id="grid-loading" style="display:none;text-align:center;padding:30px 0;">
+    <div style="display:inline-block;width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#3730a3;border-radius:50%;animation:spin 0.7s linear infinite;"></div>
+  </div>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #product-grid.htmx-request #grid-loading { display:block; }
+    #product-grid.htmx-request .grid-content { opacity:0.4; pointer-events:none; }
+  </style>
+
+  <div class="grid-content">
+  {% if view_mode == 'list' %}
+  <div>
+    {% for product in products %}
+    <a href="{% url 'ecom:product_detail' product.id %}" style="text-decoration:none;color:inherit;">
+    <div class="list-product-row hover-up">
+      {% if product.primary_image_url %}
+      <img class="list-product-img" src="{{ product.primary_image_url }}" alt="{{ product.name }}" loading="lazy">
+      {% else %}
+      <div class="list-product-img" style="background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:28px;opacity:0.3;">📦</span>
+      </div>
+      {% endif %}
+      <div class="list-product-info">
+        <div style="font-size:0.9rem;font-weight:700;color:#1a1a2e;margin-bottom:4px;">{{ product.name }}</div>
+        {% if product.category %}<div style="font-size:0.75rem;color:#6b7280;margin-bottom:4px;">{{ product.category.name }}</div>{% endif %}
+        {% if product.short_description %}<div style="font-size:0.78rem;color:#6b7280;">{{ product.short_description|truncatechars:80 }}</div>{% endif %}
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:1rem;font-weight:700;color:#3730a3;">Rs.{{ product.price|floatformat:"2" }}</div>
+        {% if product.has_discount %}
+        <div><span style="font-size:0.75rem;color:#9ca3af;text-decoration:line-through;">Rs.{{ product.compare_at_price|floatformat:"2" }}</span> <span style="font-size:0.7rem;font-weight:700;color:#dc2626;">-{{ product.discount_percent }}%</span></div>
+        {% endif %}
+        {% if product.productstock.ecom_stock > 0 %}
+        <div style="font-size:0.73rem;color:#16a34a;margin-top:4px;">In Stock</div>
+        {% else %}
+        <div style="font-size:0.73rem;color:#ef4444;margin-top:4px;">Out of Stock</div>
+        {% endif %}
+      </div>
+    </div>
+    </a>
+    {% empty %}
+    <div class="text-center" style="padding:80px 0;">
+      <h4 class="color-gray-500">No products found</h4>
+      <p class="font-sm mt-10"><a href="{% url 'ecom:product_list' %}" class="btn btn-brand-2">Clear filters</a></p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="row row-tight">
+    {% for product in products %}
+    <div class="col-xl-3 col-lg-4 col-md-6 col-6">
+      {% include "ecom/storefront/_product_card.html" %}
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="text-center" style="padding:80px 0;">
+        <h4 class="color-gray-500">No products found</h4>
+        <p class="font-sm mt-10"><a href="{% url 'ecom:product_list' %}" class="btn btn-brand-2">Clear filters</a></p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# Pagination — links use HTMX #}
+  {% if is_paginated %}
+  <div class="pagination-area mt-15 mb-sm-5 mb-lg-0">
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-start flex-wrap" style="gap:2px;">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link"
+             hx-get="?page={{ page_obj.previous_page_number }}{% if filter_qs %}&{{ filter_qs }}{% endif %}"
+             hx-target="#product-grid" hx-swap="outerHTML" hx-push-url="true">← Prev</a>
+        </li>
+        {% endif %}
+        {% with cur=page_obj.number last=page_obj.paginator.num_pages %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == 1 or num == last or num >= cur|add:"-2" and num <= cur|add:"2" %}
+          <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link"
+               hx-get="?page={{ num }}{% if filter_qs %}&{{ filter_qs }}{% endif %}"
+               hx-target="#product-grid" hx-swap="outerHTML" hx-push-url="true">{{ num }}</a>
+          </li>
+          {% elif num == cur|add:"-3" or num == cur|add:"3" %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        {% endwith %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link"
+             hx-get="?page={{ page_obj.next_page_number }}{% if filter_qs %}&{{ filter_qs }}{% endif %}"
+             hx-target="#product-grid" hx-swap="outerHTML" hx-push-url="true">Next →</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+  </div>{# /grid-content #}
+
+</div>{# /product-grid #}

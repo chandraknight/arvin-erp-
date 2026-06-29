@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Hero Banners — Ecom CMS{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">Hero Banners</h1>
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'ecom:cms_dashboard' %}" class="text-sm text-gray-500"><i class="fas fa-arrow-left mr-1"></i>CMS</a>
+      <a href="{% url 'ecom:cms_banner_create' %}" class="bg-indigo-600 text-white px-4 py-2 text-sm font-medium">
+        <i class="fas fa-plus mr-1"></i>Add Banner
+      </a>
+    </div>
+  </div>
+
+  {% if banners %}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for banner in banners %}
+    <div class="bg-white border border-gray-200 overflow-hidden">
+      <div class="relative">
+        <img src="{{ banner.image.url }}" class="w-full h-40 object-cover">
+        <div class="absolute top-2 right-2">
+          {% if banner.is_active %}
+          <span class="bg-green-500 text-white text-xs px-2 py-0.5 font-semibold">Active</span>
+          {% else %}
+          <span class="bg-gray-400 text-white text-xs px-2 py-0.5 font-semibold">Hidden</span>
+          {% endif %}
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 p-3">
+          {% if banner.title %}<p class="text-white text-sm font-bold">{{ banner.title }}</p>{% endif %}
+          {% if banner.subtitle %}<p class="text-white/80 text-xs">{{ banner.subtitle }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="p-3 flex items-center justify-between">
+        <span class="text-xs text-gray-400">Sort: {{ banner.sort_order }}</span>
+        <div class="flex items-center space-x-2">
+          <form method="post" action="{% url 'ecom:cms_banner_toggle' banner.id %}">
+            {% csrf_token %}
+            <button class="text-xs px-2 py-1 border {% if banner.is_active %}border-gray-300 text-gray-500{% else %}border-green-300 text-green-600{% endif %}">
+              {% if banner.is_active %}Hide{% else %}Show{% endif %}
+            </button>
+          </form>
+          <a href="{% url 'ecom:cms_banner_edit' banner.id %}" class="text-xs px-2 py-1 border border-indigo-300 text-indigo-600">Edit</a>
+          <form method="post" action="{% url 'ecom:cms_banner_delete' banner.id %}"
+            onsubmit="return confirm('Delete this banner?')">
+            {% csrf_token %}
+            <button class="text-xs px-2 py-1 border border-red-300 text-red-500">Delete</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-20 text-gray-400">
+    <i class="fas fa-images text-5xl mb-4"></i>
+    <p>No banners yet.</p>
+    <a href="{% url 'ecom:cms_banner_create' %}" class="mt-4 inline-block bg-indigo-600 text-white px-5 py-2 text-sm">Add First Banner</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

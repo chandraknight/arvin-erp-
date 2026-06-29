@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Budgets{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+  <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-calculator text-blue-600 mr-2"></i>Budgets</h1>
+  <div class="flex gap-2">
+    <a href="{% url 'projects:budget_create' %}" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold shadow transition">
+      <i class="fas fa-plus mr-1"></i>New Budget Line
+    </a>
+    <a href="{% url 'projects:budget_vs_actual' %}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium transition">
+      <i class="fas fa-chart-bar mr-1"></i>Budget vs Actual
+    </a>
+  </div>
+</div>
+
+<div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+  {% if budgets %}
+  <table class="w-full text-sm">
+    <thead class="bg-blue-700 text-white text-xs uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">Name</th>
+        <th class="px-4 py-3 text-left">Type</th>
+        <th class="px-4 py-3 text-left">Period</th>
+        <th class="px-4 py-3 text-left">Project / Cost Centre</th>
+        <th class="px-4 py-3 text-right">Budget</th>
+        <th class="px-4 py-3 text-right">Actual</th>
+        <th class="px-4 py-3 text-right">Variance</th>
+        <th class="px-4 py-3 text-center">Utilisation</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in budgets %}
+      <tr class="border-t border-gray-100 hover:bg-gray-50 {% if b.actual_amount > b.amount %}border-l-4 border-l-red-400{% endif %}">
+        <td class="px-4 py-3 font-semibold text-gray-800">{{ b.name }}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-0.5 text-xs font-semibold rounded
+            {% if b.budget_type == 'REVENUE' %}bg-green-100 text-green-800
+            {% elif b.budget_type == 'CAPEX' %}bg-purple-100 text-purple-800
+            {% else %}bg-amber-100 text-amber-800{% endif %}">
+            {{ b.get_budget_type_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{{ b.period_start|date:"M d, Y" }} – {{ b.period_end|date:"M d, Y" }}</td>
+        <td class="px-4 py-3 text-gray-600 text-xs">{{ b.project.name|default:b.cost_centre.name|default:"—" }}</td>
+        <td class="px-4 py-3 text-right font-mono">{{ b.amount|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right font-mono {% if b.actual_amount > b.amount %}text-red-600 font-bold{% endif %}">{{ b.actual_amount|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-right font-mono {% if b.variance < 0 %}text-red-600{% else %}text-green-700{% endif %}">{{ b.variance|floatformat:2|intcomma }}</td>
+        <td class="px-4 py-3 text-center">
+          {% if b.utilisation_pct is not None %}
+          <span class="text-xs {% if b.utilisation_pct > 100 %}text-red-600 font-bold{% elif b.utilisation_pct > 80 %}text-amber-600{% else %}text-green-700{% endif %}">
+            {{ b.utilisation_pct }}%
+          </span>
+          {% else %}—{% endif %}
+        </td>
+        <td class="px-4 py-3 text-center">
+          <div class="flex items-center justify-center gap-2">
+            <a href="{% url 'projects:budget_update' pk=b.pk %}" class="text-blue-600 hover:text-blue-800 text-xs"><i class="fas fa-edit"></i></a>
+            <a href="{% url 'projects:budget_revise' pk=b.pk %}" class="text-amber-600 hover:text-amber-800 text-xs" title="Revise budget"><i class="fas fa-sync-alt"></i></a>
+            <button type="button"
+                    hx-post="{% url 'projects:budget_delete' pk=b.pk %}"
+                    hx-target="closest tr" hx-swap="outerHTML swap:300ms"
+                    hx-confirm="Delete this budget? This cannot be undone."
+                    class="text-red-500 hover:text-red-700 text-xs" title="Delete">
+                <i class="fas fa-trash-alt htmx-hide-on-request"></i>
+                <i class="fas fa-spinner fa-spin" style="display:none" aria-hidden="true"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="text-center py-12 text-gray-400">
+    <i class="fas fa-calculator text-4xl mb-3"></i>
+    <p class="text-sm">No budget lines yet.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

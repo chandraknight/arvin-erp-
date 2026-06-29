@@ -1,0 +1,1180 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% load static %}
+
+
+{% block title %}{% if invoice %}Update{% else %}Create{% endif %} Invoice{% endblock %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <!-- Include Select2 CSS from CDN -->
+    
+{% endblock %}
+
+{% block content %}
+    {% include 'includes/toast.html' %}
+
+    <div class="w-full mt-3">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        {# ── Main form (3/4) ── #}
+        <div class="lg:col-span-3 bg-white border border-gray-200 shadow-sm p-5">
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 gap-3 border-b border-gray-100 pb-2">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight">
+                {% if invoice %}Update Invoice{% else %}Create Invoice{% endif %}
+            </h2>
+            <div class="flex gap-2 items-center">
+                {% if invoice %}
+                    <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium">#{{ invoice.invoice_number }}</span>
+                {% elif next_invoice_number %}
+                    <span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm font-medium border border-dashed border-gray-300" title="Preview — assigned on issue">#{{ next_invoice_number }}</span>
+                {% endif %}
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium">{{ user.company.name }}</span>
+            </div>
+        </div>
+
+        <form method="post" novalidate class="space-y-6" id="invoice-form">
+            {% csrf_token %}
+            {{ formset.management_form }}
+            <!-- HTMX buffer for product/package options -->
+            <div id="htmx-product-buffer" class="hidden"></div>
+            {% if form.errors %}
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3">
+                    <strong>Errors:</strong>
+                    {{ form.non_field_errors }}
+                    {% for field in form %}
+                        {% if field.errors %}
+                            <div>{{ field.label }}: {{ field.errors }}</div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                {% if invoice %}
+                <!-- Invoice # (edit mode) -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Invoice #</label>
+                    {{ form.invoice_number|add_class:"w-full text-sm border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                </div>
+                {% endif %}
+
+                <!-- Customer -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Customer <span class="text-red-400">*</span>
+                    </label>
+                    <div class="flex gap-1">
+                        {{ form.customer|add_class:"flex-1 min-w-0 border border-gray-300 px-3 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                        <button type="button"
+                                title="Add new customer"
+                                hx-get="{% url 'customers:customer_quick_create' %}"
+                                hx-target="#quick-create-modal-body"
+                                hx-swap="innerHTML"
+                                onclick="document.getElementById('quick-create-modal').classList.remove('hidden')"
+                                class="shrink-0 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold transition">
+                            + New
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick-create customer modal -->
+                <div id="quick-create-modal"
+                     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                     onclick="if(event.target===this)closeQuickCreateModal()">
+                    <div class="bg-white w-full max-w-md shadow-xl p-5 relative" onclick="event.stopPropagation()">
+                        <div id="quick-create-modal-body"></div>
+                    </div>
+                </div>
+
+                <!-- Date (BS) -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Date <span class="text-red-400">*</span>
+                    </label>
+                    <div class="relative">
+                        {{ form.due_date_bs|add_class:"nepali-datepicker w-full border border-gray-300 px-3 py-1.5 pr-9 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-calendar-alt text-gray-400 text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Date -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Transaction Date
+                    </label>
+                    <div class="relative">
+                        {{ form.transaction_date|add_class:"nepali-datepicker w-full border border-gray-300 px-3 py-1.5 pr-9 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-calendar-alt text-gray-400 text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="text-xl font-bold text-green-800">Invoice Items</h3>
+                    <button type="button" id="add-item"
+                            hx-get="{% url 'billing:htmx_invoice_item_form' %}?index=__prefix__"
+                            hx-target="#items-container"
+                            hx-swap="beforeend"
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm transition duration-150">
+                        + Add Item
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full border border-gray-200 text-sm" style="table-layout:fixed">
+                        <thead class="bg-gray-50 text-green-800 hidden sm:table-header-group">
+                        <tr>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:190px;min-width:190px">Item <span class="font-normal text-gray-400 normal-case">(name/SKU)</span></th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200">Desc</th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:80px">HS Code</th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:56px">Qty</th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:80px">Price</th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:56px">Disc%</th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:72px">Disc(₹)</th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:80px">Total (₹)</th>
+                            <th class="py-2 px-2 text-center text-xs font-semibold border-b border-gray-200" style="width:32px"></th>
+                        </tr>
+                        </thead>
+                        <tbody id="items-container">
+                        {% for item_form in formset %}
+                            {% include "billing/partials/invoice_item_row.html" with item_form=item_form org_type=org_type %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full">
+                        Subtotal (₹)
+                    </span>
+                    {{ form.subtotal|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 bg-gray-50" }}
+                </div>
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full">
+                        Discount (%)
+                    </span>
+                    {{ form.discount_percent|add_class:"discount-percent w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                </div>
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full">
+                        Discount (₹)
+                    </span>
+                    {{ form.discount_amount|add_class:"discount-amount-input w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                </div>
+
+                {% if vat_registered %}
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full">
+                        Tax (%)
+                    </span>
+                    {{ form.tax_percent|add_class:"tax-percent w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                </div>
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full">
+                        Tax (₹)
+                    </span>
+                    {{ form.tax_amount|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 bg-gray-50" }}
+                </div>
+                {% else %}
+                    <input type="hidden" name="tax_percent" value="0" class="tax-percent">
+                    <input type="hidden" name="tax_amount" value="0">
+                {% endif %}
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full">
+                        Total (₹)
+                    </span>
+                    {{ form.total|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 bg-gray-50 font-bold" }}
+                </div>
+            </div>
+
+            <!-- Payment Collection Section -->
+            <div class="mt-6 border border-green-200 bg-green-50">
+                <!-- Section header -->
+                <div class="flex items-center gap-2 px-5 py-3 border-b border-green-200">
+                    <i class="fas fa-money-bill-wave text-green-700"></i>
+                    <h3 class="text-sm font-bold text-green-800 uppercase tracking-wide">Payment Collection</h3>
+                </div>
+
+                <div class="px-5 py-4">
+                    <!-- Checkbox toggle -->
+                    <div class="flex items-start gap-3">
+                        {{ form.collect_payment|add_class:"mt-0.5 h-4 w-4 cursor-pointer accent-green-600" }}
+                        <label for="collect-payment-checkbox" class="cursor-pointer select-none">
+                            <span class="text-sm font-semibold text-gray-800">Collect Payment Immediately</span>
+                            <p class="text-xs text-gray-500 mt-0.5">Check this box to collect payment for this invoice immediately</p>
+                        </label>
+                    </div>
+
+                    <!-- Payment fields — shown when checkbox is checked -->
+                    <div id="payment-section" class="hidden mt-5 space-y-4">
+
+                        <!-- Split payment rows container -->
+                        <div id="split-rows-container" class="space-y-2">
+
+                            <!-- Row 1: primary method + amount (Django form fields) -->
+                            <div class="split-row grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                        Payment Method <span class="text-red-500">*</span>
+                                    </label>
+                                    {{ form.payment_method|add_class:"w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                        Amount <span class="text-red-500">*</span>
+                                    </label>
+                                    {{ form.payment_amount|add_class:"split-amount w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                                </div>
+                            </div>
+
+                            <!-- Extra rows injected here by JS -->
+                        </div>
+
+                        <!-- Split total feedback -->
+                        <div id="split-total-bar" class="hidden text-xs py-1.5 px-3 border rounded flex items-center gap-2">
+                            <i class="fas fa-info-circle"></i>
+                            <span id="split-total-msg"></span>
+                        </div>
+
+                        <!-- Add another payment method -->
+                        <button type="button" id="add-split-row"
+                                class="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 border border-green-400 bg-green-50 hover:bg-green-100 px-3 py-1.5 transition">
+                            <i class="fas fa-plus"></i> Add Another Payment Method
+                        </button>
+
+                        <!-- Description -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                Payment Description
+                            </label>
+                            {{ form.payment_description|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                            <p class="text-xs text-gray-400 mt-1">Enter payment description (optional)</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button type="submit" name="action" value="issue"
+                            id="issue-invoice-btn"
+                            class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 shadow-md transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed">
+                        {% if invoice %}Update & Issue Invoice{% else %}Create & Issue Invoice{% endif %}
+                    </button>
+                    <button type="submit" name="action" value="pending"
+                            class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 shadow-md transition duration-150">
+                        Save as Pending (for amendments)
+                    </button>
+                </div>
+                <div class="text-center">
+                    <label class="inline-flex items-center text-sm text-gray-600 gap-2">
+                        <input type="checkbox" name="skip_pdf_redirect" value="1" class="form-checkbox">
+                        Skip automatic PDF opening (go directly to invoice details)
+                    </label>
+                </div>
+            </div>
+        </form>
+
+        <c-back-link>
+            <c-slot name="url">
+                {% url 'products:inventory_management' %}
+            </c-slot>
+        </c-back-link>
+        </div>{# end main col #}
+
+        {# ── Sidebar (1/4) ── #}
+        <div class="lg:col-span-1 space-y-4 lg:pt-0">
+
+            {# Customer info card #}
+            <div class="bg-white border border-gray-200 shadow-sm">
+                <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+                    <i class="fas fa-user text-green-200"></i>
+                    <h3 class="text-sm font-bold uppercase tracking-wide">Customer Info</h3>
+                </div>
+                <div id="customer-info-panel" class="p-5 text-sm text-gray-500 italic">
+                    Select a customer to see details
+                </div>
+            </div>
+
+            {# Invoice summary card #}
+            <div class="bg-white border border-gray-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Invoice Summary</h3>
+                </div>
+                <div class="p-5 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Items</span>
+                        <span id="inv-summary-items" class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Subtotal</span>
+                        <span id="inv-summary-subtotal" class="font-mono">₹ 0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Discount</span>
+                        <span id="inv-summary-discount" class="font-mono text-red-600">- ₹ 0.00</span>
+                    </div>
+                    <div class="flex justify-between border-t border-gray-100 pt-2">
+                        <span class="font-semibold text-gray-800">Total</span>
+                        <span id="inv-summary-total" class="font-bold text-green-800">₹ 0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            {# Payment summary card — visible only when collect payment is checked #}
+            <div id="inv-payment-summary-card" class="hidden bg-green-50 border border-green-200 shadow-sm">
+                <div class="flex items-center gap-2 px-4 py-3 border-b border-green-200">
+                    <i class="fas fa-money-bill-wave text-green-700"></i>
+                    <h3 class="text-sm font-bold text-green-800 uppercase tracking-wide">Payment</h3>
+                </div>
+                <div class="p-5 space-y-2 text-sm" id="inv-payment-summary-rows">
+                    {# Rows injected by JS #}
+                </div>
+                <div class="px-5 pb-4 flex justify-between text-sm border-t border-green-100 pt-2">
+                    <span class="font-semibold text-gray-800">Paid</span>
+                    <span id="inv-payment-summary-total" class="font-bold text-green-800">₹ 0.00</span>
+                </div>
+            </div>
+
+        </div>{# end sidebar #}
+
+      </div>{# end grid #}
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <!-- Include Select2 JS from CDN -->
+
+    <script>
+        // Shared across both DOMContentLoaded blocks
+        function hasItemSelected() {
+            let found = false;
+            document.querySelectorAll('.item-form').forEach(form => {
+                if (form.style.display === 'none') return;
+                const ps = form.querySelector('.product-select');
+                const pks = form.querySelector('.package-select');
+                const si = form.querySelector('.service-name-input');
+                const oi = form.querySelector('.other-name-input');
+                const di = form.querySelector('.description-input');
+                const pi = form.querySelector('.price-input');
+                // Also allow rows where description or price is filled (covers error re-renders
+                // where other-name-input / service-name-input are not Django fields and lose
+                // their values after POST, but description-input is a real form field that persists)
+                if (
+                    (ps && ps.value) || (pks && pks.value) ||
+                    (si && si.value) || (oi && oi.value) ||
+                    (di && di.value) || (pi && parseFloat(pi.value) > 0)
+                ) {
+                    found = true;
+                }
+            });
+            return found;
+        }
+
+        function syncIssueButton() {
+            const checkbox = document.getElementById('collect-payment-checkbox');
+            const btn = document.getElementById('issue-invoice-btn');
+            if (!btn) return;
+            const itemOk = hasItemSelected();
+            if (!itemOk) { btn.disabled = true; return; }
+            if (checkbox && checkbox.checked) {
+                const method = document.getElementById('id_payment_method');
+                const amount = document.getElementById('id_payment_amount');
+                const methodOk = method && method.value;
+                const amountOk = amount && parseFloat(amount.value) > 0;
+                btn.disabled = !(methodOk && amountOk);
+            } else {
+                btn.disabled = false;
+            }
+        }
+
+        // Payment section toggle — standalone listener so date-picker errors can't abort it
+        document.addEventListener('DOMContentLoaded', function () {
+            const collectPaymentCheckbox = document.getElementById('collect-payment-checkbox');
+            const paymentSection = document.getElementById('payment-section');
+            const totalInput = document.getElementById('id_total');
+            const paymentAmountInput = document.getElementById('id_payment_amount');
+
+            if (!collectPaymentCheckbox || !paymentSection) return;
+
+            function togglePaymentSection() {
+                if (collectPaymentCheckbox.checked) {
+                    paymentSection.classList.remove('hidden');
+                    if (totalInput && paymentAmountInput && !paymentAmountInput.value) {
+                        paymentAmountInput.value = totalInput.value;
+                    }
+                } else {
+                    paymentSection.classList.add('hidden');
+                }
+                syncIssueButton();
+            }
+
+            collectPaymentCheckbox.addEventListener('change', togglePaymentSection);
+
+            const paymentMethodSelect = document.getElementById('id_payment_method');
+            if (paymentMethodSelect) paymentMethodSelect.addEventListener('change', syncIssueButton);
+            if (paymentAmountInput) paymentAmountInput.addEventListener('input', syncIssueButton);
+
+            if (totalInput) {
+                totalInput.addEventListener('change', function () {
+                    if (collectPaymentCheckbox.checked && paymentAmountInput) {
+                        paymentAmountInput.value = this.value;
+                        syncIssueButton();
+                    }
+                });
+            }
+
+            // Initialize on load (handles re-renders after POST errors where checkbox stays checked)
+            togglePaymentSection();
+
+            // Re-check button state when dates change — picker fires 'change' on the input after selection
+            document.querySelectorAll('.nepali-datepicker').forEach(function (el) {
+                el.addEventListener('change', function () {
+                    if (typeof syncIssueButton === 'function') syncIssueButton();
+                });
+            });
+        });
+
+        // ── Split payment rows ──────────────────────────────────────────
+        (function () {
+            const METHOD_CHOICES = [
+                {% for value, label in payment_method_choices %}
+                ['{{ value }}', '{{ label }}'],
+                {% endfor %}
+            ];
+
+            const container  = document.getElementById('split-rows-container');
+            const addBtn     = document.getElementById('add-split-row');
+            const totalBar   = document.getElementById('split-total-bar');
+            const totalMsg   = document.getElementById('split-total-msg');
+            const invoiceTotalInput = document.getElementById('id_total');
+
+            function buildMethodOptions(selected) {
+                return METHOD_CHOICES.map(([v, l]) =>
+                    `<option value="${v}"${v === selected ? ' selected' : ''}>${l}</option>`
+                ).join('');
+            }
+
+            function addRow(methodVal, amountVal) {
+                const row = document.createElement('div');
+                row.className = 'split-row grid grid-cols-1 md:grid-cols-2 gap-3 items-end extra-split-row';
+                row.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Payment Method <span class="text-red-500">*</span></label>
+                        <select name="extra_payment_method"
+                                class="w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="">— Select method —</option>
+                            ${buildMethodOptions(methodVal || '')}
+                        </select>
+                    </div>
+                    <div class="flex gap-2 items-end">
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Amount <span class="text-red-500">*</span></label>
+                            <input type="number" name="extra_payment_amount" step="0.01" min="0.01"
+                                   value="${amountVal || ''}"
+                                   class="split-amount w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <button type="button" class="remove-split-row mb-0.5 text-red-500 hover:text-red-700 border border-red-300 bg-red-50 hover:bg-red-100 px-2 py-2 text-xs transition" title="Remove">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>`;
+                container.appendChild(row);
+                row.querySelector('.remove-split-row').addEventListener('click', function () {
+                    row.remove();
+                    updateSplitTotal();
+                });
+                row.querySelectorAll('.split-amount, select').forEach(el =>
+                    el.addEventListener('input', updateSplitTotal)
+                );
+                updateSplitTotal();
+            }
+
+            function updateSplitTotal() {
+                const invoiceTotal = parseFloat(invoiceTotalInput ? invoiceTotalInput.value : 0) || 0;
+                const allAmounts   = document.querySelectorAll('.split-amount');
+                let sum = 0;
+                allAmounts.forEach(el => { sum += parseFloat(el.value) || 0; });
+
+                if (document.querySelectorAll('.extra-split-row').length === 0) {
+                    totalBar.classList.add('hidden');
+                    return;
+                }
+                totalBar.classList.remove('hidden');
+                const diff = invoiceTotal - sum;
+                if (Math.abs(diff) < 0.01) {
+                    totalBar.className = totalBar.className.replace(/border-\S+|bg-\S+|text-\S+/g, '').trim();
+                    totalBar.classList.add('border-green-400', 'bg-green-50', 'text-green-800');
+                    totalMsg.textContent = `Split total NPR ${sum.toFixed(2)} matches invoice total. ✓`;
+                } else if (sum > invoiceTotal) {
+                    totalBar.className = totalBar.className.replace(/border-\S+|bg-\S+|text-\S+/g, '').trim();
+                    totalBar.classList.add('border-red-400', 'bg-red-50', 'text-red-700');
+                    totalMsg.textContent = `Split total NPR ${sum.toFixed(2)} exceeds invoice total NPR ${invoiceTotal.toFixed(2)}.`;
+                } else {
+                    totalBar.className = totalBar.className.replace(/border-\S+|bg-\S+|text-\S+/g, '').trim();
+                    totalBar.classList.add('border-yellow-400', 'bg-yellow-50', 'text-yellow-800');
+                    totalMsg.textContent = `Split total NPR ${sum.toFixed(2)} — remaining NPR ${diff.toFixed(2)}.`;
+                }
+            }
+
+            if (addBtn) addBtn.addEventListener('click', () => addRow());
+            document.getElementById('id_payment_amount')?.addEventListener('input', updateSplitTotal);
+        })();
+        // ────────────────────────────────────────────────────────────────
+
+        function closeQuickCreateModal() {
+            document.getElementById('quick-create-modal').classList.add('hidden');
+            document.getElementById('quick-create-modal-body').innerHTML = '';
+        }
+
+        // HX-Trigger fires 'customerCreated' on the body when the quick-create POST succeeds.
+        document.body.addEventListener('customerCreated', function (evt) {
+            const data = evt.detail;
+            if (!data || !data.id || !data.name) return;
+
+            const $select = $('select[name="customer"]');
+            if ($select.length) {
+                // Remove duplicate if already present, then append and select via Select2 API
+                if ($select.find('option[value="' + data.id + '"]').length === 0) {
+                    $select.append(new Option(data.name, data.id, false, false));
+                }
+                $select.val(data.id).trigger('change');
+            }
+            closeQuickCreateModal();
+            loadCustomerInfo(data.id);
+        });
+
+        // ── Customer info panel ──────────────────────────────────────────
+        const customerInfoPanel = document.getElementById('customer-info-panel');
+
+        function loadCustomerInfo(customerId) {
+            if (!customerId) {
+                customerInfoPanel.innerHTML = '<span class="italic text-gray-400">Select a customer to see details</span>';
+                return;
+            }
+            fetch(`/customers/api/${customerId}/json/`)
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (!data) { customerInfoPanel.innerHTML = '<span class="text-red-500 text-xs">Could not load customer info.</span>'; return; }
+                    customerInfoPanel.innerHTML = `<div class="space-y-2">
+                        <div class="font-bold text-gray-800 text-base">${data.name}</div>
+                        ${data.email    ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-envelope w-4 text-gray-400"></i>${data.email}</div>` : ''}
+                        ${data.phone    ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-phone w-4 text-gray-400"></i>${data.phone}</div>` : ''}
+                        ${data.pan_number ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-id-card w-4 text-gray-400"></i>PAN: ${data.pan_number}</div>` : ''}
+                        ${data.address  ? `<div class="flex gap-2 text-gray-500 text-xs"><i class="fas fa-map-marker-alt w-4 text-gray-400"></i>${data.address}</div>` : ''}
+                    </div>`;
+                })
+                .catch(() => { customerInfoPanel.innerHTML = '<span class="text-red-500 text-xs">Error loading customer.</span>'; });
+        }
+
+        // Load on native change and Select2 change
+        document.getElementById('id_customer')?.addEventListener('change', function () { loadCustomerInfo(this.value); });
+        $(document).on('select2:select select2:unselect', '[name="customer"]', function () { loadCustomerInfo(this.value); });
+
+        // Load on page load if customer already selected (edit mode)
+        const preselectedCustomer = document.getElementById('id_customer')?.value;
+        if (preselectedCustomer) loadCustomerInfo(preselectedCustomer);
+
+        // ── Payment summary sidebar card ─────────────────────────────────
+        const paymentSummaryCard = document.getElementById('inv-payment-summary-card');
+        const paymentSummaryRows = document.getElementById('inv-payment-summary-rows');
+        const paymentSummaryTotal = document.getElementById('inv-payment-summary-total');
+        const collectCb = document.getElementById('collect-payment-checkbox');
+
+        function updatePaymentSummary() {
+            if (!collectCb?.checked) {
+                paymentSummaryCard?.classList.add('hidden');
+                return;
+            }
+            paymentSummaryCard?.classList.remove('hidden');
+
+            const rows = [];
+            // Primary row
+            const methodEl = document.getElementById('id_payment_method');
+            const amountEl = document.getElementById('id_payment_amount');
+            const method = methodEl?.options[methodEl.selectedIndex]?.text || '';
+            const amount = parseFloat(amountEl?.value) || 0;
+            if (method && method !== 'Select Payment Method' && amount > 0) {
+                rows.push({ method, amount });
+            }
+            // Extra split rows
+            document.querySelectorAll('.extra-split-row').forEach(row => {
+                const sel = row.querySelector('select[name="extra_payment_method"]');
+                const inp = row.querySelector('input[name="extra_payment_amount"]');
+                const m = sel?.options[sel.selectedIndex]?.text || '';
+                const a = parseFloat(inp?.value) || 0;
+                if (m && m !== '— Select method —' && a > 0) rows.push({ method: m, amount: a });
+            });
+
+            if (!paymentSummaryRows) return;
+            paymentSummaryRows.innerHTML = rows.length
+                ? rows.map(r => `
+                    <div class="flex justify-between items-center">
+                        <span class="flex items-center gap-1.5 text-gray-600">
+                            <i class="fas fa-circle text-green-500" style="font-size:6px"></i>${r.method}
+                        </span>
+                        <span class="font-mono text-gray-800">₹ ${r.amount.toFixed(2)}</span>
+                    </div>`).join('')
+                : '<span class="text-gray-400 italic text-xs">No payment details entered yet</span>';
+
+            const total = rows.reduce((s, r) => s + r.amount, 0);
+            if (paymentSummaryTotal) paymentSummaryTotal.textContent = '₹ ' + total.toFixed(2);
+        }
+
+        // Listen to all relevant changes
+        collectCb?.addEventListener('change', updatePaymentSummary);
+        document.getElementById('id_payment_method')?.addEventListener('change', updatePaymentSummary);
+        document.getElementById('id_payment_amount')?.addEventListener('input', updatePaymentSummary);
+        // Delegated listener for dynamic split rows
+        document.addEventListener('change', function (e) {
+            if (e.target.name === 'extra_payment_method') updatePaymentSummary();
+        });
+        document.addEventListener('input', function (e) {
+            if (e.target.name === 'extra_payment_amount') updatePaymentSummary();
+        });
+        // Also re-check when split rows are added/removed
+        document.getElementById('add-split-row')?.addEventListener('click', () => setTimeout(updatePaymentSummary, 50));
+        updatePaymentSummary();
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            let discountAmountUserEditing = false;
+            const container = document.getElementById('items-container');
+            const addButton = document.getElementById('add-item');
+            const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+            let formCount = parseInt(totalForms.value);
+            const emptyForm = container.querySelector('.item-form').cloneNode(true);
+            const submitButtons = document.querySelectorAll('button[type="submit"]');
+
+            // Disable add button initially
+            addButton.disabled = true;
+            submitButtons.forEach(b => b.disabled = true);
+
+            // Initialize Select2 on product and package selects
+            function initSelect2OnProductSelects() {
+                document.querySelectorAll('.product-select, .package-select').forEach(select => {
+                    if (select.classList.contains('select2-hidden-accessible')) {
+                        $(select).select2('destroy');
+                    }
+                    $(select).select2({
+                        width: '100%',
+                        placeholder: select.classList.contains('package-select') ? 'Search package…' : 'Search by name or SKU…',
+                        allowClear: true,
+                        dropdownParent: $('body'),
+                    });
+                });
+            }
+
+            // Initialize calculations
+            updateCalculations();
+
+            // Initialize Select2 on the customer dropdown
+            const $customerSelect = $('select[name="customer"]');
+            if ($customerSelect.length && !$customerSelect.hasClass('select2-hidden-accessible')) {
+                $customerSelect.select2({
+                    width: '100%',
+                    placeholder: 'Walk-in (Cash)',
+                    allowClear: true,
+                    dropdownParent: $customerSelect.parent(),
+                });
+            }
+
+            // Function to check if any item has a selected value
+            function checkAddButtonState() {
+                let hasSelectedItem = false;
+                document.querySelectorAll('.item-form').forEach(form => {
+                    if (form.style.display !== 'none') {
+                        const productSelect = form.querySelector('.product-select');
+                        const packageSelect = form.querySelector('.package-select');
+                        const serviceInput = form.querySelector('.service-name-input');
+                        const otherInput = form.querySelector('.other-name-input');
+                        if (
+                            (productSelect && productSelect.value) ||
+                            (packageSelect && packageSelect.value) ||
+                            (serviceInput && serviceInput.value) ||
+                            (otherInput && otherInput.value)
+                        ) {
+                            hasSelectedItem = true;
+                        }
+                    }
+                });
+                addButton.disabled = !hasSelectedItem;
+                // The issue button is further gated by syncIssueButton (payment validation)
+                // so only set non-issue submit buttons directly
+                submitButtons.forEach(b => {
+                    if (b.id !== 'issue-invoice-btn') b.disabled = !hasSelectedItem;
+                });
+                syncIssueButton();
+            }
+
+            // Map item type → which field div to show
+            const TYPE_FIELD_MAP = {
+                product: '.product-field',
+                service: '.service-field',
+                package: '.package-field',
+                other:   '.other-field',
+            };
+
+            function applyTypeVisibility(row, type, clearValues) {
+                // Keep both the hidden select and the data attribute in sync
+                const itemTypeInput = row.querySelector('.item-type-input');
+                if (itemTypeInput) itemTypeInput.value = type;
+                row.dataset.itemType = type;
+
+                // Toggle button styles
+                row.querySelectorAll('.item-type-btn').forEach(b => {
+                    b.classList.remove('bg-green-600', 'text-white', 'active');
+                    b.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                const activeBtn = row.querySelector(`.item-type-btn[data-type="${type}"]`);
+                if (activeBtn) {
+                    activeBtn.classList.remove('bg-gray-200', 'text-gray-700');
+                    activeBtn.classList.add('bg-green-600', 'text-white', 'active');
+                }
+
+                // Hide all type fields, show the selected one
+                Object.values(TYPE_FIELD_MAP).forEach(sel => {
+                    const el = row.querySelector(sel);
+                    if (el) el.classList.add('hidden');
+                });
+                const activeField = row.querySelector(TYPE_FIELD_MAP[type]);
+                if (activeField) activeField.classList.remove('hidden');
+
+                if (clearValues) {
+                    const priceInput = row.querySelector('.price-input');
+                    if (priceInput && priceInput.value) {
+                        priceInput.value = '';
+                        updateItemTotal(row);
+                        updateCalculations();
+                    }
+                    // Clear inactive selects
+                    if (type !== 'product') { const s = row.querySelector('.product-select'); if (s) s.value = ''; }
+                    if (type !== 'package') { const s = row.querySelector('.package-select'); if (s) s.value = ''; }
+                }
+            }
+
+            function handleTypeToggle(btn) {
+                const row = btn.closest('.item-form');
+                const type = btn.dataset.type;
+                applyTypeVisibility(row, type, true);
+                checkAddButtonState();
+            }
+
+            function initRowToggle(row) {
+                // data-item-type is set server-side from the bound form value.
+                // Empty string means a fresh new row — fall back to first button's type.
+                const savedType = row.dataset.itemType || '';
+                const firstBtn = row.querySelector('.item-type-btn');
+                const type = savedType || (firstBtn ? firstBtn.dataset.type : 'product');
+
+                // Apply visibility without clearing existing values
+                applyTypeVisibility(row, type, false);
+
+                // For service/other types, pre-fill the free-text input from description
+                if (type === 'service' || type === 'other') {
+                    const descInput = row.querySelector('.description-input');
+                    const freeInput = row.querySelector(`.${type}-name-input`);
+                    if (freeInput && descInput && descInput.value && !freeInput.value) {
+                        freeInput.value = descInput.value;
+                    }
+                }
+
+                row.querySelectorAll('.item-type-btn').forEach(btn => {
+                    btn.addEventListener('click', function () { handleTypeToggle(this); });
+                });
+
+                updateItemTotal(row);
+            }
+
+            // Initialize toggle buttons for all existing rows (must run before Select2
+            // so the product-field div is visible when Select2 measures width)
+            document.querySelectorAll('.item-form').forEach(row => initRowToggle(row));
+            initSelect2OnProductSelects();
+
+            // Add new item row via HTMX
+            addButton.addEventListener('click', function () {
+                // Update the hx-get URL with the current form index
+                const newIndex = formCount;
+                const baseUrl = this.getAttribute('hx-get').split('?')[0];
+                this.setAttribute('hx-get', `${baseUrl}?index=${newIndex}`);
+                // Let HTMX handle the request
+                htmx.trigger(this, 'click');
+            });
+
+            // Initialize new row after HTMX swap
+            document.addEventListener('htmx:afterSwap', function (event) {
+                if (event.target.id === 'items-container' || event.target.closest('#items-container')) {
+                    const newForm = container.lastElementChild;
+                    if (newForm && newForm.classList.contains('item-form')) {
+                        formCount++;
+                        totalForms.value = formCount;
+
+                        // Initialize toggle buttons first so product-field is visible,
+                        // then init Select2 so width computes correctly
+                        initRowToggle(newForm);
+                        initSelect2OnProductSelects();
+
+                        // Add event listeners to new fields
+                        addItemEventListeners(newForm);
+
+                        // Disable add button until this new item has a selection
+                        addButton.disabled = true;
+                        submitButtons.forEach(b => b.disabled = true);
+                    }
+                }
+            });
+
+            // Remove item row
+            container.addEventListener('click', function (e) {
+                if (e.target.closest('.remove-item')) {
+                    const formRow = e.target.closest('.item-form');
+                    const idInput = formRow.querySelector('[name$="-id"]');
+                    const deleteInput = formRow.querySelector('[name$="-DELETE"]');
+
+                    if (idInput && idInput.value) {
+                        // Existing item - mark for deletion
+                        if (deleteInput) deleteInput.checked = true;
+                        formRow.style.display = 'none';
+                    } else {
+                        // New item - remove completely
+                        formRow.remove();
+                        formCount--;
+                        totalForms.value = formCount;
+                    }
+                    updateCalculations();
+                    checkAddButtonState();
+                }
+            });
+
+            // Add event listeners to all existing item forms
+            function addItemEventListeners(form) {
+                const productSelect = form.querySelector('.product-select');
+                const packageSelect = form.querySelector('.package-select');
+                const serviceNameInput = form.querySelector('.service-name-input');
+                const otherNameInput = form.querySelector('.other-name-input');
+                const quantityInput = form.querySelector('.quantity-input');
+                const priceInput = form.querySelector('.price-input');
+                const descriptionInput = form.querySelector('.description-input');
+                const hscodeInput = form.querySelector('.hscode-input');
+                const discountPercentInput = form.querySelector('.item-discount-percent');
+                const discountAmountInput = form.querySelector('.item-discount-amount');
+                // Service / Other free-text inputs
+                if (serviceNameInput) {
+                    serviceNameInput.addEventListener('input', function () {
+                        if (descriptionInput) descriptionInput.value = this.value;
+                        checkAddButtonState();
+                    });
+                }
+                if (otherNameInput) {
+                    otherNameInput.addEventListener('input', function () {
+                        if (descriptionInput) descriptionInput.value = this.value;
+                        checkAddButtonState();
+                    });
+                }
+
+                // Product/package selection
+                // Must use jQuery .on('change') — Select2 fires change via jQuery's
+                // event system; native addEventListener never receives it.
+                // Use trigger('change.select2') to update the Select2 widget UI only,
+                // without re-firing our business-logic handler.
+                if (productSelect) {
+                    $(productSelect).on('change', function () {
+                        if (this.value) {
+                            $(packageSelect).val(null).trigger('change.select2');
+                            fetchProductPrice(this.value, priceInput, hscodeInput);
+                        } else {
+                            priceInput.value = '';
+                            hscodeInput.value = '';
+                            updateItemTotal(form);
+                            updateCalculations();
+                        }
+                        checkAddButtonState();
+                    });
+                }
+
+                if (packageSelect) {
+                    $(packageSelect).on('change', function () {
+                        if (this.value) {
+                            $(productSelect).val(null).trigger('change.select2');
+                            fetchPackagePrice(this.value, priceInput, descriptionInput);
+                        } else {
+                            priceInput.value = '';
+                            updateItemTotal(form);
+                            updateCalculations();
+                        }
+                        checkAddButtonState();
+                    });
+                }
+
+                // Quantity/price changes
+                if (quantityInput) {
+                    quantityInput.addEventListener('input', function () {
+                        updateItemTotal(form);
+                        updateCalculations();
+                    });
+                }
+
+                if (priceInput) {
+                    priceInput.addEventListener('input', function () {
+                        updateItemTotal(form);
+                        updateCalculations();
+                    });
+                }
+
+                // Item discount changes
+                if (discountPercentInput) {
+                    discountPercentInput.addEventListener('input', function () {
+                        // Calculate discount amount from percent
+                        const qty = parseFloat(form.querySelector('.quantity-input').value) || 0;
+                        const price = parseFloat(form.querySelector('.price-input').value) || 0;
+                        const discPercent = parseFloat(this.value) || 0;
+                        const baseTotal = qty * price;
+                        const discAmount = baseTotal * discPercent / 100;
+                        discountAmountInput.value = discAmount.toFixed(2);
+                        updateItemTotal(form);
+                        updateCalculations();
+                    });
+                }
+
+                if (discountAmountInput) {
+                    discountAmountInput.addEventListener('input', function () {
+                        // Calculate discount percent from amount
+                        const qty = parseFloat(form.querySelector('.quantity-input').value) || 0;
+                        const price = parseFloat(form.querySelector('.price-input').value) || 0;
+                        const discAmount = parseFloat(this.value) || 0;
+                        const baseTotal = qty * price;
+                        if (baseTotal > 0) {
+                            const discPercent = (discAmount / baseTotal * 100);
+                            discountPercentInput.value = discPercent.toFixed(2);
+                        } else {
+                            discountPercentInput.value = '';
+                        }
+                        updateItemTotal(form);
+                        updateCalculations();
+                    });
+                }
+            }
+
+            // Initialize event listeners for existing items
+            document.querySelectorAll('.item-form').forEach(form => {
+                addItemEventListeners(form);
+                updateItemTotal(form);
+            });
+
+            // Check initial state
+            checkAddButtonState();
+
+            // Discount % → clamp to 100, recalc
+            document.querySelector('.discount-percent')?.addEventListener('input', function() {
+                let v = parseFloat(this.value);
+                if (!isNaN(v) && v > 100) { this.value = 100; }
+                discountAmountUserEditing = false;
+                updateCalculations();
+            });
+            // Discount ₹ → back-calculate %, clamp to subtotal
+            document.querySelector('.discount-amount-input')?.addEventListener('input', function() {
+                discountAmountUserEditing = true;
+                const subtotal = parseFloat(document.getElementById('id_subtotal')?.value) || 0;
+                let amt = parseFloat(this.value) || 0;
+                if (subtotal > 0 && amt > subtotal) { amt = subtotal; this.value = subtotal.toFixed(2); }
+                const pctInput = document.querySelector('.discount-percent');
+                if (pctInput) pctInput.value = subtotal > 0 ? Math.min(100, (amt / subtotal * 100)).toFixed(2) : '0';
+                updateCalculations();
+            });
+            document.querySelector('.discount-amount-input')?.addEventListener('blur', function() {
+                discountAmountUserEditing = false;
+            });
+            document.querySelector('.tax-percent')?.addEventListener('input', updateCalculations);
+
+            // Fetch product price and hscode from server
+            function fetchProductPrice(productId, priceInput, hscodeInput) {
+                fetch(`/api/products/${productId}/price/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) return;
+                        // Always set price (even 0) so the field isn't left stale
+                        priceInput.value = data.price || '0';
+                        hscodeInput.value = data.hscode || '';
+
+                        // Show stock badge next to price input
+                        const row = priceInput.closest('.item-form');
+                        let badge = row.querySelector('.stock-badge');
+                        if (!badge) {
+                            badge = document.createElement('span');
+                            badge.className = 'stock-badge text-xs text-gray-500 ml-1';
+                            priceInput.parentNode.appendChild(badge);
+                        }
+                        badge.textContent = data.stock !== undefined ? `Stock: ${data.stock}` : '';
+
+                        updateItemTotal(row);
+                        updateCalculations();
+                    })
+                    .catch(error => console.error('Error fetching product details:', error));
+            }
+
+            // Fetch package price from server
+            function fetchPackagePrice(packageId, priceInput, descriptionInput) {
+                fetch(`/api/packages/${packageId}/detail/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.price) {
+                            priceInput.value = data.price;
+                            updateItemTotal(priceInput.closest('.item-form'));
+                            updateCalculations();
+                        }
+                        if (data.products) {
+                            descriptionInput.value = data.products;
+                        }
+                    })
+                    .catch(error => console.error('Error fetching package price:', error));
+            }
+
+            // Update individual item total (with item-level discount)
+            function updateItemTotal(form) {
+                const quantity = parseFloat(form.querySelector('.quantity-input').value) || 0;
+                const price = parseFloat(form.querySelector('.price-input').value) || 0;
+                const discountPercent = parseFloat(form.querySelector('.item-discount-percent').value) || 0;
+                const discountAmount = parseFloat(form.querySelector('.item-discount-amount').value) || 0;
+                const baseTotal = quantity * price;
+                let itemDiscount = 0;
+                if (discountAmount > 0) {
+                    itemDiscount = discountAmount;
+                } else if (discountPercent > 0) {
+                    itemDiscount = baseTotal * discountPercent / 100;
+                }
+                const total = Math.max(0, baseTotal - itemDiscount);
+                form.querySelector('.item-total').value = total.toFixed(2);
+            }
+
+            // Update all calculations (subtotal, discounts, taxes, total)
+            function updateCalculations() {
+                // Calculate subtotal from all items (sum of item totals after item-level discount)
+                let grossAmount = 0;  // Sum of qty*price before item discounts
+                let totalItemDiscount = 0;  // Sum of all item-level discounts
+                document.querySelectorAll('.item-form').forEach(form => {
+                    if (form.style.display !== 'none') {
+                        const quantity = parseFloat(form.querySelector('.quantity-input').value) || 0;
+                        const price = parseFloat(form.querySelector('.price-input').value) || 0;
+                        const discountPercent = parseFloat(form.querySelector('.item-discount-percent').value) || 0;
+                        const discountAmount = parseFloat(form.querySelector('.item-discount-amount').value) || 0;
+                        const baseTotal = quantity * price;
+                        grossAmount += baseTotal;
+                        let itemDiscount = 0;
+                        if (discountAmount > 0) {
+                            itemDiscount = discountAmount;
+                        } else if (discountPercent > 0) {
+                            itemDiscount = baseTotal * discountPercent / 100;
+                        }
+                        totalItemDiscount += itemDiscount;
+                    }
+                });
+
+                const subtotal = grossAmount - totalItemDiscount;
+                document.getElementById('id_subtotal').value = subtotal.toFixed(2);
+
+                // Global discount: when user is typing ₹ directly, use that value and don't overwrite
+                const globalDiscountPercent = parseFloat(document.querySelector('.discount-percent').value) || 0;
+                let globalDiscountAmount;
+                if (discountAmountUserEditing) {
+                    globalDiscountAmount = Math.min(parseFloat(document.querySelector('.discount-amount-input')?.value) || 0, subtotal);
+                } else {
+                    globalDiscountAmount = subtotal * Math.min(globalDiscountPercent, 100) / 100;
+                    document.getElementById('id_discount_amount').value = (totalItemDiscount + globalDiscountAmount).toFixed(2);
+                }
+
+                // Calculate taxable amount (after all discounts)
+                const taxableAmount = subtotal - globalDiscountAmount;
+
+                // Calculate tax amount
+                const vatRegistered = {{ vat_registered|yesno:"true,false" }};
+                const taxPercent = vatRegistered ? (parseFloat(document.querySelector('.tax-percent')?.value) || 0) : 0;
+                const taxAmount = taxableAmount * taxPercent / 100;
+                document.getElementById('id_tax_amount').value = taxAmount.toFixed(2);
+
+                // Calculate total
+                const total = taxableAmount + taxAmount;
+                document.getElementById('id_total').value = total.toFixed(2);
+
+                // ── Sidebar summary ──────────────────────────────────────
+                const itemCount = document.querySelectorAll('.item-form:not([style*="display: none"])').length;
+                const discountVal = parseFloat(document.getElementById('id_discount_amount')?.value || '0') || 0;
+                document.getElementById('inv-summary-items')?.textContent !== undefined &&
+                    (document.getElementById('inv-summary-items').textContent = itemCount);
+                document.getElementById('inv-summary-subtotal') &&
+                    (document.getElementById('inv-summary-subtotal').textContent = '₹ ' + subtotal.toFixed(2));
+                document.getElementById('inv-summary-discount') &&
+                    (document.getElementById('inv-summary-discount').textContent = '- ₹ ' + discountVal.toFixed(2));
+                document.getElementById('inv-summary-total') &&
+                    (document.getElementById('inv-summary-total').textContent = '₹ ' + total.toFixed(2));
+                // ─────────────────────────────────────────────────────────
+
+                // Keep payment amount in sync if "Collect Payment" is checked
+                const cpCheckbox = document.getElementById('collect-payment-checkbox');
+                const cpAmount = document.getElementById('id_payment_amount');
+                if (cpCheckbox && cpCheckbox.checked && cpAmount) {
+                    cpAmount.value = total.toFixed(2);
+                    syncIssueButton();
+                }
+            }
+        });
+    </script>
+    <style>
+        /* Constrain Select2 rendered text in item column — prevents long product names pushing columns off screen */
+        .item-form td[style*="width:190px"] .select2-container,
+        .item-form td[style*="width:190px"] .select2-selection {
+            max-width: 186px !important;
+        }
+        .item-form .select2-selection__rendered {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            max-width: 160px;
+        }
+        /* Fix table layout so columns respect fixed widths */
+        #items-container { table-layout: fixed; }
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.3;
+
+        }
+
+        .product-select, .package-select {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Item row Select2 must match py-1 inputs (not the global py-2 ERP default) */
+        .item-form .select2-container--default .select2-selection--single {
+            padding: 3px 8px;
+        }
+        .item-form .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 26px;
+        }
+
+        input[type="checkbox"][name$="-DELETE"] {
+            display: none;
+        }
+
+        .item-form {
+            transition: opacity 0.3s ease;
+        }
+
+        .item-form input:disabled,
+        .item-form select:disabled {
+            background-color: #f9fafb;
+            cursor: not-allowed;
+        }
+    </style>
+{% endblock %}

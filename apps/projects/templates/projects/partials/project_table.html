@@ -1,0 +1,99 @@
+{% load humanize %}
+<div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-green-700 text-white text-xs uppercase">
+      <tr>
+        <th class="px-4 py-3 text-left">Project</th>
+        <th class="px-4 py-3 text-left">Client</th>
+        <th class="px-4 py-3 text-center">Status</th>
+        <th class="px-4 py-3 text-center">Priority</th>
+        <th class="px-4 py-3 text-right">Budget</th>
+        <th class="px-4 py-3 text-right">Spent</th>
+        <th class="px-4 py-3 text-right">Revenue</th>
+        <th class="px-4 py-3 text-center">Progress</th>
+        <th class="px-4 py-3 text-center">Utilisation</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for project in projects %}
+      <tr class="border-t border-gray-100 hover:bg-green-50 transition-colors">
+        <td class="px-4 py-3">
+          <a href="{% url 'projects:project_detail' project.pk %}" class="font-semibold text-green-700 hover:underline">
+            {% if project.code %}[{{ project.code }}] {% endif %}{{ project.name }}
+          </a>
+          {% if project.cost_centre %}<p class="text-xs text-gray-400">{{ project.cost_centre.name }}</p>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-gray-600 text-xs">{{ project.client_name|default:"—" }}</td>
+        <td class="px-4 py-3 text-center">
+          <span class="px-2 py-0.5 text-xs font-semibold rounded
+            {% if project.status == 'ACTIVE' %}bg-green-100 text-green-800
+            {% elif project.status == 'COMPLETED' %}bg-blue-100 text-blue-800
+            {% elif project.status == 'ON_HOLD' %}bg-amber-100 text-amber-800
+            {% elif project.status == 'CANCELLED' %}bg-red-100 text-red-800
+            {% else %}bg-gray-100 text-gray-600{% endif %}">
+            {{ project.get_status_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-center">
+          <span class="px-2 py-0.5 text-xs rounded
+            {% if project.priority == 'URGENT' %}bg-red-100 text-red-700
+            {% elif project.priority == 'HIGH' %}bg-orange-100 text-orange-700
+            {% elif project.priority == 'MEDIUM' %}bg-yellow-100 text-yellow-700
+            {% else %}bg-gray-100 text-gray-500{% endif %}">
+            {{ project.get_priority_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-right font-mono text-xs">{{ project.budget_amount|floatformat:0|intcomma }}</td>
+        <td class="px-4 py-3 text-right font-mono text-xs {% if project.is_over_budget %}text-red-600 font-bold{% endif %}">
+          {{ project.total_expenses|floatformat:0|intcomma }}
+        </td>
+        <td class="px-4 py-3 text-right font-mono text-xs text-green-700">{{ project.total_revenue|floatformat:0|intcomma }}</td>
+        <td class="px-4 py-3 text-center">
+          <div class="flex items-center gap-1 justify-center">
+            <div class="w-12 bg-gray-200 h-1.5 rounded">
+              <div class="h-1.5 rounded bg-blue-500" style="width:{{ project.completion_pct }}%"></div>
+            </div>
+            <span class="text-xs text-gray-500">{{ project.completion_pct }}%</span>
+          </div>
+        </td>
+        <td class="px-4 py-3 text-center">
+          {% if project.budget_utilisation_pct is not None %}
+          <span class="text-xs {% if project.budget_utilisation_pct > 100 %}text-red-600 font-bold{% elif project.budget_utilisation_pct > 80 %}text-amber-600{% else %}text-green-700{% endif %}">
+            {{ project.budget_utilisation_pct }}%
+          </span>
+          {% else %}—{% endif %}
+        </td>
+        <td class="px-4 py-3 text-center">
+          <a href="{% url 'projects:project_detail' project.pk %}" class="text-green-700 hover:text-green-900 text-xs font-medium">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="10" class="px-4 py-12 text-center text-gray-400">
+          <i class="fas fa-project-diagram text-3xl mb-2 block"></i>
+          No projects found. <a href="{% url 'projects:project_create' %}" class="text-green-600 hover:underline">Create your first project</a>.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-between px-1">
+  <p class="text-sm text-gray-500">{{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</p>
+  <nav class="flex items-center gap-1">
+    {% if page_obj.has_previous %}
+    <a hx-get="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status }}"
+       hx-target="#project-list-container" hx-swap="innerHTML" hx-push-url="true"
+       class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">‹ Prev</a>
+    {% endif %}
+    <span class="px-3 py-1 text-sm bg-green-700 text-white font-bold">{{ page_obj.number }}</span>
+    {% if page_obj.has_next %}
+    <a hx-get="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status }}"
+       hx-target="#project-list-container" hx-swap="innerHTML" hx-push-url="true"
+       class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">Next ›</a>
+    {% endif %}
+  </nav>
+</div>
+{% endif %}

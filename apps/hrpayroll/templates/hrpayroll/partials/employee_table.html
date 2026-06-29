@@ -1,0 +1,101 @@
+{% load humanize %}
+{# HTMX partial — swapped into #employee-list-container #}
+
+<div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+        <thead class="bg-green-600 text-white text-xs uppercase">
+            <tr>
+                <th class="px-4 py-3 text-left border border-green-700">#</th>
+                <th class="px-4 py-3 text-left border border-green-700">Name</th>
+                <th class="px-4 py-3 text-left border border-green-700">Department</th>
+                <th class="px-4 py-3 text-left border border-green-700">Position</th>
+                <th class="px-4 py-3 text-left border border-green-700">Email</th>
+                <th class="px-4 py-3 text-left border border-green-700">Hire Date</th>
+                <th class="px-4 py-3 text-center border border-green-700">Status</th>
+                <th class="px-4 py-3 text-center border border-green-700">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for emp in employees %}
+            <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50 transition-colors">
+                <td class="px-4 py-2 border border-gray-200 text-gray-500 text-xs">
+                    {{ forloop.counter0|add:page_obj.start_index }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 font-semibold text-gray-800">
+                    <a href="{% url 'hrpayroll:employee_detail' emp.pk %}" class="hover:text-green-700 transition">
+                        {{ emp.first_name }} {{ emp.last_name }}
+                    </a>
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-600">
+                    {{ emp.department.name|default:"—" }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-600">
+                    {{ emp.position|default:"—" }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-600 text-xs">
+                    {{ emp.email }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-gray-500 text-xs whitespace-nowrap">
+                    {{ emp.hire_date|date:"Y-m-d" }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-center">
+                    {% if emp.is_active %}
+                        <span class="px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-800">Active</span>
+                    {% else %}
+                        <span class="px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 text-center">
+                    <div class="flex items-center justify-center gap-3">
+                        <a href="{% url 'hrpayroll:employee_detail' emp.pk %}"
+                           class="text-blue-600 hover:text-blue-800 transition" title="View Profile">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'hrpayroll:employee_update' emp.pk %}"
+                           class="text-amber-600 hover:text-amber-800 transition" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button type="button"
+                                hx-post="{% url 'hrpayroll:employee_delete' emp.pk %}"
+                                hx-target="closest tr"
+                                hx-swap="outerHTML swap:300ms"
+                                hx-confirm="Delete {{ emp.first_name }} {{ emp.last_name }}? This cannot be undone."
+                                class="text-red-500 hover:text-red-700 transition" title="Delete">
+                            <i class="fas fa-trash-alt htmx-hide-on-request"></i>
+                            <i class="fas fa-spinner fa-spin text-xs" style="display:none" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="px-4 py-12 text-center text-gray-400">
+                    <i class="fas fa-user-tie text-3xl mb-2 block"></i>
+                    {% if q %}No employees match "{{ q }}".{% else %}No employees found.{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-between px-1">
+    <p class="text-sm text-gray-500">
+        {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+    </p>
+    <nav class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+            <a hx-get="?page={{ page_obj.previous_page_number }}&q={{ q }}&department={{ department }}&is_active={{ is_active }}"
+               hx-target="#employee-list-container" hx-swap="innerHTML" hx-push-url="true"
+               class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">‹ Prev</a>
+        {% endif %}
+        <span class="px-3 py-1 text-sm bg-green-600 text-white font-bold">{{ page_obj.number }}</span>
+        {% if page_obj.has_next %}
+            <a hx-get="?page={{ page_obj.next_page_number }}&q={{ q }}&department={{ department }}&is_active={{ is_active }}"
+               hx-target="#employee-list-container" hx-swap="innerHTML" hx-push-url="true"
+               class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 cursor-pointer">Next ›</a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}

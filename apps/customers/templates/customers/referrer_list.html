@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}Referrers{% endblock %}
+{% block content %}
+<div class="p-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Referrers</h1>
+      <p class="text-sm text-gray-500 mt-0.5">People who refer customers via POS sales</p>
+    </div>
+  </div>
+
+  {# Add form #}
+  <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
+    <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Add Referrer</h2>
+    <form method="post" action="{% url 'customers:referrer_create' %}" class="flex flex-wrap gap-3 items-end">
+      {% csrf_token %}
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Name <span class="text-red-500">*</span></label>
+        <input type="text" name="name" required placeholder="Full name"
+               class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-green-500">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Phone</label>
+        <input type="text" name="phone" placeholder="+977..."
+               class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-44 focus:outline-none focus:ring-2 focus:ring-green-500">
+      </div>
+      <button type="submit"
+              class="px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg">
+        <i class="fas fa-plus mr-1"></i> Add
+      </button>
+    </form>
+  </div>
+
+  {# List #}
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-medium text-gray-600 w-10">#</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
+          <th class="text-center px-4 py-3 font-medium text-gray-600 w-28">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for referrer in referrers %}
+        {# View row #}
+        <tr id="row-{{ referrer.pk }}" class="border-b border-gray-100 hover:bg-gray-50">
+          <td class="px-4 py-3 text-gray-400 text-xs">{{ forloop.counter }}</td>
+          <td class="px-4 py-3 font-medium text-gray-800">{{ referrer.name }}</td>
+          <td class="px-4 py-3 text-gray-500">{{ referrer.phone|default:"—" }}</td>
+          <td class="px-4 py-3 text-center">
+            <div class="flex items-center justify-center gap-3">
+              <button type="button"
+                      onclick="toggleEdit('{{ referrer.pk }}')"
+                      class="text-amber-500 hover:text-amber-700 transition" title="Edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <form method="post" action="{% url 'customers:referrer_delete' referrer.pk %}"
+                    onsubmit="return confirm('Delete {{ referrer.name }}?')" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="text-red-500 hover:text-red-700 transition" title="Delete">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {# Inline edit row — hidden by default #}
+        <tr id="edit-{{ referrer.pk }}" class="hidden border-b border-indigo-100 bg-indigo-50">
+          <td class="px-4 py-3 text-gray-400 text-xs"></td>
+          <td colspan="3" class="px-4 py-3">
+            <form method="post" action="{% url 'customers:referrer_update' referrer.pk %}"
+                  class="flex flex-wrap gap-3 items-end">
+              {% csrf_token %}
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Name <span class="text-red-500">*</span></label>
+                <input type="text" name="name" value="{{ referrer.name }}" required
+                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-52 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Phone</label>
+                <input type="text" name="phone" value="{{ referrer.phone }}"
+                       class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              </div>
+              <div class="flex gap-2">
+                <button type="submit"
+                        class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg">
+                  <i class="fas fa-save mr-1"></i> Save
+                </button>
+                <button type="button" onclick="toggleEdit('{{ referrer.pk }}')"
+                        class="px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-100">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="px-4 py-10 text-center text-gray-400">No referrers yet. Add one above.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+function toggleEdit(pk) {
+  const viewRow = document.getElementById('row-' + pk);
+  const editRow = document.getElementById('edit-' + pk);
+  viewRow.classList.toggle('hidden');
+  editRow.classList.toggle('hidden');
+}
+</script>
+{% endblock %}

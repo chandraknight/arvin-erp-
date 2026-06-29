@@ -1,0 +1,63 @@
+{% extends "ecom/storefront/base.html" %}
+{% load static %}
+
+{% block page_title %}Blog{% endblock %}
+{% block nav_active_blog %}class="active"{% endblock %}
+
+{% block content %}
+
+<section class="mb-60">
+  <div class="container">
+    <h2 class="mb-40 color-brand-3">Latest Articles</h2>
+    <div class="row">
+      {% for post in posts %}
+      <div class="col-lg-4 col-md-6 mb-40">
+        <div class="card-blog-grid hover-up">
+          {% if post.cover_image %}
+          <div class="card-image mb-20" style="overflow:hidden;border-radius:8px;height:200px;">
+            <a href="{% url 'ecom:blog_detail' post.slug %}">
+              <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
+            </a>
+          </div>
+          {% endif %}
+          <div class="card-info">
+            <span class="font-xs color-gray-500">{{ post.published_at|date:"M d, Y" }}{% if post.author_name %} · {{ post.author_name }}{% endif %}</span>
+            <h5 class="mt-10 mb-10"><a class="color-brand-3" href="{% url 'ecom:blog_detail' post.slug %}">{{ post.title }}</a></h5>
+            {% if post.excerpt %}
+            <p class="font-sm color-gray-500" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">{{ post.excerpt }}</p>
+            {% endif %}
+            <div class="mt-15">
+              <a class="btn btn-sm btn-cart" href="{% url 'ecom:blog_detail' post.slug %}">Read More →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center" style="padding:60px 0;">
+        <h4 class="color-gray-500">No articles yet. Check back soon!</h4>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+    <div class="pagination-area mt-20">
+      <nav>
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">← Prev</a></li>
+          {% endif %}
+          {% for num in page_obj.paginator.page_range %}
+          <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+          </li>
+          {% endfor %}
+          {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next →</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

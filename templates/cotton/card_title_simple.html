@@ -1,0 +1,20 @@
+{% load global_filter %}
+<div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8 border-b-4 border-green-600 pb-5">
+
+    <div class="flex items-start gap-3 relative group">
+        <i class="fas fa-file-excel text-green-600 text-4xl mt-1"></i>
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-700 tracking-wide">
+                    {{ title }}
+                </h1>
+            </div>
+            <div class="flex mt-2 gap-2">
+                <p class="text-sm text-green-700 font-medium tracking-tight">
+                    {{ descriptions }}
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>

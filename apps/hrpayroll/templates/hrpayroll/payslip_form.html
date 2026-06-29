@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit Payslip{% else %}Create Payslip{% endif %}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2 bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+    <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+        <h2 class="text-2xl font-extrabold text-green-800">
+            {% if form.instance.pk %}Edit Payslip{% else %}Create Payslip{% endif %}
+        </h2>
+    </div>
+
+    <form method="post" id="payslip-form" class="space-y-4">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="bg-red-50 border border-red-200 p-4">
+                <p class="text-sm text-red-700">{{ form.non_field_errors }}</p>
+            </div>
+        {% endif %}
+
+        <!-- Row: Payroll Run + Employee -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-stretch">
+                <span class="inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-36 sm:w-36 whitespace-nowrap">
+                    Payroll Run
+                </span>
+                <div class="flex-1">
+                    {{ form.payroll_run|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 bg-white" }}
+                    {% if form.payroll_run.errors %}<p class="text-red-500 text-sm mt-1">{% for e in form.payroll_run.errors %}{{ e }}{% endfor %}</p>{% endif %}
+                </div>
+            </div>
+            <div class="flex items-stretch">
+                <span class="inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-36 sm:w-36 whitespace-nowrap">
+                    Employee
+                </span>
+                <div class="flex-1">
+                    {{ form.employee|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 bg-white" }}
+                    {% if form.employee.errors %}<p class="text-red-500 text-sm mt-1">{% for e in form.employee.errors %}{{ e }}{% endfor %}</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Row: Issue Date + Finalized -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-stretch">
+                <span class="inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-36 sm:w-36 whitespace-nowrap">
+                    Issue Date
+                </span>
+                <div class="flex-1">
+                    {{ form.issue_date|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150 nepali-datepicker"|attr:"autocomplete:off"|attr:"placeholder:YYYY-MM-DD" }}
+                    {% if form.issue_date.errors %}<p class="text-red-500 text-sm mt-1">{% for e in form.issue_date.errors %}{{ e }}{% endfor %}</p>{% endif %}
+                </div>
+            </div>
+            <div class="flex items-stretch">
+                <span class="inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-36 sm:w-36 whitespace-nowrap">
+                    Finalized
+                </span>
+                <div class="flex items-center border border-gray-300 px-4 py-3 flex-1">
+                    {{ form.is_finalized }}
+                    <span class="ml-2 text-sm text-gray-600">Mark this payslip as finalized</span>
+                    {% if form.is_finalized.errors %}<p class="text-red-500 text-sm mt-1">{% for e in form.is_finalized.errors %}{{ e }}{% endfor %}</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-4 pt-2">
+            <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 shadow-md hover:shadow-lg transition duration-150">
+                {% if form.instance.pk %}Update Payslip{% else %}Create Payslip{% endif %}
+            </button>
+            <a href="{% url 'hrpayroll:payslip_list' %}" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 shadow-md hover:shadow-lg transition duration-150 text-center flex items-center justify-center">
+                Cancel
+            </a>
+        </div>
+    </form>
+
+    <div class="mt-4">
+        <a href="{% url 'hrpayroll:payslip_list' %}" class="text-sm text-gray-500 hover:text-gray-700">← Back to Payslips</a>
+    </div>
+</div>
+{% endblock %}

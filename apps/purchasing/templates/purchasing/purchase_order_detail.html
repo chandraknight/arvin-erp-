@@ -1,0 +1,85 @@
+<!-- purchasing/templates/purchasing/purchase_order_detail.html -->
+{% extends 'base.html' %}
+{% load global_filter %}
+
+{% block title %}Purchase Order Detail{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-200 no-print">
+        <h1 class="text-2xl font-bold text-gray-800">Purchase Order Detail</h1>
+        <div class="flex gap-2">
+            <button onclick="window.print()"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition shadow">
+                <i class="fas fa-print"></i> Print
+            </button>
+            <a href="{% url 'reports:purchase_order_list_report' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    {# Messages are handled in base.html #}
+
+    <div class="mt-6 p-4 border rounded-lg bg-gray-50">
+        <h2 class="text-xl font-semibold mb-4 text-gray-700">Order Details</h2>
+        <p><strong>Number:</strong> {{ purchase_order.purchase_order_number|default:purchase_order.id }}</p>
+        <p><strong>Vendor:</strong> {{ purchase_order.vendor.name }}</p>
+        <p><strong>Date:</strong> {{ purchase_order.date|date:"Y-m-d" }}</p>
+        <p><strong>Status:</strong> {{ purchase_order.get_status_display }}</p>
+        <p><strong>Total Amount:</strong> {{ purchase_order.total_amount }}</p>
+        <p><strong>Created By:</strong> {% if purchase_order.created_by %}{{ purchase_order.created_by.email }}{% else %}N/A{% endif %}</p>
+        <p><strong>Created At:</strong> {{ purchase_order.created_at|date:"Y-m-d H:i" }}</p>
+    </div>
+
+    {% if purchase_order.status == 'SUBMITTED' %}
+        <div class="mt-6">
+            <form method="post" action="{% url 'purchasing:receive_purchase_order' purchase_order.pk %}" class="inline-block">
+                {% csrf_token %}
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200 ease-in-out text-sm">Receive Purchase Order</button>
+            </form>
+        </div>
+    {% endif %}
+
+    <h2 class="text-2xl font-semibold mb-3 text-gray-700">Items</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm mb-4">
+            <thead>
+                <tr class="bg-gray-100 text-gray-700 uppercase text-sm leading-normal">
+                    <th class="py-3 px-6 text-left">Product</th>
+                    <th class="py-3 px-6 text-right">Qty (Purchase Unit)</th>
+                    <th class="py-3 px-6 text-right">→ Sale Units</th>
+                    <th class="py-3 px-6 text-right">Price</th>
+                    <th class="py-3 px-6 text-right">Line Total</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-700 text-sm font-light">
+                {% for item in purchase_order.items.all %}
+                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                    <td class="py-3 px-6 text-left">
+                        {{ item.product.name }}
+                        {% if item.product.purchase_unit %}
+                          <span class="text-xs text-gray-400 ml-1">({{ item.product.purchase_unit.symbol }})</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-3 px-6 text-right">{{ item.quantity }}</td>
+                    <td class="py-3 px-6 text-right text-indigo-700 font-medium">
+                        {% if item.product.conversion_factor and item.product.conversion_factor != 1 %}
+                          {{ item.quantity|mul:item.product.conversion_factor }}
+                          {% if item.product.sale_unit %}<span class="text-xs text-gray-400 ml-1">{{ item.product.sale_unit.symbol }}</span>{% endif %}
+                        {% else %}
+                          —
+                        {% endif %}
+                    </td>
+                    <td class="py-3 px-6 text-right">{{ item.price }}</td>
+                    <td class="py-3 px-6 text-right whitespace-nowrap">{{ item.quantity|mul:item.price }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not purchase_order.items.all %}
+        <p class="text-gray-600 italic">No items for this purchase order.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Void Order — {{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+  <div class="bg-white border border-red-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-red-700 text-white rounded-t">
+      <h1 class="text-lg font-bold"><i class="fas fa-ban mr-2"></i>Void Order</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+        This will cancel all items and free the table. This cannot be undone.
+      </div>
+      <div class="text-sm text-gray-700 space-y-1">
+        <p><strong>Order:</strong> {{ order.order_number }}</p>
+        <p><strong>Table:</strong> {{ order.table.label }}</p>
+        <p><strong>Status:</strong> {{ order.status }}</p>
+        <p><strong>Total:</strong> {{ order.total }}</p>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Reason for voiding</label>
+          <input type="text" name="reason" required maxlength="200"
+                 class="w-full border border-gray-300 px-3 py-2 text-sm"
+                 placeholder="e.g. Customer left, wrong order...">
+        </div>
+        <div class="flex gap-3">
+          <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">
+            Void Order
+          </button>
+          <a href="{% url 'restaurant:order_detail' order.pk %}"
+             class="px-5 py-2 border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

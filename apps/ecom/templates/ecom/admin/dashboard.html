@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Ecom Dashboard{% endblock %}
+
+{% block content %}
+<div class="p-6">
+
+  {# ── Header ── #}
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">E-Commerce Control Panel</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Operations overview &amp; fulfillment queue</p>
+    </div>
+    <a href="/store/" target="_blank"
+       class="inline-flex items-center gap-2 bg-[#800000] hover:bg-[#6b0000] text-white px-4 py-2 text-sm font-semibold rounded-lg transition">
+      <i class="fas fa-external-link-alt"></i> View Store
+    </a>
+  </div>
+
+  {# ── Stats Cards (4-up) ── #}
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Today's Orders</p>
+      <p class="text-3xl font-black text-[#800000] mt-1">{{ today_orders }}</p>
+      <a href="{% url 'ecom:admin_order_list' %}" class="text-xs text-indigo-600 mt-1 inline-block">View queue →</a>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Pending Orders</p>
+      <p class="text-3xl font-black text-amber-600 mt-1">{{ pending_orders }}</p>
+      <a href="{% url 'ecom:admin_order_list' %}?status=PENDING" class="text-xs text-indigo-600 mt-1 inline-block">Review →</a>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Active Faith Kits</p>
+      <p class="text-3xl font-black text-amber-600 mt-1">{{ active_bundles }}</p>
+      <a href="{% url 'ecom:admin_package_list' %}" class="text-xs text-indigo-600 mt-1 inline-block">Manage →</a>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Products on Store</p>
+      <p class="text-3xl font-black text-green-700 mt-1">{{ ecom_products_count }}</p>
+      <a href="{% url 'ecom:admin_product_list' %}" class="text-xs text-indigo-600 mt-1 inline-block">Manage →</a>
+    </div>
+  </div>
+
+  {# ── Quick Actions ── #}
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <a href="{% url 'ecom:cms_dashboard' %}" class="bg-indigo-50 border border-indigo-200 p-5 rounded-xl hover:bg-indigo-100 transition">
+      <p class="text-sm text-indigo-600 font-semibold"><i class="fas fa-paint-brush mr-1"></i>Content (CMS)</p>
+      <p class="text-xs text-indigo-400 mt-1">Banners · Pages · Announcements</p>
+      <p class="mt-3 text-indigo-700 text-sm font-bold">Manage →</p>
+    </a>
+    <a href="{% url 'ecom:media_library' %}" class="bg-emerald-50 border border-emerald-200 p-5 rounded-xl hover:bg-emerald-100 transition">
+      <p class="text-sm text-emerald-600 font-semibold"><i class="fas fa-images mr-1"></i>Media Manager</p>
+      <p class="text-xs text-emerald-400 mt-1">Product · Category · Banner images</p>
+      <p class="mt-3 text-emerald-700 text-sm font-bold">Browse →</p>
+    </a>
+    <a href="{% url 'ecom:cms_settings' %}" class="bg-orange-50 border border-orange-200 p-5 rounded-xl hover:bg-orange-100 transition">
+      <p class="text-sm text-orange-600 font-semibold"><i class="fas fa-truck mr-1"></i>Delivery &amp; Shipping</p>
+      {% if site %}
+      <p class="text-xs text-orange-500 mt-1">Charge Rs {{ site.delivery_charge|floatformat:0 }} · Free above Rs {{ site.free_shipping_threshold|default:5000 }}</p>
+      {% else %}
+      <p class="text-xs text-orange-400 mt-1">Not configured yet</p>
+      {% endif %}
+      <p class="mt-3 text-orange-700 text-sm font-bold">Edit →</p>
+    </a>
+    <a href="{% url 'ecom:coupon_list' %}" class="bg-pink-50 border border-pink-200 p-5 rounded-xl hover:bg-pink-100 transition">
+      <p class="text-sm text-pink-600 font-semibold"><i class="fas fa-tag mr-1"></i>Coupons</p>
+      <p class="text-xs text-pink-400 mt-1">Discount codes &amp; promotions</p>
+      <p class="mt-3 text-pink-700 text-sm font-bold">Manage →</p>
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    {# ── Live Fulfillment Queue ── #}
+    <div class="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="font-bold text-gray-800">Live Fulfillment Queue</h2>
+        <a href="{% url 'ecom:admin_order_list' %}" class="text-sm text-indigo-600 font-medium">View all →</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-400 border-b border-gray-100 text-xs uppercase tracking-wider">
+              <th class="px-5 py-3 font-bold">Order #</th>
+              <th class="px-5 py-3 font-bold">Customer</th>
+              <th class="px-5 py-3 font-bold">Items</th>
+              <th class="px-5 py-3 font-bold">Total</th>
+              <th class="px-5 py-3 font-bold">Status</th>
+              <th class="px-5 py-3 font-bold"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for order in recent_orders %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-5 py-3 font-mono text-xs font-bold text-gray-600">{{ order.order_number }}</td>
+              <td class="px-5 py-3">
+                <p class="font-semibold text-gray-800">{{ order.customer_name }}</p>
+                <p class="text-gray-400 text-xs">{{ order.customer_phone }}</p>
+              </td>
+              <td class="px-5 py-3 text-gray-500 text-xs">
+                {{ order.items.count }} item{{ order.items.count|pluralize }}
+              </td>
+              <td class="px-5 py-3 font-bold text-gray-900">Rs {{ order.total|floatformat:0 }}</td>
+              <td class="px-5 py-3">
+                <span class="px-2.5 py-1 text-xs font-bold rounded-full
+                  {% if order.status == 'DELIVERED' %}bg-green-100 text-green-700 border border-green-200
+                  {% elif order.status == 'CANCELLED' %}bg-red-100 text-red-700 border border-red-200
+                  {% elif order.status == 'DISPATCHED' %}bg-blue-100 text-blue-700 border border-blue-200
+                  {% elif order.status == 'PROCESSING' %}bg-purple-100 text-purple-700 border border-purple-200
+                  {% else %}bg-amber-100 text-amber-800 border border-amber-200{% endif %}">
+                  {{ order.get_status_display }}
+                </span>
+              </td>
+              <td class="px-5 py-3">
+                <a href="{% url 'ecom:admin_order_detail' order.id %}" class="text-[#800000] text-xs font-bold hover:underline">View</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-5 py-10 text-center text-gray-400">
+                <div class="text-3xl mb-2">📦</div>
+                No orders yet.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# ── Low Stock Alerts ── #}
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="font-bold text-gray-800"><i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i> Low Stock Supply Alerts</h2>
+      </div>
+      <div class="p-4 space-y-3">
+        {% for stock in low_stock_products %}
+        <div class="flex items-center justify-between p-3 rounded-xl border
+          {% if stock.ecom_stock <= 2 %}bg-red-50 border-red-100{% else %}bg-amber-50 border-amber-200{% endif %}">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-exclamation-triangle text-xs {% if stock.ecom_stock <= 2 %}text-red-500{% else %}text-amber-500{% endif %}"></i>
+            <span class="text-sm font-semibold text-gray-800 truncate max-w-[130px]">{{ stock.product.name }}</span>
+          </div>
+          <span class="text-xs font-black {% if stock.ecom_stock <= 2 %}text-red-700 bg-white border border-red-200{% else %}text-amber-800 bg-white border border-amber-200{% endif %} px-2 py-0.5 rounded whitespace-nowrap">
+            {{ stock.ecom_stock }} left
+          </span>
+        </div>
+        {% empty %}
+        <div class="text-center py-8 text-gray-400">
+          <i class="fas fa-check-circle text-green-500 text-2xl mb-2 block"></i>
+          <p class="text-sm font-medium">All stock levels are healthy.</p>
+        </div>
+        {% endfor %}
+
+        {% if low_stock_products %}
+        <a href="{% url 'ecom:admin_ecom_inventory' %}"
+           class="block text-center text-xs font-bold text-[#800000] hover:underline mt-2 py-2">
+          View Full Inventory →
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

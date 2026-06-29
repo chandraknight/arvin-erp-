@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Category Images{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">Category Images</h1>
+    <a href="{% url 'ecom:admin_dashboard' %}" class="text-sm text-gray-500"><i class="fas fa-arrow-left mr-1"></i>Dashboard</a>
+  </div>
+
+  <p class="text-sm text-gray-500 mb-5">Upload an image for each category to display on the store home page.</p>
+
+  <div class="bg-white border border-gray-200 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+        <tr>
+          <th class="px-4 py-3 text-left w-16">Image</th>
+          <th class="px-4 py-3 text-left">Category</th>
+          <th class="px-4 py-3 text-left">Parent</th>
+          <th class="px-4 py-3 text-left w-80">Upload / Replace</th>
+          <th class="px-4 py-3 text-left w-24">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for cat in categories %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3">
+            {% if cat.ecom_image %}
+            <img src="{{ cat.ecom_image.url }}" alt="{{ cat.name }}" class="w-12 h-12 object-cover rounded border border-gray-200">
+            {% else %}
+            <div class="w-12 h-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center text-gray-400 text-xs">None</div>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 font-medium text-gray-800">{{ cat.name }}</td>
+          <td class="px-4 py-3 text-gray-500">{{ cat.parent.name|default:"—" }}</td>
+          <td class="px-4 py-3">
+            <form method="post" action="{% url 'ecom:admin_update_category_image' cat.id %}" enctype="multipart/form-data" class="flex items-center gap-2">
+              {% csrf_token %}
+              <input type="file" name="ecom_image" accept="image/*" class="text-xs text-gray-600 border border-gray-300 px-2 py-1 w-48">
+              <button type="submit" class="bg-indigo-600 text-white px-3 py-1.5 text-xs hover:bg-indigo-700">Upload</button>
+            </form>
+          </td>
+          <td class="px-4 py-3">
+            {% if cat.ecom_image %}
+            <form method="post" action="{% url 'ecom:admin_update_category_image' cat.id %}">
+              {% csrf_token %}
+              <button type="submit" name="clear" value="1" class="text-xs text-red-500 hover:underline"
+                onclick="return confirm('Remove image for {{ cat.name }}?')">Remove</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-8 text-center text-gray-400 text-sm">No categories found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

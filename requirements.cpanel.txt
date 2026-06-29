@@ -1,0 +1,21 @@
+# cPanel deployment requirements
+# Python >= 3.10 required. Django 5.2 LTS is used because cPanel typically
+# runs Python < 3.12 which cannot install Django 6.x.
+# MySQL is used instead of PostgreSQL (cPanel default).
+# gunicorn is excluded — cPanel uses Apache + Passenger/mod_wsgi.
+
+Django==5.2.14
+djangorestframework==3.15.2
+django-environ==0.13.0
+numpy==1.26.4
+openpyxl==3.1.5
+xhtml2pdf==0.2.11
+django-widget-tweaks==1.5.1
+django-crispy-forms==2.3
+crispy-tailwind==1.0.3
+django-cotton==2.6.2
+whitenoise==6.8.2
+pandas==2.2.3
+mysqlclient==2.2.4
+nepali-datetime==1.0.8.4
+num2words==0.5.14

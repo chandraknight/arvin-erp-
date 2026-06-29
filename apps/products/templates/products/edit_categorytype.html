@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if editing %}Edit Category Type: {{ categorytype.name }}{% else %}Edit Category Type: {{ categorytype.name }}{% endif %}{% endblock %}
+
+{% block content %}
+ <c-form_simple title="Category Type Entry Form" back_link="products:inventory_management"></c-form_simple>
+{% endblock %}

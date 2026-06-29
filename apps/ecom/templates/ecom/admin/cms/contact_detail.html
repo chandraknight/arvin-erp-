@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Contact Message — Ecom CMS{% endblock %}
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'ecom:cms_contact_list' %}"
+       class="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition">
+      <i class="fas fa-arrow-left text-xs"></i> Back
+    </a>
+    <h1 class="text-2xl font-bold text-gray-800">Contact Message</h1>
+    {% if not msg.is_read %}
+    <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">New</span>
+    {% endif %}
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <dl class="divide-y divide-gray-100">
+      <div class="grid grid-cols-4 gap-4 py-3">
+        <dt class="text-sm font-medium text-gray-500">From</dt>
+        <dd class="text-sm text-gray-800 col-span-3">{{ msg.name }}</dd>
+      </div>
+      <div class="grid grid-cols-4 gap-4 py-3">
+        <dt class="text-sm font-medium text-gray-500">Email</dt>
+        <dd class="text-sm text-gray-800 col-span-3">{{ msg.email|default:"—" }}</dd>
+      </div>
+      <div class="grid grid-cols-4 gap-4 py-3">
+        <dt class="text-sm font-medium text-gray-500">Phone</dt>
+        <dd class="text-sm text-gray-800 col-span-3">{{ msg.phone|default:"—" }}</dd>
+      </div>
+      <div class="grid grid-cols-4 gap-4 py-3">
+        <dt class="text-sm font-medium text-gray-500">Subject</dt>
+        <dd class="text-sm text-gray-800 col-span-3">{{ msg.subject|default:"—" }}</dd>
+      </div>
+      <div class="grid grid-cols-4 gap-4 py-3">
+        <dt class="text-sm font-medium text-gray-500">Received</dt>
+        <dd class="text-sm text-gray-800 col-span-3">{{ msg.created_at|date:"d M Y H:i" }}</dd>
+      </div>
+      <div class="grid grid-cols-4 gap-4 py-3">
+        <dt class="text-sm font-medium text-gray-500">Message</dt>
+        <dd class="text-sm text-gray-800 col-span-3">
+          <div class="bg-gray-50 rounded-lg p-4 whitespace-pre-wrap leading-relaxed">{{ msg.message }}</div>
+        </dd>
+      </div>
+    </dl>
+
+    <div class="mt-6 pt-4 border-t border-gray-100">
+      {% if not msg.is_read %}
+      <form method="post" action="{% url 'ecom:cms_contact_mark_read' msg.id %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+          <i class="fas fa-check mr-1"></i> Mark as Read
+        </button>
+      </form>
+      {% else %}
+      <span class="inline-block px-3 py-1 bg-gray-100 text-gray-500 text-sm rounded-lg">
+        <i class="fas fa-check mr-1"></i> Already read
+      </span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

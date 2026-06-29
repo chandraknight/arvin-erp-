@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Confirm Restore{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+    <!-- Warning header -->
+    <div class="bg-red-50 border-b border-red-100 px-6 py-5 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-red-900">Confirm Restore</h1>
+        <p class="text-sm text-red-700 mt-0.5">This action is destructive and cannot be undone.</p>
+      </div>
+    </div>
+
+    <!-- Details -->
+    <div class="px-6 py-5 space-y-4">
+      <div class="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-500 font-medium">File</span>
+          <span class="text-gray-800 font-semibold truncate max-w-xs" title="{{ record.file_name }}">{{ record.file_name }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500 font-medium">Type</span>
+          <span class="text-gray-800">{{ record.get_backup_type_display }}</span>
+        </div>
+        {% if record.company %}
+        <div class="flex justify-between">
+          <span class="text-gray-500 font-medium">Company</span>
+          <span class="text-gray-800">{{ record.company.name }}</span>
+        </div>
+        {% endif %}
+        <div class="flex justify-between">
+          <span class="text-gray-500 font-medium">Size</span>
+          <span class="text-gray-800">{{ record.file_size_display }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500 font-medium">Created</span>
+          <span class="text-gray-800">{{ record.created_at|date:"d M Y H:i" }}</span>
+        </div>
+      </div>
+
+      {% if record.backup_type == 'COMPANY' %}
+      <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+        <i class="fas fa-info-circle mr-2"></i>
+        All existing data for <strong>{{ record.company.name }}</strong> will be deleted and replaced with the backup contents.
+      </div>
+      {% else %}
+      <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-800">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        <strong>The entire database will be dropped and restored.</strong>
+        All companies, users, and all data will be replaced. The server will need to be restarted after restoration.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div class="px-6 pb-6 flex flex-col sm:flex-row gap-3">
+      <form method="post" action="{% url 'backup:backup_restore' record.pk %}" class="flex-1">
+        {% csrf_token %}
+        <button type="submit"
+                class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+          <i class="fas fa-undo"></i> Yes, Restore Now
+        </button>
+      </form>
+      <a href="{% url 'backup:backup_list' %}"
+         class="flex-1 text-center border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+        <i class="fas fa-times"></i> Cancel
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

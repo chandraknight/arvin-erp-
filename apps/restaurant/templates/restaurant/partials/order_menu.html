@@ -1,0 +1,62 @@
+{% comment %}
+Menu-based item picker for order_detail.html.
+Shown when a published menu exists; falls back to raw form otherwise.
+{% endcomment %}
+{% if published_menu %}
+<div class="space-y-4">
+  {% for cat in menu_categories %}
+  <div>
+    <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+      {{ cat.name }}
+      <span class="ml-1 px-1.5 py-0.5 rounded text-xs
+        {% if cat.item_type == 'FOOD' %}bg-orange-100 text-orange-600
+        {% elif cat.item_type == 'BEVERAGE' %}bg-blue-100 text-blue-600
+        {% else %}bg-purple-100 text-purple-600{% endif %}">
+        {{ cat.get_item_type_display }}
+      </span>
+    </h3>
+    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {% for item in cat.items.all %}
+      {% if item.is_available %}
+      <button type="button"
+              class="menu-item-btn text-left border border-gray-200 rounded p-2 hover:border-green-500 hover:bg-green-50 transition"
+              data-product-id="{{ item.product.pk }}"
+              data-product-name="{{ item.product.name }}"
+              data-price="{{ item.effective_price }}"
+              data-item-type="{% if cat.item_type == 'BOTH' %}FOOD{% else %}{{ cat.item_type }}{% endif %}">
+        <div class="text-sm font-semibold text-gray-800 leading-tight">{{ item.product.name }}</div>
+        {% if item.notes %}<div class="text-xs text-gray-400 mt-0.5">{{ item.notes }}</div>{% endif %}
+        <div class="text-sm font-mono text-green-700 mt-1">₹{{ item.effective_price }}</div>
+      </button>
+      {% else %}
+      <div class="border border-gray-100 rounded p-2 opacity-40 cursor-not-allowed">
+        <div class="text-sm text-gray-500">{{ item.product.name }}</div>
+        <div class="text-xs text-red-400 mt-0.5">86'd</div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <p class="text-sm text-gray-400">Menu has no categories yet.</p>
+  {% endfor %}
+</div>
+
+<script>
+document.querySelectorAll('.menu-item-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const form = document.getElementById('add-item-form');
+    if (!form) return;
+    form.querySelector('[name="product"]').value = btn.dataset.productId;
+    form.querySelector('[name="unit_price"]').value = btn.dataset.price;
+    form.querySelector('[name="item_type"]').value = btn.dataset.itemType;
+    const nameEl = document.getElementById('selected-item-name');
+    if (nameEl) nameEl.textContent = btn.dataset.productName + ' — ₹' + btn.dataset.price;
+    form.querySelector('[name="quantity"]').focus();
+  });
+});
+</script>
+{% else %}
+{# Fallback: raw product form when no published menu #}
+{% include 'restaurant/partials/item_form_errors.html' with form=item_form %}
+{% endif %}

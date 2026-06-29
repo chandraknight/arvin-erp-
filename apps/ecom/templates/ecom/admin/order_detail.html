@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Ecom Order {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <a href="{% url 'ecom:admin_order_list' %}" class="text-sm text-gray-500"><i class="fas fa-arrow-left mr-1"></i>Orders</a>
+      <h1 class="text-xl font-bold text-gray-900 mt-1">{{ order.order_number }}</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'ecom:admin_order_print_slip' order.id %}?mode=a4" target="_blank"
+         class="bg-gray-700 text-white px-4 py-2 text-sm font-medium">
+        <i class="fas fa-print mr-1"></i>Print Slip (A4)
+      </a>
+      <a href="{% url 'ecom:admin_order_print_slip' order.id %}?mode=thermal" target="_blank"
+         class="bg-gray-700 text-white px-4 py-2 text-sm font-medium">
+        <i class="fas fa-receipt mr-1"></i>Thermal
+      </a>
+      {% if order.sales_order %}
+      <a href="{% url 'orders:order_detail' order.sales_order.id %}"
+        class="bg-indigo-600 text-white px-4 py-2 text-sm font-medium">
+        <i class="fas fa-external-link-alt mr-1"></i>Order Mgmt
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <!-- Customer info -->
+    <div class="bg-white border border-gray-200 p-5">
+      <h2 class="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Customer</h2>
+      <dl class="space-y-2 text-sm">
+        <div class="flex justify-between"><dt class="text-gray-500">Name</dt><dd class="font-medium">{{ order.customer_name }}</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Phone</dt><dd>{{ order.customer_phone }}</dd></div>
+        {% if order.customer_email %}<div class="flex justify-between"><dt class="text-gray-500">Email</dt><dd>{{ order.customer_email }}</dd></div>{% endif %}
+        <div class="flex justify-between"><dt class="text-gray-500">Address</dt><dd class="text-right max-w-xs">{{ order.delivery_address }}</dd></div>
+        {% if order.notes %}<div class="flex justify-between"><dt class="text-gray-500">Notes</dt><dd class="text-right max-w-xs text-gray-600">{{ order.notes }}</dd></div>{% endif %}
+      </dl>
+    </div>
+
+    <!-- Order status controls -->
+    <div class="bg-white border border-gray-200 p-5 space-y-4">
+      <h2 class="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Update Status</h2>
+
+      <form method="post" action="{% url 'ecom:admin_update_order_status' order.id %}" class="flex items-center gap-2">
+        {% csrf_token %}
+        <select name="status" class="flex-1 border border-gray-300 px-3 py-2 text-sm focus:outline-none">
+<option value="PENDING" {% if order.status == 'PENDING' %}selected{% endif %}>Pending</option>
+          <option value="CONFIRMED" {% if order.status == 'CONFIRMED' %}selected{% endif %}>Confirmed</option>
+          <option value="PROCESSING" {% if order.status == 'PROCESSING' %}selected{% endif %}>Processing</option>
+          <option value="DISPATCHED" {% if order.status == 'DISPATCHED' %}selected{% endif %}>Dispatched</option>
+          <option value="DELIVERED" {% if order.status == 'DELIVERED' %}selected{% endif %}>Delivered</option>
+          <option value="CANCELLED" {% if order.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+        </select>
+        <button type="submit" class="bg-gray-800 text-white px-4 py-2 text-sm">Update</button>
+      </form>
+
+      <form method="post" action="{% url 'ecom:admin_update_cod_status' order.id %}" class="flex items-center gap-2">
+        {% csrf_token %}
+        <select name="cod_status" class="flex-1 border border-gray-300 px-3 py-2 text-sm focus:outline-none">
+          <option value="PENDING" {% if order.cod_status == 'PENDING' %}selected{% endif %}>Pending Collection</option>
+          <option value="COLLECTED" {% if order.cod_status == 'COLLECTED' %}selected{% endif %}>Cash Collected</option>
+          <option value="FAILED" {% if order.cod_status == 'FAILED' %}selected{% endif %}>Collection Failed</option>
+        </select>
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 text-sm">COD</button>
+      </form>
+
+      <div class="pt-2 border-t text-sm space-y-1">
+        <div class="flex justify-between">
+          <span class="text-gray-500">Payment</span>
+          <span class="font-medium text-green-700">{{ order.get_payment_method_display }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">COD Status</span>
+          <span class="font-medium {% if order.cod_status == 'COLLECTED' %}text-green-600{% elif order.cod_status == 'FAILED' %}text-red-600{% else %}text-yellow-600{% endif %}">
+            {{ order.get_cod_status_display }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items -->
+  <div class="bg-white border border-gray-200 mb-6">
+    <div class="px-5 py-4 border-b font-semibold text-gray-700">Order Items</div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+        <tr>
+          <th class="px-5 py-3 text-left">Product</th>
+          <th class="px-5 py-3 text-right">Qty</th>
+          <th class="px-5 py-3 text-right">Unit Price</th>
+          <th class="px-5 py-3 text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for item in order.items.all %}
+        <tr>
+          <td class="px-5 py-3 font-medium">{{ item.product.name }}</td>
+          <td class="px-5 py-3 text-right">{{ item.quantity }}</td>
+          <td class="px-5 py-3 text-right">Rs {{ item.unit_price|floatformat:2 }}</td>
+          <td class="px-5 py-3 text-right font-semibold">Rs {{ item.total_price|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="bg-gray-50">
+        {% if order.subtotal != order.total %}
+        <tr>
+          <td colspan="3" class="px-5 py-2 text-right text-gray-500 text-xs">Subtotal</td>
+          <td class="px-5 py-2 text-right text-gray-500 text-xs">Rs {{ order.subtotal|floatformat:2 }}</td>
+        </tr>
+        {% if order.discount_amount %}
+        <tr>
+          <td colspan="3" class="px-5 py-1 text-right text-red-500 text-xs">Discount</td>
+          <td class="px-5 py-1 text-right text-red-500 text-xs">- Rs {{ order.discount_amount|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        {% if order.delivery_charge %}
+        <tr>
+          <td colspan="3" class="px-5 py-1 text-right text-gray-500 text-xs">Delivery Charge</td>
+          <td class="px-5 py-1 text-right text-gray-500 text-xs">Rs {{ order.delivery_charge|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        {% endif %}
+        <tr>
+          <td colspan="3" class="px-5 py-3 text-right font-bold text-gray-700">Total</td>
+          <td class="px-5 py-3 text-right font-bold text-indigo-700 text-base">Rs {{ order.total|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {% if order.sales_order %}
+  <div class="bg-indigo-50 border border-indigo-200 px-5 py-4 text-sm">
+    <p class="text-indigo-800 font-medium">
+      <i class="fas fa-link mr-2"></i>Linked to Sales Order
+      <a href="{% url 'orders:order_detail' order.sales_order.id %}" class="underline ml-1">
+        {{ order.sales_order.order_number|default:"View Sales Order" }}
+      </a>
+      — Status: <strong>{{ order.sales_order.get_status_display }}</strong>
+    </p>
+  </div>
+  {% else %}
+  <div class="bg-orange-50 border border-orange-200 px-5 py-4 text-sm flex items-center justify-between">
+    <p class="text-orange-700"><i class="fas fa-exclamation-triangle mr-2"></i>No sales order linked to this ecom order.</p>
+    <form method="post" action="{% url 'ecom:admin_order_create_so' order.id %}">
+      {% csrf_token %}
+      <button type="submit" class="bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700"
+        onclick="return confirm('Create and link a sales order for {{ order.order_number }}?')">
+        <i class="fas fa-plus mr-1"></i>Create Sales Order
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

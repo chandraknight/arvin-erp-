@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Print Labels{% endblock %}
+
+{% block content %}
+<div class="w-full py-4">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Print Labels</h1>
+      <p class="text-sm text-gray-500 mt-1">Select products and set quantities, then print.</p>
+    </div>
+    <button id="print-btn" onclick="openPrint()"
+            class="hidden items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+      <i class="fas fa-print"></i> Print Selected (<span id="label-count">0</span> labels)
+    </button>
+  </div>
+
+  <!-- Search -->
+  <form method="get" class="mb-4 flex gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search name, barcode or SKU…"
+           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+    <button type="submit" class="px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg">Search</button>
+    {% if q %}
+    <a href="{% url 'products:print_labels' %}" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">Clear</a>
+    {% endif %}
+  </form>
+
+  <!-- Select all bar -->
+  <div class="flex items-center gap-3 mb-3 px-1">
+    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+      <input type="checkbox" id="select-all" class="cursor-pointer">
+      Select all on page
+    </label>
+    <button onclick="setAllQty(1)" class="text-xs text-indigo-600 hover:underline">Set qty=1 for all</button>
+  </div>
+
+  <!-- Product table -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="w-10 px-3 py-3"></th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Product</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Barcode / SKU</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">Price</th>
+          <th class="text-center px-4 py-3 font-medium text-gray-600 w-24">Qty</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for product in products %}
+        <tr class="hover:bg-gray-50" data-id="{{ product.id }}">
+          <td class="px-3 py-3 text-center">
+            <input type="checkbox" class="item-check cursor-pointer" value="{{ product.id }}">
+          </td>
+          <td class="px-4 py-3 font-medium text-gray-800">{{ product.name }}</td>
+          <td class="px-4 py-3 text-gray-500 text-xs">
+            {% if product.barcode %}{{ product.barcode }}{% endif %}
+            {% if product.sku %}<span class="ml-1 text-gray-400">SKU {{ product.sku }}</span>{% endif %}
+            {% if not product.barcode and not product.sku %}<span class="text-gray-300">—</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right text-gray-700">Rs.{{ product.price|floatformat:2 }}</td>
+          <td class="px-4 py-3 text-center">
+            <input type="number" class="item-qty w-16 border border-gray-300 rounded px-2 py-1 text-center text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                   min="0" value="0" data-id="{{ product.id }}">
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-10 text-center text-gray-400">No products found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="mt-4 flex items-center justify-between text-sm">
+    <span class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} &mdash; {{ page_obj.paginator.count }} products</span>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}"
+         class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-xs">&laquo; Prev</a>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?{% if q %}q={{ q }}&{% endif %}page={{ num }}"
+           class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-xs">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}"
+         class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-xs">Next &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="mt-4 flex justify-between items-center">
+    <a href="{% url 'products:inventory_management' %}" class="text-sm text-indigo-600 hover:underline">&larr; Back to Inventory</a>
+    <button id="print-btn-bottom" onclick="openPrint()"
+            class="hidden items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+      <i class="fas fa-print"></i> Print Selected
+    </button>
+  </div>
+</div>
+
+<script>
+  const PRINT_URL = "{% url 'products:print_labels_generate' %}";
+  const topBtn    = document.getElementById('print-btn');
+  const botBtn    = document.getElementById('print-btn-bottom');
+  const countSpan = document.getElementById('label-count');
+
+  function getSelections() {
+    return Array.from(document.querySelectorAll('.item-check:checked')).map(cb => {
+      const qty = parseInt(document.querySelector(`.item-qty[data-id="${cb.value}"]`)?.value || '1');
+      return { id: cb.value, qty: Math.max(1, qty || 1) };
+    });
+  }
+
+  function refresh() {
+    const sel = getSelections();
+    const total = sel.reduce((s, x) => s + x.qty, 0);
+    const show = sel.length > 0;
+    topBtn.classList.toggle('hidden', !show);
+    topBtn.classList.toggle('inline-flex', show);
+    botBtn.classList.toggle('hidden', !show);
+    botBtn.classList.toggle('inline-flex', show);
+    if (countSpan) countSpan.textContent = total;
+  }
+
+  function openPrint() {
+    const sel = getSelections();
+    if (!sel.length) return;
+    const param = sel.map(s => s.id + ':' + s.qty).join(',');
+    window.open(PRINT_URL + '?ids=' + param, '_blank');
+  }
+
+  function setAllQty(n) {
+    document.querySelectorAll('.item-qty').forEach(el => { el.value = n; });
+    document.querySelectorAll('.item-check').forEach(el => { el.checked = true; });
+    refresh();
+  }
+
+  document.querySelectorAll('.item-check').forEach(cb => cb.addEventListener('change', refresh));
+  document.querySelectorAll('.item-qty').forEach(el => {
+    el.addEventListener('input', function() {
+      const cb = document.querySelector(`.item-check[value="${this.dataset.id}"]`);
+      if (cb) cb.checked = parseInt(this.value) > 0;
+      refresh();
+    });
+  });
+
+  document.getElementById('select-all').addEventListener('change', function() {
+    document.querySelectorAll('.item-check').forEach(cb => { cb.checked = this.checked; });
+    if (this.checked) {
+      document.querySelectorAll('.item-qty').forEach(el => {
+        if (parseInt(el.value) < 1) el.value = 1;
+      });
+    }
+    refresh();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice Processing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 1rem 0.5rem;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .btn-secondary {
+            background-color: #3498db;
+        }
+        .btn-secondary:hover {
+            background-color: #2980b9;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        .countdown {
+            font-weight: bold;
+            color: #3498db;
+            font-size: 1.2em;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        let countdown = 8;
+        let countdownInterval;
+        let pdfOpened = false;
+
+        function openAndRedirect() {
+            // Try to open PDF
+            const pdfWindow = window.open("{{ pdf_url }}", '_blank');
+            pdfOpened = Boolean(pdfWindow);
+
+            // Show status message
+            const statusEl = document.getElementById('status');
+            if (pdfWindow) {
+                statusEl.textContent = "PDF opened successfully!";
+            } else {
+                statusEl.textContent = "Couldn't open PDF automatically. Please use the buttons below.";
+                statusEl.style.color = "#e74c3c";
+            }
+
+            // Start countdown
+            countdownInterval = setInterval(updateCountdown, 1000);
+
+            // Redirect after 8 seconds
+            setTimeout(function() {
+                clearInterval(countdownInterval);
+                window.location.href = "{{ redirect_url }}";
+            }, 8000);
+        }
+
+        function updateCountdown() {
+            countdown--;
+            document.getElementById('countdown').textContent = countdown;
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+            }
+        }
+
+        function manualOpen() {
+            const win = window.open("{{ pdf_url }}", '_blank');
+            if (win) {
+                pdfOpened = true;
+                document.getElementById('status').textContent = "PDF opened successfully!";
+                document.getElementById('status').style.color = "#4CAF50";
+            }
+            return false;
+        }
+
+        function manualRedirect() {
+            clearInterval(countdownInterval);
+            window.location.href = "{{ redirect_url }}";
+        }
+    </script>
+</head>
+<body onload="openAndRedirect()">
+    <div class="container">
+        <h2>Invoice Processing</h2>
+        <div class="loader"></div>
+        <p id="status">Opening your invoice PDF...</p>
+        <p>You will be automatically redirected in <span id="countdown" class="countdown">8</span> seconds.</p>
+
+        <div>
+            <a href="{{ pdf_url }}" onclick="return manualOpen()" class="btn">Open PDF Again</a>
+            <a href="#" onclick="manualRedirect()" class="btn btn-secondary">Continue Now</a>
+        </div>
+
+        <p style="margin-top: 1.5rem; font-size: 0.9em; color: #777;">
+            If the PDF doesn't open, please check your popup blocker settings.
+        </p>
+    </div>
+</body>
+</html>

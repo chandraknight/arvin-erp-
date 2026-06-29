@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Dispose Asset — {{ asset.name }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+  <div class="bg-white border border-orange-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-orange-700 text-white rounded-t">
+      <h1 class="text-lg font-bold">Dispose Fixed Asset</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="bg-orange-50 border border-orange-200 rounded p-3 text-sm text-orange-700">
+        This will mark the asset as <strong>DISPOSED</strong>. Depreciation will no longer be posted for this asset.
+      </div>
+      <div class="text-sm text-gray-700 space-y-1">
+        <p><strong>Asset:</strong> {{ asset.name }}</p>
+        <p><strong>Code:</strong> {{ asset.asset_code|default:"—" }}</p>
+        <p><strong>Net Book Value:</strong> ₹{{ asset.net_book_value|floatformat:2 }}</p>
+        <p><strong>Accumulated Depreciation:</strong> ₹{{ asset.accumulated_depreciation|floatformat:2 }}</p>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Disposal Date (BS)</label>
+          <input type="text" name="disposal_date" required
+                 class="nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm"
+                 placeholder="YYYY-MM-DD" autocomplete="off" readonly>
+        </div>
+        <div class="flex gap-3">
+          <button type="submit" class="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold">
+            Confirm Disposal
+          </button>
+          <a href="{% url 'bookkeeping:fixed_asset_detail' asset.pk %}"
+             class="px-5 py-2 border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

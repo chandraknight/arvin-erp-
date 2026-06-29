@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}AP Aging Report{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-2">
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-3 border-b border-gray-200 pb-2">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Accounts Payable Aging</h1>
+            <p class="text-sm text-gray-500 mt-1">As of {{ as_of_date|date:"Y-m-d" }}</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'reports:export_ap_aging_excel' %}?as_of_date={{ as_of_date|date:'Y-m-d' }}"
+               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition shadow">
+                <i class="fas fa-file-excel"></i> Export
+            </a>
+            <button onclick="window.print()"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition shadow">
+                <i class="fas fa-print"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Date filter -->
+    <form method="get" class="bg-white border border-gray-200 shadow-sm p-4 mb-6">
+        <div class="flex items-end gap-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">As of Date (BS)</label>
+                <input type="text" name="as_of_date" value="{{ as_of_date|date:'Y-m-d' }}"
+                       class="nepali-datepicker border border-gray-300 px-3 py-2 text-sm"
+                       placeholder="YYYY-MM-DD" autocomplete="off">
+            </div>
+            <button type="submit"
+                    class="px-4 py-2 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition">
+                Apply
+            </button>
+        </div>
+    </form>
+
+    <!-- Summary cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        <div class="bg-white border border-gray-200 shadow-sm p-3 text-center">
+            <p class="text-xs text-gray-500">Current</p>
+            <p class="text-base font-bold text-green-700">{{ totals.current|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-3 text-center">
+            <p class="text-xs text-gray-500">1–30 Days</p>
+            <p class="text-base font-bold text-amber-600">{{ totals.days_1_30|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-3 text-center">
+            <p class="text-xs text-gray-500">31–60 Days</p>
+            <p class="text-base font-bold text-orange-600">{{ totals.days_31_60|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-3 text-center">
+            <p class="text-xs text-gray-500">61–90 Days</p>
+            <p class="text-base font-bold text-red-600">{{ totals.days_61_90|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-3 text-center">
+            <p class="text-xs text-gray-500">90+ Days</p>
+            <p class="text-base font-bold text-red-800">{{ totals.days_90_plus|floatformat:2|intcomma }}</p>
+        </div>
+    </div>
+
+    <!-- Detail table -->
+    <div class="overflow-x-auto bg-white border border-gray-200 shadow-sm">
+        <table class="min-w-full text-sm">
+            <thead class="bg-green-600 text-white text-xs uppercase">
+                <tr>
+                    <th class="px-4 py-3 text-left border border-green-700">Vendor</th>
+                    <th class="px-4 py-3 text-left border border-green-700">Bill #</th>
+                    <th class="px-4 py-3 text-left border border-green-700">Bill Date</th>
+                    <th class="px-4 py-3 text-left border border-green-700">Due Date</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Outstanding</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Days Overdue</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Current</th>
+                    <th class="px-4 py-3 text-right border border-green-700">1–30</th>
+                    <th class="px-4 py-3 text-right border border-green-700">31–60</th>
+                    <th class="px-4 py-3 text-right border border-green-700">61–90</th>
+                    <th class="px-4 py-3 text-right border border-green-700">90+</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in aging_data %}
+                <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50">
+                    <td class="px-4 py-2 border border-gray-200 font-medium">{{ row.bill.vendor.name }}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-green-700">{{ row.bill.bill_number }}</td>
+                    <td class="px-4 py-2 border border-gray-200 whitespace-nowrap">{{ row.bill.bill_date|date:"Y-m-d" }}</td>
+                    <td class="px-4 py-2 border border-gray-200 whitespace-nowrap">{{ row.bill.due_date|date:"Y-m-d"|default:"—" }}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right font-medium">{{ row.outstanding|floatformat:2|intcomma }}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right
+                        {% if row.days_overdue > 90 %}text-red-700 font-bold
+                        {% elif row.days_overdue > 30 %}text-orange-600
+                        {% elif row.days_overdue > 0 %}text-amber-600
+                        {% else %}text-green-600{% endif %}">
+                        {% if row.days_overdue > 0 %}{{ row.days_overdue }}{% else %}Current{% endif %}
+                    </td>
+                    <td class="px-4 py-2 border border-gray-200 text-right">{% if row.current %}{{ row.current|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right">{% if row.days_1_30 %}{{ row.days_1_30|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right">{% if row.days_31_60 %}{{ row.days_31_60|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right">{% if row.days_61_90 %}{{ row.days_61_90|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right">{% if row.days_90_plus %}{{ row.days_90_plus|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11" class="px-4 py-12 text-center text-gray-400">
+                        <i class="fas fa-check-circle text-3xl mb-2 block text-green-400"></i>
+                        No outstanding payables as of {{ as_of_date|date:"Y-m-d" }}.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if aging_data %}
+            <tfoot class="bg-gray-100 font-bold text-sm">
+                <tr>
+                    <td colspan="4" class="px-4 py-3 border border-gray-300">Total</td>
+                    <td class="px-4 py-3 border border-gray-300 text-right">{{ totals.total|floatformat:2|intcomma }}</td>
+                    <td class="px-4 py-3 border border-gray-300"></td>
+                    <td class="px-4 py-3 border border-gray-300 text-right">{{ totals.current|floatformat:2|intcomma }}</td>
+                    <td class="px-4 py-3 border border-gray-300 text-right">{{ totals.days_1_30|floatformat:2|intcomma }}</td>
+                    <td class="px-4 py-3 border border-gray-300 text-right">{{ totals.days_31_60|floatformat:2|intcomma }}</td>
+                    <td class="px-4 py-3 border border-gray-300 text-right">{{ totals.days_61_90|floatformat:2|intcomma }}</td>
+                    <td class="px-4 py-3 border border-gray-300 text-right">{{ totals.days_90_plus|floatformat:2|intcomma }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+
+</div>
+{% endblock %}

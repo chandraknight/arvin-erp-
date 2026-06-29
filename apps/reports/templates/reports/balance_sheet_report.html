@@ -1,0 +1,135 @@
+<!-- reports/templates/reports/balance_sheet_report.html -->
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Balance Sheet Report{% endblock %}
+
+{% block content %}
+    <div class="w-full mt-2">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Balance Sheet Report</h1>
+             <a href="{% url 'reports:report_dashboard' %}" class="inline-block bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200 ease-in-out text-sm">Back to Reports Dashboard</a>
+        </div>
+
+        {% if fiscal_year %}
+        <div class="alert alert-info mb-4">
+            Showing balance sheet for fiscal year:
+            <strong>{{ fiscal_year.start_date }} to {{ fiscal_year.end_date }}</strong>
+        </div>
+        {% endif %}
+
+        {# Messages are handled in base.html #}
+
+        <form method="get" class="mb-6 space-y-4">
+            <div class="flex flex-wrap items-center space-y-4 md:space-y-0 md:space-x-4">
+                <div>
+                    <label for="report_date" class="block text-sm font-medium text-gray-700">As of Date:</label>
+                    <input type="text" name="report_date" id="report_date" value="{{ report_date_bs|default:'' }}" class="nepali-datepicker mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div class="flex items-end space-x-2">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200 ease-in-out text-sm">Generate Report</button>
+                    <a href="{% url 'reports:export_balance_sheet_report_excel' %}{{ request.GET.urlencode|add:'&' }}" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200 ease-in-out text-sm">Export to Excel</a>
+                    <a href="{% url 'reports:export_balance_sheet_report_pdf' %}{{ request.GET.urlencode|add:'&' }}" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200 ease-in-out text-sm">Export to PDF</a>
+                    <a href="{% url 'reports:print_balance_sheet_report' %}{{ request.GET.urlencode|add:'&' }}" class="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition duration-200 ease-in-out text-sm">Print Report</a>
+                </div>
+            </div>
+        </form>
+
+        <h2 class="text-2xl font-semibold mb-4 text-gray-700">As of {{ report_date|date:"Y-m-d" }}</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h3 class="text-xl font-semibold mb-3 text-gray-700">Assets</h3>
+                {% if assets %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white shadow-md rounded mb-4">
+                            <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                <tr>
+                                    <th class="py-3 px-6 text-left">Account</th>
+                                    <th class="py-3 px-6 text-right">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light">
+                                {% for account in assets %}
+                                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                        <td class="py-3 px-6 text-left whitespace-nowrap">{{ account.account.name }}</td>
+                                        <td class="py-3 px-6 text-right whitespace-nowrap">{{ account.balance|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600 italic">No asset accounts found or no activity.</p>
+                {% endif %}
+                <div class="text-lg font-bold text-gray-800 text-right">Total Assets: {{ total_assets|floatformat:2|intcomma }}</div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold mb-3 text-gray-700">Liabilities & Equity</h3>
+                <h4 class="text-lg font-semibold mb-2 text-gray-700">Liabilities</h4>
+                 {% if liabilities %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white shadow-md rounded mb-4">
+                            <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                <tr>
+                                    <th class="py-3 px-6 text-left">Account</th>
+                                    <th class="py-3 px-6 text-right">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light">
+                                {% for account in liabilities %}
+                                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                        <td class="py-3 px-6 text-left whitespace-nowrap">{{ account.account.name }}</td>
+                                        <td class="py-3 px-6 text-right whitespace-nowrap">{{ account.balance|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                 {% else %}
+                     <p class="text-gray-600 italic">No liability accounts found or no activity.</p>
+                 {% endif %}
+                 <div class="text-lg font-bold text-gray-800 text-right mb-6">Total Liabilities: {{ total_liabilities|floatformat:2|intcomma }}</div>
+
+                <h4 class="text-lg font-semibold mb-2 text-gray-700">Equity</h4>
+                 {% if equity %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white shadow-md rounded mb-4">
+                            <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                <tr>
+                                    <th class="py-3 px-6 text-left">Account</th>
+                                    <th class="py-3 px-6 text-right">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light">
+                                {% for account in equity %}
+                                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                        <td class="py-3 px-6 text-left whitespace-nowrap">{{ account.account.name }}</td>
+                                        <td class="py-3 px-6 text-right whitespace-nowrap">{{ account.balance|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                 {% else %}
+                     <p class="text-gray-600 italic">No equity accounts found or no activity.</p>
+                 {% endif %}
+                 <div class="text-lg font-bold text-gray-800 text-right">Total Equity: {{ total_equity|floatformat:2|intcomma }}</div>
+
+                <div class="mt-6 text-xl font-bold text-gray-800 text-right">
+                    Total Liabilities & Equity: {{ total_liabilities|add:total_equity|floatformat:2|intcomma }}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            {% if balance_sheet_balanced %}
+                <p class="text-green-600 font-bold">Balance Sheet is balanced (Assets = Liabilities + Equity).</p>
+            {% else %}
+                <p class="text-red-600 font-bold">Balance Sheet is NOT balanced. Please check entries.</p>
+            {% endif %}
+        </div>
+
+    </div>
+{% endblock %} 

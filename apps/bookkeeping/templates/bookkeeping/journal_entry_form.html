@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Create Journal Entry{% endblock %}
+
+{% block content %}
+    {% include 'includes/toast.html' %}
+
+    <div class="w-full mt-2 bg-white border border-gray-200 shadow-sm p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 border-b border-gray-100 pb-6">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight">
+                Create Journal Entry
+            </h2>
+            <div class="flex gap-2">
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">{{ user.company.name }}</span>
+            </div>
+        </div>
+
+        <form method="post" novalidate class="space-y-6" id="journal-entry-form">
+            {% csrf_token %}
+            {{ formset.management_form }}
+
+            {% if form.errors %}
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3">
+                    <strong>Errors:</strong>
+                    {{ form.non_field_errors }}
+                    {% for field in form %}
+                        {% if field.errors %}
+                            <div>{{ field.label }}: {{ field.errors }}</div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                        Date
+                    </span>
+                    <div class="relative w-auto">
+                        {{ form.date|add_class:"nepali-datepicker w-full border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-calendar-alt text-gray-400 text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                        Company
+                    </span>
+                    <div class="flex-1">
+                        {{ form.company|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 bg-white" }}
+                        {% if form.company.errors %}
+                            <div class="text-red-500 text-xs mt-1">
+                                {% for error in form.company.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-span-2">
+                    <div class="sm:flex">
+                        <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                            Description
+                        </span>
+                        <div class="flex-1">
+                            {{ form.description|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                            {% if form.description.errors %}
+                                <div class="text-red-500 text-xs mt-1">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="text-xl font-bold text-green-800">Journal Entry Lines</h3>
+                     <button type="button" id="add-line"
+                             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm transition duration-150">
+                        + Add Line
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full border border-gray-200">
+                        <thead class="bg-gray-50 text-green-800 hidden sm:table-header-group">
+                        <tr>
+                            <th class="py-3 px-4 text-left text-sm font-semibold border-b border-gray-200">
+                                Account
+                            </th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold border-b border-gray-200">
+                                Debit
+                            </th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold border-b border-gray-200">
+                                Credit
+                            </th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold border-b border-gray-200">
+                                Narration
+                            </th>
+                            <th class="py-3 px-4 text-center text-sm font-semibold border-b border-gray-200">
+                                Actions
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody id="lines-container">
+                        {% for line_form in formset %}
+                            <tr class="border-b border-gray-200 line-form flex flex-wrap sm:table-row"
+                                data-index="{{ forloop.counter0 }}">
+                                {% for hidden in line_form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+
+                                <td class="py-3 px-4 w-full sm:w-auto block sm:table-cell">
+                                    <div class="sm:hidden text-sm font-semibold text-green-800 mb-1">Account</div>
+                                    {{ line_form.account|add_class:"w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                    {% if line_form.account.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in line_form.account.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3 px-4 w-1/2 sm:w-auto block sm:table-cell">
+                                    <div class="sm:hidden text-sm font-semibold text-green-800 mb-1">Debit</div>
+                                    {{ line_form.debit_amount|add_class:"debit-input w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                    {% if line_form.debit_amount.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in line_form.debit_amount.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3 px-4 w-1/2 sm:w-auto block sm:table-cell">
+                                    <div class="sm:hidden text-sm font-semibold text-green-800 mb-1">Credit</div>
+                                    {{ line_form.credit_amount|add_class:"credit-input w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                    {% if line_form.credit_amount.errors %}
+                                        <div class="text-red-500 text-xs mt-1">
+                                            {% for error in line_form.credit_amount.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3 px-4 w-full sm:w-auto block sm:table-cell">
+                                    <div class="sm:hidden text-sm font-semibold text-green-800 mb-1">Narration</div>
+                                    {{ line_form.narration|add_class:"w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                </td>
+
+                                <td class="py-3 px-4 w-full sm:w-auto text-center block sm:table-cell">
+                                    <div class="sm:hidden text-sm font-semibold text-green-800 mb-1">Actions</div>
+                                    <button type="button"
+                                            class="remove-line text-red-600 hover:text-red-800 transition duration-150">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                        Total Debit
+                    </span>
+                    <div class="flex-1">
+                        <input type="text" id="total-debit"
+                               class="w-full border border-gray-300 px-4 py-3 text-gray-900 bg-gray-50 font-bold"
+                               readonly>
+                    </div>
+                </div>
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                        Total Credit
+                    </span>
+                    <div class="flex-1">
+                        <input type="text" id="total-credit"
+                               class="w-full border border-gray-300 px-4 py-3 text-gray-900 bg-gray-50 font-bold"
+                               readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <button type="submit"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 shadow-md transition duration-150">
+                    Create Journal Entry
+                </button>
+            </div>
+        </form>
+
+        <c-back-link>
+            <c-slot name="url">
+                {% url 'bookkeeping:journal_entry_list' %}
+            </c-slot>
+        </c-back-link>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('lines-container');
+            const addButton = document.getElementById('add-line');
+            const totalForms = document.getElementById('id_lines-TOTAL_FORMS');
+            const submitButton = document.querySelector('button[type="submit"]');
+            const totalDebitInput = document.getElementById('total-debit');
+            const totalCreditInput = document.getElementById('total-credit');
+
+            let formCount = container.querySelectorAll('.line-form').length;
+            if (totalForms) {
+                formCount = parseInt(totalForms.value) || formCount;
+            }
+
+            let emptyForm;
+            const existingForms = container.querySelectorAll('.line-form');
+            if (existingForms.length > 0) {
+                emptyForm = existingForms[0].cloneNode(true);
+            } else {
+                console.error('No template form found to clone');
+                addButton.disabled = true;
+                return;
+            }
+
+            addButton.disabled = false;
+            submitButton.disabled = false;
+
+            updateTotals();
+
+            addButton.addEventListener('click', function () {
+                const newForm = emptyForm.cloneNode(true);
+                const newIndex = formCount;
+
+                const fieldsToUpdate = [
+                    'account', 'debit_amount', 'credit_amount', 'narration', 'id', 'DELETE'
+                ];
+
+                fieldsToUpdate.forEach(field => {
+                    const elements = newForm.querySelectorAll(`[name*="-${field}"]`);
+                    elements.forEach(el => {
+                        el.name = el.name.replace(/lines-\d+-/, `lines-${newIndex}-`);
+                        if (el.id) {
+                            el.id = el.id.replace(/id_lines-\d+-/, `id_lines-${newIndex}-`);
+                        }
+                    });
+                });
+
+                const clearSelectors = [
+                    '.account', '.debit-input',
+                    '.credit-input', '.narration'
+                ];
+
+                clearSelectors.forEach(selector => {
+                    const el = newForm.querySelector(selector);
+                    if (el) {
+                        if (el.tagName === 'SELECT') {
+                            el.selectedIndex = 0;
+                        } else {
+                            el.value = '';
+                        }
+                    }
+                });
+
+                const idField = newForm.querySelector('[name$="-id"]');
+                const deleteField = newForm.querySelector('[name$="-DELETE"]');
+                if (idField) idField.value = '';
+                if (deleteField) deleteField.checked = false;
+
+                container.appendChild(newForm);
+                formCount++;
+                if (totalForms) totalForms.value = formCount;
+
+                addLineEventListeners(newForm);
+            });
+
+            container.addEventListener('click', function (e) {
+                if (e.target.closest('.remove-line')) {
+                    const formRow = e.target.closest('.line-form');
+                    const idInput = formRow.querySelector('[name$="-id"]');
+                    const deleteInput = formRow.querySelector('[name$="-DELETE"]');
+
+                    if (idInput && idInput.value) {
+                        if (deleteInput) deleteInput.checked = true;
+                        formRow.style.display = 'none';
+                    } else {
+                        // New line - remove completely
+                        formRow.remove();
+                        formCount--;
+                        if (totalForms) totalForms.value = formCount;
+                    }
+                    updateTotals();
+                }
+            });
+
+            function addLineEventListeners(form) {
+                const debitInput = form.querySelector('.debit-input');
+                const creditInput = form.querySelector('.credit-input');
+
+                if (debitInput) {
+                    debitInput.addEventListener('input', function() {
+                        if (this.value) {
+                            const creditInput = this.closest('.line-form').querySelector('.credit-input');
+                            if (creditInput) creditInput.value = '';
+                        }
+                        updateTotals();
+                    });
+                }
+
+                if (creditInput) {
+                    creditInput.addEventListener('input', function() {
+                        if (this.value) {
+                            const debitInput = this.closest('.line-form').querySelector('.debit-input');
+                            if (debitInput) debitInput.value = '';
+                        }
+                        updateTotals();
+                    });
+                }
+            }
+
+            document.querySelectorAll('.line-form').forEach(form => {
+                addLineEventListeners(form);
+            });
+
+            function updateTotals() {
+                let debitTotal = 0;
+                let creditTotal = 0;
+
+                document.querySelectorAll('.line-form').forEach(form => {
+                    if (form.style.display !== 'none') {
+                        const debitInput = form.querySelector('.debit-input');
+                        const creditInput = form.querySelector('.credit-input');
+
+                        if (debitInput && debitInput.value) {
+                            debitTotal += parseFloat(debitInput.value) || 0;
+                        }
+                        if (creditInput && creditInput.value) {
+                            creditTotal += parseFloat(creditInput.value) || 0;
+                        }
+                    }
+                });
+
+                if (totalDebitInput) {
+                    totalDebitInput.value = debitTotal.toFixed(2);
+                }
+
+                if (totalCreditInput) {
+                    totalCreditInput.value = creditTotal.toFixed(2);
+                }
+
+                if (Math.abs(debitTotal - creditTotal) > 0.01) {
+                    totalDebitInput.classList.add('border-red-500');
+                    totalCreditInput.classList.add('border-red-500');
+                    submitButton.disabled = true;
+                } else {
+                    totalDebitInput.classList.remove('border-red-500');
+                    totalCreditInput.classList.remove('border-red-500');
+                    submitButton.disabled = false;
+                }
+            }
+        });
+    </script>
+
+    <style>
+        .line-form {
+            transition: opacity 0.3s ease;
+        }
+
+        .line-form input:disabled,
+        .line-form select:disabled {
+            background-color: #f9fafb;
+            cursor: not-allowed;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        input[type="checkbox"][name$="-DELETE"] {
+            display: none;
+        }
+
+        #total-debit, #total-credit {
+            text-align: right;
+        }
+    </style>
+{% endblock %}

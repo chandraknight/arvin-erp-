@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Reconciliation — {{ src.original_filename }}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <a href="{% url 'tours:reconciliation_list' %}" class="text-gray-400 hover:text-gray-600 transition">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">{{ src.original_filename }}</h2>
+        <p class="text-sm text-gray-500 mt-0.5">
+          {{ src.get_status_display }}
+          {% if src.period_from %} · {{ src.period_from }} → {{ src.period_to|default:"?" }}{% endif %}
+          {% if src.processed_at %} · Processed {{ src.processed_at|date:"Y-m-d H:i" }}{% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      {% if src.status != 'PROCESSING' %}
+        <form method="post" action="{% url 'tours:reconciliation_process' src.pk %}" x-data="{ autoImport: false }">
+          {% csrf_token %}
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" name="auto_import" value="1" class="accent-green-600">
+              Auto-import unmatched
+            </label>
+            <button type="submit"
+                    class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 transition duration-150">
+              <i class="fas fa-sync-alt mr-1"></i>
+              {% if src.status == 'PROCESSED' %}Re-process{% else %}Process{% endif %}
+            </button>
+          </div>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Summary stats -->
+  {% if src.status == 'PROCESSED' %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white border border-gray-200 p-4 shadow-sm">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Rows</p>
+        <p class="text-2xl font-bold text-gray-800 mt-1">{{ src.rows_total }}</p>
+      </div>
+      <div class="bg-green-50 border border-green-200 p-4 shadow-sm">
+        <p class="text-xs font-semibold text-green-700 uppercase tracking-wide">Matched</p>
+        <p class="text-2xl font-bold text-green-700 mt-1">{{ src.rows_matched }}</p>
+      </div>
+      <div class="bg-red-50 border border-red-200 p-4 shadow-sm">
+        <p class="text-xs font-semibold text-red-700 uppercase tracking-wide">Issues</p>
+        <p class="text-2xl font-bold text-red-700 mt-1">{{ src.rows_unmatched }}</p>
+      </div>
+      <div class="bg-blue-50 border border-blue-200 p-4 shadow-sm">
+        <p class="text-xs font-semibold text-blue-700 uppercase tracking-wide">Imported</p>
+        <p class="text-2xl font-bold text-blue-700 mt-1">{{ src.rows_new }}</p>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if src.error_log %}
+    <div class="bg-red-50 border border-red-200 p-4 text-sm text-red-700 mb-5 font-mono whitespace-pre-wrap">{{ src.error_log }}</div>
+  {% endif %}
+
+  <!-- Line items -->
+  {% if src.status == 'PROCESSED' %}
+    <!-- Filter tabs -->
+    <div class="flex gap-1 mb-4">
+      <a href="?match=" class="px-3 py-1 text-sm border transition {% if not match_filter %}bg-green-600 border-green-600 text-white{% else %}border-gray-300 text-gray-600 hover:bg-gray-50{% endif %}">All</a>
+      <a href="?match=MATCHED" class="px-3 py-1 text-sm border transition {% if match_filter == 'MATCHED' %}bg-green-600 border-green-600 text-white{% else %}border-gray-300 text-gray-600 hover:bg-gray-50{% endif %}">Matched</a>
+      <a href="?match=MISMATCH" class="px-3 py-1 text-sm border transition {% if match_filter == 'MISMATCH' %}bg-red-600 border-red-600 text-white{% else %}border-gray-300 text-gray-600 hover:bg-gray-50{% endif %}">Mismatch</a>
+      <a href="?match=UNMATCHED" class="px-3 py-1 text-sm border transition {% if match_filter == 'UNMATCHED' %}bg-yellow-500 border-yellow-500 text-white{% else %}border-gray-300 text-gray-600 hover:bg-gray-50{% endif %}">Unmatched</a>
+      <a href="?match=NEW_IMPORTED" class="px-3 py-1 text-sm border transition {% if match_filter == 'NEW_IMPORTED' %}bg-blue-600 border-blue-600 text-white{% else %}border-gray-300 text-gray-600 hover:bg-gray-50{% endif %}">Imported</a>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+      <table class="min-w-full text-sm text-gray-700">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="px-3 py-2 text-left font-semibold text-gray-600">Ticket #</th>
+            <th class="px-3 py-2 text-left font-semibold text-gray-600">Passenger</th>
+            <th class="px-3 py-2 text-left font-semibold text-gray-600">Date</th>
+            <th class="px-3 py-2 text-left font-semibold text-gray-600">Carrier</th>
+            <th class="px-3 py-2 text-left font-semibold text-gray-600">Routing</th>
+            <th class="px-3 py-2 text-right font-semibold text-gray-600">Fare</th>
+            <th class="px-3 py-2 text-right font-semibold text-gray-600">Gross</th>
+            <th class="px-3 py-2 text-right font-semibold text-gray-600">Net</th>
+            <th class="px-3 py-2 text-left font-semibold text-gray-600">Result</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for item in page_obj.object_list %}
+            <tr class="hover:bg-gray-50 transition duration-100
+              {% if item.match_status == 'MISMATCH' %}bg-red-50{% elif item.match_status == 'UNMATCHED' %}bg-yellow-50{% endif %}">
+              <td class="px-3 py-2 font-mono text-xs">
+                {% if item.air_ticket %}
+                  <a href="{% url 'tours:ticket_detail' item.air_ticket.pk %}" class="text-green-600 hover:underline">{{ item.raw_ticket_number }}</a>
+                {% else %}
+                  {{ item.raw_ticket_number }}
+                {% endif %}
+              </td>
+              <td class="px-3 py-2 text-xs">{{ item.raw_passenger_name|default:"—" }}</td>
+              <td class="px-3 py-2 text-xs text-gray-500">{{ item.raw_issue_date|default:"—" }}</td>
+              <td class="px-3 py-2 font-bold text-xs">{{ item.raw_airline_code|default:"—" }}</td>
+              <td class="px-3 py-2 text-xs text-gray-500">{{ item.raw_routing|default:"—" }}</td>
+              <td class="px-3 py-2 text-right text-xs">{{ item.raw_fare|floatformat:2 }}</td>
+              <td class="px-3 py-2 text-right text-xs font-medium">{{ item.raw_gross|floatformat:2 }}</td>
+              <td class="px-3 py-2 text-right text-xs">{{ item.raw_net|floatformat:2 }}</td>
+              <td class="px-3 py-2">
+                <span class="text-xs px-2 py-0.5 font-medium
+                  {% if item.match_status == 'MATCHED' %}bg-green-100 text-green-700
+                  {% elif item.match_status == 'MISMATCH' %}bg-red-100 text-red-700
+                  {% elif item.match_status == 'NEW_IMPORTED' %}bg-blue-100 text-blue-700
+                  {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                  {{ item.get_match_status_display }}
+                </span>
+                {% if item.mismatch_note %}
+                  <p class="text-xs text-red-500 mt-0.5 max-w-xs">{{ item.mismatch_note }}</p>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="px-4 py-8 text-center text-gray-400">No items found for this filter.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if page_obj.has_other_pages %}
+        <div class="border-t border-gray-200 px-4 py-3 flex items-center justify-center gap-1">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if match_filter %}&match={{ match_filter }}{% endif %}"
+               class="px-3 py-1 text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Previous</a>
+          {% endif %}
+          {% for num in page_obj.paginator.page_range %}
+            <a href="?page={{ num }}{% if match_filter %}&match={{ match_filter }}{% endif %}"
+               class="px-3 py-1 text-sm border transition {% if page_obj.number == num %}bg-green-600 border-green-600 text-white{% else %}border-gray-300 text-gray-600 hover:bg-gray-50{% endif %}">
+              {{ num }}
+            </a>
+          {% endfor %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if match_filter %}&match={{ match_filter }}{% endif %}"
+               class="px-3 py-1 text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Next</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% elif src.status == 'UPLOADED' %}
+    <div class="bg-yellow-50 border border-yellow-200 p-6 text-center">
+      <i class="fas fa-clock text-yellow-500 text-3xl mb-2 block"></i>
+      <p class="text-yellow-700 font-medium">File uploaded but not yet processed.</p>
+      <p class="text-yellow-600 text-sm mt-1">Click "Process" above to run reconciliation.</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

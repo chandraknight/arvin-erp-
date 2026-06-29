@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: sans-serif;
+            font-size: 11pt;
+            color: #000;
+            line-height: 1.4;
+            margin: 0;
+        }
+    </style>
+</head>
+<body style="font-family: sans-serif;">
+
+<table style="width: 100%; border-collapse: collapse;">
+    <tr>
+        <td style="text-align: left;">
+            <div style="font-size: 14pt; font-weight: bold;">{{ company_name }}</div>
+            <div style="font-size: 9pt;">{{ address }}</div>
+            <div style="font-size: 9pt;">Tel: {{ tel }} | Email: {{ email }}</div>
+        </td>
+        <td style="text-align: right;">
+            <div style="font-size: 12pt; font-weight: bold;">{{ invoice.invoice_number|default:"DRAFT" }}</div>
+            <div style="font-size: 9pt;">Date: {{ invoice.created_at|date:"Y-m-d" }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- Customer Info -->
+<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+    <tr>
+        {% if vat_registered %}
+        <td style="width: 100px; font-weight: bold;">Bill To:</td>
+        {% endif %}
+        <td>
+            <div><strong>{{ customer_name|default:"Cash" }}</strong></div>
+        </td>
+    </tr>
+</table>
+{% if customer_phone %}
+    <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
+        <tr>
+            <td style="width: 100px; font-weight: bold;">Contact:</td>
+            <td>
+                <div><strong>{{ customer_phone }}</strong></div>
+            </td>
+        </tr>
+    </table>
+{% endif %}
+
+<!-- Items Table -->
+<table style="width: 100%; border: 1px solid #000; border-collapse: collapse; margin-top: 20px;">
+    <thead>
+    <tr>
+        <th style="border: 1px solid #000; padding: 5px; width: 5%;">#</th>
+        <th style="border: 1px solid #000; padding: 5px; width: 22%;">Item</th>
+        <th style="border: 1px solid #000; padding: 5px; width: 28%;">Description</th>
+        <th style="border: 1px solid #000; padding: 5px; width: 8%; text-align: right;">Qty</th>
+        <th style="border: 1px solid #000; padding: 5px; width: 10%; text-align: right;">Rate</th>
+        <th style="border: 1px solid #000; padding: 5px; width: 10%; text-align: right;">Disc</th>
+        <th style="border: 1px solid #000; padding: 5px; width: 12%; text-align: right;">Amount</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in items %}
+        <tr>
+            <td style="border: 1px solid #000; padding: 5px;">{{ forloop.counter }}</td>
+            <td style="border: 1px solid #000; padding: 5px;">
+                {% if item.product %}
+                    {{ item.product.name }}
+                {% elif item.package %}
+                    {{ item.package.name }}
+                {% else %}
+                    {{ item.description|default:"-" }}
+                {% endif %}
+            </td>
+            <td style="border: 1px solid #000; padding: 5px;">{{ item.description|default:"-" }}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: right;">{{ item.quantity }}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: right;">{{ item.price }}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: right;">{% if item.discount_percent > 0 %}{{ item.discount_percent }}%{% elif item.discount_amount > 0 %}NPR {{ item.discount_amount }}{% else %}-{% endif %}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: right;">{{ item.total_price }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- Amount in Words -->
+<div style="font-size: 9pt; padding: 5px; border-left: 4px solid #000; margin-top: 15px; margin-bottom: 20px;">
+    <strong>Amount in words:</strong> {{ amount_in_words }}
+</div>
+
+<!-- Totals Table Aligned Right with Gap -->
+<table style="width: 100%; margin-top: 10px; margin-bottom: 40px;">
+    <tr>
+        <td style="width: 60%;"></td>
+        <td style="width: 40%; text-align: right;">
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
+                <tr>
+                    <td style="border: 1px solid #000; padding: 5px;">Subtotal</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: right;">{{ invoice.subtotal }}</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 5px;">Discount</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: right;">{{ invoice.discount_amount }}</td>
+                </tr>
+                {% if vat_registered %}
+                <tr>
+                    <td style="border: 1px solid #000; padding: 5px;">Tax</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: right;">{{ invoice.tax_amount }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td style="border-top: 2px solid #000; border: 1px solid #000; padding: 5px;"><strong>Total</strong>
+                    </td>
+                    <td style="border-top: 2px solid #000; border: 1px solid #000; padding: 5px; text-align: right;">
+                        <strong>{{ invoice.total }}</strong></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- Signature -->
+<div style=" margin-top: 80px; text-align: right;">
+    <div style="width: 200px; border-top: 1px solid #000; margin-left: auto;"></div>
+    <div style="margin-top: 5px; font-size: 9pt;">Authorized Signature</div>
+</div>
+
+<!-- Footer -->
+<div style="font-size: 8pt; text-align: center; border-top: 1px solid #000; margin-top: 80px; padding-top: 10px;">
+    {{ company_name }} | {{ address }} | Tel: {{ tel }} | Email: {{ email }}
+</div>
+
+</body>
+</html>

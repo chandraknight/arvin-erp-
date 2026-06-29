@@ -1,0 +1,5 @@
+<a hx-get="{% url link %}" hx-target="{{ hx_target }}" hx-trigger="{{ hx_trigger }}" hx-swap="{{ hx_swap }}" hx-indicator="{{ hx_indicator }}"
+ class="flex items-center py-2 px-4 hover:bg-green-100 transition duration-200 mb-1" @click="sidebarOpen = false">
+    <span class="{{ icon }} w-5 mr-3 text-center text-green-600"></span>
+    <span class="text-sm text-gray-700">{{ name }}</span>
+</a>

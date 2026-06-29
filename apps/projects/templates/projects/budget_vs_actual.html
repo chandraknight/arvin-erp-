@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Budget vs Actual{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Budget vs Actual</h1>
+            <p class="text-sm text-gray-500">{% if fiscal_year %}FY {{ fiscal_year.name }}{% endif %}</p>
+        </div>
+        <button onclick="window.print()" class="px-4 py-2 text-sm bg-gray-600 text-white hover:bg-gray-700 transition shadow">
+            <i class="fas fa-print mr-1"></i> Print
+        </button>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase">Total Budget</p>
+            <p class="text-2xl font-bold text-gray-800">{{ total_budget|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase">Total Actual</p>
+            <p class="text-2xl font-bold {% if total_actual > total_budget %}text-red-600{% else %}text-green-700{% endif %}">
+                {{ total_actual|floatformat:2|intcomma }}
+            </p>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <p class="text-xs text-gray-500 uppercase">Variance (Remaining)</p>
+            <p class="text-2xl font-bold {% if total_variance < 0 %}text-red-600{% else %}text-green-700{% endif %}">
+                {{ total_variance|floatformat:2|intcomma }}
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-green-600 text-white text-xs uppercase">
+                <tr>
+                    <th class="px-4 py-3 text-left border border-green-700">Budget Line</th>
+                    <th class="px-4 py-3 text-left border border-green-700">Type</th>
+                    <th class="px-4 py-3 text-left border border-green-700">Period</th>
+                    <th class="px-4 py-3 text-left border border-green-700">Cost Centre / Project</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Budget</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Actual</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Variance</th>
+                    <th class="px-4 py-3 text-right border border-green-700">Utilisation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in budget_data %}
+                <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50 {% if row.over_budget %}border-l-4 border-l-red-500{% endif %}">
+                    <td class="px-4 py-2 border border-gray-200 font-medium">{{ row.budget.name }}</td>
+                    <td class="px-4 py-2 border border-gray-200">
+                        <span class="px-2 py-0.5 text-xs font-semibold
+                            {% if row.budget.budget_type == 'REVENUE' %}bg-green-100 text-green-800
+                            {% elif row.budget.budget_type == 'CAPEX' %}bg-purple-100 text-purple-800
+                            {% else %}bg-amber-100 text-amber-800{% endif %}">
+                            {{ row.budget.get_budget_type_display }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2 border border-gray-200 text-xs text-gray-500 whitespace-nowrap">
+                        {{ row.budget.period_start|date:"Y-m-d" }} → {{ row.budget.period_end|date:"Y-m-d" }}
+                    </td>
+                    <td class="px-4 py-2 border border-gray-200 text-gray-600 text-xs">
+                        {{ row.budget.cost_centre.name|default:row.budget.project.name|default:"—" }}
+                    </td>
+                    <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ row.budget.amount|floatformat:2|intcomma }}</td>
+                    <td class="px-4 py-2 border border-gray-200 text-right font-mono {% if row.over_budget %}text-red-600 font-bold{% endif %}">
+                        {{ row.actual|floatformat:2|intcomma }}
+                    </td>
+                    <td class="px-4 py-2 border border-gray-200 text-right font-mono {% if row.variance < 0 %}text-red-600{% else %}text-green-700{% endif %}">
+                        {{ row.variance|floatformat:2|intcomma }}
+                    </td>
+                    <td class="px-4 py-2 border border-gray-200 text-right">
+                        {% if row.utilisation is not None %}
+                        <span class="{% if row.utilisation > 100 %}text-red-600 font-bold{% elif row.utilisation > 80 %}text-amber-600{% else %}text-green-700{% endif %}">
+                            {{ row.utilisation }}%
+                        </span>
+                        {% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="px-4 py-12 text-center text-gray-400">
+                        No budget lines found. <a href="{% url 'projects:budget_create' %}" class="text-green-600 hover:underline">Create a budget</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

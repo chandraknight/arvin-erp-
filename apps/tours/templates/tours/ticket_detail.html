@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}Ticket {{ ticket.ticket_number }}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+  <div class="flex items-start justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <a href="{% url 'tours:ticket_list' %}" class="text-gray-400 hover:text-gray-600 transition">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800 font-mono">{{ ticket.ticket_number }}</h2>
+        <p class="text-sm text-gray-500 mt-0.5">{{ ticket.passenger_name }} · Issued {{ ticket.issue_date }}</p>
+      </div>
+    </div>
+    <a href="{% url 'tours:ticket_edit' ticket.pk %}"
+       class="border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium px-4 py-2 transition duration-150">
+      <i class="fas fa-edit mr-1"></i> Edit
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <div class="md:col-span-2 space-y-5">
+
+      <!-- Route card -->
+      <div class="bg-white border border-gray-200 shadow-sm p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Flight Details</h3>
+          <span class="text-xs px-2 py-0.5 font-medium
+            {% if ticket.status == 'ISSUED' %}bg-green-100 text-green-700
+            {% elif ticket.status == 'VOIDED' %}bg-red-100 text-red-700
+            {% elif ticket.status == 'REFUNDED' %}bg-yellow-100 text-yellow-700
+            {% else %}bg-gray-100 text-gray-600{% endif %}">
+            {{ ticket.get_status_display }}
+          </span>
+        </div>
+        <!-- Visual route -->
+        <div class="flex items-center gap-3 my-4">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-gray-800">{{ ticket.origin.iata_code|default:"???" }}</div>
+            <div class="text-xs text-gray-500 mt-0.5">{{ ticket.origin.city|default:"Origin" }}</div>
+          </div>
+          <div class="flex-1 border-t-2 border-dashed border-gray-300 relative">
+            <i class="fas fa-plane text-green-600 absolute -top-3 left-1/2 -translate-x-1/2 text-lg"></i>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-gray-800">{{ ticket.destination.iata_code|default:"???" }}</div>
+            <div class="text-xs text-gray-500 mt-0.5">{{ ticket.destination.city|default:"Destination" }}</div>
+          </div>
+        </div>
+        <dl class="grid grid-cols-2 gap-3 text-sm mt-4 border-t border-gray-100 pt-4">
+          <dt class="text-gray-500">Routing</dt><dd class="font-mono text-gray-800">{{ ticket.routing|default:"—" }}</dd>
+          <dt class="text-gray-500">Carrier</dt><dd class="font-bold text-gray-800">{{ ticket.validating_carrier|default:ticket.airline.iata_code|default:"—" }}</dd>
+          <dt class="text-gray-500">Trip Type</dt><dd class="text-gray-700">{{ ticket.get_trip_type_display }}</dd>
+          <dt class="text-gray-500">Cabin</dt><dd class="text-gray-700">{{ ticket.get_cabin_display }}</dd>
+          <dt class="text-gray-500">Fare Basis</dt><dd class="font-mono text-gray-700">{{ ticket.fare_basis|default:"—" }}</dd>
+          <dt class="text-gray-500">PNR</dt><dd class="font-mono text-gray-700">{{ ticket.pnr|default:"—" }}</dd>
+          <dt class="text-gray-500">Departure</dt><dd class="text-gray-700">{{ ticket.departure_date|default:"—" }}</dd>
+          <dt class="text-gray-500">Return</dt><dd class="text-gray-700">{{ ticket.return_date|default:"—" }}</dd>
+        </dl>
+      </div>
+
+      <!-- Financials -->
+      <div class="bg-white border border-gray-200 shadow-sm p-5">
+        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Fare Breakdown (NPR)</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between"><span class="text-gray-500">Base Fare</span><span class="font-medium">{{ ticket.fare_amount|floatformat:2 }}</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Taxes</span><span class="font-medium">{{ ticket.tax_amount|floatformat:2 }}</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Fuel Surcharge (YQ)</span><span class="font-medium">{{ ticket.fuel_surcharge|floatformat:2 }}</span></div>
+          <div class="flex justify-between border-t border-gray-100 pt-2 font-bold text-base"><span>Gross Fare</span><span class="text-gray-800">{{ ticket.gross_fare|floatformat:2 }}</span></div>
+          <div class="flex justify-between text-green-600"><span class="text-gray-500">Commission ({{ ticket.commission_percent }}%)</span><span>{{ ticket.commission_amount|floatformat:2 }}</span></div>
+          <div class="flex justify-between border-t border-gray-100 pt-2 font-bold"><span>Net Fare</span><span class="text-green-600">{{ ticket.net_fare|floatformat:2 }}</span></div>
+        </div>
+        {% if ticket.bsp_reference %}
+          <div class="mt-3 pt-3 border-t border-gray-100">
+            <p class="text-xs text-gray-500">BSP Reference: <span class="font-mono text-gray-700">{{ ticket.bsp_reference }}</span></p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-4">
+      {% if ticket.booking %}
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+          <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Booking</p>
+          <a href="{% url 'tours:booking_detail' ticket.booking.pk %}"
+             class="text-sm text-green-600 hover:underline">{{ ticket.booking.booking_number }}</a>
+          <p class="text-xs text-gray-400 mt-0.5">{{ ticket.booking.contact_name }}</p>
+        </div>
+      {% endif %}
+
+      {% if ticket.remarks %}
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+          <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Remarks</p>
+          <p class="text-sm text-gray-700">{{ ticket.remarks }}</p>
+        </div>
+      {% endif %}
+
+      <!-- Reconciliation history -->
+      {% if ticket.reconciliation_items.exists %}
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+          <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-2">BSP Reconciliation</p>
+          {% for rec in ticket.reconciliation_items.all %}
+            <div class="text-xs mb-2 pb-2 border-b border-gray-50 last:border-0">
+              <span class="font-medium
+                {% if rec.match_status == 'MATCHED' %}text-green-600
+                {% elif rec.match_status == 'MISMATCH' %}text-red-600
+                {% else %}text-gray-600{% endif %}">
+                {{ rec.get_match_status_display }}
+              </span>
+              <span class="text-gray-400 ml-1">— {{ rec.source_file.original_filename }}</span>
+              {% if rec.mismatch_note %}
+                <p class="text-red-500 mt-0.5">{{ rec.mismatch_note }}</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

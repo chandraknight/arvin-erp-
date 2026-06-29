@@ -1,0 +1,71 @@
+{% load global_filter %}
+{% load cotton %}
+
+<!-- Mobile Card View -->
+<div class="block md:hidden space-y-4">
+    {% for item in object_list %}
+        <div class="bg-white border border-gray-200 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Record #{{ forloop.counter0|add:page_obj.start_index }}
+                </span>
+            </div>
+            <div class="space-y-2">
+                {% for td in td_list %}
+                    <div class="flex justify-between items-start gap-4">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-tight">{{ td|title }}</span>
+                        <span class="text-sm text-gray-800 font-medium text-right">{{ item|get_value:td }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="bg-white border border-gray-200 shadow-sm p-8 text-center">
+            <i class="fas fa-folder-open text-3xl text-gray-200 mb-2 block"></i>
+            <p class="text-sm text-gray-500">{{ empty_message }}</p>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Desktop Table View -->
+<div class="hidden md:block bg-white border border-gray-200 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">#</th>
+                {% for th_data in th_list %}
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{{ th_data }}</th>
+                {% endfor %}
+                {{ custom_th }}
+            </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+            {% if not custom_th %}
+                {% for item in object_list %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ forloop.counter0|add:page_obj.start_index }}</td>
+                        {% for td in td_list %}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{{ item|get_value:td }}</td>
+                        {% endfor %}
+                        {% cotton:slot "custom_td" %}{% endcotton:slot %}
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="100%" class="px-6 py-12 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-folder-open text-4xl text-gray-200 mb-3"></i>
+                                <p>{{ name }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                {{ custom_td }}
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<c-pagination></c-pagination>

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load global_filter %}
+{% block title %}Check Out — {{ booking.guest_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+  <div class="bg-white border border-indigo-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-indigo-700 text-white rounded-t">
+      <h1 class="text-lg font-bold"><i class="fas fa-sign-out-alt mr-2"></i>Check Out & Generate Invoice</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="text-sm text-gray-700 space-y-1">
+        <p><strong>Guest:</strong> {{ booking.guest_name }}</p>
+        <p><strong>Room:</strong> {{ booking.room.room_number }} — {{ booking.room.room_type.name }}</p>
+        <p><strong>Check-in:</strong> {{ booking.check_in }}</p>
+        <p><strong>Check-out:</strong> {{ booking.check_out }}</p>
+        <p><strong>Nights:</strong> {{ booking.nights }}</p>
+      </div>
+
+      <div class="border border-gray-200 rounded p-4 text-sm space-y-2">
+        <div class="flex justify-between">
+          <span class="text-gray-500">Room charge ({{ booking.nights }} × Rs {{ booking.rate_per_night }})</span>
+          <span>Rs {{ booking.room_charge_total }}</span>
+        </div>
+        {% if booking.extra_charge_total %}
+        <div class="flex justify-between">
+          <span class="text-gray-500">Extra charges</span>
+          <span>Rs {{ booking.extra_charge_total }}</span>
+        </div>
+        {% endif %}
+        <div class="border-t pt-2 flex justify-between font-bold">
+          <span>Grand Total</span>
+          <span>Rs {{ booking.grand_total }}</span>
+        </div>
+      </div>
+
+      <div class="bg-indigo-50 border border-indigo-200 rounded p-3 text-sm text-indigo-700">
+        An invoice will be created and the room freed for new bookings.
+      </div>
+
+      <form method="post" class="flex gap-3">
+        {% csrf_token %}
+        <button type="submit"
+                class="px-6 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-semibold shadow transition">
+          Check Out & Bill
+        </button>
+        <a href="{% url 'restaurant:room_booking_detail' booking.pk %}"
+           class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold shadow transition">
+          Cancel
+        </a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

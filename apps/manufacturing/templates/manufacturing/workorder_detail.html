@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Work Order {{ work_order.work_order_number }}{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">{{ work_order.work_order_number }}</h1>
+            <p class="text-sm text-gray-500 mt-1">Product: {{ work_order.bom.finished_product.name }} — Planned {{ work_order.planned_quantity }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'manufacturing:workorder_update' work_order.pk %}" class="px-4 py-2 bg-amber-600 text-white hover:bg-amber-700 transition">Edit</a>
+            {% if work_order.status == 'PLANNED' %}
+            <a href="{% url 'manufacturing:workorder_start' work_order.pk %}" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition">Start</a>
+            {% endif %}
+            {% if work_order.status == 'IN_PROGRESS' %}
+            <a href="{% url 'manufacturing:workorder_complete' work_order.pk %}" class="px-4 py-2 bg-green-600 text-white hover:bg-green-700 transition">Complete</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+            <h2 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Work Order Details</h2>
+            <dl class="space-y-2 text-sm text-gray-700">
+                <div class="flex justify-between"><dt>Status</dt><dd>{{ work_order.get_status_display }}</dd></div>
+                <div class="flex justify-between"><dt>Planned Qty</dt><dd>{{ work_order.planned_quantity }}</dd></div>
+                <div class="flex justify-between"><dt>Produced</dt><dd>{{ work_order.produced_quantity }}</dd></div>
+                <div class="flex justify-between"><dt>Rejected</dt><dd>{{ work_order.rejected_quantity }}</dd></div>
+                {% if work_order.sales_order %}<div class="flex justify-between"><dt>Sales Order</dt><dd><a href="{% url 'orders:order_detail' work_order.sales_order.pk %}" class="text-green-600 hover:underline">{{ work_order.sales_order.order_number }}</a></dd></div>{% endif %}
+            </dl>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+            <h2 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Schedule</h2>
+            <dl class="space-y-2 text-sm text-gray-700">
+                <div class="flex justify-between"><dt>Planned Start</dt><dd>{{ work_order.planned_start_date|date:"Y-m-d"|default:"—" }}</dd></div>
+                <div class="flex justify-between"><dt>Planned End</dt><dd>{{ work_order.planned_end_date|date:"Y-m-d"|default:"—" }}</dd></div>
+                <div class="flex justify-between"><dt>Actual Start</dt><dd>{{ work_order.actual_start_date|date:"Y-m-d"|default:"—" }}</dd></div>
+                <div class="flex justify-between"><dt>Actual End</dt><dd>{{ work_order.actual_end_date|date:"Y-m-d"|default:"—" }}</dd></div>
+            </dl>
+        </div>
+        <div class="bg-white border border-gray-200 shadow-sm p-5">
+            <h2 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">Notes</h2>
+            <p class="text-sm text-gray-700">{{ work_order.notes|default:"No notes."|linebreaksbr }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm mb-6">
+        <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-sm font-bold text-gray-700">Materials</h2>
+            <span class="text-xs text-gray-500">Planned vs actual use</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-green-600 text-white text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-2 text-left border border-green-700">Material</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Planned</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Used</th>
+                        <th class="px-4 py-2 text-right border border-green-700">Variance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for material in materials %}
+                    <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                        <td class="px-4 py-2 border border-gray-200">{{ material.raw_material.name }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ material.quantity_planned }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ material.quantity_used }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ material.quantity_used|default:"0" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">No material consumption recorded.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 shadow-sm">
+        <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-sm font-bold text-gray-700">Production Runs</h2>
+            <a href="{% url 'manufacturing:run_create' work_order.pk %}" class="text-sm text-green-600 hover:underline">Add run</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-blue-600 text-white text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-2 text-left border border-blue-700">Run #</th>
+                        <th class="px-4 py-2 text-right border border-blue-700">Produced</th>
+                        <th class="px-4 py-2 text-right border border-blue-700">Rejected</th>
+                        <th class="px-4 py-2 text-right border border-blue-700">Yield %</th>
+                        <th class="px-4 py-2 text-center border border-blue-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in production_runs %}
+                    <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                        <td class="px-4 py-2 border border-gray-200"><a href="{% url 'manufacturing:run_detail' run.pk %}" class="text-green-600 hover:underline">{{ run.run_number }}</a></td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ run.quantity_produced }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ run.quantity_rejected }}</td>
+                        <td class="px-4 py-2 border border-gray-200 text-right">{{ run.yield_percent|default:"—" }}%</td>
+                        <td class="px-4 py-2 border border-gray-200 text-center"><a href="{% url 'manufacturing:run_detail' run.pk %}" class="text-blue-600 hover:text-blue-800">View</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No production runs yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "ecom/storefront/base.html" %}
+{% load static %}
+
+{% block page_title %}Contact Us{% endblock %}
+{% block nav_active_contact %}active{% endblock %}
+{% block nav_bottom_contact %}class="active"{% endblock %}
+
+{% block content %}
+
+{# ── Page Hero Banner ── #}
+<div style="background:linear-gradient(135deg,#500000 0%,#800000 100%);padding:48px 0 40px;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;opacity:0.06;pointer-events:none;background-image:radial-gradient(#f59e0b 1px,transparent 1px);background-size:18px 18px;"></div>
+  <div class="container" style="position:relative;z-index:1;text-align:center;">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:99px;padding:6px 16px;margin-bottom:16px;">
+      <span style="font-size:16px;">🙏</span>
+      <span style="font-size:12px;font-weight:700;color:#fcd34d;letter-spacing:0.06em;text-transform:uppercase;">We're Here to Help</span>
+    </div>
+    <h1 style="font-size:36px;font-weight:800;color:#fff;margin:0 0 10px;line-height:1.2;">Get In Touch</h1>
+    <p style="font-size:15px;color:rgba(255,255,255,0.75);margin:0;max-width:480px;margin-inline:auto;">
+      Have a question, a special request, or need help with your order? We'd love to hear from you.
+    </p>
+  </div>
+</div>
+
+{# ── Main Content ── #}
+<section style="background:#fafaf9;padding:56px 0 72px;">
+  <div class="container">
+    <div class="row g-4 align-items-start">
+
+      {# ── Left: Contact Info ── #}
+      <div class="col-lg-4">
+
+        {% if cms %}
+        {% if cms.contact_address %}
+        <div style="background:#fff;border:1px solid #f0ede9;border-radius:16px;padding:20px 22px;margin-bottom:14px;display:flex;align-items:flex-start;gap:14px;box-shadow:0 2px 8px rgba(128,0,0,0.05);transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 6px 20px rgba(128,0,0,0.10)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(128,0,0,0.05)'">
+          <div style="width:42px;height:42px;background:#fff5f5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:1px solid #fce4e4;">📍</div>
+          <div>
+            <p style="margin:0 0 3px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.07em;">Address</p>
+            <p style="margin:0;font-size:14px;font-weight:500;color:#1c1917;line-height:1.5;">{{ cms.contact_address }}</p>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if cms.contact_phone %}
+        <div style="background:#fff;border:1px solid #f0ede9;border-radius:16px;padding:20px 22px;margin-bottom:14px;display:flex;align-items:flex-start;gap:14px;box-shadow:0 2px 8px rgba(128,0,0,0.05);transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 6px 20px rgba(128,0,0,0.10)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(128,0,0,0.05)'">
+          <div style="width:42px;height:42px;background:#fff5f5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:1px solid #fce4e4;">📞</div>
+          <div>
+            <p style="margin:0 0 3px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.07em;">Phone</p>
+            <a href="tel:{{ cms.contact_phone }}" style="font-size:14px;font-weight:600;color:#800000;text-decoration:none;">{{ cms.contact_phone }}</a>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if cms.contact_email %}
+        <div style="background:#fff;border:1px solid #f0ede9;border-radius:16px;padding:20px 22px;margin-bottom:14px;display:flex;align-items:flex-start;gap:14px;box-shadow:0 2px 8px rgba(128,0,0,0.05);transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 6px 20px rgba(128,0,0,0.10)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(128,0,0,0.05)'">
+          <div style="width:42px;height:42px;background:#fff5f5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:1px solid #fce4e4;">✉️</div>
+          <div>
+            <p style="margin:0 0 3px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.07em;">Email</p>
+            <a href="mailto:{{ cms.contact_email }}" style="font-size:14px;font-weight:600;color:#800000;text-decoration:none;">{{ cms.contact_email }}</a>
+          </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {# ── Follow Us ── #}
+        {% if cms and cms.facebook_url or cms.instagram_url or cms.twitter_url %}
+        <div style="background:#fff;border:1px solid #f0ede9;border-radius:16px;padding:22px;box-shadow:0 2px 8px rgba(128,0,0,0.05);">
+          <p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.07em;">Follow Us</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            {% if cms.facebook_url %}
+            <a href="{{ cms.facebook_url }}" target="_blank" rel="noopener"
+               style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:8px;font-size:13px;font-weight:600;color:#44403c;text-decoration:none;transition:all 0.15s;"
+               onmouseover="this.style.background='#800000';this.style.color='#fff';this.style.borderColor='#800000';"
+               onmouseout="this.style.background='#fafaf9';this.style.color='#44403c';this.style.borderColor='#e8d5c4';">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+              Facebook
+            </a>
+            {% endif %}
+            {% if cms.instagram_url %}
+            <a href="{{ cms.instagram_url }}" target="_blank" rel="noopener"
+               style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:8px;font-size:13px;font-weight:600;color:#44403c;text-decoration:none;transition:all 0.15s;"
+               onmouseover="this.style.background='#800000';this.style.color='#fff';this.style.borderColor='#800000';"
+               onmouseout="this.style.background='#fafaf9';this.style.color='#44403c';this.style.borderColor='#e8d5c4';">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              Instagram
+            </a>
+            {% endif %}
+            {% if cms.twitter_url %}
+            <a href="{{ cms.twitter_url }}" target="_blank" rel="noopener"
+               style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:8px;font-size:13px;font-weight:600;color:#44403c;text-decoration:none;transition:all 0.15s;"
+               onmouseover="this.style.background='#800000';this.style.color='#fff';this.style.borderColor='#800000';"
+               onmouseout="this.style.background='#fafaf9';this.style.color='#44403c';this.style.borderColor='#e8d5c4';">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
+              Twitter
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        {# Fallback: show Follow Us section even without links #}
+        <div style="background:#fff;border:1px solid #f0ede9;border-radius:16px;padding:22px;box-shadow:0 2px 8px rgba(128,0,0,0.05);">
+          <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.07em;">Follow Us</p>
+          <p style="margin:0;font-size:13px;color:#78716c;">Stay connected on our social channels for updates, offers, and festival reminders.</p>
+        </div>
+        {% endif %}
+
+      </div>
+
+      {# ── Right: Contact Form ── #}
+      <div class="col-lg-8">
+        <div style="background:#fff;border:1px solid #f0ede9;border-radius:20px;padding:36px 40px;box-shadow:0 4px 24px rgba(128,0,0,0.07);">
+
+          <div style="margin-bottom:28px;">
+            <h2 style="font-size:22px;font-weight:800;color:#1c1917;margin:0 0 6px;">Send Us a Message</h2>
+            <p style="font-size:13px;color:#78716c;margin:0;">We typically respond within one business day.</p>
+          </div>
+
+          {% if sent %}
+          <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:18px 20px;display:flex;align-items:center;gap:12px;">
+            <span style="font-size:22px;">✅</span>
+            <div>
+              <p style="margin:0;font-size:14px;font-weight:700;color:#15803d;">Message sent successfully!</p>
+              <p style="margin:4px 0 0;font-size:13px;color:#166534;">We've received your message and will get back to you shortly.</p>
+            </div>
+          </div>
+
+          {% else %}
+          <form method="post" action="">
+            {% csrf_token %}
+
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label for="name" style="display:block;font-size:12px;font-weight:700;color:#57534e;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+                  Full Name <span style="color:#800000;">*</span>
+                </label>
+                <input type="text" id="name" name="name" required
+                  placeholder="Your full name"
+                  style="width:100%;padding:10px 14px;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:10px;font-size:14px;color:#1c1917;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s;"
+                  onfocus="this.style.borderColor='#800000';this.style.boxShadow='0 0 0 3px rgba(128,0,0,0.08)';this.style.background='#fff';"
+                  onblur="this.style.borderColor='#e8d5c4';this.style.boxShadow='none';this.style.background='#fafaf9';">
+              </div>
+              <div class="col-sm-6">
+                <label for="phone" style="display:block;font-size:12px;font-weight:700;color:#57534e;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Phone</label>
+                <input type="tel" id="phone" name="phone"
+                  placeholder="Your phone number"
+                  style="width:100%;padding:10px 14px;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:10px;font-size:14px;color:#1c1917;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s;"
+                  onfocus="this.style.borderColor='#800000';this.style.boxShadow='0 0 0 3px rgba(128,0,0,0.08)';this.style.background='#fff';"
+                  onblur="this.style.borderColor='#e8d5c4';this.style.boxShadow='none';this.style.background='#fafaf9';">
+              </div>
+              <div class="col-12">
+                <label for="email" style="display:block;font-size:12px;font-weight:700;color:#57534e;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Email</label>
+                <input type="email" id="email" name="email"
+                  placeholder="your@email.com"
+                  style="width:100%;padding:10px 14px;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:10px;font-size:14px;color:#1c1917;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s;"
+                  onfocus="this.style.borderColor='#800000';this.style.boxShadow='0 0 0 3px rgba(128,0,0,0.08)';this.style.background='#fff';"
+                  onblur="this.style.borderColor='#e8d5c4';this.style.boxShadow='none';this.style.background='#fafaf9';">
+              </div>
+              <div class="col-12">
+                <label for="subject" style="display:block;font-size:12px;font-weight:700;color:#57534e;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Subject</label>
+                <input type="text" id="subject" name="subject"
+                  placeholder="How can we help?"
+                  style="width:100%;padding:10px 14px;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:10px;font-size:14px;color:#1c1917;outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s;"
+                  onfocus="this.style.borderColor='#800000';this.style.boxShadow='0 0 0 3px rgba(128,0,0,0.08)';this.style.background='#fff';"
+                  onblur="this.style.borderColor='#e8d5c4';this.style.boxShadow='none';this.style.background='#fafaf9';">
+              </div>
+              <div class="col-12">
+                <label for="message" style="display:block;font-size:12px;font-weight:700;color:#57534e;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+                  Message <span style="color:#800000;">*</span>
+                </label>
+                <textarea id="message" name="message" rows="5" required
+                  placeholder="Write your message here…"
+                  style="width:100%;padding:10px 14px;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:10px;font-size:14px;color:#1c1917;outline:none;resize:vertical;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s;font-family:inherit;"
+                  onfocus="this.style.borderColor='#800000';this.style.boxShadow='0 0 0 3px rgba(128,0,0,0.08)';this.style.background='#fff';"
+                  onblur="this.style.borderColor='#e8d5c4';this.style.boxShadow='none';this.style.background='#fafaf9';"></textarea>
+              </div>
+              <div class="col-12" style="padding-top:4px;">
+                <button type="submit"
+                  style="display:inline-flex;align-items:center;gap:8px;padding:13px 32px;background:#800000;color:#fff;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;transition:background 0.15s,transform 0.1s;box-shadow:0 4px 12px rgba(128,0,0,0.25);"
+                  onmouseover="this.style.background='#500000';"
+                  onmouseout="this.style.background='#800000';"
+                  onmousedown="this.style.transform='scale(0.98)';"
+                  onmouseup="this.style.transform='scale(1)';">
+                  Send Message
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+              </div>
+            </div>
+          </form>
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}

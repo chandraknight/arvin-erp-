@@ -1,0 +1,5 @@
+<a href="{{ href|default:'#' }}"
+   class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-6 py-3 shadow transition duration-150 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
+  {% if icon %}<i class="{{ icon }}"></i>{% endif %}
+  {{ slot }}
+</a>

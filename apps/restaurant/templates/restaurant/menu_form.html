@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-4">
+  <div class="bg-white border border-gray-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-green-700 text-white rounded-t">
+      <h1 class="text-lg font-bold">{{ title }}</h1>
+    </div>
+    <div class="p-6">
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-1">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold">Save</button>
+          <a href="{% url 'restaurant:menu_list' %}" class="px-5 py-2 border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

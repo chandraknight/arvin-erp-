@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Mark Table Available{% endblock %}
+
+{% block content %}
+<div class="max-w-sm mx-auto mt-2">
+  <div class="bg-white border border-gray-200 shadow-sm rounded p-6 text-center space-y-4">
+    <i class="fas fa-chair text-4xl text-green-600"></i>
+    <p class="text-gray-700">Mark <strong>{{ table.label }}</strong> as Available?</p>
+    <div class="flex gap-3 justify-center">
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="px-6 py-2 bg-green-700 hover:bg-green-800 text-white font-semibold rounded shadow transition">
+          Yes, Mark Available
+        </button>
+      </form>
+      <a href="{% url 'restaurant:dashboard' %}" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded transition">Cancel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

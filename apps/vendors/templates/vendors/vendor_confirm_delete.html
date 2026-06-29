@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Vendor - {{ vendor.name }}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2 py-6">
+    <div class="w-full">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-6">
+                <div class="flex-shrink-0">
+                    <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.728-.833-2.498 0L4.316 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Delete Vendor</h2>
+                    <p class="text-gray-600">This action cannot be undone</p>
+                </div>
+            </div>
+
+            <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Warning</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p>Are you sure you want to delete the vendor <strong>"{{ vendor.name }}"</strong>?</p>
+                            <p class="mt-1">This will also affect:</p>
+                            <ul class="list-disc ml-5 mt-1">
+                                <li>Associated ledger account will be marked as inactive</li>
+                                <li>Historical transactions will remain but vendor will be inaccessible</li>
+                                <li>Any pending vendor bills or payments will need to be handled separately</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 mb-6">
+                <h4 class="text-lg font-semibold text-gray-900 mb-3">Vendor Details</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Vendor Name</p>
+                        <p class="text-sm text-gray-900">{{ vendor.name }}</p>
+                    </div>
+                    {% if vendor.contact_person %}
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Contact Person</p>
+                        <p class="text-sm text-gray-900">{{ vendor.contact_person }}</p>
+                    </div>
+                    {% endif %}
+                    {% if vendor.email %}
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Email</p>
+                        <p class="text-sm text-gray-900">{{ vendor.email }}</p>
+                    </div>
+                    {% endif %}
+                    {% if vendor.phone %}
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Phone</p>
+                        <p class="text-sm text-gray-900">{{ vendor.phone }}</p>
+                    </div>
+                    {% endif %}
+                    {% if vendor.address %}
+                    <div class="md:col-span-2">
+                        <p class="text-sm font-medium text-gray-500">Address</p>
+                        <p class="text-sm text-gray-900">{{ vendor.address }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'vendors:vendor_dashboard' %}" 
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded transition duration-200">
+                    Cancel
+                </a>
+                <form method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition duration-200">
+                        Delete Vendor
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
