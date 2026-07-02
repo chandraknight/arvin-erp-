@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Daybook — {{ selected_date_bs }}{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2 space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Daybook Report</h1>
+      <p class="text-sm text-gray-500 mt-0.5">All transactions for <span class="font-semibold text-gray-700">{{ selected_date_bs }}</span> ({{ selected_date }})</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'reports:export_daybook_report_excel' %}?date_bs={{ selected_date_bs }}"
+         class="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded transition">
+        <i class="fas fa-file-excel"></i> Export Excel
+      </a>
+      <a href="{% url 'reports:report_dashboard' %}"
+         class="inline-flex items-center gap-1 bg-gray-500 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded transition">
+        <i class="fas fa-arrow-left"></i> Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Date Filter -->
+  <form method="get" class="flex flex-wrap gap-3 items-end bg-white border rounded p-4 shadow-sm">
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Date (BS)</label>
+      <input type="text" name="date_bs" value="{{ selected_date_bs }}"
+             class="nepali-datepicker border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+             placeholder="YYYY-MM-DD" autocomplete="off">
+    </div>
+    <button type="submit"
+            class="bg-green-600 hover:bg-green-700 text-white text-sm px-5 py-2 rounded transition">
+      <i class="fas fa-search mr-1"></i>View
+    </button>
+  </form>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-lg shadow-sm border p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Invoices Issued</p>
+      <p class="text-xl font-bold text-gray-800 mt-1">{{ invoices.count }}</p>
+      <p class="text-sm text-green-700 font-medium">रु {{ total_invoiced|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Payments Collected</p>
+      <p class="text-xl font-bold text-gray-800 mt-1">{{ payments.count }}</p>
+      <p class="text-sm text-blue-700 font-medium">रु {{ total_collected|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Total Debits</p>
+      <p class="text-xl font-bold text-gray-800 mt-1">रु {{ total_debits|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border p-4">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">Total Credits</p>
+      <p class="text-xl font-bold text-gray-800 mt-1">रु {{ total_credits|floatformat:2|intcomma }}</p>
+    </div>
+  </div>
+
+  <!-- Invoices -->
+  <div class="bg-white rounded-lg shadow-sm border">
+    <div class="px-5 py-3 border-b flex items-center gap-2">
+      <i class="fas fa-file-invoice text-green-600"></i>
+      <h2 class="font-semibold text-gray-700">Invoices / Sales</h2>
+      <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{{ invoices.count }}</span>
+    </div>
+    {% if invoices %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+          <tr>
+            <th class="px-4 py-3 text-left">Invoice #</th>
+            <th class="px-4 py-3 text-left">Customer</th>
+            <th class="px-4 py-3 text-left">Status</th>
+            <th class="px-4 py-3 text-right">Total</th>
+            <th class="px-4 py-3 text-right">Outstanding</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for inv in invoices %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 font-medium text-green-700">
+              <a href="{% url 'billing:invoice_detail' inv.pk %}" class="hover:underline">{{ inv.invoice_number|default:inv.id }}</a>
+            </td>
+            <td class="px-4 py-3 text-gray-700">{{ inv.customer.name|default:"—" }}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded text-xs font-medium
+                {% if inv.status == 'ISSUED' %}bg-green-100 text-green-700
+                {% elif inv.status == 'DRAFT' %}bg-yellow-100 text-yellow-700
+                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                {{ inv.status }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-right">रु {{ inv.total|floatformat:2|intcomma }}</td>
+            <td class="px-4 py-3 text-right {% if inv.outstanding_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+              रु {{ inv.outstanding_balance|floatformat:2|intcomma }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-gray-50 font-semibold text-sm">
+          <tr>
+            <td colspan="3" class="px-4 py-3 text-right text-gray-600">Total</td>
+            <td class="px-4 py-3 text-right">रु {{ total_invoiced|floatformat:2|intcomma }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <p class="px-5 py-6 text-sm text-gray-400 italic">No invoices on this date.</p>
+    {% endif %}
+  </div>
+
+  <!-- Payments -->
+  <div class="bg-white rounded-lg shadow-sm border">
+    <div class="px-5 py-3 border-b flex items-center gap-2">
+      <i class="fas fa-money-bill-wave text-blue-600"></i>
+      <h2 class="font-semibold text-gray-700">Payments Received</h2>
+      <span class="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{{ payments.count }}</span>
+    </div>
+    {% if payments %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+          <tr>
+            <th class="px-4 py-3 text-left">Invoice #</th>
+            <th class="px-4 py-3 text-left">Customer</th>
+            <th class="px-4 py-3 text-left">Method</th>
+            <th class="px-4 py-3 text-right">Amount</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for pay in payments %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 font-medium text-blue-700">
+              {{ pay.invoice.invoice_number|default:"—" }}
+            </td>
+            <td class="px-4 py-3 text-gray-700">
+              {% if pay.invoice and pay.invoice.customer %}{{ pay.invoice.customer.name }}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-gray-600">{{ pay.payment_method|default:"—" }}</td>
+            <td class="px-4 py-3 text-right text-blue-700 font-medium">रु {{ pay.amount|floatformat:2|intcomma }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-gray-50 font-semibold text-sm">
+          <tr>
+            <td colspan="3" class="px-4 py-3 text-right text-gray-600">Total</td>
+            <td class="px-4 py-3 text-right text-blue-700">रु {{ total_collected|floatformat:2|intcomma }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <p class="px-5 py-6 text-sm text-gray-400 italic">No payments on this date.</p>
+    {% endif %}
+  </div>
+
+  <!-- Journal Entries -->
+  <div class="bg-white rounded-lg shadow-sm border">
+    <div class="px-5 py-3 border-b flex items-center gap-2">
+      <i class="fas fa-book-open text-indigo-600"></i>
+      <h2 class="font-semibold text-gray-700">Journal Entries</h2>
+      <span class="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{{ journal_entries.count }}</span>
+    </div>
+    {% if journal_entries %}
+    <div class="space-y-4 p-4">
+      {% for je in journal_entries %}
+      <div class="border rounded-lg overflow-hidden">
+        <div class="bg-indigo-50 px-4 py-2 flex items-center justify-between">
+          <span class="text-sm font-medium text-indigo-800">{{ je.description|truncatechars:80 }}</span>
+          <a href="{% url 'bookkeeping:journal_entry_detail' je.pk %}" class="text-xs text-indigo-600 hover:underline">View</a>
+        </div>
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+            <tr>
+              <th class="px-4 py-2 text-left">Account</th>
+              <th class="px-4 py-2 text-right">Debit</th>
+              <th class="px-4 py-2 text-right">Credit</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for line in je.lines.all %}
+            <tr>
+              <td class="px-4 py-2 text-gray-700">{{ line.account.name|default:"—" }}</td>
+              <td class="px-4 py-2 text-right">
+                {% if line.entry_type == 'DEBIT' %}रु {{ line.amount|floatformat:2|intcomma }}{% endif %}
+              </td>
+              <td class="px-4 py-2 text-right">
+                {% if line.entry_type == 'CREDIT' %}रु {{ line.amount|floatformat:2|intcomma }}{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="border-t bg-gray-50 px-5 py-3 flex justify-end gap-8 text-sm font-semibold">
+      <span class="text-gray-600">Total Debit: <span class="text-gray-800">रु {{ total_debits|floatformat:2|intcomma }}</span></span>
+      <span class="text-gray-600">Total Credit: <span class="text-gray-800">रु {{ total_credits|floatformat:2|intcomma }}</span></span>
+    </div>
+    {% else %}
+    <p class="px-5 py-6 text-sm text-gray-400 italic">No journal entries on this date.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

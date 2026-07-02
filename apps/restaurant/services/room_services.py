@@ -81,7 +81,7 @@ def check_out_room(booking: RoomBooking, user=None) -> 'billing.Invoice':
     company = booking.company
     setup_default_ledger_accounts(company)
 
-    invoice_number, seq = generate_invoice_number(company.id)
+    invoice_number, seq, fy = generate_invoice_number(company.id)
 
     # Room accommodation line
     subtotal = booking.room_charge_total
@@ -96,6 +96,7 @@ def check_out_room(booking: RoomBooking, user=None) -> 'billing.Invoice':
         customer=None,
         invoice_number=invoice_number,
         sequence_number=seq,
+        fiscal_year=fy,
         transaction_date=timezone.now().date(),
         subtotal=grand,
         discount_amount=Decimal('0.00'),

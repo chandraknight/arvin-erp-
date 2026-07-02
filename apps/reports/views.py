@@ -4280,14 +4280,24 @@ def tax_report(request, template='reports/tax_report.html'):
         journal_entry__date__lte=end_date,
     ).aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
 
-    # Input tax — approximated as tax_amount on vendor bills
-    input_tax = VendorBill.objects.filter(
+    # Input tax — sum stored tax_amount on vendor bills
+    purchase_agg = VendorBill.objects.filter(
         vendor__company=user_company,
         bill_date__gte=start_date,
         bill_date__lte=end_date,
     ).aggregate(
-        t=Coalesce(Sum('total_amount'), Decimal('0'))
-    )['t'] * (user_company.tax_rate / Decimal('100'))
+        t=Coalesce(Sum('tax_amount'), Decimal('0'))
+    )
+    input_tax = purchase_agg['t']
+    # Legacy bills with no stored tax_amount: fall back to derived estimate
+    if input_tax == Decimal('0'):
+        total_bills = VendorBill.objects.filter(
+            vendor__company=user_company,
+            bill_date__gte=start_date,
+            bill_date__lte=end_date,
+        ).aggregate(t=Coalesce(Sum('total_amount'), Decimal('0')))['t']
+        if total_bills > Decimal('0'):
+            input_tax = (total_bills * user_company.tax_rate / Decimal('100')).quantize(Decimal('0.01'))
 
     net_tax_payable = output_tax - input_tax
 
@@ -4677,19 +4687,22 @@ def _compute_vat_for_period(user_company, p_start, p_end, tax_payable_ids):
         bill_date__lte=p_end,
     ).aggregate(
         total_purchases=Coalesce(Sum('total_amount'), Decimal('0')),
+        input_vat=Coalesce(Sum('tax_amount'), Decimal('0')),
     )
-    # Derive input VAT from bill totals using company tax rate
-    # (VendorBill has no explicit tax field — tax is embedded in total_amount)
-    tax_rate = user_company.tax_rate
     total_purchases = purchase_qs['total_purchases']
-    # Back-calculate: if tax-inclusive, input_vat = total * rate / (100 + rate)
-    # If tax-exclusive, input_vat = total * rate / 100
-    if getattr(user_company, 'vat_inclusive', False):
-        input_vat = (total_purchases * tax_rate / (Decimal('100') + tax_rate)).quantize(Decimal('0.01'))
+    input_vat = purchase_qs['input_vat']
+    taxable_purchases = (total_purchases - input_vat).quantize(Decimal('0.01'))
+
+    # Legacy bills (before tax_amount field) have tax_amount=0 but may have
+    # tax embedded in total. For those rows, fall back to derivation only when
+    # the entire period has input_vat=0 yet purchases exist.
+    if input_vat == Decimal('0') and total_purchases > Decimal('0'):
+        tax_rate = user_company.tax_rate
+        if getattr(user_company, 'vat_inclusive', False):
+            input_vat = (total_purchases * tax_rate / (Decimal('100') + tax_rate)).quantize(Decimal('0.01'))
+        else:
+            input_vat = (total_purchases * tax_rate / Decimal('100')).quantize(Decimal('0.01'))
         taxable_purchases = total_purchases - input_vat
-    else:
-        input_vat = (total_purchases * tax_rate / Decimal('100')).quantize(Decimal('0.01'))
-        taxable_purchases = total_purchases
 
     output_vat = sales_qs['output_vat']
     net_vat    = output_vat - input_vat
@@ -4793,12 +4806,18 @@ def vat_period_report(request, template='reports/vat_period_report.html'):
     )
 
     # ── Vendor bill detail for the full range ─────────────────────────────
+    from django.db.models import ExpressionWrapper, F as _F, DecimalField as _DF
     bill_detail = VendorBill.objects.filter(
         vendor__company=user_company,
         bill_date__gte=start_date,
         bill_date__lte=end_date,
-    ).select_related('vendor').order_by('bill_date').values(
-        'bill_number', 'bill_date', 'total_amount', 'vendor__name',
+    ).select_related('vendor').annotate(
+        subtotal_amount=ExpressionWrapper(
+            _F('total_amount') - _F('tax_amount'), output_field=_DF(max_digits=10, decimal_places=2)
+        )
+    ).order_by('bill_date').values(
+        'bill_number', 'bill_date', 'total_amount', 'tax_amount', 'tax_percent',
+        'subtotal_amount', 'vendor__name',
     )
 
     logger.info(
@@ -4973,9 +4992,9 @@ def export_vat_period_report_excel(request):
 
     # ── Sheet 3: Vendor Bill Detail ───────────────────────────────────────
     ws3 = wb.create_sheet('Purchase Bill Detail')
-    ws3.append(['Bill #', 'Date', 'Vendor', 'Total Amount', 'Derived Input VAT'])
+    ws3.append(['Bill #', 'Date', 'Vendor', 'Subtotal (excl. VAT)', 'VAT %', 'Input VAT', 'Bill Total'])
     bill_header_row = ws3.max_row
-    for col_idx in range(1, 6):
+    for col_idx in range(1, 8):
         cell = ws3.cell(row=bill_header_row, column=col_idx)
         cell.font = header_font
         cell.fill = header_fill
@@ -4986,22 +5005,16 @@ def export_vat_period_report_excel(request):
         bill_date__lte=end_date,
     ).select_related('vendor').order_by('bill_date')
 
-    tax_rate = user_company.tax_rate
     for bill in bills:
-        if getattr(user_company, 'vat_inclusive', False):
-            derived_vat = float(
-                (bill.total_amount * tax_rate / (Decimal('100') + tax_rate)).quantize(Decimal('0.01'))
-            )
-        else:
-            derived_vat = float(
-                (bill.total_amount * tax_rate / Decimal('100')).quantize(Decimal('0.01'))
-            )
+        subtotal_ex_vat = float((bill.total_amount - bill.tax_amount).quantize(Decimal('0.01')))
         ws3.append([
             bill.bill_number,
             str(bill.bill_date),
             bill.vendor.name,
+            subtotal_ex_vat,
+            float(bill.tax_percent),
+            float(bill.tax_amount),
             float(bill.total_amount),
-            derived_vat,
         ])
 
     response = HttpResponse(
@@ -5753,5 +5766,197 @@ def export_purchase_price_history_excel(request):
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     response['Content-Disposition'] = 'attachment; filename="purchase_price_history.xlsx"'
+    wb.save(response)
+    return response
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DAYBOOK REPORT
+# ─────────────────────────────────────────────────────────────────────────────
+@login_required
+def daybook_report(request):
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    from apps.utils.nepali_date import today_bs, bs_str_to_ad, ad_date_to_bs_str
+    import datetime
+
+    # Date selection — default to today
+    date_bs_str = request.GET.get('date_bs', '').strip()
+    date_ad_str = request.GET.get('date_ad', '').strip()
+
+    selected_date = None
+    selected_date_bs = ''
+
+    if date_bs_str:
+        try:
+            selected_date = bs_str_to_ad(date_bs_str)
+            selected_date_bs = date_bs_str
+        except Exception:
+            pass
+    elif date_ad_str:
+        try:
+            selected_date = datetime.date.fromisoformat(date_ad_str)
+            selected_date_bs = ad_date_to_bs_str(selected_date)
+        except Exception:
+            pass
+
+    if not selected_date:
+        selected_date = datetime.date.today()
+        selected_date_bs = ad_date_to_bs_str(selected_date)
+
+    # Invoices issued on this date
+    invoices = Invoice.objects.filter(
+        company=user_company,
+        transaction_date=selected_date,
+        is_deleted=False,
+    ).exclude(status='CANCELLED').select_related('customer').order_by('created_at')
+
+    # Payments received on this date
+    payments = Payment.objects.filter(
+        company=user_company,
+        payment_date=selected_date,
+        is_deleted=False,
+    ).select_related('invoice', 'invoice__customer').order_by('created_at')
+
+    # Journal entries posted on this date
+    journal_entries = JournalEntry.objects.filter(
+        company=user_company,
+        date=selected_date,
+        is_deleted=False,
+    ).prefetch_related('lines__account').order_by('created_at')
+
+    # Totals
+    total_invoiced = invoices.aggregate(t=Sum('total'))['t'] or Decimal('0')
+    total_collected = payments.aggregate(t=Sum('amount'))['t'] or Decimal('0')
+
+    total_debits = Decimal('0')
+    total_credits = Decimal('0')
+    for je in journal_entries:
+        for line in je.lines.all():
+            if line.entry_type == 'DEBIT':
+                total_debits += line.amount
+            else:
+                total_credits += line.amount
+
+    context = {
+        'selected_date': selected_date,
+        'selected_date_bs': selected_date_bs,
+        'invoices': invoices,
+        'payments': payments,
+        'journal_entries': journal_entries,
+        'total_invoiced': total_invoiced,
+        'total_collected': total_collected,
+        'total_debits': total_debits,
+        'total_credits': total_credits,
+        'rupee': 'रु',
+    }
+    return render(request, 'reports/bookkeeping/daybook_report.html', context)
+
+
+@login_required
+def export_daybook_report_excel(request):
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    from apps.utils.nepali_date import bs_str_to_ad, ad_date_to_bs_str
+    import datetime
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    date_bs_str = request.GET.get('date_bs', '').strip()
+    date_ad_str = request.GET.get('date_ad', '').strip()
+    selected_date = None
+
+    if date_bs_str:
+        try:
+            selected_date = bs_str_to_ad(date_bs_str)
+        except Exception:
+            pass
+    elif date_ad_str:
+        try:
+            selected_date = datetime.date.fromisoformat(date_ad_str)
+        except Exception:
+            pass
+    if not selected_date:
+        selected_date = datetime.date.today()
+
+    selected_date_bs = ad_date_to_bs_str(selected_date)
+
+    invoices = Invoice.objects.filter(
+        company=user_company, transaction_date=selected_date, is_deleted=False,
+    ).exclude(status='CANCELLED').select_related('customer')
+
+    payments = Payment.objects.filter(
+        company=user_company, payment_date=selected_date, is_deleted=False,
+    ).select_related('invoice__customer')
+
+    journal_entries = JournalEntry.objects.filter(
+        company=user_company, date=selected_date, is_deleted=False,
+    ).prefetch_related('lines__account')
+
+    wb = Workbook()
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='1F4E79')
+
+    def _make_sheet(ws, title, headers):
+        ws.title = title
+        for col, h in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=h)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+
+    # Invoices sheet
+    ws1 = wb.active
+    _make_sheet(ws1, 'Invoices', ['Invoice #', 'Customer', 'Status', 'Total (NPR)', 'Outstanding (NPR)'])
+    for row, inv in enumerate(invoices, 2):
+        ws1.append([
+            inv.invoice_number or str(inv.id),
+            inv.customer.name if inv.customer else '—',
+            inv.status,
+            float(inv.total),
+            float(inv.outstanding_balance),
+        ])
+
+    # Payments sheet
+    ws2 = wb.create_sheet('Payments')
+    _make_sheet(ws2, 'Payments', ['Invoice #', 'Customer', 'Amount (NPR)', 'Method'])
+    for row, pay in enumerate(payments, 2):
+        ws2.append([
+            pay.invoice.invoice_number if pay.invoice else '—',
+            pay.invoice.customer.name if pay.invoice and pay.invoice.customer else '—',
+            float(pay.amount),
+            pay.payment_method or '—',
+        ])
+
+    # Journal entries sheet
+    ws3 = wb.create_sheet('Journal Entries')
+    _make_sheet(ws3, 'Journal Entries', ['Description', 'Account', 'Type', 'Amount (NPR)'])
+    for je in journal_entries:
+        for line in je.lines.all():
+            ws3.append([
+                je.description,
+                line.account.name if line.account else '—',
+                line.entry_type,
+                float(line.amount),
+            ])
+
+    for ws in [ws1, ws2, ws3]:
+        for col in ws.columns:
+            letter = get_column_letter(col[0].column)
+            ws.column_dimensions[letter].width = max(
+                (len(str(c.value)) for c in col if c.value), default=10
+            ) + 4
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="daybook_{selected_date}.xlsx"'
     wb.save(response)
     return response

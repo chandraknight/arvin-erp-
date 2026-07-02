@@ -40,6 +40,16 @@ class CompanyForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
+        # tax_rate has a model default (13.00) — allow blank in the form
+        self.fields['tax_rate'].required = False
+        self.fields['tax_rate'].initial = '13.00'
+
+    def clean_tax_rate(self):
+        from decimal import Decimal
+        val = self.cleaned_data.get('tax_rate')
+        if val is None or val == '':
+            return Decimal('13.00')
+        return val
 
 
 class CompanyBasicInfoForm(forms.ModelForm):

@@ -28,11 +28,6 @@ def inventory_management(request):
         packages_per_page = 5
 
     try:
-        categories_per_page = int(request.GET.get('categories_per_page', 5))
-    except (ValueError, TypeError):
-        categories_per_page = 5
-
-    try:
         products_per_page = int(request.GET.get('products_per_page', 5))  # New products pagination
     except (ValueError, TypeError):
         products_per_page = 5
@@ -57,8 +52,21 @@ def inventory_management(request):
             product__company=request.user.company
         ).order_by('-created_at')[:10]
 
-        categories_queryset = Category.objects.filter(company=request.user.company).order_by('name')
+        categories_queryset = Category.objects.filter(company=request.user.company).select_related('type').order_by('type__name', 'name')
         categories_count = categories_queryset.count()
+        # Group categories by type for the template
+        _cat_types = CategoryType.active_objects.filter(company=request.user.company).order_by('name')
+        _cat_map = {}
+        for c in categories_queryset:
+            key = c.type_id
+            if key not in _cat_map:
+                _cat_map[key] = {'type': c.type, 'categories': []}
+            _cat_map[key]['categories'].append(c)
+        # categories with no type go under a virtual "Uncategorised" bucket
+        _uncategorised = [c for c in categories_queryset if c.type_id is None]
+        category_groups = list(_cat_map.values())
+        if _uncategorised:
+            category_groups.append({'type': None, 'categories': _uncategorised})
         packages_queryset = Package.objects.filter(
             items__product__company=request.user.company
         ).distinct().prefetch_related('items__product').order_by('name')
@@ -73,8 +81,18 @@ def inventory_management(request):
         low_stock_products_count = low_stock_products.count()
         transactions = StockTransaction.active_objects.all().order_by('-created_at')[:10]
 
-        categories_queryset = Category.active_objects.all().order_by('name')
+        categories_queryset = Category.active_objects.all().select_related('type').order_by('type__name', 'name')
         categories_count = categories_queryset.count()
+        _cat_map = {}
+        for c in categories_queryset:
+            key = c.type_id
+            if key not in _cat_map:
+                _cat_map[key] = {'type': c.type, 'categories': []}
+            _cat_map[key]['categories'].append(c)
+        _uncategorised = [c for c in categories_queryset if c.type_id is None]
+        category_groups = list(_cat_map.values())
+        if _uncategorised:
+            category_groups.append({'type': None, 'categories': _uncategorised})
         packages_queryset = Package.active_objects.all().prefetch_related('items__product').order_by('name')
         packages_count = packages_queryset.count()
 
@@ -98,16 +116,6 @@ def inventory_management(request):
         products = products_paginator.page(products_paginator.num_pages)
 
 
-    categories_paginator = Paginator(categories_queryset, categories_per_page)
-    categories_page = request.GET.get('categories_page', 1)
-    try:
-        categories_page = int(categories_page)
-        categories = categories_paginator.page(categories_page)
-    except (PageNotAnInteger, ValueError):
-        categories = categories_paginator.page(1)
-    except EmptyPage:
-        categories = categories_paginator.page(categories_paginator.num_pages)
-
     packages_paginator = Paginator(packages_queryset, packages_per_page)
     packages_page = request.GET.get('packages_page', 1)
     try:
@@ -126,14 +134,12 @@ def inventory_management(request):
         'products': products,
         'low_stock_products': low_stock_products,
         'transactions': transactions,
-        'categories': categories,
+        'category_groups': category_groups,
         'packages': packages,
         'rupee': RUPEE,
         'products_paginator': products_paginator,
-        'categories_paginator': categories_paginator,
         'packages_paginator': packages_paginator,
         'products_per_page': products_per_page,
-        'categories_per_page': categories_per_page,
         'packages_per_page': packages_per_page,
         'q': q,
         'category_filter': category_filter,

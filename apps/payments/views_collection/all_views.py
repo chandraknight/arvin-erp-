@@ -77,9 +77,10 @@ def payment_create(request):
                                 p.amount = split['amount']
                                 _stamp_payment(p, request)
                                 if company:
-                                    ref, seq = generate_payment_number(company.id, p.payment_type)
+                                    ref, seq, fy = generate_payment_number(company.id, p.payment_type)
                                     p.reference_number = ref
                                     p.sequence_number = seq
+                                    p.fiscal_year = fy
                                 p.save()
 
                                 if p.invoice:
@@ -111,9 +112,10 @@ def payment_create(request):
                     payment = form.save(commit=False)
                     _stamp_payment(payment, request)
                     if not payment.reference_number and getattr(payment, 'company', None):
-                        ref, seq = generate_payment_number(payment.company.id, payment.payment_type)
+                        ref, seq, fy = generate_payment_number(payment.company.id, payment.payment_type)
                         payment.reference_number = ref
                         payment.sequence_number = seq
+                        payment.fiscal_year = fy
                     payment.save()
 
                     if payment.invoice:
@@ -132,12 +134,12 @@ def payment_create(request):
 
         auto_payment_number = None
         if hasattr(request.user, 'company') and request.user.company:
-            auto_payment_number, _ = generate_payment_number(request.user.company.id, 'CUSTOMER')
+            auto_payment_number, _, _fy = generate_payment_number(request.user.company.id, 'CUSTOMER')
     else:
         form = PaymentForm(user=request.user, request=request)
         auto_payment_number = None
         if hasattr(request.user, 'company') and request.user.company:
-            auto_payment_number, _ = generate_payment_number(request.user.company.id, 'CUSTOMER')
+            auto_payment_number, _, _fy = generate_payment_number(request.user.company.id, 'CUSTOMER')
     
     company = getattr(request.user, 'company', None)
     vendors = Vendor.objects.filter(company=company).order_by('name') if company else Vendor.objects.none()

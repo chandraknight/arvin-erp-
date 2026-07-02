@@ -64,6 +64,12 @@ urlpatterns = [
     path('notes/debit-credit/', views.debit_credit_note_report,
          name='debit_credit_note_report'),
     path('ar-aging/', views.ar_aging_report, name='ar_aging_report'),
+    path('ar-aging/export/excel/', views.export_ar_aging_report_excel,
+         name='export_ar_aging_report_excel'),
+    path('ar-aging/export/pdf/', views.export_ar_aging_report_pdf,
+         name='export_ar_aging_report_pdf'),
+    path('ar-aging/print/', views.print_ar_aging_report,
+         name='print_ar_aging_report'),
     path('sales/by-category/', views.sales_by_category_report,
          name='sales_by_category_report'),
     path('sales/by-category/export/excel/', views.export_sales_by_category_report_excel,
@@ -218,6 +224,10 @@ urlpatterns = [
          name='purchase_price_history_report'),
     path('products/purchase-price-history/export/excel/', views.export_purchase_price_history_excel,
          name='export_purchase_price_history_excel'),
+
+    # ── Daybook ───────────────────────────────────────────────────────────
+    path('bookkeeping/daybook/', views.daybook_report, name='daybook_report'),
+    path('bookkeeping/daybook/export/excel/', views.export_daybook_report_excel, name='export_daybook_report_excel'),
 
     # ── Report Access Management (company admin only) ─────────────────────
     path('access/', views.report_access_manage, name='report_access_manage'),

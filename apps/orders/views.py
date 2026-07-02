@@ -339,7 +339,7 @@ def convert_to_invoice(request, pk):
     from apps.billing.services.invoice_service import generate_invoice_number
     is_vat = getattr(request.user_company, 'vat_registered', False)
     doc_type = 'INV' if is_vat else 'ORD'
-    invoice_number, seq = generate_invoice_number(request.user_company.id, doc_type=doc_type)
+    invoice_number, seq, fy = generate_invoice_number(request.user_company.id, doc_type=doc_type)
 
     invoice = Invoice.objects.create(
         company=request.user_company,
@@ -353,6 +353,7 @@ def convert_to_invoice(request, pk):
         outstanding_balance=order.total,
         tax_percent=request.user_company.tax_rate,
         invoice_number=invoice_number,
+        fiscal_year=fy,
         sequence_number=seq,
         status='ISSUED' if is_vat else 'ESTIMATE',
         created_by=request.user,

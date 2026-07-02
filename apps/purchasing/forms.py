@@ -141,15 +141,19 @@ class VendorBillForm(FiscalYearDateMixin, forms.ModelForm):
 
     class Meta:
         model = VendorBill
-        fields = ['vendor', 'purchase_order', 'bill_number', 'bill_date', 'due_date', 'status']
+        fields = ['vendor', 'purchase_order', 'bill_number', 'bill_date', 'due_date', 'status', 'tax_percent']
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
         if self.request and hasattr(self.request.user, 'company'):
-            self.fields['vendor'].queryset = self.fields['vendor'].queryset.filter(
+            self.fields['vendor'].queryset = Vendor.active_objects.filter(
                 company=self.request.user.company
             )
+        elif self.request and self.request.user.is_superuser:
+            self.fields['vendor'].queryset = Vendor.active_objects.all()
+        else:
+            self.fields['vendor'].queryset = Vendor.active_objects.none()
         self.inject_fiscal_year(self.request)
 
 class VendorPaymentForm(FiscalYearDateMixin, forms.ModelForm):

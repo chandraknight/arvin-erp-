@@ -12,6 +12,7 @@ class Vendor(BaseModel):
     phone = models.CharField(max_length=50, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     pan_number = models.CharField(max_length=20, blank=True, null=True, help_text="PAN / VAT registration number")
+    vat_registered = models.BooleanField(default=False, help_text="Is this vendor VAT registered?")
     ref_by = models.ForeignKey(
         'pos.Referrer',
         on_delete=models.SET_NULL,

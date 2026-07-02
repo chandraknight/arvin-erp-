@@ -102,12 +102,17 @@ class Payment(BaseModel):
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     user_payment_destination = models.CharField(max_length=20, null=True, blank=True)
     sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='payments',
+        db_constraint=False,
+    )
 
     class Meta:
         ordering = ['-date', '-created_at']
         constraints = [
-            # Partial unique index: no two payments in the same company may share
-            # a reference_number, but NULL reference_numbers are allowed to coexist.
             models.UniqueConstraint(
                 fields=['company', 'reference_number'],
                 condition=models.Q(reference_number__isnull=False),

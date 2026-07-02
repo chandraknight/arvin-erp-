@@ -89,7 +89,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:flex">
                         <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full">Tax Rate %</span>
-                        {{ form.tax_rate|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                        {{ form.tax_rate|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600"|attr:"placeholder:13.00" }}
                     </div>
                     <div class="sm:flex">
                         <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full">VAT Number</span>
@@ -276,7 +276,7 @@
 
 <script>
 const FIELD_MAP = {
-    TRADING:          {inventory:1, purchasing:1, hr_payroll:1, order_management:1, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
+    TRADING:          {inventory:1, purchasing:1, hr_payroll:0, order_management:1, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
     SERVICE:          {inventory:0, purchasing:0, hr_payroll:1, order_management:1, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
     PROJECT:          {inventory:0, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:1, forecasting:1, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
     NGO:              {inventory:0, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:1, forecasting:1, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
@@ -284,7 +284,7 @@ const FIELD_MAP = {
     RESTAURANT:       {inventory:1, purchasing:1, hr_payroll:1, order_management:1, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:1, tours:0, ecom:0},
     SMALL_ENTERPRISE: {inventory:0, purchasing:0, hr_payroll:0, order_management:0, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
     TOUR_OPERATOR:    {inventory:0, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:1, ecom:0},
-    OTHER:            {inventory:1, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
+    OTHER:            {inventory:1, purchasing:1, hr_payroll:0, order_management:0, pos:0, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
 };
 
 const LABEL_MAP = {

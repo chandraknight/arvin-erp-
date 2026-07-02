@@ -9,7 +9,7 @@ def issue_invoice_from_booking(booking, user):
     if booking.has_invoice:
         return booking.invoice
 
-    invoice_number, seq = generate_invoice_number(booking.company.id)
+    invoice_number, seq, fy = generate_invoice_number(booking.company.id)
 
     invoice = Invoice.objects.create(
         company=booking.company,
@@ -23,6 +23,7 @@ def issue_invoice_from_booking(booking, user):
         outstanding_balance=booking.total,
         invoice_number=invoice_number,
         sequence_number=seq,
+        fiscal_year=fy,
         created_by=user,
     )
 

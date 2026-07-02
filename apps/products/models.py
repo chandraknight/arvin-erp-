@@ -211,14 +211,27 @@ class Package(BaseModel):
             return 0
         return round((self.compare_at_price - self.price) / self.compare_at_price * 100)
 
+PACKAGE_ITEM_TYPE_CHOICES = [
+    ('core',     'Core (always included, mandatory)'),
+    ('optional', 'Optional (pre-selected, customer can remove)'),
+    ('addon',    'Add-on (not selected, customer can add)'),
+]
+
+
 class PackageItem(BaseModel):
     package = models.ForeignKey(Package, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
+    item_type = models.CharField(
+        max_length=10,
+        choices=PACKAGE_ITEM_TYPE_CHOICES,
+        default='core',
+        help_text="Core = always in bundle. Optional = pre-selected, customer can deselect. Add-on = customer can add."
+    )
 
     def __str__(self):
         name = self.product.name if self.product else "Unknown Product"
-        return f"{self.quantity}x {name} in {self.package.name}"
+        return f"{self.quantity}x {name} in {self.package.name} ({self.item_type})"
 
 class ProductImage(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')

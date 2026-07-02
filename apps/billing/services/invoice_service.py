@@ -58,12 +58,16 @@ def calculate_total(invoice):
     return invoice.total
 
 
-def generate_invoice_number(company_id, doc_type: str = "INV") -> str:
+def generate_invoice_number(company_id, doc_type: str = "INV") -> tuple:
     """
     Format: {COMPANY}-{TYPE}-{FY}-{NNNN}
     e.g.   DPS-INV-2082/83-0001
+
+    Sequence resets to 0001 for each new fiscal year.
+    Returns (invoice_number, sequence, fiscal_year).
     """
     today_np = nepali_datetime.date.today()
+    fiscal_year = None
     try:
         company = Company.active_objects.get(id=company_id)
         company_prefix = company.name[:3].upper().strip().ljust(3, 'X')
@@ -76,21 +80,23 @@ def generate_invoice_number(company_id, doc_type: str = "INV") -> str:
     prefix = f"{company_prefix}-{doc_type}-{fiscal_year_name}-"
 
     from apps.billing.models import Invoice
-    # Use company-wide max to respect the unique_invoice_seq_per_company constraint
+    # Scope sequence to current fiscal year so numbering resets each year
+    fy_filter = {'fiscal_year': fiscal_year} if fiscal_year else {'fiscal_year__isnull': True}
     last_seq = Invoice.objects.filter(
         company_id=company_id,
+        **fy_filter,
     ).aggregate(max_seq=Max('sequence_number'))
 
     sequence = (last_seq['max_seq'] or 0) + 1
 
     invoice_number = f"{prefix}{sequence:04d}"
     while Invoice.objects.filter(
-        company_id=company_id, sequence_number=sequence
+        company_id=company_id, fiscal_year=fiscal_year, sequence_number=sequence
     ).exists() or Invoice.objects.filter(invoice_number=invoice_number).exists():
         sequence += 1
         invoice_number = f"{prefix}{sequence:04d}"
 
-    return invoice_number, sequence
+    return invoice_number, sequence, fiscal_year
 
 def can_approve(status: str) -> bool:
     return status in [StatusChoicesEnum.Draft, StatusChoicesEnum.Submitted]

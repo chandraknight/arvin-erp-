@@ -12,6 +12,26 @@
             info="Create and manage your category type"
     ></c-card_title_simple>
 
+    {% if messages %}
+    <div class="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 text-sm font-medium">
+        {% for message in messages %}{{ message }}{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="mb-4 flex items-center gap-2 text-sm text-gray-500">
+        <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-700 text-white font-semibold rounded-full text-xs">
+            <i class="fas fa-check-circle"></i> Step 1: Category Type
+        </span>
+        <i class="fas fa-arrow-right text-gray-400"></i>
+        <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-200 text-gray-600 font-semibold rounded-full text-xs">
+            Step 2: Category
+        </span>
+        <i class="fas fa-arrow-right text-gray-400"></i>
+        <span class="inline-flex items-center gap-1 px-3 py-1 bg-gray-200 text-gray-600 font-semibold rounded-full text-xs">
+            Step 3: Add Product
+        </span>
+    </div>
+
     <c-section_options title="Add New Category Type" >
     <c-slot name="body">
          <c-form_simple
@@ -34,5 +54,12 @@
       </c-table_options>
     </c-slot>
     </c-section_options>
+
+    <div class="mt-4 flex justify-end">
+        <a href="{% url 'products:add_category' %}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold shadow transition">
+            Next: Add Category <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
 
 {% endblock %}

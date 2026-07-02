@@ -201,11 +201,15 @@ def vendor_bill_create(request):
                     for obj in formset.deleted_objects:
                         obj.delete()
 
-                    total_amount = vendor_bill.items.aggregate(
-                        total=Sum(F('quantity') * F('price'), output_field=models.DecimalField())
-                    )['total'] or 0.00
-                    vendor_bill.total_amount = total_amount
-                    vendor_bill.save(update_fields=['total_amount'])
+                    from decimal import Decimal
+                    tax_percent = form.cleaned_data.get('tax_percent') or Decimal('0.00')
+                    vendor_bill.tax_percent = tax_percent
+                    # Don't save yet — update_vendor_bill_total will compute tax_amount
+                    # and save both tax_percent + total_amount + tax_amount together
+                    # to avoid a spurious zero-VAT journal being posted here.
+
+                    from apps.billing.services.vendor_bill_service import update_vendor_bill_total
+                    update_vendor_bill_total(vendor_bill)  # saves tax_percent, tax_amount, total_amount
 
                     # Record payment if requested
                     collect = form.cleaned_data.get('collect_payment', False)
@@ -268,7 +272,11 @@ def vendor_bill_create(request):
         form = VendorBillForm(request=request)
         formset = ScopedFormSet(instance=VendorBill())
 
-    return render(request, 'purchasing/vendor_bill_create.html', {'form': form, 'formset': formset})
+    return render(request, 'purchasing/vendor_bill_create.html', {
+        'form': form,
+        'formset': formset,
+        'tax_rate': company.tax_rate if company else 0,
+    })
 
 @login_required
 def vendor_payment_list(request):

@@ -42,8 +42,6 @@ urlpatterns = [
     path('api/products/user-category/', get_user_categories, name='user_categories'),
     path('api/products/user-products/', get_user_products, name='user_products'),
 
-    path('api/products/user-products/', get_user_products, name='user_products'),
-
     path('api/products/user-product-packages/', get_user_product_packages, name='user_product_packages'),
 
     path('api/', include('apps.api.urls', namespace='api')),

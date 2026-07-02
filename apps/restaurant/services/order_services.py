@@ -254,12 +254,13 @@ def issue_bill(order: DiningOrder, request):
     from apps.billing.services.invoice_service import generate_invoice_number
 
     with transaction.atomic():
-        invoice_number, seq = generate_invoice_number(order.company.id)
+        invoice_number, seq, fy = generate_invoice_number(order.company.id)
         invoice = Invoice.objects.create(
             company=order.company,
             branch=order.branch,
             customer=order.customer,
             invoice_number=invoice_number,
+            fiscal_year=fy,
             transaction_date=tz.now().date(),
             subtotal=order.subtotal,
             discount_amount=order.discount_amount,

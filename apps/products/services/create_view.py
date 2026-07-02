@@ -12,6 +12,19 @@ from django.forms import formset_factory, modelformset_factory
 
 @auth_required('products.add_category')
 def add_category(request):
+    # Guard: category type must exist before creating a category
+    ct_qs = (
+        CategoryType.active_objects.all()
+        if request.user.is_superuser
+        else CategoryType.active_objects.filter(company=request.user.company)
+    )
+    if not ct_qs.exists():
+        messages.warning(
+            request,
+            "Create a Category Type first — categories must belong to a type."
+        )
+        return redirect('products:add_category_type')
+
     page_number = request.GET.get('page', 1)
     if request.method == 'POST':
         form = CategoryForm(request.POST, user=request.user)
@@ -60,6 +73,36 @@ def add_category(request):
 
 @auth_required('products.add_product')
 def add_item(request):
+    company = request.user.company if not request.user.is_superuser else None
+
+    # Guard: must have at least one CategoryType before adding a product
+    ct_qs = (
+        CategoryType.active_objects.all()
+        if request.user.is_superuser
+        else CategoryType.active_objects.filter(company=company)
+    )
+    if not ct_qs.exists():
+        messages.warning(
+            request,
+            "You need to create a Category Type before adding products. "
+            "Start here — you'll be guided back to add your product once it's done."
+        )
+        return redirect('products:add_category_type')
+
+    # Guard: must have at least one Category before adding a product
+    cat_qs = (
+        Category.active_objects.all()
+        if request.user.is_superuser
+        else Category.active_objects.filter(company=company)
+    )
+    if not cat_qs.exists():
+        messages.warning(
+            request,
+            "You need to create a Category before adding products. "
+            "Create one here — you'll be brought back to add your product once it's ready."
+        )
+        return redirect('products:add_category')
+
     category_type_id = request.GET.get('category_type') or request.POST.get('category_type')
     category_type = None
     if category_type_id:

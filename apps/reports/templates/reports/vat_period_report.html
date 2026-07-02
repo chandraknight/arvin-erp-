@@ -216,8 +216,10 @@
             <th class="px-4 py-3 text-left border border-red-700">Bill #</th>
             <th class="px-4 py-3 text-left border border-red-700">Date</th>
             <th class="px-4 py-3 text-left border border-red-700">Vendor</th>
+            <th class="px-4 py-3 text-right border border-red-700">Subtotal (excl. VAT)</th>
+            <th class="px-4 py-3 text-right border border-red-700">VAT %</th>
+            <th class="px-4 py-3 text-right border border-red-700">Input VAT</th>
             <th class="px-4 py-3 text-right border border-red-700">Bill Total</th>
-            <th class="px-4 py-3 text-right border border-red-700">Derived Input VAT</th>
           </tr>
         </thead>
         <tbody>
@@ -226,15 +228,14 @@
             <td class="px-4 py-2 border border-gray-200 font-medium text-red-700">{{ bill.bill_number }}</td>
             <td class="px-4 py-2 border border-gray-200 whitespace-nowrap">{{ bill.bill_date|date:"Y-m-d" }}</td>
             <td class="px-4 py-2 border border-gray-200">{{ bill.vendor__name }}</td>
-            <td class="px-4 py-2 border border-gray-200 text-right">{{ bill.total_amount|floatformat:2|intcomma }}</td>
-            <td class="px-4 py-2 border border-gray-200 text-right font-semibold text-red-700">
-              {# Derived VAT shown as informational — exact figure is in the period table above #}
-              {{ bill.total_amount|floatformat:2|intcomma }}
-            </td>
+            <td class="px-4 py-2 border border-gray-200 text-right">{{ bill.subtotal_amount|floatformat:2|intcomma }}</td>
+            <td class="px-4 py-2 border border-gray-200 text-right">{{ bill.tax_percent|floatformat:2 }}%</td>
+            <td class="px-4 py-2 border border-gray-200 text-right font-semibold text-red-700">{{ bill.tax_amount|floatformat:2|intcomma }}</td>
+            <td class="px-4 py-2 border border-gray-200 text-right font-bold">{{ bill.total_amount|floatformat:2|intcomma }}</td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5" class="px-4 py-8 text-center text-gray-400">No vendor bills in this period.</td>
+            <td colspan="7" class="px-4 py-8 text-center text-gray-400">No vendor bills in this period.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -243,16 +244,12 @@
   </div>
 
   <!-- ── Methodology note ───────────────────────────────────────────────── -->
-  <div class="bg-amber-50 border border-amber-200 p-4 text-xs text-amber-800 mb-6">
-    <strong>Note on Input VAT calculation:</strong>
-    Vendor bills in this system do not carry an explicit VAT field. Input VAT is
-    <em>derived</em> from the bill total using the company tax rate ({{ tax_rate }}%).
-    {% if company.vat_inclusive %}
-      Prices are <strong>VAT-inclusive</strong>: Input VAT = Total × {{ tax_rate }} ÷ (100 + {{ tax_rate }}).
-    {% else %}
-      Prices are <strong>VAT-exclusive</strong>: Input VAT = Total × {{ tax_rate }} ÷ 100.
-    {% endif %}
-    Verify against actual supplier invoices before filing.
+  <div class="bg-blue-50 border border-blue-200 p-4 text-xs text-blue-800 mb-6">
+    <strong>Input VAT calculation:</strong>
+    VAT-registered vendor bills store the exact <code>tax_amount</code> entered at billing time.
+    Bills created before VAT tracking was enabled (with <code>tax_amount = 0</code>) fall back to
+    a derived estimate using the company tax rate ({{ tax_rate }}%).
+    Verify legacy bills against supplier invoices before filing.
   </div>
 
 </div>

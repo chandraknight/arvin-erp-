@@ -409,6 +409,8 @@
                 {% endif %}
 
                 <p class="section-sublabel">Bookkeeping</p>
+                <a href="{% url 'reports:daybook_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-calendar-day nav-icon"></i>Day Book</a>
                 <a href="{% url 'reports:ledger_account_list_report' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-book nav-icon"></i>Ledger Accounts</a>
                 <a href="{% url 'reports:journal_entry_list_report' %}" class="nav-link" @click="sidebarOpen = false"

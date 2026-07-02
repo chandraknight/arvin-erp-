@@ -21,7 +21,7 @@ class VendorForm(forms.ModelForm):
     
     class Meta:
         model = Vendor
-        fields = ['name', 'contact_person', 'email', 'phone', 'address', 'pan_number']
+        fields = ['name', 'contact_person', 'email', 'phone', 'address', 'pan_number', 'vat_registered']
         widgets = {
             'address': forms.Textarea(attrs={'rows': 1}),
             'name': forms.TextInput(attrs={'placeholder': 'Enter vendor name'}),

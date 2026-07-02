@@ -8,6 +8,13 @@
     <h1 class="text-2xl font-bold text-gray-800">{% if pkg %}Edit{% else %}New{% endif %} Package</h1>
   </div>
 
+  <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 font-medium">
+    <i class="fas fa-info-circle mr-1"></i>
+    <strong>Bundle flow:</strong> Core items are always included and locked.
+    Optional items are pre-selected but customers can deselect them.
+    Add-ons are off by default and customers can add them.
+  </div>
+
   {% if messages %}
     {% for msg in messages %}
       <div class="mb-4 px-4 py-3 rounded text-sm {% if msg.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
@@ -19,6 +26,7 @@
   <form method="post" enctype="multipart/form-data" id="pkg-form">
     {% csrf_token %}
 
+    <!-- Package Details -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-5">
       <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Package Details</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -26,27 +34,35 @@
           <label class="block text-xs text-gray-500 mb-1">Name *</label>
           <input type="text" name="name" required value="{{ pkg.name|default:'' }}"
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                 placeholder="e.g. Skincare Starter Bundle">
+                 placeholder="e.g. Hindu Daily Worship Kit">
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-1">Bundle Price (Rs) *</label>
+          <label class="block text-xs text-gray-500 mb-1">Bundle Price (Rs) *
+            <span class="text-gray-400 font-normal">(set your selling price)</span>
+          </label>
           <input type="number" name="price" step="0.01" min="0" required value="{{ pkg.price|default:'' }}"
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-1">Compare-at Price (Rs) <span class="text-gray-400">optional</span></label>
+          <label class="block text-xs text-gray-500 mb-1">Compare-at Price (Rs)
+            <span class="text-gray-400 font-normal">optional strikethrough</span>
+          </label>
           <input type="number" name="compare_at_price" step="0.01" min="0" value="{{ pkg.compare_at_price|default:'' }}"
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                 placeholder="Strikethrough price for discount display">
+                 placeholder="Original price for discount display">
         </div>
         <div class="sm:col-span-2">
-          <label class="block text-xs text-gray-500 mb-1">Description <span class="text-gray-400">shown on storefront</span></label>
+          <label class="block text-xs text-gray-500 mb-1">Description
+            <span class="text-gray-400 font-normal">shown on storefront</span>
+          </label>
           <textarea name="ecom_description" rows="3"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     placeholder="Brief description of the bundle...">{{ pkg.ecom_description|default:'' }}</textarea>
         </div>
         <div>
-          <label class="block text-xs text-gray-500 mb-1">Bundle Image <span class="text-gray-400">optional</span></label>
+          <label class="block text-xs text-gray-500 mb-1">Bundle Image
+            <span class="text-gray-400 font-normal">optional</span>
+          </label>
           {% if pkg and pkg.ecom_image %}
             <div class="mb-2">
               <img src="{{ pkg.ecom_image.url }}" alt="" class="h-16 w-16 object-cover rounded-lg border border-gray-200">
@@ -56,56 +72,109 @@
                  class="w-full text-sm text-gray-500 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
         </div>
         <div class="flex items-center gap-3 pt-5">
-          <input type="checkbox" name="show_on_ecom" id="show_on_ecom" {% if pkg and pkg.show_on_ecom %}checked{% endif %}
+          <input type="checkbox" name="show_on_ecom" id="show_on_ecom"
+                 {% if pkg and pkg.show_on_ecom %}checked{% endif %}
                  class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
           <label for="show_on_ecom" class="text-sm text-gray-700 font-medium">Show on e-commerce store</label>
         </div>
       </div>
     </div>
 
-    <!-- Items -->
+    <!-- Items with type classification -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-5">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center justify-between mb-2">
         <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Products in Bundle</h2>
         <button type="button" id="add-item-btn"
                 class="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium px-3 py-1.5 rounded-lg transition">
-          + Add Product
+          + Add Product Row
         </button>
       </div>
 
-      <div id="items-container" class="space-y-3">
+      <!-- Legend -->
+      <div class="flex flex-wrap gap-3 mb-4 text-xs font-medium">
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-700 border border-red-200 rounded">
+          <i class="fas fa-lock"></i> Core — always included, customer cannot remove
+        </span>
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded">
+          <i class="fas fa-sliders-h"></i> Optional — pre-selected, customer can remove
+        </span>
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded">
+          <i class="fas fa-plus-circle"></i> Add-on — customer can add, off by default
+        </span>
+      </div>
+
+      <div class="mb-2 grid grid-cols-12 gap-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-1">
+        <div class="col-span-5">Product</div>
+        <div class="col-span-2 text-center">Qty</div>
+        <div class="col-span-4">Item Type</div>
+        <div class="col-span-1"></div>
+      </div>
+
+      <div id="items-container" class="space-y-2">
         {% if pkg %}
           {% for item in pkg.items.all %}
-          <div class="item-row flex items-center gap-3">
-            <select name="product_ids"
-                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-              <option value="">— Select product —</option>
-              {% for p in products %}
-              <option value="{{ p.id }}" {% if p.id == item.product.id %}selected{% endif %}>{{ p.name }}</option>
-              {% endfor %}
-            </select>
-            <input type="number" name="quantities" value="{{ item.quantity }}" min="1"
-                   class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400">
-            <button type="button" class="remove-item text-red-400 hover:text-red-600 text-sm font-medium px-2">✕</button>
+          <div class="item-row grid grid-cols-12 gap-2 items-center">
+            <div class="col-span-5">
+              <select name="product_ids"
+                      class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="">— Select product —</option>
+                {% for p in products %}
+                <option value="{{ p.id }}" {% if p.id == item.product.id %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-span-2">
+              <input type="number" name="quantities" value="{{ item.quantity }}" min="1"
+                     class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+            <div class="col-span-4">
+              <select name="item_types"
+                      class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 item-type-select">
+                <option value="core"     {% if item.item_type == 'core' %}selected{% endif %}>🔒 Core</option>
+                <option value="optional" {% if item.item_type == 'optional' %}selected{% endif %}>⚙ Optional</option>
+                <option value="addon"    {% if item.item_type == 'addon' %}selected{% endif %}>＋ Add-on</option>
+              </select>
+            </div>
+            <div class="col-span-1 flex justify-center">
+              <button type="button" class="remove-item text-red-400 hover:text-red-600 text-base font-bold">✕</button>
+            </div>
           </div>
           {% endfor %}
         {% else %}
-          <div class="item-row flex items-center gap-3">
-            <select name="product_ids"
-                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-              <option value="">— Select product —</option>
-              {% for p in products %}
-              <option value="{{ p.id }}">{{ p.name }}</option>
-              {% endfor %}
-            </select>
-            <input type="number" name="quantities" value="1" min="1"
-                   class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400">
-            <button type="button" class="remove-item text-red-400 hover:text-red-600 text-sm font-medium px-2">✕</button>
+          <div class="item-row grid grid-cols-12 gap-2 items-center">
+            <div class="col-span-5">
+              <select name="product_ids"
+                      class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="">— Select product —</option>
+                {% for p in products %}
+                <option value="{{ p.id }}">{{ p.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-span-2">
+              <input type="number" name="quantities" value="1" min="1"
+                     class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+            <div class="col-span-4">
+              <select name="item_types"
+                      class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 item-type-select">
+                <option value="core">🔒 Core</option>
+                <option value="optional">⚙ Optional</option>
+                <option value="addon">＋ Add-on</option>
+              </select>
+            </div>
+            <div class="col-span-1 flex justify-center">
+              <button type="button" class="remove-item text-red-400 hover:text-red-600 text-base font-bold">✕</button>
+            </div>
           </div>
         {% endif %}
       </div>
 
-      <p class="text-xs text-gray-400 mt-3">Only products marked "Show on ecom" appear here. Qty is how many of each product are in the bundle.</p>
+      <p class="text-xs text-gray-400 mt-3">
+        Only products marked "Show on ecom" appear here.
+        Qty is how many of each product go in the bundle.
+        Item type controls how the customer can interact with this item.
+      </p>
     </div>
 
     <div class="flex gap-3">
@@ -126,23 +195,56 @@
   const container = document.getElementById('items-container');
   const productOptions = `{% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}`;
 
+  function colorRow(select) {
+    const colors = {
+      core:     'border-red-200 bg-red-50/30',
+      optional: 'border-amber-200 bg-amber-50/20',
+      addon:    'border-green-200 bg-green-50/20',
+    };
+    const row = select.closest('.item-row');
+    row.className = 'item-row grid grid-cols-12 gap-2 items-center p-1 rounded-lg transition ' + (colors[select.value] || '');
+  }
+
   function newRow() {
     const div = document.createElement('div');
-    div.className = 'item-row flex items-center gap-3';
+    div.className = 'item-row grid grid-cols-12 gap-2 items-center';
     div.innerHTML = `
-      <select name="product_ids" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-        <option value="">— Select product —</option>
-        ${productOptions}
-      </select>
-      <input type="number" name="quantities" value="1" min="1"
-             class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400">
-      <button type="button" class="remove-item text-red-400 hover:text-red-600 text-sm font-medium px-2">✕</button>
+      <div class="col-span-5">
+        <select name="product_ids" class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="">— Select product —</option>
+          ${productOptions}
+        </select>
+      </div>
+      <div class="col-span-2">
+        <input type="number" name="quantities" value="1" min="1"
+               class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div class="col-span-4">
+        <select name="item_types"
+                class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 item-type-select">
+          <option value="core">🔒 Core</option>
+          <option value="optional">⚙ Optional</option>
+          <option value="addon">＋ Add-on</option>
+        </select>
+      </div>
+      <div class="col-span-1 flex justify-center">
+        <button type="button" class="remove-item text-red-400 hover:text-red-600 text-base font-bold">✕</button>
+      </div>
     `;
     return div;
   }
 
+  // Color existing rows on load
+  document.querySelectorAll('.item-type-select').forEach(colorRow);
+
   document.getElementById('add-item-btn').addEventListener('click', function () {
-    container.appendChild(newRow());
+    const row = newRow();
+    container.appendChild(row);
+    row.querySelector('.item-type-select').addEventListener('change', function() { colorRow(this); });
+  });
+
+  container.addEventListener('change', function(e) {
+    if (e.target.classList.contains('item-type-select')) colorRow(e.target);
   });
 
   container.addEventListener('click', function (e) {

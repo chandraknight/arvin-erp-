@@ -12177,3 +12177,891 @@ WARNING 2026-06-29 09:36:32,029 log 83385 6250491904 Not Found: /favicon.ico
 WARNING 2026-06-29 09:36:32,031 log 83385 6250491904 "GET /favicon.ico HTTP/1.1" 404 7623
 WARNING 2026-06-29 10:31:23,471 log 76058 6191771648 Not Found: /favicon.ico
 WARNING 2026-06-29 10:31:23,472 log 76058 6191771648 "GET /favicon.ico HTTP/1.1" 404 7623
+WARNING 2026-07-02 14:00:27,465 log 59779 6225719296 Not Found: /apple-touch-icon.png
+WARNING 2026-07-02 14:00:27,467 log 59779 6242545664 Not Found: /favicon.ico
+WARNING 2026-07-02 14:00:27,469 log 59779 6208892928 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-02 14:00:27,469 log 59779 6208892928 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-02 14:00:27,470 log 59779 6242545664 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-02 14:00:27,470 log 59779 6225719296 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+ERROR 2026-07-02 14:18:21,608 log 61059 6161805312 Internal Server Error: /products/inventory/add-package/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/utils/decorator.py", line 40, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/products/services/create_view.py", line 184, in create_package
+    return render(request, template_name, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1150, in render
+    output = self.filter_expression.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 788, in resolve
+    obj = self.var.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 928, in resolve
+    value = self._resolve_lookup(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 965, in _resolve_lookup
+    current = current[bit]
+              ~~~~~~~^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 118, in __getitem__
+    return self.forms[index]
+           ^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/utils/functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 207, in forms
+    for i in range(self.total_form_count())
+                   ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 182, in total_form_count
+    initial_forms = self.initial_form_count()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 1146, in initial_form_count
+    return super().initial_form_count()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 718, in initial_form_count
+    return len(self.get_queryset())
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+ERROR 2026-07-02 14:18:21,613 log 61059 6161805312 "GET /products/inventory/add-package/ HTTP/1.1" 500 264041
+ERROR 2026-07-02 14:18:25,107 log 61059 6161805312 Internal Server Error: /products/inventory/add-package/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/utils/decorator.py", line 40, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/products/services/create_view.py", line 184, in create_package
+    return render(request, template_name, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1150, in render
+    output = self.filter_expression.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 788, in resolve
+    obj = self.var.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 928, in resolve
+    value = self._resolve_lookup(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 965, in _resolve_lookup
+    current = current[bit]
+              ~~~~~~~^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 118, in __getitem__
+    return self.forms[index]
+           ^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/utils/functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 207, in forms
+    for i in range(self.total_form_count())
+                   ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 182, in total_form_count
+    initial_forms = self.initial_form_count()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 1146, in initial_form_count
+    return super().initial_form_count()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 718, in initial_form_count
+    return len(self.get_queryset())
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+ERROR 2026-07-02 14:18:25,110 log 61059 6161805312 "GET /products/inventory/add-package/ HTTP/1.1" 500 264034
+ERROR 2026-07-02 14:18:26,201 log 61059 6161805312 Internal Server Error: /products/inventory/add-package/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/utils/decorator.py", line 40, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/products/services/create_view.py", line 184, in create_package
+    return render(request, template_name, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1150, in render
+    output = self.filter_expression.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 788, in resolve
+    obj = self.var.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 928, in resolve
+    value = self._resolve_lookup(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 965, in _resolve_lookup
+    current = current[bit]
+              ~~~~~~~^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 118, in __getitem__
+    return self.forms[index]
+           ^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/utils/functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 207, in forms
+    for i in range(self.total_form_count())
+                   ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 182, in total_form_count
+    initial_forms = self.initial_form_count()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 1146, in initial_form_count
+    return super().initial_form_count()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 718, in initial_form_count
+    return len(self.get_queryset())
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+ERROR 2026-07-02 14:18:26,204 log 61059 6161805312 "GET /products/inventory/add-package/ HTTP/1.1" 500 264034
+ERROR 2026-07-02 14:18:41,757 log 61059 6161805312 Internal Server Error: /products/inventory/add-package/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/utils/decorator.py", line 40, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/products/services/create_view.py", line 184, in create_package
+    return render(request, template_name, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1150, in render
+    output = self.filter_expression.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 788, in resolve
+    obj = self.var.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 928, in resolve
+    value = self._resolve_lookup(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 965, in _resolve_lookup
+    current = current[bit]
+              ~~~~~~~^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 118, in __getitem__
+    return self.forms[index]
+           ^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/utils/functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 207, in forms
+    for i in range(self.total_form_count())
+                   ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 182, in total_form_count
+    initial_forms = self.initial_form_count()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 1146, in initial_form_count
+    return super().initial_form_count()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 718, in initial_form_count
+    return len(self.get_queryset())
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+ERROR 2026-07-02 14:18:41,761 log 61059 6161805312 "GET /products/inventory/add-package/ HTTP/1.1" 500 264034
+ERROR 2026-07-02 14:18:42,665 log 61059 6161805312 Internal Server Error: /products/inventory/add-package/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/utils/decorator.py", line 40, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/products/services/create_view.py", line 184, in create_package
+    return render(request, template_name, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1150, in render
+    output = self.filter_expression.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 788, in resolve
+    obj = self.var.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 928, in resolve
+    value = self._resolve_lookup(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 965, in _resolve_lookup
+    current = current[bit]
+              ~~~~~~~^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 118, in __getitem__
+    return self.forms[index]
+           ^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/utils/functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 207, in forms
+    for i in range(self.total_form_count())
+                   ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 182, in total_form_count
+    initial_forms = self.initial_form_count()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 1146, in initial_form_count
+    return super().initial_form_count()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 718, in initial_form_count
+    return len(self.get_queryset())
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+ERROR 2026-07-02 14:18:42,667 log 61059 6161805312 "GET /products/inventory/add-package/ HTTP/1.1" 500 264034
+ERROR 2026-07-02 14:19:12,749 log 61124 6162935808 Internal Server Error: /products/inventory/add-package/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/utils/decorator.py", line 40, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/products/services/create_view.py", line 184, in create_package
+    return render(request, template_name, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1150, in render
+    output = self.filter_expression.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 788, in resolve
+    obj = self.var.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 928, in resolve
+    value = self._resolve_lookup(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 965, in _resolve_lookup
+    current = current[bit]
+              ~~~~~~~^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 118, in __getitem__
+    return self.forms[index]
+           ^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/utils/functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 207, in forms
+    for i in range(self.total_form_count())
+                   ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 182, in total_form_count
+    initial_forms = self.initial_form_count()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 1146, in initial_form_count
+    return super().initial_form_count()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 718, in initial_form_count
+    return len(self.get_queryset())
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+ERROR 2026-07-02 14:19:12,754 log 61124 6162935808 "GET /products/inventory/add-package/ HTTP/1.1" 500 264034
+ERROR 2026-07-02 14:19:14,350 log 61124 6162935808 Internal Server Error: /products/inventory/add-package/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/utils/decorator.py", line 40, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/products/services/create_view.py", line 184, in create_package
+    return render(request, template_name, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1150, in render
+    output = self.filter_expression.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 788, in resolve
+    obj = self.var.resolve(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 928, in resolve
+    value = self._resolve_lookup(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 965, in _resolve_lookup
+    current = current[bit]
+              ~~~~~~~^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 118, in __getitem__
+    return self.forms[index]
+           ^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/utils/functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 207, in forms
+    for i in range(self.total_form_count())
+                   ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/formsets.py", line 182, in total_form_count
+    initial_forms = self.initial_form_count()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 1146, in initial_form_count
+    return super().initial_form_count()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/forms/models.py", line 718, in initial_form_count
+    return len(self.get_queryset())
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column products_packageitem.item_type does not exist
+LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
+                                                             ^
+
+ERROR 2026-07-02 14:19:14,353 log 61124 6162935808 "GET /products/inventory/add-package/ HTTP/1.1" 500 264034

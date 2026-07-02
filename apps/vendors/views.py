@@ -273,6 +273,7 @@ def vendor_json(request, pk):
         'phone': vendor.phone or '',
         'pan_number': vendor.pan_number or '',
         'address': vendor.address or '',
+        'vat_registered': vendor.vat_registered,
     })
 
 

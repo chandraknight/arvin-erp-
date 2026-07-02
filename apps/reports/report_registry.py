@@ -350,6 +350,15 @@ REPORT_REGISTRY = {
         'color': 'green',
         'module_flag': None,
     },
+    'daybook_report': {
+        'label': 'Daybook',
+        'description': 'All invoices, payments and journal entries for a selected day',
+        'url_name': 'reports:daybook_report',
+        'section': 'Bookkeeping',
+        'icon': 'fas fa-calendar-day',
+        'color': 'orange',
+        'module_flag': None,
+    },
 
     # ── HR & Payroll (require enable_hr_payroll) ──────────────────────────
     'payroll_summary_report': {

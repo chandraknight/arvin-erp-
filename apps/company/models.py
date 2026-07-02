@@ -69,15 +69,15 @@ class Company(BaseModel):
         help_text='Enable Manufacturing module (BOM, Work Orders, Production Runs).'
     )
     enable_hr_payroll = models.BooleanField(
-        default=False,
+        default=True,
         help_text='Enable HR & Payroll module (Employees, Attendance, Payroll Runs).'
     )
     enable_purchasing = models.BooleanField(
-        default=False,
+        default=True,
         help_text='Enable Purchasing module (Purchase Orders, Vendor Bills).'
     )
     enable_inventory = models.BooleanField(
-        default=False,
+        default=True,
         help_text='Enable Inventory / Product management module.'
     )
     enable_restaurant = models.BooleanField(
@@ -140,7 +140,7 @@ class Company(BaseModel):
 
     def _apply_org_type_defaults(self):
         """Set feature flags to sensible defaults for the chosen organisation type."""
-        # Baseline: all off — org-type blocks below enable what is needed
+        # Baseline: cores off — each org type sets exactly what it needs
         self.enable_branch_accounting = False
         self.enable_project_tracking = False
         self.enable_forecasting = False
@@ -155,35 +155,36 @@ class Company(BaseModel):
         self.enable_ecom = False
 
         if self.organisation_type == 'TRADING':
+            # Core trading modules; HR is optional — enable manually if needed
             self.enable_inventory = True
             self.enable_purchasing = True
             self.enable_order_management = True
             self.enable_pos = True
+            self.enable_hr_payroll = False
 
         elif self.organisation_type == 'SERVICE':
             self.enable_order_management = True
-            self.enable_inventory = False
-            self.enable_purchasing = False
             self.enable_pos = True
+            self.enable_hr_payroll = True
 
         elif self.organisation_type == 'PROJECT':
             self.enable_project_tracking = True
             self.enable_forecasting = True
-            self.enable_purchasing = True   # project firms procure materials/subcontractors
-            self.enable_inventory = False
-            self.enable_order_management = False
+            self.enable_purchasing = True
+            self.enable_hr_payroll = True
 
         elif self.organisation_type == 'NGO':
             self.enable_project_tracking = True
             self.enable_forecasting = True
             self.enable_purchasing = True
-            self.enable_inventory = False
+            self.enable_hr_payroll = True
 
         elif self.organisation_type == 'MANUFACTURING':
             self.enable_manufacturing = True
             self.enable_order_management = True
             self.enable_inventory = True
             self.enable_purchasing = True
+            self.enable_hr_payroll = True
 
         elif self.organisation_type == 'RESTAURANT':
             self.enable_order_management = True
@@ -194,21 +195,17 @@ class Company(BaseModel):
             self.enable_pos = True
 
         elif self.organisation_type == 'SMALL_ENTERPRISE':
-            self.enable_inventory = False
-            self.enable_purchasing = False
-            self.enable_hr_payroll = False
-            self.enable_order_management = False
             self.enable_pos = True
 
         elif self.organisation_type == 'TOUR_OPERATOR':
             self.enable_tours = True
-            self.enable_order_management = False
-            self.enable_inventory = False
             self.enable_purchasing = True
             self.enable_hr_payroll = True
-            self.enable_pos = False
 
-        # OTHER: baseline defaults apply
+        else:
+            # OTHER: safe minimal defaults
+            self.enable_inventory = True
+            self.enable_purchasing = True
 
 class Branch(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='branches')

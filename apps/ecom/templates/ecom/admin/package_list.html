@@ -27,7 +27,9 @@
       <thead class="bg-gray-50 border-b border-gray-200">
         <tr>
           <th class="text-left px-4 py-3 font-medium text-gray-600">Package</th>
-          <th class="text-left px-4 py-3 font-medium text-gray-600">Items</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Items
+            <span class="text-[10px] font-normal text-gray-400 block">🔴 core · 🟡 optional · 🟢 add-on</span>
+          </th>
           <th class="text-right px-4 py-3 font-medium text-gray-600">Price</th>
           <th class="text-center px-4 py-3 font-medium text-gray-600">On Ecom</th>
           <th class="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
@@ -54,7 +56,17 @@
           <td class="px-4 py-3">
             <ul class="text-xs text-gray-600 space-y-0.5">
               {% for item in pkg.items.all %}
-              <li>{{ item.quantity }}× {{ item.product.name }}</li>
+              <li class="flex items-center gap-1">
+                {% if item.item_type == 'core' %}
+                  <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                {% elif item.item_type == 'optional' %}
+                  <span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                {% else %}
+                  <span class="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                {% endif %}
+                {{ item.quantity }}× {{ item.product.name }}
+                <span class="text-gray-400">({{ item.item_type }})</span>
+              </li>
               {% empty %}
               <li class="text-gray-400">No items</li>
               {% endfor %}

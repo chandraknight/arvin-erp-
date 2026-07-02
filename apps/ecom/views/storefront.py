@@ -934,8 +934,34 @@ def bundle_detail(request, bundle_id):
     _require_ecom_enabled(company)
     bundle = get_object_or_404(Package, id=bundle_id, company=company, show_on_ecom=True)
     cart = _get_cart(request)
+
+    # Categorise items by type for the customisation UI
+    all_items = bundle.items.select_related('product').prefetch_related(
+        'product__images', 'product__productstock'
+    ).all()
+    core_items     = [i for i in all_items if i.item_type == 'core']
+    optional_items = [i for i in all_items if i.item_type == 'optional']
+    addon_items    = [i for i in all_items if i.item_type == 'addon']
+
+    # Base price = sum of core items only (optional/addon are extras)
+    core_total = sum(
+        float(i.product.price) * (i.quantity or 1)
+        for i in core_items if i.product
+    )
+
     ctx = _cms_context(company)
-    ctx.update({'company': company, 'bundle': bundle, 'cart_count': sum(cart.values())})
+    ctx.update({
+        'company': company,
+        'bundle': bundle,
+        'cart_count': sum(cart.values()),
+        'core_items': core_items,
+        'optional_items': optional_items,
+        'addon_items': addon_items,
+        'core_total': core_total,
+        'core_count': len(core_items),
+        'optional_count': len(optional_items),
+        'addon_count': len(addon_items),
+    })
     return render(request, 'ecom/storefront/bundle_detail.html', ctx)
 
 
@@ -946,23 +972,49 @@ def add_bundle_to_cart(request, bundle_id):
     bundle = get_object_or_404(Package, id=bundle_id, company=company, show_on_ecom=True)
     cart = _get_cart(request)
     skipped = []
+
+    # Customer's optional/addon selections from the customisation form
+    selected_optional = set(request.POST.getlist('optional_items'))
+    selected_addon    = set(request.POST.getlist('addon_items'))
+
     for item in bundle.items.select_related('product__productstock').all():
         if not item.product or not item.product.show_on_ecom:
             continue
-        pid = str(item.product.id)
+
+        # Determine whether this item should be included
+        pid_str = str(item.product.id)
+        if item.item_type == 'core':
+            include = True
+        elif item.item_type == 'optional':
+            # included if the customer left it checked (pid in selected_optional)
+            # If the form submitted nothing for optional_items at all, default to include
+            if selected_optional:
+                include = pid_str in selected_optional
+            else:
+                include = True  # legacy: no selection = add all
+        elif item.item_type == 'addon':
+            include = pid_str in selected_addon
+        else:
+            include = True
+
+        if not include:
+            continue
+
         qty = item.quantity or 1
         try:
             avail = item.product.productstock.ecom_stock
         except Exception:
             avail = 0
-        current = cart.get(pid, 0)
+
+        current = cart.get(pid_str, 0)
         if avail > 0 and current + qty <= avail:
-            cart[pid] = current + qty
+            cart[pid_str] = current + qty
         else:
             skipped.append(item.product.name)
+
     _save_cart(request, cart)
     if skipped:
-        messages.warning(request, f"Some items were not added (out of stock): {', '.join(skipped)}")
+        messages.warning(request, f'Some items were not added (out of stock): {", ".join(skipped)}')
     else:
         messages.success(request, f'"{bundle.name}" added to cart.')
     return redirect('ecom:cart')

@@ -4,10 +4,8 @@ from apps.company.models import Company, FiscalYear
 
 def generate_payment_number(company_id, payment_type='CUSTOMER'):
     """
-    Race-safe sequential payment number generator.
-    Uses select_for_update() inside an atomic block so concurrent requests
-    cannot read the same max sequence and generate duplicate numbers.
-    Returns (reference_number, sequence) tuple.
+    Race-safe sequential payment number generator scoped per fiscal year.
+    Returns (reference_number, sequence, fiscal_year) 3-tuple.
     """
     from django.db import transaction
     from django.db.models import Max
@@ -22,6 +20,7 @@ def generate_payment_number(company_id, payment_type='CUSTOMER'):
         date_part = fiscal_year.name if fiscal_year else today_np.strftime("%y/%m/%d")
     except (Company.DoesNotExist, AttributeError):
         company_prefix = "PAY"
+        fiscal_year = None
         date_part = today_np.strftime("%y/%m/%d")
 
     type_prefix = {
@@ -36,7 +35,6 @@ def generate_payment_number(company_id, payment_type='CUSTOMER'):
 
     with transaction.atomic():
         if payment_type == 'EXPENSE':
-            # Expenses live in a separate table — sequence from Expense.reference_number
             from apps.payments.models import Expense
             last_seq = (
                 Expense.objects
@@ -51,12 +49,11 @@ def generate_payment_number(company_id, payment_type='CUSTOMER'):
                 sequence += 1
                 payment_number = f"{prefix}{sequence:04d}"
         else:
-            # All other types use the Payment table
+            fy_filter = {'fiscal_year': fiscal_year} if fiscal_year else {'fiscal_year__isnull': True}
             last_seq = (
                 Payment.objects
                 .select_for_update()
-                .filter(company_id=company_id, payment_type=payment_type,
-                        reference_number__startswith=prefix)
+                .filter(company_id=company_id, payment_type=payment_type, **fy_filter)
                 .aggregate(max_seq=Max('sequence_number'))
             )['max_seq'] or 0
 
@@ -68,4 +65,4 @@ def generate_payment_number(company_id, payment_type='CUSTOMER'):
                 sequence += 1
                 payment_number = f"{prefix}{sequence:04d}"
 
-    return payment_number, sequence
+    return payment_number, sequence, fiscal_year

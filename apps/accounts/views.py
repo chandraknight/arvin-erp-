@@ -1,8 +1,17 @@
+import logging
+import json
+from importlib import import_module
+
 from django.contrib.auth import authenticate, login, logout
+from django.conf import settings
 from .services.all_services import *
 from ..utils.global_models import *
 from .utils import get_latest_tag
 from ..payments.models import Payment
+
+logger = logging.getLogger(__name__)
+audit_logger = logging.getLogger('audit')
+
 
 def login_view(request):
     if request.GET.get('session_expired'):
@@ -20,6 +29,64 @@ def login_view(request):
                 messages.error(request, 'Invalid username or password.')
                 return redirect('accounts:login')
             login(request, user)
+            request.session.save()  # explicit save before redirect — guards against worker kill
+            session_engine = getattr(
+                settings,
+                "SESSION_ENGINE",
+                "django.contrib.sessions.backends.db",
+            )
+            SessionStore = import_module(session_engine).SessionStore
+            encoded_session = request.session.encode(request.session._session)
+            try:
+                reloaded_session = SessionStore(session_key=request.session.session_key)
+                reloaded_user_id = reloaded_session.get('_auth_user_id')
+            except Exception:
+                audit_logger.error(
+                    json.dumps(
+                        {
+                            "event": "login_session_reload_error",
+                            "session_key": request.session.session_key,
+                            "session_engine": session_engine,
+                            "encoded_session_len": len(encoded_session),
+                            "expected_user_id": str(user.pk),
+                        },
+                        default=str,
+                    )
+                )
+                logger.exception(
+                    "login_session_reload_error",
+                    extra={
+                        "session_key": request.session.session_key,
+                        "session_engine": session_engine,
+                        "encoded_session_len": len(encoded_session),
+                        "expected_user_id": str(user.pk),
+                    },
+                )
+            else:
+                if str(reloaded_user_id) != str(user.pk):
+                    audit_logger.error(
+                        json.dumps(
+                            {
+                                "event": "login_session_reload_failed",
+                                "session_key": request.session.session_key,
+                                "session_engine": session_engine,
+                                "encoded_session_len": len(encoded_session),
+                                "expected_user_id": str(user.pk),
+                                "reloaded_user_id": reloaded_user_id,
+                            },
+                            default=str,
+                        )
+                    )
+                    logger.error(
+                        "login_session_reload_failed",
+                        extra={
+                            "session_key": request.session.session_key,
+                            "session_engine": session_engine,
+                            "encoded_session_len": len(encoded_session),
+                            "expected_user_id": str(user.pk),
+                            "reloaded_user_id": reloaded_user_id,
+                        },
+                    )
             return redirect('accounts:user_dashboard')
     else:
         form = LoginForm()

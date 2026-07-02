@@ -40,6 +40,13 @@ class Invoice(BaseModel):
     due_date_bs = models.CharField(max_length=50, null=True, blank=True)
     tax_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), help_text='Tax percentage applied')
     sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='invoices',
+        db_constraint=False,
+    )
     status = models.CharField(
         max_length=10,
         choices=INVOICE_STATUS_CHOICES,
@@ -57,7 +64,11 @@ class Invoice(BaseModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['company', 'sequence_number'], name='unique_invoice_seq_per_company')
+            models.UniqueConstraint(
+                fields=['company', 'fiscal_year', 'sequence_number'],
+                name='unique_invoice_seq_per_company_fy',
+                condition=models.Q(sequence_number__isnull=False),
+            )
         ]
         indexes = [
             models.Index(fields=['company', 'status', 'outstanding_balance'], name='invoice_company_status_idx'),
@@ -228,6 +239,14 @@ class VendorBill(models.Model):
     bill_date = models.DateField()
     due_date = models.DateField(null=True, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    tax_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('0.00'),
+        help_text='VAT/tax rate applied to this bill (e.g. 13.00).',
+    )
+    tax_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text='VAT/tax amount charged on this bill.',
+    )
     status = models.CharField(max_length=10, choices=VENDOR_BILL_STATUS_CHOICES, default='UNPAID')
     cancellation_reason = models.TextField(
         blank=True, null=True,

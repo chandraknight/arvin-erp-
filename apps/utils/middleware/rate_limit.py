@@ -9,6 +9,8 @@ Configure limits via settings.RATE_LIMIT_RULES:
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.conf import settings
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
 
 from apps.utils.ip import get_client_ip
 
@@ -39,6 +41,17 @@ def _is_rate_limited(key: str, max_requests: int, window_seconds: int) -> bool:
     return False
 
 
+def _rate_limit_key(label: str, ip: str) -> str:
+    return f'rl:{label}:{ip}'
+
+
+@receiver(user_logged_in, dispatch_uid='rate_limit.clear_login_limit_on_success')
+def clear_login_rate_limit(sender, request, **kwargs):
+    if request is None:
+        return
+    cache.delete(_rate_limit_key('login', get_client_ip(request)))
+
+
 class RateLimitMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -50,7 +63,7 @@ class RateLimitMiddleware:
 
         for prefix, max_req, window, label in self.rules:
             if path.startswith(prefix):
-                key = f'rl:{label}:{ip}'
+                key = _rate_limit_key(label, ip)
                 if _is_rate_limited(key, max_req, window):
                     return self._too_many_requests(window)
 

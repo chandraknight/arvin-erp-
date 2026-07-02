@@ -73,6 +73,15 @@
                         {% if form.pan_number.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.pan_number.help_text }}</p>{% endif %}
                     </div>
 
+                    <div class="flex items-center gap-3 pt-2">
+                        {{ form.vat_registered|add_class:'h-4 w-4 accent-green-600 cursor-pointer' }}
+                        <label for="{{ form.vat_registered.id_for_label }}" class="text-sm font-semibold text-gray-700 cursor-pointer select-none">
+                            VAT Registered
+                            <span class="block text-xs font-normal text-gray-500">Check if this vendor charges VAT on their bills</span>
+                        </label>
+                        {% for error in form.vat_registered.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+
                     <div class="md:col-span-2">
                         <label for="{{ form.address.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
                             {{ form.address.label }}{% if form.address.field.required %} <span class="text-red-500">*</span>{% endif %}

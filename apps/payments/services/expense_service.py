@@ -23,7 +23,7 @@ def create_expense_batch(expense_rows: list, payment_rows: list, date_bs, compan
         """Generate sequential EXP reference if caller didn't supply one."""
         try:
             from apps.payments.services.payment_number_service import generate_payment_number
-            ref, _ = generate_payment_number(str(company.id), 'EXPENSE')
+            ref, _, _fy = generate_payment_number(str(company.id), 'EXPENSE')
             return ref
         except Exception:
             return ''

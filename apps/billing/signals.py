@@ -190,7 +190,9 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
     # Only re-journal when financially meaningful fields are involved.
     # Saves with update_fields=['status'] or ['is_deleted'] must not create entries.
     update_fields = kwargs.get('update_fields')
-    if update_fields is not None and not {'total_amount', 'bill_date', 'bill_number'}.intersection(set(update_fields)):
+    if update_fields is not None and not {
+        'total_amount', 'tax_amount', 'tax_percent', 'bill_date', 'bill_number'
+    }.intersection(set(update_fields)):
         return
 
     company = (
@@ -227,7 +229,7 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
 
     lines = []
     from decimal import Decimal
-    total = Decimal("0.00")
+    items_subtotal = Decimal("0.00")
     for item in instance.items.all():
         debit_account = item.debit_account or _get_ledger(company, "Purchase Expense")
         if not debit_account:
@@ -238,7 +240,7 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
             entry_type="DEBIT",
             amount=item.total_price,
         ))
-        total += item.total_price
+        items_subtotal += item.total_price
 
     if not lines:
         # Soft-delete the empty shell entry — no lines means nothing to post
@@ -246,10 +248,33 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
         entry.save(update_fields=['is_deleted'])
         return
 
+    # ── VAT leg: when vendor charged VAT, debit Input VAT (recoverable asset) ──
+    tax_amount = Decimal(str(instance.tax_amount or "0.00"))
+    if tax_amount > Decimal("0.00"):
+        input_vat_account = _get_ledger(company, "Input VAT")
+        if input_vat_account:
+            lines.append(JournalEntryLine(
+                journal_entry=entry,
+                account=input_vat_account,
+                entry_type="DEBIT",
+                amount=tax_amount,
+            ))
+        else:
+            # Fallback: no Input VAT account yet — warn but don't block
+            logger.warning(
+                "No 'Input VAT' ledger account for company %s — VAT of %s on vendor bill %s "
+                "will not be journalised. Create the account to fix this.",
+                company, tax_amount, instance.bill_number,
+            )
+            # Still include the tax in AP so the books at least balance
+            # (will appear as part of Purchase Expense implicitly)
+
+    # AP CREDIT = full payable amount to vendor (items subtotal + VAT)
+    ap_total = items_subtotal + tax_amount
     lines.append(JournalEntryLine(
         journal_entry=entry,
         account=ap_account,
         entry_type="CREDIT",
-        amount=total,
+        amount=ap_total,
     ))
     JournalEntryLine.objects.bulk_create(lines)

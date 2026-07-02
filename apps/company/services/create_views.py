@@ -48,8 +48,18 @@ class FiscalYearCreateView(AuthMixin, CreateView):
                 form.add_error(None, "Start date year must be less than end date year")
                 return self.form_invalid(form)
 
+            # Superusers pick company from the form field; regular users get their own company
+            if self.request.user.is_superuser:
+                company = form.cleaned_data.get('company') or form.instance.company
+            else:
+                company = self.request.user.company
+
+            if not company:
+                form.add_error('company', "Please select a company.")
+                return self.form_invalid(form)
+
             existing_fiscal_years = FiscalYear.objects.filter(
-                company=self.request.user.company,
+                company=company,
                 start_date__lte=end_date_ad,
                 end_date__gte=start_date_ad
             )
@@ -57,7 +67,7 @@ class FiscalYearCreateView(AuthMixin, CreateView):
                 form.add_error(None, "This fiscal year overlaps with an existing one")
                 return self.form_invalid(form)
 
-            form.instance.company = self.request.user.company
+            form.instance.company = company
             form.instance.start_date = start_date_ad
             form.instance.end_date = end_date_ad
             form.instance.start_date_bs = start_date_bs
@@ -101,6 +111,7 @@ class CompanyCreateAndAssignView(AuthMixin, CreateView):
         return context
 
     def post(self, request, *args, **kwargs):
+        self.object = None  # required by CreateView.get_context_data
         form = CompanyForm(request.POST, request.FILES)
         admin_form = CompanyAdminUserForm(request.POST, prefix='admin')
 

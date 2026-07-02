@@ -118,9 +118,10 @@ def create_invoice_payment(
     # Generate payment reference number
     reference_number = payment_reference or None
     sequence_number = None
+    payment_fiscal_year = None
     if not reference_number:
         try:
-            reference_number, sequence_number = generate_payment_number(invoice.company.id, 'CUSTOMER')
+            reference_number, sequence_number, payment_fiscal_year = generate_payment_number(invoice.company.id, 'CUSTOMER')
         except Exception as e:
             logger.warning(f"Could not generate payment number: {e}")
 
@@ -138,6 +139,7 @@ def create_invoice_payment(
                 payment_type='CUSTOMER',
                 reference_number=reference_number,
                 sequence_number=sequence_number,
+                fiscal_year=payment_fiscal_year,
                 description=payment_description,
                 created_by=getattr(request, 'user', None),
             )

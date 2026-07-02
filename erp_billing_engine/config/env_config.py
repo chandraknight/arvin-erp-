@@ -23,6 +23,15 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS')
 
+# True only if a reverse proxy (e.g. Nginx) sits in front of Django and sets
+# X-Forwarded-Proto. cPanel/Passenger deployments terminate TLS in Apache with
+# no separate proxy hop, so this must stay False there.
+BEHIND_REVERSE_PROXY = env('BEHIND_REVERSE_PROXY', cast=bool, default=False)
+
+# Set SECURE_COOKIES=False in .env if cPanel Apache does not forward
+# X-Forwarded-Proto and the Secure cookie flag causes the post-login redirect loop.
+SECURE_COOKIES = env('SECURE_COOKIES', cast=bool, default=True)
+
 # Persistent DB connections — reuse across requests instead of opening a new
 # connection per request. 60s is safe for gunicorn with sync workers.
 # Set CONN_MAX_AGE=0 in .env to disable (e.g. for PgBouncer transaction-mode).
@@ -30,24 +39,36 @@ _CONN_MAX_AGE = env.int('CONN_MAX_AGE', default=60)
 
 # Data base config postgres
 if env('DATABASE_URL', default=None):
-    DATABASES = {
-        'default': {**env.db('DATABASE_URL'), 'CONN_MAX_AGE': _CONN_MAX_AGE}
-    }
-    # Use django_cockroachdb engine for CockroachDB
+    _db_config = {**env.db('DATABASE_URL'), 'CONN_MAX_AGE': _CONN_MAX_AGE}
+    # DISABLE_SERVER_SIDE_CURSORS is PostgreSQL-only — prevents named cursor
+    # errors with CONN_MAX_AGE > 0 (e.g. behind pgBouncer transaction mode).
+    if _db_config.get('ENGINE', '').endswith('postgresql') or \
+       _db_config.get('ENGINE', '').endswith('postgis'):
+        _db_config['DISABLE_SERVER_SIDE_CURSORS'] = True
+    DATABASES = {'default': _db_config}
     if 'cockroachlabs.cloud' in DATABASES['default'].get('HOST', ''):
         DATABASES['default']['ENGINE'] = 'django_cockroachdb'
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
-            'NAME': env('DB_NAME', default='erp'),
-            'USER': env('DB_USER'),
-            'PASSWORD': env('DB_PASSWORD'),
-            'HOST': env('DB_HOST', default='localhost'),
-            'PORT': env('DB_PORT', default='5432'),
-            'CONN_MAX_AGE': _CONN_MAX_AGE,
-        }
+    _db_engine = env('DB_ENGINE', default='django.db.backends.postgresql')
+    _db_config = {
+        'ENGINE': _db_engine,
+        'NAME': env('DB_NAME', default='erp'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST', default='localhost'),
+        'PORT': env('DB_PORT', default='5432'),
+        'CONN_MAX_AGE': _CONN_MAX_AGE,
     }
+    # Server-side cursors only apply to PostgreSQL — skip for MySQL/MariaDB
+    if 'postgresql' in _db_engine or 'postgis' in _db_engine:
+        _db_config['DISABLE_SERVER_SIDE_CURSORS'] = True
+    # MySQL: enforce utf8mb4 and strict mode
+    if 'mysql' in _db_engine:
+        _db_config['OPTIONS'] = {
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        }
+    DATABASES = {'default': _db_config}
 
 # Cache — defaults to LocMemCache (dev-safe, in-process).
 # Set REDIS_URL=redis://localhost:6379/1 in .env to enable Redis (recommended in prod).

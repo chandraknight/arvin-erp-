@@ -115,12 +115,14 @@ JOURNAL_ENTRY_TYPES = [
 ]
 
 DEFAULT_ACCOUNTS = [
-    {"name": "Accounts Receivable", "account_type": "ASSET", "code": "1100"},
-    {"name": "Sales Revenue", "account_type": "REVENUE", "code": "4000"},
-    {"name": "Accounts Payable", "account_type": "LIABILITY", "code": "2100"},
-    {"name": "Purchase Expense", "account_type": "EXPENSE", "code": "5000"},
-    {"name": "Cash", "account_type": "ASSET", "code": "1000"},
-    {"name": "Bank", "account_type": "ASSET", "code": "1010"},
-    {"name": "Tax Payable", "account_type": "LIABILITY", "code": "2200"},
-    {"name": "Discount Given", "account_type": "EXPENSE", "code": "5100"},
+    {"name": "Accounts Receivable", "account_type": "ASSET",     "code": "1100"},
+    {"name": "Sales Revenue",        "account_type": "REVENUE",   "code": "4000"},
+    {"name": "Accounts Payable",     "account_type": "LIABILITY", "code": "2100"},
+    {"name": "Purchase Expense",     "account_type": "EXPENSE",   "code": "5000"},
+    {"name": "Cash",                 "account_type": "ASSET",     "code": "1000"},
+    {"name": "Bank",                 "account_type": "ASSET",     "code": "1010"},
+    {"name": "Tax Payable",          "account_type": "LIABILITY", "code": "2200"},
+    {"name": "Discount Given",       "account_type": "EXPENSE",   "code": "5100"},
+    # Input VAT (recoverable) — debit side when receiving a vendor VAT bill
+    {"name": "Input VAT",            "account_type": "ASSET",     "code": "1300"},
 ]

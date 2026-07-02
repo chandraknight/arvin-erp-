@@ -33,7 +33,7 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
         # Preview next invoice number (read-only — doesn't reserve it)
         if company:
             try:
-                next_inv, _ = generate_invoice_number(company.id)
+                next_inv, _, _fy = generate_invoice_number(company.id)
                 context['next_invoice_number'] = next_inv
             except Exception:
                 context['next_invoice_number'] = None
@@ -64,9 +64,10 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
                     if action == 'issue':
                         if not form.instance.invoice_number:
                             doc_type = 'ORD' if is_non_vat else 'INV'
-                            invoice_number, seq_number = generate_invoice_number(self.request.user.company.id, doc_type=doc_type)
+                            invoice_number, seq_number, fy = generate_invoice_number(self.request.user.company.id, doc_type=doc_type)
                             form.instance.invoice_number = invoice_number
                             form.instance.sequence_number = seq_number
+                            form.instance.fiscal_year = fy
                         # Non-VAT companies: treat as estimate — no journal, no AR impact
                         form.instance.status = 'ESTIMATE' if is_non_vat else 'ISSUED'
                     else:

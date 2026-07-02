@@ -90,7 +90,7 @@ def checkout(
     # ── 2. Generate invoice number ────────────────────────────────────────────
     is_vat = getattr(company, 'vat_registered', False)
     doc_type = 'INV' if is_vat else 'ORD'
-    invoice_number, sequence_number = generate_invoice_number(company.id, doc_type=doc_type)
+    invoice_number, sequence_number, fy = generate_invoice_number(company.id, doc_type=doc_type)
 
     # ── 3. Create Invoice ─────────────────────────────────────────────────────
     today = timezone.now().date()
@@ -100,6 +100,7 @@ def checkout(
         customer=customer,
         invoice_number=invoice_number,
         sequence_number=sequence_number,
+        fiscal_year=fy,
         transaction_date=today,
         discount_percent=Decimal(cart.get('discount_pct', '0')),
         tax_percent=Decimal(cart.get('tax_pct', '0')),
@@ -159,7 +160,7 @@ def checkout(
 
     # ── 6. Create Payment ─────────────────────────────────────────────────────
     try:
-        reference_number, _ = generate_payment_number(company.id, 'CUSTOMER')
+        reference_number, _, pay_fy = generate_payment_number(company.id, 'CUSTOMER')
     except Exception:
         reference_number = None
 
@@ -174,6 +175,7 @@ def checkout(
         method=payment_method,
         payment_type='CUSTOMER',
         reference_number=reference_number,
+        fiscal_year=pay_fy,
         description=f'POS sale — {invoice.invoice_number}',
         created_by=user,
     )

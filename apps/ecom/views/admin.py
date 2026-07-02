@@ -451,12 +451,17 @@ def package_create(request):
             pkg.save(update_fields=['ecom_image'])
         product_ids = request.POST.getlist('product_ids')
         quantities = request.POST.getlist('quantities')
-        for pid, qty in zip(product_ids, quantities):
+        item_types = request.POST.getlist('item_types')
+        for pid, qty, itype in zip(product_ids, quantities, item_types or []):
             if pid and qty:
                 from apps.products.models import Product as Prod
                 try:
                     product = Prod.objects.get(id=pid, company=company)
-                    PackageItem.objects.create(package=pkg, product=product, quantity=int(qty))
+                    PackageItem.objects.create(
+                        package=pkg, product=product,
+                        quantity=int(qty),
+                        item_type=itype if itype in ('core', 'optional', 'addon') else 'core',
+                    )
                 except Exception:
                     pass
         messages.success(request, f'Package "{pkg.name}" created.')
@@ -483,11 +488,16 @@ def package_edit(request, package_id):
         pkg.items.all().delete()
         product_ids = request.POST.getlist('product_ids')
         quantities = request.POST.getlist('quantities')
-        for pid, qty in zip(product_ids, quantities):
+        item_types = request.POST.getlist('item_types')
+        for pid, qty, itype in zip(product_ids, quantities, item_types or []):
             if pid and qty:
                 try:
                     product = Prod.objects.get(id=pid, company=company)
-                    PackageItem.objects.create(package=pkg, product=product, quantity=int(qty))
+                    PackageItem.objects.create(
+                        package=pkg, product=product,
+                        quantity=int(qty),
+                        item_type=itype if itype in ('core', 'optional', 'addon') else 'core',
+                    )
                 except Exception:
                     pass
         messages.success(request, f'Package "{pkg.name}" updated.')

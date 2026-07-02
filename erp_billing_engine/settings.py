@@ -104,7 +104,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/accounts/dashboard/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 AUTHENTICATION_BACKENDS = [
     'apps.accounts.backends.AuthBackend',
@@ -117,14 +117,28 @@ CRISPY_TEMPLATE_PACK = "tailwind"
 SESSION_COOKIE_AGE = 3600
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_NAME = 'erpSessionId'  # renamed to invalidate stale cookies from old SECRET_KEY
 
 # Secure cookie flags — enforced in production (DEBUG=False).
 # These prevent session hijacking over HTTP and JavaScript access to cookies.
 SESSION_COOKIE_HTTPONLY = True   # Prevent JS access to session cookie (Django default, explicit here)
 CSRF_COOKIE_HTTPONLY = False     # Must remain False — HTMX/JS needs to read the CSRF cookie value
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 if not DEBUG:
-    SESSION_COOKIE_SECURE = True  # Only send session cookie over HTTPS
-    CSRF_COOKIE_SECURE = True     # Only send CSRF cookie over HTTPS
+    # cPanel Apache terminates SSL. It sets both HTTPS=on (handled in wsgi.py)
+    # AND HTTP_X_FORWARDED_PROTO=https in most configurations.
+    # SECURE_PROXY_SSL_HEADER makes Django trust the forwarded proto header so
+    # request.is_secure() returns True, which ensures:
+    #   1. The post-login redirect goes to https:// not http://
+    #   2. SESSION_COOKIE_SECURE cookies are sent by the browser on follow-up requests
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    # SECURE_COOKIES can be set to False in .env as a diagnostic fallback if
+    # Apache does not forward X-Forwarded-Proto correctly and the Secure cookie
+    # flag is causing the post-login redirect loop.
+    SESSION_COOKIE_SECURE = SECURE_COOKIES
+    CSRF_COOKIE_SECURE = SECURE_COOKIES
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
