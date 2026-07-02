@@ -2530,14 +2530,14 @@ def export_payment_list_excel(request):
         return redirect('accounts:user_dashboard')
 
     payments = Payment.objects.filter(
-        company=user_company).order_by('-payment_date')
+        company=user_company).order_by('-date')
 
     data = []
     data.append(['Payment Date', 'Amount',
                 'Reference Number', 'Payment Method'])
     for payment in payments:
-        data.append([payment.payment_date, payment.amount,
-                    payment.reference_number, payment.get_payment_method_display()])
+        data.append([payment.date, payment.amount,
+                    payment.reference_number, payment.get_method_display()])
 
     df = pd.DataFrame(data)
     response = HttpResponse(
@@ -2576,7 +2576,7 @@ def print_payment_list_report(request):
         return redirect('accounts:user_dashboard')
 
     payments = Payment.objects.filter(
-        company=user_company).order_by('-payment_date')
+        company=user_company).order_by('-date')
     context = {
         'payments': payments,
         'company': user_company,
@@ -2910,11 +2910,11 @@ def export_payment_history_report_excel(request):
         invoice_number = payment.invoice.invoice_number if payment.invoice else 'N/A'
         customer_name = payment.invoice.customer.name if payment.invoice and payment.invoice.customer else 'N/A'
         data.append([
-            payment.payment_date,
+            payment.date,
             payment.amount,
             invoice_number,
             customer_name,
-            payment.get_payment_method_display()
+            payment.get_method_display()
         ])
 
     df = pd.DataFrame(data)
@@ -5817,7 +5817,7 @@ def daybook_report(request):
     # Payments received on this date
     payments = Payment.objects.filter(
         company=user_company,
-        payment_date=selected_date,
+        date=selected_date,
         is_deleted=False,
     ).select_related('invoice', 'invoice__customer').order_by('created_at')
 
@@ -5893,7 +5893,7 @@ def export_daybook_report_excel(request):
     ).exclude(status='CANCELLED').select_related('customer')
 
     payments = Payment.objects.filter(
-        company=user_company, payment_date=selected_date, is_deleted=False,
+        company=user_company, date=selected_date, is_deleted=False,
     ).select_related('invoice__customer')
 
     journal_entries = JournalEntry.objects.filter(
@@ -5932,7 +5932,7 @@ def export_daybook_report_excel(request):
             pay.invoice.invoice_number if pay.invoice else '—',
             pay.invoice.customer.name if pay.invoice and pay.invoice.customer else '—',
             float(pay.amount),
-            pay.payment_method or '—',
+            pay.get_method_display() if pay.method else '—',
         ])
 
     # Journal entries sheet

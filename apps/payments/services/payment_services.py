@@ -82,7 +82,7 @@ def handle_other_payment_journal(instance):
 def create_invoice_payment(
     request, invoice, payment_method, payment_amount,
     payment_reference=None, payment_description=None, payment_destination=None,
-    payment_date=None,
+    payment_date=None, bank_account=None,
 ):
     """
     Create a payment for an invoice with validation and retry logic.
@@ -107,10 +107,16 @@ def create_invoice_payment(
     # (avoids stale in-memory values when called right after invoice creation)
     invoice.refresh_from_db()
 
-    if payment_amount > invoice.total:
+    current_outstanding = invoice.outstanding_balance
+    if current_outstanding is None:
+        current_outstanding = invoice.total
+
+    if payment_amount > current_outstanding:
         return False, None, (
-            f"Payment amount ({payment_amount}) exceeds invoice total ({invoice.total})"
+            f"Payment amount ({payment_amount}) exceeds invoice outstanding balance ({current_outstanding})"
         )
+    if bank_account and bank_account.company_id != invoice.company_id:
+        return False, None, "Selected bank account does not belong to this invoice company."
 
     # Resolve payment date — fall back to today
     resolved_date = payment_date if payment_date is not None else timezone.now().date()
@@ -136,6 +142,7 @@ def create_invoice_payment(
                 amount=payment_amount,
                 discount_amount=getattr(invoice, 'discount_amount', Decimal('0.00')),
                 method=payment_method,
+                bank_account=bank_account,
                 payment_type='CUSTOMER',
                 reference_number=reference_number,
                 sequence_number=sequence_number,
@@ -150,7 +157,7 @@ def create_invoice_payment(
             # post_invoice_journal inside the same transaction, which can DELETE
             # the newly-created journal entry before its FK lines are committed.
             from apps.billing.models import Invoice as InvoiceModel
-            new_outstanding = max(Decimal('0'), invoice.total - payment_amount)
+            new_outstanding = max(Decimal('0'), current_outstanding - payment_amount)
             InvoiceModel.objects.filter(pk=invoice.pk).update(
                 outstanding_balance=new_outstanding
             )

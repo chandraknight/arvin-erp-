@@ -11,6 +11,7 @@ urlpatterns = [
     path('ledger_accounts/', views.LedgerAccountListView.as_view(), name='ledger_account_list'),
     path('ledger/create/', views.LedgerAccountCreateView.as_view(), name='ledger_account_create'),
     path('ledger/<uuid:pk>/edit/', views.LedgerAccountUpdateView.as_view(), name='ledger_account_update'),
+    path('htmx/ledger-account/quick-create/', views.ledger_account_quick_create, name='ledger_account_quick_create'),
     path('ledger-report/<uuid:account_id>/', views.LedgerReportView.as_view(), name='ledger_report'),
     path('ledger-report/<uuid:account_id>/set-opening-balance/', views.LedgerReportView.as_view(), name='set_opening_balance'),
 

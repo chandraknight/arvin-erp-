@@ -120,7 +120,18 @@
 
                                 <td class="py-3 px-4 w-full sm:w-auto block sm:table-cell">
                                     <div class="sm:hidden text-sm font-semibold text-green-800 mb-1">Account</div>
-                                    {{ line_form.account|add_class:"w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                    <div class="flex gap-1">
+                                        {{ line_form.account|add_class:"account-select flex-1 border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                        <button type="button"
+                                                class="ledger-quick-create-btn px-2 py-2 bg-green-700 hover:bg-green-800 text-white text-xs font-semibold whitespace-nowrap"
+                                                title="Add ledger account"
+                                                hx-get="{% url 'bookkeeping:ledger_account_quick_create' %}"
+                                                hx-target="#quick-create-ledger-modal-body"
+                                                hx-swap="innerHTML"
+                                                onclick="openLedgerQuickCreateModal(this)">
+                                            + New
+                                        </button>
+                                    </div>
                                     {% if line_form.account.errors %}
                                         <div class="text-red-500 text-xs mt-1">
                                             {% for error in line_form.account.errors %}
@@ -205,6 +216,14 @@
             </div>
         </form>
 
+        <div id="quick-create-ledger-modal"
+             class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+             onclick="if(event.target===this)closeLedgerQuickCreateModal()">
+            <div class="bg-white w-full max-w-lg shadow-xl p-5 relative" onclick="event.stopPropagation()">
+                <div id="quick-create-ledger-modal-body"></div>
+            </div>
+        </div>
+
         <c-back-link>
             <c-slot name="url">
                 {% url 'bookkeeping:journal_entry_list' %}
@@ -213,6 +232,18 @@
     </div>
 
     <script>
+        function openLedgerQuickCreateModal(button) {
+            const row = button.closest('.line-form');
+            const select = row?.querySelector('.account-select');
+            window.pendingLedgerSelectId = select?.id || '';
+            document.getElementById('quick-create-ledger-modal').classList.remove('hidden');
+        }
+
+        function closeLedgerQuickCreateModal() {
+            document.getElementById('quick-create-ledger-modal').classList.add('hidden');
+            document.getElementById('quick-create-ledger-modal-body').innerHTML = '';
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const container = document.getElementById('lines-container');
             const addButton = document.getElementById('add-line');
@@ -239,6 +270,40 @@
             addButton.disabled = false;
             submitButton.disabled = false;
 
+            function addLedgerOptionToSelect(select, account, shouldSelect) {
+                if (!select || !account?.id) return;
+                let option = select.querySelector(`option[value="${account.id}"]`);
+                if (!option) {
+                    option = new Option(account.name, account.id, false, false);
+                    option.dataset.accountType = account.account_type || '';
+                    select.appendChild(option);
+                }
+                if (shouldSelect) {
+                    select.value = account.id;
+                }
+                if (typeof $ !== 'undefined' && $(select).hasClass('select2-hidden-accessible')) {
+                    $(select).trigger('change');
+                } else {
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+
+            function addLedgerOptionToTemplate(account) {
+                emptyForm?.querySelectorAll('.account-select').forEach(select => {
+                    addLedgerOptionToSelect(select, account, false);
+                });
+            }
+
+            document.body.addEventListener('ledgerAccountCreated', function (evt) {
+                const account = evt.detail;
+                const targetId = window.pendingLedgerSelectId;
+                document.querySelectorAll('.account-select').forEach(select => {
+                    addLedgerOptionToSelect(select, account, select.id === targetId);
+                });
+                addLedgerOptionToTemplate(account);
+                closeLedgerQuickCreateModal();
+            });
+
             updateTotals();
 
             addButton.addEventListener('click', function () {
@@ -260,7 +325,7 @@
                 });
 
                 const clearSelectors = [
-                    '.account', '.debit-input',
+                    '.account-select', '.debit-input',
                     '.credit-input', '.narration'
                 ];
 

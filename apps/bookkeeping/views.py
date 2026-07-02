@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.db.models import Q, Sum, Case, When, Value, DecimalField
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 from datetime import datetime, date
 from decimal import Decimal
 from .models import JournalEntry, LedgerAccount, JournalEntryLine, LedgerOpeningBalance
@@ -11,6 +12,45 @@ from ..utils.constant import RUPEE
 from ..utils.mixins import AuthMixin
 from ..utils.nepali_date import bs_str_to_ad, ad_date_to_bs_str
 from .view_collections.all_views import *
+
+
+@login_required
+def ledger_account_quick_create(request):
+    """HTMX endpoint: create a ledger account inside journal forms."""
+    if not (request.user.is_superuser or getattr(request.user, 'is_company_admin', False) or request.user.has_perm('bookkeeping.add_ledgeraccount')):
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Permission denied.")
+
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    import json
+    from .forms import LedgerAccountForm
+
+    company = request.user_company or getattr(request.user, 'company', None)
+    if request.method == 'POST':
+        form = LedgerAccountForm(request.POST, company=company)
+        if form.is_valid():
+            account = form.save(commit=False)
+            account.company = company
+            account.created_by = request.user
+            account.save()
+            label = account.name
+            if account.code:
+                label = f"{account.code} - {account.name}"
+            response = HttpResponse("")
+            response['HX-Trigger'] = json.dumps({
+                'ledgerAccountCreated': {
+                    'id': str(account.pk),
+                    'name': label,
+                    'account_type': account.account_type,
+                }
+            })
+            return response
+        html = render_to_string('bookkeeping/partials/ledger_account_quick_create_modal.html', {'form': form}, request=request)
+        return HttpResponse(html, status=422)
+
+    form = LedgerAccountForm(company=company)
+    return render(request, 'bookkeeping/partials/ledger_account_quick_create_modal.html', {'form': form})
 
 
 class JournalEntryListView(AuthMixin, ListView):

@@ -125,7 +125,7 @@
         </div>{# end main col #}
 
     {# ── Summary Sidebar (1/4) ── #}
-    <div class="lg:col-span-1 space-y-4">
+    <div class="lg:col-span-1 space-y-4 lg:sticky lg:top-4 self-start">
 
       {# Bill summary card #}
       <div class="bg-white border border-gray-200 shadow-sm">
@@ -149,9 +149,15 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Bank account field — show only for Bank Transfer / Cheque ──────
     const methodSelect  = document.getElementById('{{ form.payment_method.id_for_label }}');
     const bankAccountDiv = document.getElementById('div_id_bank_account');
+    function methodNeedsBank(method) {
+        return method === 'BANK_TRANSFER' || method === 'CHEQUE';
+    }
     function toggleBankAccount() {
         if (!methodSelect || !bankAccountDiv) return;
-        const show = methodSelect.value === 'BANK_TRANSFER' || methodSelect.value === 'CHEQUE';
+        let show = methodNeedsBank(methodSelect.value);
+        document.querySelectorAll('select[name="extra_payment_method"]').forEach(select => {
+            if (methodNeedsBank(select.value)) show = true;
+        });
         bankAccountDiv.style.display = show ? '' : 'none';
     }
     if (methodSelect) {
@@ -231,11 +237,17 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>`;
         container.appendChild(row);
         row.querySelector('.remove-split').addEventListener('click', () => { row.remove(); updateSplitTotal(); });
-        row.querySelectorAll('.split-amount, select').forEach(el => el.addEventListener('input', updateSplitTotal));
+        row.querySelectorAll('.split-amount, select').forEach(el => el.addEventListener('input', function () {
+            updateSplitTotal();
+            toggleBankAccount();
+        }));
         updateSplitTotal();
     });
 
     container.querySelector('.split-amount')?.addEventListener('input', updateSplitTotal);
+    document.addEventListener('change', function (e) {
+        if (e.target.name === 'extra_payment_method') toggleBankAccount();
+    });
 });
 </script>
 {% endblock %}

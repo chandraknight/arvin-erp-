@@ -201,6 +201,18 @@
                                 </div>
                             </div>
 
+                            <div id="vb-payment-bank-account" class="hidden">
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Bank Account</label>
+                                <select name="payment_bank_account"
+                                        class="w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    <option value="">Select bank account</option>
+                                    {% for account in bank_accounts %}
+                                        <option value="{{ account.pk }}">{{ account }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-xs text-gray-400 mt-1">Used for Bank Transfer and Cheque payments.</p>
+                            </div>
+
                             {# Split total feedback #}
                             <div id="vb-split-total-bar" class="hidden text-xs py-1.5 px-3 border flex items-center gap-2">
                                 <i class="fas fa-info-circle"></i>
@@ -230,7 +242,7 @@
     </div>{# end main col #}
 
     {# ── Sidebar (1/5) ── #}
-    <div class="lg:col-span-1 space-y-4">
+    <div class="lg:col-span-1 space-y-4 lg:sticky lg:top-4 self-start">
 
       {# Vendor info card #}
       <div class="bg-white border border-gray-200 shadow-sm">
@@ -449,6 +461,20 @@ document.addEventListener('DOMContentLoaded', function () {
             .join('');
     }
 
+    function methodNeedsBank(method) {
+        return method === 'BANK_TRANSFER' || method === 'CHEQUE';
+    }
+
+    function toggleVbBankAccount() {
+        const wrap = document.getElementById('vb-payment-bank-account');
+        if (!wrap) return;
+        let show = methodNeedsBank(document.getElementById('id_payment_method')?.value);
+        document.querySelectorAll('select[name="extra_payment_method"]').forEach(select => {
+            if (methodNeedsBank(select.value)) show = true;
+        });
+        wrap.classList.toggle('hidden', !show);
+    }
+
     function updateSplitTotal() {
         const splitBar  = document.getElementById('vb-split-total-bar');
         const splitMsg  = document.getElementById('vb-split-total-msg');
@@ -537,14 +563,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 </button>
             </div>`;
         splitContainer.appendChild(row);
-        row.querySelector('.vb-remove-split').addEventListener('click', () => { row.remove(); updateSplitTotal(); updatePaymentSummary(); });
-        row.querySelectorAll('.vb-split-amount, select').forEach(el => el.addEventListener('input', () => { updateSplitTotal(); updatePaymentSummary(); }));
+        row.querySelector('.vb-remove-split').addEventListener('click', () => { row.remove(); updateSplitTotal(); updatePaymentSummary(); toggleVbBankAccount(); });
+        row.querySelectorAll('.vb-split-amount, select').forEach(el => el.addEventListener('input', () => { updateSplitTotal(); updatePaymentSummary(); toggleVbBankAccount(); }));
         updateSplitTotal();
+        toggleVbBankAccount();
     });
 
     document.getElementById('id_payment_amount')?.addEventListener('input', () => { updateSplitTotal(); updatePaymentSummary(); });
-    document.getElementById('id_payment_method')?.addEventListener('change', updatePaymentSummary);
+    document.getElementById('id_payment_method')?.addEventListener('change', () => { updatePaymentSummary(); toggleVbBankAccount(); });
+    document.addEventListener('change', function (e) {
+        if (e.target.name === 'extra_payment_method') toggleVbBankAccount();
+    });
     document.getElementById('vb-collect-payment-checkbox')?.addEventListener('change', updatePaymentSummary);
+    toggleVbBankAccount();
 
     // ── Vendor quick-create ────────────────────────────────────────
     function closeVendorQuickCreateModal() {

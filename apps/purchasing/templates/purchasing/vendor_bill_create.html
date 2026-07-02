@@ -13,10 +13,10 @@
         <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium">{{ user.company.name }}</span>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-6 gap-4">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
         {# ── Main form ── #}
-        <div class="lg:col-span-5 space-y-6">
+        <div class="lg:col-span-4 space-y-6">
 
             <form method="post" novalidate class="space-y-6" id="vendor-bill-form">
                 {% csrf_token %}
@@ -89,7 +89,7 @@
                             {{ form.status|add_class:"w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
                         </div>
 
-                        {# VAT / Tax Rate — toggle section #}
+                        {# VAT / Tax Rate - toggle section #}
                         <div class="sm:col-span-2 lg:col-span-3">
                             <div class="border border-gray-200 bg-gray-50 px-4 py-3">
                                 <div class="flex items-start gap-3">
@@ -102,20 +102,35 @@
                                             <span id="vat-registered-badge" class="hidden ml-2 px-1.5 py-0.5 text-xs font-semibold bg-green-100 text-green-700 rounded">
                                                 <i class="fas fa-check-circle mr-0.5"></i>Vendor is VAT Registered
                                             </span>
-                                            <p class="text-xs text-gray-500 mt-0.5">Check if the vendor provided a VAT bill (e.g. 13% VAT on top of item prices)</p>
+                                            <p class="text-xs text-gray-500 mt-0.5">Turn this on only when the supplier gave a VAT bill. Enter the VAT rate shown on the bill, usually 13%.</p>
                                         </label>
 
                                         <div id="vat-rate-section" class="mt-3 hidden">
                                             <div class="flex items-end gap-4 flex-wrap">
                                                 <div>
                                                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">VAT Rate (%)</label>
-                                                    {{ form.tax_percent|add_class:"w-28 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+                                                    {{ form.tax_percent|add_class:"w-28 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"|attr:"step:0.01"|attr:"min:0" }}
                                                 </div>
                                                 <button type="button" id="vat-fill-company-rate"
                                                         class="px-3 py-2 text-xs font-semibold bg-green-100 text-green-800 border border-green-300 hover:bg-green-200 transition">
-                                                    Use Company Rate ({{ tax_rate }}%)
+                                                    Use VAT Rate ({{ tax_rate }}%)
                                                 </button>
                                                 <div id="vat-preview" class="text-sm text-gray-600"></div>
+                                            </div>
+                                            {# Journal entry explanation #}
+                                            <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800 space-y-1">
+                                                <p class="font-semibold flex items-center gap-1"><i class="fas fa-book-open"></i> Journal entries that will be posted:</p>
+                                                <div class="grid grid-cols-2 gap-x-4 font-mono">
+                                                    <span class="text-green-700 font-semibold">DEBIT</span>
+                                                    <span class="text-red-700 font-semibold">CREDIT</span>
+                                                    <span>Purchase Expense &nbsp;(item subtotal)</span>
+                                                    <span></span>
+                                                    <span>Input VAT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(VAT amount)</span>
+                                                    <span></span>
+                                                    <span></span>
+                                                    <span>Accounts Payable &nbsp;(subtotal + VAT)</span>
+                                                </div>
+                                                <p class="text-blue-600 mt-1">Input VAT is a recoverable asset — it offsets your VAT Payable when filing.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -206,6 +221,18 @@
                                 </div>
                             </div>
 
+                            <div id="vb-payment-bank-account" class="hidden">
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Bank Account</label>
+                                <select name="payment_bank_account"
+                                        class="w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    <option value="">Select bank account</option>
+                                    {% for account in bank_accounts %}
+                                        <option value="{{ account.pk }}">{{ account }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-xs text-gray-400 mt-1">Used for Bank Transfer and Cheque payments.</p>
+                            </div>
+
                             <div id="vb-split-total-bar" class="hidden text-xs py-1.5 px-3 border flex items-center gap-2">
                                 <i class="fas fa-info-circle"></i>
                                 <span id="vb-split-total-msg"></span>
@@ -231,34 +258,47 @@
         </div>
 
         {# ── Right sidebar ── #}
-        <div class="space-y-4">
+        <div class="lg:col-span-1 space-y-4 lg:sticky lg:top-4 self-start">
 
+            {# Vendor Info card #}
             <div class="bg-white border border-gray-200 shadow-sm">
                 <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
-                    <i class="fas fa-truck text-green-200"></i>
+                    <i class="fas fa-truck text-green-200 text-sm"></i>
                     <h3 class="text-sm font-bold uppercase tracking-wide">Vendor Info</h3>
                 </div>
-                <div id="vendor-info-panel" class="p-4 text-sm text-gray-500 italic">
+                <div id="vendor-info-panel" class="p-5 text-sm text-gray-500 italic">
                     Select a vendor to see details
                 </div>
             </div>
 
+            {# Bill Summary card #}
             <div class="bg-white border border-gray-200 shadow-sm">
                 <div class="px-4 py-3 border-b border-gray-200">
                     <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Bill Summary</h3>
                 </div>
-                <div class="p-4 space-y-2 text-sm">
+                <div class="p-5 space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Items</span>
-                        <span id="summary-items" class="font-medium">0</span>
+                        <span class="text-gray-500 font-medium">Items</span>
+                        <span id="summary-items" class="font-semibold text-gray-800">0</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-400">
+                        <span class="font-medium">Subtotal (excl. VAT)</span>
+                        <span id="summary-subtotal-ex" class="font-mono">₹ 0.00</span>
                     </div>
                     <div class="flex justify-between" id="summary-vat-row">
-                        <span class="text-gray-500">VAT</span>
-                        <span id="summary-vat" class="font-medium text-amber-700">₹ 0.00</span>
+                        <span class="text-gray-500 font-medium flex items-center gap-1">
+                            <i class="fas fa-receipt text-amber-500" style="font-size:10px"></i>
+                            Input VAT <span id="summary-vat-rate" class="text-gray-400 ml-0.5 font-normal"></span>
+                        </span>
+                        <span id="summary-vat" class="font-semibold text-amber-700 font-mono">₹ 0.00</span>
                     </div>
-                    <div class="flex justify-between border-t border-gray-100 pt-2">
-                        <span class="font-semibold text-gray-800">Total</span>
-                        <span id="summary-total" class="font-bold text-green-800">₹ 0.00</span>
+                    <div class="flex justify-between border-t border-gray-100 pt-2 mt-1">
+                        <span class="font-bold text-gray-800">Total Payable</span>
+                        <span id="summary-total" class="font-bold text-green-800 font-mono">₹ 0.00</span>
+                    </div>
+                    <div id="summary-journal-hint" class="hidden mt-1 pt-2 border-t border-dashed border-blue-200 text-xs text-blue-600 leading-relaxed">
+                        <i class="fas fa-book text-blue-400 mr-1"></i>
+                        Input VAT → <strong>Input VAT</strong> ledger (recoverable asset).
                     </div>
                 </div>
             </div>
@@ -266,13 +306,13 @@
             {# Payment summary card — visible only when collect payment is checked #}
             <div id="vb-payment-summary-card" class="hidden bg-green-50 border border-green-200 shadow-sm">
                 <div class="flex items-center gap-2 px-4 py-3 border-b border-green-200">
-                    <i class="fas fa-money-bill-wave text-green-700"></i>
+                    <i class="fas fa-money-bill-wave text-green-700 text-sm"></i>
                     <h3 class="text-sm font-bold text-green-800 uppercase tracking-wide">Payment</h3>
                 </div>
-                <div class="p-4 space-y-2 text-sm" id="vb-payment-summary-rows"></div>
-                <div class="px-4 pb-3 flex justify-between text-sm border-t border-green-100 pt-2">
-                    <span class="font-semibold text-gray-800">Paid</span>
-                    <span id="vb-payment-summary-total" class="font-bold text-green-800">₹ 0.00</span>
+                <div class="p-5 space-y-1.5 text-sm" id="vb-payment-summary-rows"></div>
+                <div class="px-5 pb-4 border-t border-green-100 pt-2 flex justify-between text-sm">
+                    <span class="font-semibold text-gray-800">Total Paid</span>
+                    <span id="vb-payment-summary-total" class="font-bold text-green-800 font-mono">₹ 0.00</span>
                 </div>
             </div>
 
@@ -296,19 +336,43 @@ document.addEventListener('DOMContentLoaded', function () {
     const totalForms = document.getElementById('id_items-TOTAL_FORMS');
     let formCount = parseInt(totalForms?.value || '0');
 
-    const companyTaxRate = {{ tax_rate|default:0 }};
+    const defaultVatRate = parseFloat('{{ tax_rate|default:"13.00" }}') || 13;
 
     // ── VAT toggle ─────────────────────────────────────────────────
     const vatToggle      = document.getElementById('vat-bill-toggle');
     const vatRateSection = document.getElementById('vat-rate-section');
     const vatTaxInput    = document.getElementById('id_tax_percent');
+    const collectCb      = document.getElementById('vb-collect-payment-checkbox');
+    const paymentSection = document.getElementById('vb-payment-section');
+    const VB_METHODS     = [{% for v,l in form.payment_method.field.choices %}['{{ v }}','{{ l }}'],{% endfor %}];
+    const splitContainer = document.getElementById('vb-split-rows-container');
+    const addSplitBtn    = document.getElementById('vb-add-split-row');
+    const splitBar       = document.getElementById('vb-split-total-bar');
+    const splitMsg       = document.getElementById('vb-split-total-msg');
+    const vbBankAccountWrap = document.getElementById('vb-payment-bank-account');
+    const vbPaymentCard  = document.getElementById('vb-payment-summary-card');
+    const vbPaymentRows  = document.getElementById('vb-payment-summary-rows');
+    const vbPaymentTotal = document.getElementById('vb-payment-summary-total');
+
+    function methodNeedsBank(method) {
+        return method === 'BANK_TRANSFER' || method === 'CHEQUE';
+    }
+
+    function toggleVbBankAccount() {
+        if (!vbBankAccountWrap) return;
+        let show = methodNeedsBank(document.getElementById('id_payment_method')?.value);
+        document.querySelectorAll('select[name="extra_payment_method"]').forEach(select => {
+            if (methodNeedsBank(select.value)) show = true;
+        });
+        vbBankAccountWrap.classList.toggle('hidden', !show);
+    }
 
     function toggleVatSection() {
         if (vatToggle?.checked) {
             vatRateSection?.classList.remove('hidden');
-            // If rate is still 0, auto-fill company rate
+            // If rate is still 0, auto-fill the standard purchase VAT rate.
             if (vatTaxInput && (!vatTaxInput.value || parseFloat(vatTaxInput.value) === 0)) {
-                vatTaxInput.value = companyTaxRate;
+                vatTaxInput.value = defaultVatRate.toFixed(2);
             }
         } else {
             vatRateSection?.classList.add('hidden');
@@ -321,7 +385,7 @@ document.addEventListener('DOMContentLoaded', function () {
     toggleVatSection();
 
     document.getElementById('vat-fill-company-rate')?.addEventListener('click', function () {
-        if (vatTaxInput) { vatTaxInput.value = companyTaxRate; updateCalculations(); }
+        if (vatTaxInput) { vatTaxInput.value = defaultVatRate.toFixed(2); updateCalculations(); }
     });
 
     // ── Vendor info panel ──────────────────────────────────────────
@@ -351,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         vatToggle.checked = true;
                         toggleVatSection();
                     } else if (taxInput && (!taxInput.value || parseFloat(taxInput.value) === 0)) {
-                        taxInput.value = companyTaxRate;
+                        taxInput.value = defaultVatRate.toFixed(2);
                     }
                     vatBadge?.classList.remove('hidden');
                 } else {
@@ -365,16 +429,29 @@ document.addEventListener('DOMContentLoaded', function () {
     const vendorSelect = document.getElementById('id_vendor');
     vendorSelect?.addEventListener('change', function () { loadVendorInfo(this.value); });
     if (vendorSelect?.value) loadVendorInfo(vendorSelect.value);
-    $(document).on('select2:select select2:unselect', '#id_vendor', function () { loadVendorInfo(this.value); });
+    if (typeof $ !== 'undefined') {
+        $(document).on('select2:select select2:unselect', '#id_vendor', function () { loadVendorInfo(this.value); });
+    }
 
     // ── Payment toggle ─────────────────────────────────────────────
-    const collectCb      = document.getElementById('vb-collect-payment-checkbox');
-    const paymentSection = document.getElementById('vb-payment-section');
     function togglePayment() {
-        collectCb?.checked ? paymentSection.classList.remove('hidden') : paymentSection.classList.add('hidden');
+        if (!collectCb || !paymentSection) return;
+        const isChecked = collectCb.checked;
+        isChecked ? paymentSection.classList.remove('hidden') : paymentSection.classList.add('hidden');
+        updateVbPaymentSummary();
+        if (isChecked) {
+            // Auto-fill payment amount with bill total if not yet user-edited
+            const payAmt = document.getElementById('id_payment_amount');
+            const billTotal = parseFloat(document.getElementById('id_subtotal')?.value || '0') || 0;
+            if (payAmt && !payAmt.dataset.userEdited && billTotal > 0) {
+                payAmt.value = billTotal.toFixed(2);
+            }
+            updateSplitTotal();
+        }
     }
     collectCb?.addEventListener('change', togglePayment);
-    togglePayment();
+    // Force correct initial state — defer slightly so DOM is stable
+    requestAnimationFrame(() => { togglePayment(); });
 
     // ── Item calculations ──────────────────────────────────────────
     function updateItemTotal(row) {
@@ -394,18 +471,22 @@ document.addEventListener('DOMContentLoaded', function () {
             if (qty > 0 || price > 0) items++;
             updateItemTotal(row);
         });
-        const taxRate = parseFloat(document.getElementById('id_tax_percent')?.value) || 0;
+        const taxRate = vatToggle?.checked ? (parseFloat(document.getElementById('id_tax_percent')?.value) || 0) : 0;
         const vatAmount = subtotal * taxRate / 100;
         const total = subtotal + vatAmount;
+        const formattedTaxRate = Number.isInteger(taxRate) ? taxRate.toFixed(0) : taxRate.toFixed(2);
 
         document.getElementById('subtotal-display').textContent = subtotal.toFixed(2);
         document.getElementById('vat-display').textContent      = vatAmount.toFixed(2);
-        document.getElementById('vat-label-row').textContent    = `VAT (${taxRate}%)`;
+        document.getElementById('vat-label-row').textContent    = `VAT (${formattedTaxRate}%)`;
         document.getElementById('total-display').textContent    = total.toFixed(2);
         document.getElementById('summary-total').textContent    = '₹ ' + total.toFixed(2);
         document.getElementById('summary-vat').textContent      = '₹ ' + vatAmount.toFixed(2);
+        document.getElementById('summary-vat-rate').textContent = taxRate > 0 ? `(${formattedTaxRate}%)` : '';
+        document.getElementById('summary-subtotal-ex').textContent = '₹ ' + subtotal.toFixed(2);
         document.getElementById('summary-items').textContent    = items;
         document.getElementById('id_subtotal').value            = total.toFixed(2);
+        document.getElementById('summary-journal-hint')?.classList.toggle('hidden', taxRate <= 0 || vatAmount <= 0);
         // VAT preview hint
         const preview = document.getElementById('vat-preview');
         if (preview) {
@@ -525,13 +606,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── Split payment rows ─────────────────────────────────────────
-    const VB_METHODS = [{% for v,l in form.payment_method.field.choices %}['{{ v }}','{{ l }}'],{% endfor %}];
-    const splitContainer = document.getElementById('vb-split-rows-container');
-    const addSplitBtn    = document.getElementById('vb-add-split-row');
-    const splitBar       = document.getElementById('vb-split-total-bar');
-    const splitMsg       = document.getElementById('vb-split-total-msg');
-
     function updateSplitTotal() {
+        if (!splitBar || !splitMsg) return;
         const billTotal = parseFloat(document.getElementById('id_subtotal')?.value || '0') || 0;
         const extraRows = document.querySelectorAll('.vb-extra-split-row');
         const allAmts   = document.querySelectorAll('.vb-split-amount');
@@ -575,8 +651,12 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>`;
         splitContainer.appendChild(row);
         row.querySelector('.vb-remove-split').addEventListener('click', () => { row.remove(); updateSplitTotal(); });
-        row.querySelectorAll('.vb-split-amount, select').forEach(el => el.addEventListener('input', updateSplitTotal));
+        row.querySelectorAll('.vb-split-amount, select').forEach(el => el.addEventListener('input', function () {
+            updateSplitTotal();
+            toggleVbBankAccount();
+        }));
         updateSplitTotal();
+        toggleVbBankAccount();
         if (typeof initSelect2 === 'function') initSelect2(row);
     });
     document.getElementById('id_payment_amount')?.addEventListener('input', function () {
@@ -642,11 +722,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     vbCollectCb?.addEventListener('change', updateVbPaymentSummary);
     document.getElementById('id_payment_method')?.addEventListener('change', updateVbPaymentSummary);
+    document.getElementById('id_payment_method')?.addEventListener('change', toggleVbBankAccount);
     document.getElementById('id_payment_amount')?.addEventListener('input', updateVbPaymentSummary);
-    document.addEventListener('change', e => { if (e.target.name === 'extra_payment_method') updateVbPaymentSummary(); });
+    document.addEventListener('change', e => {
+        if (e.target.name === 'extra_payment_method') {
+            updateVbPaymentSummary();
+            toggleVbBankAccount();
+        }
+    });
     document.addEventListener('input',  e => { if (e.target.name === 'extra_payment_amount')  updateVbPaymentSummary(); });
     document.getElementById('vb-add-split-row')?.addEventListener('click', () => setTimeout(updateVbPaymentSummary, 50));
     updateVbPaymentSummary();
+    toggleVbBankAccount();
 });
 </script>
 

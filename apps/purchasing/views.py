@@ -161,7 +161,12 @@ def vendor_bill_create(request):
     if guard:
         return guard
     from .forms import vendor_bill_item_formset_factory
+    from decimal import Decimal
+    from apps.payments.models import BankAccount
     company = getattr(request.user, 'company', None)
+    default_vendor_vat_rate = Decimal('13.00')
+    if company and getattr(company, 'tax_rate', None) and company.tax_rate > 0:
+        default_vendor_vat_rate = company.tax_rate
     ScopedFormSet = vendor_bill_item_formset_factory(company)
 
     if request.method == 'POST':
@@ -201,7 +206,6 @@ def vendor_bill_create(request):
                     for obj in formset.deleted_objects:
                         obj.delete()
 
-                    from decimal import Decimal
                     tax_percent = form.cleaned_data.get('tax_percent') or Decimal('0.00')
                     vendor_bill.tax_percent = tax_percent
                     # Don't save yet — update_vendor_bill_total will compute tax_amount
@@ -223,37 +227,55 @@ def vendor_bill_create(request):
                         payment_date_ad = form.cleaned_data.get('payment_date') or tz.now().date()
                         payment_rows = []
 
+                        def resolve_bank_account(raw_id):
+                            if not company or not raw_id:
+                                return None
+                            return BankAccount.active_objects.filter(
+                                company=company,
+                                is_active=True,
+                                pk=raw_id,
+                            ).first()
+
                         primary_method = form.cleaned_data.get('payment_method')
                         primary_amount = form.cleaned_data.get('payment_amount')
                         if primary_method and primary_amount and primary_amount > 0:
-                            payment_rows.append((primary_method, primary_amount))
+                            payment_rows.append((
+                                primary_method,
+                                primary_amount,
+                                resolve_bank_account(request.POST.get('payment_bank_account')),
+                            ))
 
-                        for method, raw in zip(
-                            request.POST.getlist('extra_payment_method'),
-                            request.POST.getlist('extra_payment_amount'),
-                        ):
+                        extra_methods = request.POST.getlist('extra_payment_method')
+                        extra_amounts = request.POST.getlist('extra_payment_amount')
+                        for idx, method in enumerate(extra_methods):
                             method = method.strip()
                             if method not in valid_methods:
                                 continue
                             try:
+                                raw = extra_amounts[idx] if idx < len(extra_amounts) else ''
                                 amt = D(raw)
                                 if amt > 0:
-                                    payment_rows.append((method, amt))
+                                    payment_rows.append((
+                                        method,
+                                        amt,
+                                        resolve_bank_account(request.POST.get('payment_bank_account')),
+                                    ))
                             except Exception:
                                 pass
 
                         if payment_rows:
-                            for method, amount in payment_rows:
+                            for method, amount, bank_account in payment_rows:
                                 VendorPayment.objects.create(
                                     vendor_bill=vendor_bill,
                                     amount=amount,
                                     payment_date=payment_date_ad,
                                     payment_method=method,
+                                    bank_account=bank_account,
                                     created_by=request.user,
                                 )
                             vendor_bill.status = 'PAID'
                             vendor_bill.save(update_fields=['status'])
-                            total_paid = sum(a for _, a in payment_rows)
+                            total_paid = sum(a for _, a, _ in payment_rows)
                             messages.success(request, f"Vendor Bill created and payment of ₹{total_paid} recorded.")
                         else:
                             messages.success(request, "Vendor Bill created successfully.")
@@ -275,7 +297,11 @@ def vendor_bill_create(request):
     return render(request, 'purchasing/vendor_bill_create.html', {
         'form': form,
         'formset': formset,
-        'tax_rate': company.tax_rate if company else 0,
+        'tax_rate': default_vendor_vat_rate,
+        'bank_accounts': (
+            BankAccount.active_objects.filter(company=company, is_active=True)
+            if company else BankAccount.objects.none()
+        ),
     })
 
 @login_required
@@ -303,11 +329,46 @@ def vendor_payment_create(request):
         form = VendorPaymentForm(request.POST, request=request)
         if form.is_valid():
             try:
-                vendor_payment = form.save(commit=False)
-                if request.user.is_authenticated:
-                    vendor_payment.created_by = request.user
-                vendor_payment.save()
-                messages.success(request, "Vendor Payment recorded successfully.")
+                from apps.utils.constant import PAYMENT_METHOD_CHOICES
+                from decimal import Decimal as D
+
+                valid_methods = [m[0] for m in PAYMENT_METHOD_CHOICES]
+                created_count = 0
+                with transaction.atomic():
+                    vendor_payment = form.save(commit=False)
+                    if request.user.is_authenticated:
+                        vendor_payment.created_by = request.user
+                    vendor_payment.save()
+                    created_count += 1
+
+                    extra_methods = request.POST.getlist('extra_payment_method')
+                    extra_amounts = request.POST.getlist('extra_payment_amount')
+                    for idx, method in enumerate(extra_methods):
+                        method = method.strip()
+                        if method not in valid_methods:
+                            continue
+                        try:
+                            raw = extra_amounts[idx] if idx < len(extra_amounts) else ''
+                            amount = D(raw)
+                        except Exception:
+                            continue
+                        if amount <= 0:
+                            continue
+                        VendorPayment.objects.create(
+                            vendor_bill=vendor_payment.vendor_bill,
+                            amount=amount,
+                            payment_date=vendor_payment.payment_date,
+                            payment_method=method,
+                            bank_account=vendor_payment.bank_account,
+                            transaction_id=vendor_payment.transaction_id,
+                            created_by=request.user if request.user.is_authenticated else None,
+                        )
+                        created_count += 1
+
+                if created_count > 1:
+                    messages.success(request, f"Vendor split payment recorded successfully ({created_count} methods).")
+                else:
+                    messages.success(request, "Vendor Payment recorded successfully.")
                 return redirect('reports:vendor_payment_list_report')
             except Exception as e:
                 logger.error(f"Error creating vendor payment: {e}")

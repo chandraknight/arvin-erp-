@@ -181,6 +181,11 @@
                                             {% if product.barcode %}{{ product.barcode }}{% endif %}
                                             {% if product.sku %} &middot; SKU {{ product.sku }}{% endif %}
                                         </p>
+                                        {% if product.purchase_unit and product.sale_unit %}
+                                            <p class="text-xs text-amber-700 truncate">
+                                                1 {{ product.purchase_unit.symbol }} = {{ product.conversion_factor }} {{ product.sale_unit.symbol }}
+                                            </p>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </td>
@@ -196,12 +201,12 @@
                             {% if not product.is_service %}
                                 <td class="px-4 py-3 whitespace-nowrap text-right">
                                     <span class="text-sm {% if product.productstock.stock <= product.productstock.minimum_stock %}text-red-600 font-semibold{% else %}text-gray-900{% endif %}">
-                                        {{ product.productstock.stock|default:"0" }}
+                                        {{ product.productstock.stock|default:"0" }}{% if product.sale_unit %} {{ product.sale_unit.symbol }}{% endif %}
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-right">
                                     <span class="text-sm {% if product.productstock.ecom_stock <= product.productstock.ecom_minimum_stock %}text-indigo-600 font-semibold{% else %}text-gray-900{% endif %}">
-                                        {{ product.productstock.ecom_stock|default:"0" }}
+                                        {{ product.productstock.ecom_stock|default:"0" }}{% if product.sale_unit %} {{ product.sale_unit.symbol }}{% endif %}
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-center text-sm font-medium space-x-3">

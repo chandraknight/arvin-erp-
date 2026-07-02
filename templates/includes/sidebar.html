@@ -218,7 +218,7 @@
         {% endif %}
 
         {# ─── PAYMENTS ─── #}
-        {% if user.is_company_admin or user|group_has_perm:'payments.view_payment' %}
+        {% if user.is_company_admin or user|group_has_perm:'payments.view_payment' or user|group_has_perm:'payments.view_bankaccount' or user|group_has_perm:'payments.add_bankaccount' %}
         <div x-data="sidebarSection('payments')"
              class="section-group">
             <button @click="toggle()" type="button"
@@ -243,8 +243,14 @@
                 <a href="{% url 'payments:expense_create' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-plus-circle nav-icon"></i>Add Expense</a>
                 {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'payments.view_bankaccount' or user|group_has_perm:'payments.add_bankaccount' %}
                 <a href="{% url 'payments:bank_account_list' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-university nav-icon"></i>Bank Accounts</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'payments.add_bankaccount' %}
+                <a href="{% url 'payments:bank_account_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-plus nav-icon"></i>Add Bank Account</a>
+                {% endif %}
             </div>
         </div>
         {% endif %}
@@ -259,6 +265,8 @@
                 <i class="fas fa-chevron-right chevron-icon" :class="open ? 'chevron-open' : ''"></i>
             </button>
             <div x-show="open" x-transition class="section-links">
+                <a href="{% url 'reports:daybook_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-calendar-day nav-icon"></i>Day Book</a>
                 <a href="{% url 'bookkeeping:ledger_account_list' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-book nav-icon"></i>Ledger Accounts</a>
                 <a href="{% url 'bookkeeping:journal_entry_list' %}" class="nav-link" @click="sidebarOpen = false"

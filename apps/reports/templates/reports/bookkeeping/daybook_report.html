@@ -142,7 +142,7 @@
             <td class="px-4 py-3 text-gray-700">
               {% if pay.invoice and pay.invoice.customer %}{{ pay.invoice.customer.name }}{% else %}—{% endif %}
             </td>
-            <td class="px-4 py-3 text-gray-600">{{ pay.payment_method|default:"—" }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ pay.get_method_display|default:"—" }}</td>
             <td class="px-4 py-3 text-right text-blue-700 font-medium">रु {{ pay.amount|floatformat:2|intcomma }}</td>
           </tr>
           {% endfor %}

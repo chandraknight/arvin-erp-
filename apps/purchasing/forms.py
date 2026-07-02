@@ -1,5 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory, BaseInlineFormSet
+from decimal import Decimal
 from .models import Vendor, PurchaseOrder, PurchaseOrderItem
 from apps.products.models import Product
 from apps.bookkeeping.models import LedgerAccount
@@ -155,6 +156,14 @@ class VendorBillForm(FiscalYearDateMixin, forms.ModelForm):
         else:
             self.fields['vendor'].queryset = Vendor.active_objects.none()
         self.inject_fiscal_year(self.request)
+
+    def clean_tax_percent(self):
+        tax_percent = self.cleaned_data.get('tax_percent') or Decimal('0.00')
+        if tax_percent < 0:
+            raise forms.ValidationError("VAT rate cannot be negative.")
+        if tax_percent > 100:
+            raise forms.ValidationError("VAT rate cannot be greater than 100%.")
+        return tax_percent
 
 class VendorPaymentForm(FiscalYearDateMixin, forms.ModelForm):
     payment_date = NepaliDateField(widget=NepaliDateWidget(), required=True, label='Payment Date (BS)')

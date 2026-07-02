@@ -160,3 +160,7 @@ class LedgerAccountForm(forms.ModelForm):
 
             if self.instance and self.instance.pk:
                 self.fields['parent_account'].queryset = qs.exclude(pk=self.instance.pk)
+
+    def clean_code(self):
+        code = self.cleaned_data.get('code')
+        return code.strip() or None if isinstance(code, str) else code

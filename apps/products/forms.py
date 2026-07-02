@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory,BaseInlineFormSet
-from .models import Product, Category, ProductStock, Package, PackageItem, CategoryType, ProductImage
+from .models import Product, Category, ProductStock, Package, PackageItem, CategoryType, ProductImage, UnitOfMeasure
 from apps.products.models import StockTransaction
 from apps.vendors.models import Vendor
 
@@ -33,9 +33,13 @@ class ItemForm(forms.ModelForm):
         fields = [
             'name', 'category_type', 'category', 'barcode', 'sku', 'hscode',
             'price', 'compare_at_price', 'cost_price', 'is_service', 'vendor',
+            'purchase_unit', 'sale_unit', 'conversion_factor',
         ]
         help_texts = {
             'is_service': 'Check if this product is a service or non-stock item.',
+            'purchase_unit': 'How you buy/receive this item. Example: kg.',
+            'sale_unit': 'How you sell/count stock. Example: g.',
+            'conversion_factor': 'How many sale units equal 1 purchase unit. Example: 1 kg = 1000 g, so enter 1000.',
         }
 
     def __init__(self, *args, **kwargs):
@@ -56,9 +60,30 @@ class ItemForm(forms.ModelForm):
         self.fields['category'].queryset = categories
         self.fields['category_type'].queryset = category_types
         self.fields['vendor'].queryset = vendors
+        self.fields['purchase_unit'].queryset = UnitOfMeasure.objects.all().order_by('uom_type', 'name')
+        self.fields['sale_unit'].queryset = UnitOfMeasure.objects.all().order_by('uom_type', 'name')
+        self.fields['conversion_factor'].widget.attrs.update({'min': '0.0001', 'step': '0.0001'})
+        self.fields['conversion_factor'].initial = self.fields['conversion_factor'].initial or 1
 
         if category_type:
             self.fields['category'].queryset = categories.filter(type=category_type)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_service = cleaned_data.get('is_service')
+        purchase_unit = cleaned_data.get('purchase_unit')
+        sale_unit = cleaned_data.get('sale_unit')
+        conversion_factor = cleaned_data.get('conversion_factor')
+
+        if not is_service:
+            if not purchase_unit:
+                self.add_error('purchase_unit', 'Select the unit used when purchasing this product.')
+            if not sale_unit:
+                self.add_error('sale_unit', 'Select the unit used when selling this product.')
+            if not conversion_factor or conversion_factor <= 0:
+                self.add_error('conversion_factor', 'Conversion factor must be greater than zero.')
+
+        return cleaned_data
 
 
 class StockTransactionForm(forms.ModelForm):
@@ -208,5 +233,4 @@ PackageItemFormSet = inlineformset_factory(
     min_num=1,
     max_num=10,
 )
-
 

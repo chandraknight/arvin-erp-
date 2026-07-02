@@ -20,6 +20,7 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         from apps.utils.constant import PAYMENT_METHOD_CHOICES
+        from apps.payments.models import BankAccount
         context = super().get_context_data(**kwargs)
         if self.request.POST:
             context['formset'] = InvoiceItemFormSet(self.request.POST, request=self.request)
@@ -30,6 +31,10 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
         context['vat_registered'] = company.vat_registered if company else False
         context['tax_rate'] = company.tax_rate if company else 0
         context['payment_method_choices'] = PAYMENT_METHOD_CHOICES
+        context['bank_accounts'] = (
+            BankAccount.active_objects.filter(company=company, is_active=True)
+            if company else BankAccount.objects.none()
+        )
         # Preview next invoice number (read-only — doesn't reserve it)
         if company:
             try:
@@ -131,8 +136,17 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
                     collect_payment = form.cleaned_data.get('collect_payment', False)
                     if collect_payment and action == 'issue' and not is_estimate:
                         from apps.payments.services.payment_services import create_invoice_payment
+                        from apps.payments.models import BankAccount
                         from apps.utils.constant import PAYMENT_METHOD_CHOICES
                         valid_methods = [m[0] for m in PAYMENT_METHOD_CHOICES]
+                        bank_account = None
+                        raw_bank_account_id = self.request.POST.get('payment_bank_account')
+                        if company and raw_bank_account_id:
+                            bank_account = BankAccount.active_objects.filter(
+                                company=company,
+                                is_active=True,
+                                pk=raw_bank_account_id,
+                            ).first()
 
                         # Build list of (method, amount) from primary row + split rows
                         payment_rows = []
@@ -168,6 +182,7 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
                                             payment_reference=form.cleaned_data.get('payment_reference'),
                                             payment_date=form.cleaned_data.get('payment_date'),
                                             payment_description=form.cleaned_data.get('payment_description', ''),
+                                            bank_account=bank_account,
                                         )
                                         if not success:
                                             raise Exception(error)
@@ -224,11 +239,17 @@ class VendorBillCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
     permission_required = ['billing.add_vendorbill']
 
     def get_context_data(self, **kwargs):
+        from apps.payments.models import BankAccount
         context = super().get_context_data(**kwargs)
         if self.request.POST:
             context['formset'] = VendorBillItemFormSet(self.request.POST, request=self.request)
         else:
             context['formset'] = VendorBillItemFormSet(request=self.request)
+        company = getattr(self.request.user, 'company', None)
+        context['bank_accounts'] = (
+            BankAccount.active_objects.filter(company=company, is_active=True)
+            if company else BankAccount.objects.none()
+        )
         return context
 
     def form_valid(self, form):
@@ -275,18 +296,27 @@ class VendorBillCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
                 collect = form.cleaned_data.get('collect_payment', False)
                 if collect:
                     from apps.payments.models import VendorPayment
+                    from apps.payments.models import BankAccount
                     from apps.utils.constant import PAYMENT_METHOD_CHOICES
                     from django.utils import timezone
                     from decimal import Decimal as D
 
                     valid_methods = [m[0] for m in PAYMENT_METHOD_CHOICES]
                     payment_date_ad = form.cleaned_data.get('payment_date') or timezone.now().date()
+                    bank_account = None
+                    raw_bank_account_id = self.request.POST.get('payment_bank_account')
+                    if company and raw_bank_account_id:
+                        bank_account = BankAccount.active_objects.filter(
+                            company=company,
+                            is_active=True,
+                            pk=raw_bank_account_id,
+                        ).first()
 
                     payment_rows = []
                     primary_method = form.cleaned_data.get('payment_method')
                     primary_amount = form.cleaned_data.get('payment_amount')
                     if primary_method and primary_amount and primary_amount > 0:
-                        payment_rows.append((primary_method, primary_amount))
+                        payment_rows.append((primary_method, primary_amount, bank_account))
 
                     extra_methods = self.request.POST.getlist('extra_payment_method')
                     extra_amounts = self.request.POST.getlist('extra_payment_amount')
@@ -297,21 +327,22 @@ class VendorBillCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
                         try:
                             amt = D(raw)
                             if amt > 0:
-                                payment_rows.append((method, amt))
+                                payment_rows.append((method, amt, bank_account))
                         except Exception:
                             pass
 
                     if payment_rows:
-                        for method, amount in payment_rows:
+                        for method, amount, bank_account in payment_rows:
                             VendorPayment.objects.create(
                                 vendor_bill=self.object,
                                 amount=amount,
                                 payment_date=payment_date_ad,
                                 payment_method=method,
+                                bank_account=bank_account,
                             )
                         self.object.status = 'PAID'
                         self.object.save(update_fields=['status'])
-                        total_paid = sum(a for _, a in payment_rows)
+                        total_paid = sum(a for _, a, _ in payment_rows)
                         messages.success(self.request, f'Vendor bill created and payment of ₹{total_paid} recorded.')
                     else:
                         messages.success(self.request, 'Vendor bill created successfully.')

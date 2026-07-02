@@ -99,12 +99,14 @@ class CollectPaymentHtmxView(LoginRequiredMixin, View):
 
     def get(self, request, pk):
         from apps.utils.nepali_date import today_bs
+        from apps.payments.models import BankAccount
         invoice = self._get_invoice(request, pk)
         html = render_to_string(
             'billing/partials/collect_payment_modal.html',
             {
                 'invoice': invoice,
                 'payment_methods': PAYMENT_METHOD_CHOICES,
+                'bank_accounts': BankAccount.active_objects.filter(company=invoice.company, is_active=True),
                 'today_bs': today_bs(),
             },
             request=request,
@@ -115,6 +117,7 @@ class CollectPaymentHtmxView(LoginRequiredMixin, View):
         import logging
         from decimal import Decimal, InvalidOperation
         from apps.billing.models import Invoice
+        from apps.payments.models import BankAccount
         from apps.payments.services.payment_services import create_invoice_payment
         from apps.utils.nepali_date import NepaliDateField
 
@@ -127,6 +130,14 @@ class CollectPaymentHtmxView(LoginRequiredMixin, View):
         payment_reference = request.POST.get('payment_reference', '').strip() or None
         payment_description = request.POST.get('payment_description', '').strip() or None
         payment_date_bs = request.POST.get('payment_date', '').strip() or None
+        payment_bank_account_id = request.POST.get('payment_bank_account', '').strip() or None
+        bank_account = None
+        if payment_bank_account_id:
+            bank_account = BankAccount.active_objects.filter(
+                company=invoice.company,
+                is_active=True,
+                pk=payment_bank_account_id,
+            ).first()
 
         errors = []
         valid_methods = [m[0] for m in PAYMENT_METHOD_CHOICES]
@@ -194,6 +205,7 @@ class CollectPaymentHtmxView(LoginRequiredMixin, View):
                 {
                     'invoice': invoice,
                     'payment_methods': PAYMENT_METHOD_CHOICES,
+                    'bank_accounts': BankAccount.active_objects.filter(company=invoice.company, is_active=True),
                     'errors': errors,
                     'form_data': request.POST,
                     'today_bs': today_bs(),
@@ -213,6 +225,7 @@ class CollectPaymentHtmxView(LoginRequiredMixin, View):
                 payment_reference=payment_reference,
                 payment_description=payment_description,
                 payment_date=payment_date,
+                bank_account=bank_account,
             )
             if not success:
                 html = render_to_string(
@@ -220,6 +233,7 @@ class CollectPaymentHtmxView(LoginRequiredMixin, View):
                     {
                         'invoice': invoice,
                         'payment_methods': PAYMENT_METHOD_CHOICES,
+                        'bank_accounts': BankAccount.active_objects.filter(company=invoice.company, is_active=True),
                         'errors': [error],
                         'form_data': request.POST,
                     },
