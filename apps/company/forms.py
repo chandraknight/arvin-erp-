@@ -15,10 +15,12 @@ class CompanyForm(forms.ModelForm):
             'enable_order_management', 'enable_manufacturing',
             'enable_hr_payroll', 'enable_purchasing', 'enable_inventory',
             'enable_restaurant', 'enable_pos', 'enable_tours', 'enable_ecom',
+            'enable_ebilling', 'cbms_username', 'cbms_password',
         ]
         widgets = {
             'address': forms.Textarea(attrs={'rows': 2}),
             'organisation_type': forms.Select(attrs={'class': 'form-control'}),
+            'cbms_password': forms.PasswordInput(render_value=True),
         }
         help_texts = {
             'vat_registered': 'Check if this company is registered for VAT/PAN.',
@@ -35,6 +37,7 @@ class CompanyForm(forms.ModelForm):
             'enable_pos': 'Enables Point of Sale (POS) module for quick retail/counter sales.',
             'enable_tours': 'Enables Tours & Ticketing module (Enquiries, Bookings, Invoicing).',
             'enable_ecom': 'Enables E-Commerce storefront (/store/). Customers can browse and place COD orders online.',
+            'enable_ebilling': 'Enables real-time bill submission to Nepal IRD CBMS. Requires VAT number and CBMS credentials.',
         }
 
     def __init__(self, *args, **kwargs):
@@ -50,6 +53,22 @@ class CompanyForm(forms.ModelForm):
         if val is None or val == '':
             return Decimal('13.00')
         return val
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('enable_ebilling'):
+            missing = []
+            if not cleaned.get('vat_number'):
+                missing.append('VAT number')
+            if not cleaned.get('cbms_username'):
+                missing.append('CBMS username')
+            if not cleaned.get('cbms_password'):
+                missing.append('CBMS password')
+            if missing:
+                raise forms.ValidationError(
+                    f"E-Billing (IRD CBMS) requires: {', '.join(missing)}."
+                )
+        return cleaned
 
 
 class CompanyBasicInfoForm(forms.ModelForm):

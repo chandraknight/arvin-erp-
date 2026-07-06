@@ -30,6 +30,7 @@ urlpatterns = [
 
     # ── Contact ───────────────────────────────────────────
     path('contact/', storefront.contact_us, name='contact'),
+    path('newsletter/subscribe/', storefront.newsletter_subscribe, name='newsletter_subscribe'),
 
     # ── Customer auth ─────────────────────────────────────
     path('login/', storefront.customer_login, name='login'),
@@ -96,6 +97,11 @@ urlpatterns = [
     path('manage/cms/blog/add/', cms_admin.blog_create, name='cms_blog_create'),
     path('manage/cms/blog/<uuid:post_id>/edit/', cms_admin.blog_edit, name='cms_blog_edit'),
     path('manage/cms/blog/<uuid:post_id>/delete/', cms_admin.blog_delete, name='cms_blog_delete'),
+
+    # ── CMS: Newsletter ───────────────────────────────────
+    path('manage/cms/newsletter/', cms_admin.newsletter_list, name='cms_newsletter_list'),
+    path('manage/cms/newsletter/<uuid:sub_id>/delete/', cms_admin.newsletter_delete, name='cms_newsletter_delete'),
+    path('manage/cms/newsletter/send/', cms_admin.newsletter_send, name='cms_newsletter_send'),
 
     # ── CMS: Contacts ─────────────────────────────────────
     path('manage/cms/contacts/', cms_admin.contact_list, name='cms_contact_list'),

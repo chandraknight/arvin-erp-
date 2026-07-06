@@ -13065,3 +13065,143 @@ LINE 1: ...."product_id", "products_packageitem"."quantity", "products_...
                                                              ^
 
 ERROR 2026-07-02 14:19:14,353 log 61124 6162935808 "GET /products/inventory/add-package/ HTTP/1.1" 500 264034
+WARNING 2026-07-06 07:44:45,419 log 6984 6191542272 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
+WARNING 2026-07-06 07:44:55,543 log 6984 6191542272 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
+WARNING 2026-07-06 07:45:09,623 log 6984 6191542272 Not Found: /admin/
+WARNING 2026-07-06 07:45:09,624 log 6984 6191542272 "GET /admin/ HTTP/1.1" 404 7416
+WARNING 2026-07-06 07:45:15,675 log 6984 6191542272 Not Found: /login
+WARNING 2026-07-06 07:45:15,675 log 6984 6191542272 "GET /login HTTP/1.1" 404 7413
+WARNING 2026-07-06 07:45:37,786 log 6984 6242021376 Not Found: /apple-touch-icon.png
+WARNING 2026-07-06 07:45:37,791 log 6984 6225195008 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-06 07:45:37,789 log 6984 6258847744 Not Found: /favicon.ico
+WARNING 2026-07-06 07:45:37,791 log 6984 6242021376 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-06 07:45:37,792 log 6984 6225195008 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-06 07:45:37,792 log 6984 6258847744 "GET /favicon.ico HTTP/1.1" 404 7431
+ERROR 2026-07-06 07:49:09,950 log 19366 6123646976 Internal Server Error: /billing/credit-notes/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/utils/decorator.py", line 40, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/views_collection/list_view.py", line 148, in credit_note_list
+    return render(request, template_name, {
+        'object_list': page_obj.object_list,
+        'page_obj': page_obj,
+        'paginate_by': paginate_by
+    })
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/defaulttags.py", line 511, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/urls/resolvers.py", line 842, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'unified_bill_list' not found. 'unified_bill_list' is not a valid view function or pattern name.
+ERROR 2026-07-06 07:49:09,954 log 19366 6123646976 "GET /billing/credit-notes/ HTTP/1.1" 500 177188
+ERROR 2026-07-06 07:49:32,986 log 19366 6123646976 Internal Server Error: /billing/credit-notes/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/utils/decorator.py", line 40, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/views_collection/list_view.py", line 148, in credit_note_list
+    return render(request, template_name, {
+        'object_list': page_obj.object_list,
+        'page_obj': page_obj,
+        'paginate_by': paginate_by
+    })
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/defaulttags.py", line 511, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/urls/base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/urls/resolvers.py", line 842, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'unified_bill_list' not found. 'unified_bill_list' is not a valid view function or pattern name.
+ERROR 2026-07-06 07:49:32,988 log 19366 6123646976 "GET /billing/credit-notes/ HTTP/1.1" 500 177197

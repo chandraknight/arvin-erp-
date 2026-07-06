@@ -50,17 +50,14 @@ class BillingTypeEnum(Enum):
     VendorBill = 'VENDOR_BILL'
 
 
+# Notes are applied immediately on creation — there is no draft stage.
 DEBIT_CREDIT_NOTE_STATUS_CHOICES = [
-    ('DRAFT', 'Draft'),
-    ('ISSUED', 'Issued'),
     ('APPLIED', 'Applied'),
     ('CANCELLED', 'Cancelled'),
 ]
 
 DEBIT_CREDIT_NOTE_REMARK = [
-    ('DRAFT', 'The note is still being prepared and not yet finalized or sent to the customer/vendor.'),
-    ('ISSUED', 'The note is complete and officially issued — but not yet applied to any invoice.'),
-    ('APPLIED', 'The note has been partially or fully applied to an invoice or vendor bill.'),
+    ('APPLIED', 'The note has been applied to an invoice or vendor bill.'),
     ('CANCELLED', 'The note was voided or invalidated — it no longer affects any financials.'),
 ]
 
@@ -125,4 +122,8 @@ DEFAULT_ACCOUNTS = [
     {"name": "Discount Given",       "account_type": "EXPENSE",   "code": "5100"},
     # Input VAT (recoverable) — debit side when receiving a vendor VAT bill
     {"name": "Input VAT",            "account_type": "ASSET",     "code": "1300"},
+    # NFRS presentation: revenue/purchases are reported net of returns, but the
+    # returns themselves are tracked in contra accounts for disclosure.
+    {"name": "Sales Returns",        "account_type": "REVENUE",   "code": "4100"},
+    {"name": "Purchase Returns",     "account_type": "EXPENSE",   "code": "5200"},
 ]

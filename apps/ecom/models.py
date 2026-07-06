@@ -309,6 +309,39 @@ class ContactMessage(BaseModel):
         return f"{self.name} — {self.subject or 'No subject'}"
 
 
+class NewsletterSubscriber(BaseModel):
+    company = models.ForeignKey(
+        'company.Company', on_delete=models.CASCADE, related_name='ecom_newsletter_subscribers'
+    )
+    email = models.EmailField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['company', 'email'], name='unique_newsletter_email_per_company'),
+        ]
+
+    def __str__(self):
+        return self.email
+
+
+class NewsletterCampaign(BaseModel):
+    company = models.ForeignKey(
+        'company.Company', on_delete=models.CASCADE, related_name='ecom_newsletter_campaigns'
+    )
+    subject = models.CharField(max_length=300)
+    body = models.TextField(help_text='Plain-text newsletter body.')
+    sent_at = models.DateTimeField(null=True, blank=True)
+    recipient_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.subject
+
+
 def _media_upload_path(instance, filename):
     return f'ecom/uploads/{instance.company_id}/{instance.folder or "general"}/{filename}'
 

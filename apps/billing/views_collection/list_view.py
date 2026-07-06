@@ -153,7 +153,7 @@ def credit_note_list(request):
 
 @auth_required('billing.view_debitnote')
 def debit_note_list(request):
-    template_name = 'reports/billing/debitnote_note_list.html'
+    template_name = 'reports/billing/debit_note_list.html'
     base_queryset = DebitNote.active_objects.order_by('-created_at')
 
     if not request.user.is_superuser and hasattr(request.user, 'company'):

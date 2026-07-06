@@ -69,6 +69,17 @@
       <p class="text-xs text-gray-500">{{ blog_count }} article{{ blog_count|pluralize }} — shown on storefront when published</p>
     </a>
 
+    <!-- Newsletter Subscribers -->
+    <a href="{% url 'ecom:cms_newsletter_list' %}" class="bg-white border border-gray-200 p-5 hover:border-indigo-400 transition group">
+      <div class="flex items-center space-x-3 mb-3">
+        <div class="h-10 w-10 bg-amber-100 flex items-center justify-center text-amber-600">
+          <i class="fas fa-envelope-open-text"></i>
+        </div>
+        <p class="font-semibold text-gray-800 group-hover:text-indigo-700">Newsletter</p>
+      </div>
+      <p class="text-xs text-gray-500">{{ newsletter_count }} subscriber{{ newsletter_count|pluralize }} — from the storefront subscribe form</p>
+    </a>
+
     <!-- Category Images -->
     <a href="{% url 'ecom:admin_category_images' %}" class="bg-white border border-gray-200 p-5 hover:border-indigo-400 transition group">
       <div class="flex items-center space-x-3 mb-3">

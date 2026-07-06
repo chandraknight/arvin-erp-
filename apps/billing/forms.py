@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from .models import Invoice, InvoiceItem, VendorBill, VendorBillItem, CreditNote, DebitNote
 from django.forms import BaseInlineFormSet
@@ -320,17 +322,77 @@ class CreditNoteForm(BaseNoteForm):
             raise forms.ValidationError("Amount must be positive.")
         return amount
 
+    def clean(self):
+        cleaned = super().clean()
+        invoice = cleaned.get('invoice')
+        amount = cleaned.get('amount')
+        if invoice and amount:
+            outstanding = invoice.outstanding_balance or Decimal('0.00')
+            # On re-apply the note's previous effect is reverted first,
+            # so its old amount counts as available headroom.
+            if self.instance.pk and self.instance.invoice_id == invoice.pk \
+                    and self.instance.status == 'APPLIED':
+                outstanding += self.instance.amount
+            if amount > outstanding:
+                raise forms.ValidationError(
+                    f"Credit note amount ({amount}) exceeds the invoice outstanding balance ({outstanding})."
+                )
+        return cleaned
+
 
 class DebitNoteForm(BaseNoteForm):
     class Meta:
         model = DebitNote
-        fields = ['company', 'invoice', 'customer', 'amount', 'reason']
+        fields = ['company', 'vendor', 'vendor_bill', 'invoice', 'customer', 'amount', 'reason']
         widgets = {
             'reason': forms.Textarea(attrs={'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.request and hasattr(self.request.user, 'company'):
+            company = self.request.user.company
+            from apps.vendors.models import Vendor
+            self.fields['vendor'].queryset = Vendor.objects.filter(company=company).order_by('name')
+            self.fields['vendor_bill'].queryset = VendorBill.objects.filter(
+                company=company, is_deleted=False,
+            ).order_by('-bill_date')
+        self.fields['vendor'].help_text = 'For a purchase return, select the vendor.'
+        self.fields['vendor_bill'].help_text = 'Vendor bill the goods are returned against.'
 
     def clean_amount(self):
         amount = self.cleaned_data['amount']
         if amount <= 0:
             raise forms.ValidationError("Amount must be positive.")
         return amount
+
+    def clean(self):
+        cleaned = super().clean()
+        vendor = cleaned.get('vendor')
+        vendor_bill = cleaned.get('vendor_bill')
+        invoice = cleaned.get('invoice')
+        customer = cleaned.get('customer')
+        amount = cleaned.get('amount')
+
+        if not (vendor or vendor_bill) and not (invoice or customer):
+            raise forms.ValidationError(
+                "Select a vendor/vendor bill for a purchase return, "
+                "or an invoice/customer for a customer debit note."
+            )
+        if (vendor or vendor_bill) and (invoice or customer):
+            raise forms.ValidationError(
+                "A debit note is either a purchase return (vendor) or a customer "
+                "adjustment (invoice/customer) — not both."
+            )
+        if vendor_bill:
+            if vendor and vendor_bill.vendor_id != vendor.pk:
+                raise forms.ValidationError("Selected vendor bill does not belong to the selected vendor.")
+            if not vendor:
+                cleaned['vendor'] = vendor_bill.vendor
+            if amount:
+                bill_gross = (vendor_bill.total_amount or Decimal('0.00')) + (vendor_bill.tax_amount or Decimal('0.00'))
+                if amount > bill_gross:
+                    raise forms.ValidationError(
+                        f"Debit note amount ({amount}) exceeds the vendor bill total ({bill_gross})."
+                    )
+        return cleaned

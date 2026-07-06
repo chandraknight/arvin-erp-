@@ -249,8 +249,8 @@
     <div style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.12);font-size:24px;margin-bottom:20px;">🔔</div>
     <h2 style="font-size:clamp(24px,3vw,38px);font-weight:800;color:#fff;margin-bottom:12px;letter-spacing:-0.3px;">Never Miss A Meaningful Date</h2>
     <p style="color:#e7e5e4;font-size:15px;max-width:440px;margin:0 auto 28px;line-height:1.7;font-weight:400;">Get festival reminders, restock alerts, gift ideas, and seasonal offers across faith traditions.</p>
-    <form method="post" action="#" style="max-width:440px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;"
-          onsubmit="this.querySelector('button').textContent='Subscribed ✓';this.querySelector('button').style.background='#059669';return false;">
+    <form method="post" action="{% url 'ecom:newsletter_subscribe' %}" style="max-width:440px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+      {% csrf_token %}
       <input type="email" name="email" placeholder="yourname@gmail.com" required
         style="flex:1;min-width:220px;height:48px;padding:0 16px;border-radius:8px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.25);color:#fff;font-size:14px;outline:none;transition:border-color 0.15s;"
         onfocus="this.style.borderColor='#fbbf24'" onblur="this.style.borderColor='rgba(255,255,255,0.25)'">

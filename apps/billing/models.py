@@ -176,7 +176,7 @@ class CreditNote(BaseModel):
     invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='credit_notes')
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     credit_note_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='DRAFT')
+    status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='APPLIED')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal('0.00'),
@@ -192,8 +192,13 @@ class DebitNote(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='debit_notes_company', null=True, blank=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_notes')
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
+    # Purchase return (Nepali practice: debit note issued to the vendor).
+    # When vendor/vendor_bill are set, the note reverses a purchase instead of
+    # adjusting a customer invoice.
+    vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_notes')
+    vendor_bill = models.ForeignKey('VendorBill', on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_notes')
     debit_note_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='DRAFT')
+    status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='APPLIED')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal('0.00'),

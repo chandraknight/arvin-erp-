@@ -740,6 +740,32 @@ def blog_detail(request, slug):
 # Contact
 # ──────────────────────────────────────────────────────────
 
+@require_POST
+def newsletter_subscribe(request):
+    company = _get_company(request)
+    _require_ecom_enabled(company)
+
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError as DjangoValidationError
+    from apps.ecom.models import NewsletterSubscriber
+
+    email = request.POST.get('email', '').strip().lower()
+    try:
+        validate_email(email)
+    except DjangoValidationError:
+        messages.error(request, 'Please enter a valid email address.')
+    else:
+        _, created = NewsletterSubscriber.objects.get_or_create(
+            company=company, email=email, defaults={'is_active': True},
+        )
+        if created:
+            messages.success(request, 'You are subscribed! We will keep you posted on festivals and offers.')
+        else:
+            messages.info(request, 'You are already subscribed.')
+
+    return redirect(request.META.get('HTTP_REFERER') or 'ecom:home')
+
+
 def contact_us(request):
     company = _get_company(request)
     _require_ecom_enabled(company)

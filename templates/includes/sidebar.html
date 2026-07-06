@@ -66,13 +66,13 @@
                 <a href="{% url 'billing:invoice_create' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-file-invoice nav-icon"></i>Add Invoice</a>
                 {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'billing.view_creditnote' %}
+                <a href="{% url 'billing:credit_note_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-list nav-icon"></i>Credit Notes (Sales Returns)</a>
+                {% endif %}
                 {% if user.is_company_admin or user|group_has_perm:'billing.add_creditnote' %}
                 <a href="{% url 'billing:credit_note_create' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-undo-alt nav-icon"></i>Add Credit Note</a>
-                {% endif %}
-                {% if user.is_company_admin or user|group_has_perm:'billing.add_debitnote' %}
-                <a href="{% url 'billing:debit_note_create' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-receipt nav-icon"></i>Add Debit Note</a>
                 {% endif %}
 
             </div>
@@ -125,6 +125,14 @@
                 {% if user.is_company_admin or user|group_has_perm:'billing.add_vendorbill' %}
                 <a href="{% url 'purchasing:vendor_bill_create' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-plus nav-icon"></i>Add Vendor Bill</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'billing.view_debitnote' %}
+                <a href="{% url 'billing:debit_note_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-list nav-icon"></i>Debit Notes (Purchase Returns)</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'billing.add_debitnote' %}
+                <a href="{% url 'billing:debit_note_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-receipt nav-icon"></i>Add Debit Note</a>
                 {% endif %}
             </div>
         </div>
@@ -474,6 +482,8 @@
                     ><i class="fas fa-paint-brush nav-icon"></i>Content (CMS)</a>
                 <a href="{% url 'ecom:coupon_list' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-tag nav-icon"></i>Discount Coupons</a>
+                <a href="{% url 'ecom:cms_newsletter_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-envelope-open-text nav-icon"></i>Newsletter Subscribers</a>
                 <a href="/store/" target="_blank" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-external-link-alt nav-icon"></i>View Store</a>
             </div>

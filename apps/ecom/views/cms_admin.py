@@ -36,12 +36,15 @@ def cms_dashboard(request):
     pages = Page.objects.filter(company=company)
     announcements = Announcement.objects.filter(company=company)
     blog_count = BlogPost.objects.filter(company=company).count()
+    from apps.ecom.models import NewsletterSubscriber
+    newsletter_count = NewsletterSubscriber.objects.filter(company=company).count()
     return render(request, 'ecom/admin/cms/dashboard.html', {
         'settings': settings,
         'banners': banners,
         'pages': pages,
         'announcements': announcements,
         'blog_count': blog_count,
+        'newsletter_count': newsletter_count,
     })
 
 
@@ -376,6 +379,74 @@ def blog_delete(request, post_id):
     post.delete()
     messages.success(request, 'Blog post deleted.')
     return redirect('ecom:cms_blog_list')
+
+
+# ──────────────────────────────────────────────────────────
+# Newsletter subscribers
+# ──────────────────────────────────────────────────────────
+
+@login_required
+def newsletter_list(request):
+    from apps.ecom.models import NewsletterSubscriber
+    company = _get_company(request)
+    subscribers = NewsletterSubscriber.objects.filter(company=company)
+
+    if request.GET.get('export') == 'csv':
+        import csv
+        from django.http import HttpResponse
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="newsletter_subscribers.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['Email', 'Active', 'Subscribed At'])
+        for sub in subscribers:
+            writer.writerow([sub.email, 'yes' if sub.is_active else 'no', sub.created_at.strftime('%Y-%m-%d %H:%M')])
+        return response
+
+    return render(request, 'ecom/admin/cms/newsletter_list.html', {'subscribers': subscribers})
+
+
+@login_required
+def newsletter_send(request):
+    from apps.ecom.models import NewsletterSubscriber, NewsletterCampaign
+    from apps.ecom.services import send_newsletter
+    company = _get_company(request)
+    subscriber_count = NewsletterSubscriber.objects.filter(company=company, is_active=True).count()
+
+    if request.method == 'POST':
+        subject = request.POST.get('subject', '').strip()
+        body = request.POST.get('body', '').strip()
+        if not subject or not body:
+            messages.error(request, 'Both subject and message are required.')
+        elif subscriber_count == 0:
+            messages.error(request, 'There are no active subscribers to send to.')
+        else:
+            campaign = NewsletterCampaign.objects.create(
+                company=company, subject=subject, body=body,
+                created_by=request.user,
+            )
+            sent = send_newsletter(campaign)
+            if sent:
+                messages.success(request, f'Newsletter sent to {sent} subscriber{"s" if sent != 1 else ""}.')
+            else:
+                messages.error(request, 'Sending failed — check the email settings and logs.')
+            return redirect('ecom:cms_newsletter_list')
+
+    campaigns = NewsletterCampaign.objects.filter(company=company)[:10]
+    return render(request, 'ecom/admin/cms/newsletter_send.html', {
+        'subscriber_count': subscriber_count,
+        'campaigns': campaigns,
+    })
+
+
+@login_required
+@require_POST
+def newsletter_delete(request, sub_id):
+    from apps.ecom.models import NewsletterSubscriber
+    company = _get_company(request)
+    sub = get_object_or_404(NewsletterSubscriber, id=sub_id, company=company)
+    sub.delete()
+    messages.success(request, f'Removed {sub.email} from the newsletter list.')
+    return redirect('ecom:cms_newsletter_list')
 
 
 # ──────────────────────────────────────────────────────────
