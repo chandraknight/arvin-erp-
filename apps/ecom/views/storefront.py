@@ -781,7 +781,10 @@ def customer_login(request):
     company = _get_company(request)
     _require_ecom_enabled(company)
 
-    if request.user.is_authenticated and not request.user.is_staff:
+    if request.user.is_authenticated:
+        from apps.accounts.services.helper_views import is_erp_user
+        if is_erp_user(request.user):
+            return redirect('accounts:user_dashboard')
         return redirect('ecom:account')
 
     from django.conf import settings as dj_settings
@@ -809,8 +812,11 @@ def customer_login(request):
             username = request.POST.get('username', '').strip()
             password = request.POST.get('password', '').strip()
             user = authenticate(request, username=username, password=password)
-            if user and not user.is_staff:
+            if user:
                 login(request, user)
+                from apps.accounts.services.helper_views import is_erp_user
+                if is_erp_user(user):
+                    return redirect('accounts:user_dashboard')
                 return redirect(request.GET.get('next', 'ecom:account'))
             else:
                 form_errors = 'Invalid email/username or password.'

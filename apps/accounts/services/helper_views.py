@@ -16,7 +16,14 @@ _FEATURES = [
 ]
 
 
+def is_erp_user(user):
+    """ERP/admin users get the dashboard; storefront customers get their account page."""
+    return user.is_staff or user.is_superuser or user.is_company_admin or user.company_id
+
+
 def home_redirect_view(request):
     if request.user.is_authenticated:
-        return redirect('accounts:user_dashboard')
-    return render(request, 'accounts/landing.html', {'features': _FEATURES})
+        if is_erp_user(request.user):
+            return redirect('accounts:user_dashboard')
+        return redirect('ecom:account')
+    return redirect('ecom:home')

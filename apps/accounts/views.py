@@ -7,6 +7,7 @@ from django.conf import settings
 from .services.all_services import *
 from ..utils.global_models import *
 from .utils import get_latest_tag
+from .services.helper_views import is_erp_user
 from ..payments.models import Payment
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,9 @@ def login_view(request):
     if request.GET.get('session_expired'):
         messages.warning(request, "Your session has expired. Please login again.")
     if request.user.is_authenticated:
-        return redirect('accounts:user_dashboard')
+        if is_erp_user(request.user):
+            return redirect('accounts:user_dashboard')
+        return redirect('ecom:account')
     tag = get_latest_tag()
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -87,7 +90,9 @@ def login_view(request):
                             "reloaded_user_id": reloaded_user_id,
                         },
                     )
-            return redirect('accounts:user_dashboard')
+            if is_erp_user(user):
+                return redirect('accounts:user_dashboard')
+            return redirect('ecom:account')
     else:
         form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form,'current_tag': tag})
