@@ -62,10 +62,10 @@
 
       {# ── Logo ── #}
       <a href="{% url 'ecom:home' %}" style="display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;">
-        <div style="width:40px;height:40px;background:#800000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(128,0,0,0.3);flex-shrink:0;">🙏</div>
         {% if cms and cms.logo %}
           <img alt="{{ company.name }}" src="{{ cms.logo.url }}" style="height:36px;width:auto;object-fit:contain;">
         {% else %}
+          <div style="width:40px;height:40px;background:#800000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(128,0,0,0.3);flex-shrink:0;">🙏</div>
           <span style="font-size:20px;font-weight:800;color:#6b0000;letter-spacing:-0.3px;line-height:1;">
             {% if cms and cms.store_name %}{{ cms.store_name }}{% else %}{{ company.name }}{% endif %}
           </span>

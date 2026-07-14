@@ -13205,3 +13205,9 @@ Traceback (most recent call last):
     raise NoReverseMatch(msg)
 django.urls.exceptions.NoReverseMatch: Reverse for 'unified_bill_list' not found. 'unified_bill_list' is not a valid view function or pattern name.
 ERROR 2026-07-06 07:49:32,988 log 19366 6123646976 "GET /billing/credit-notes/ HTTP/1.1" 500 177197
+WARNING 2026-07-14 12:49:31,381 log 20919 6264500224 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-14 12:49:31,387 log 20919 6298152960 Not Found: /favicon.ico
+WARNING 2026-07-14 12:49:31,384 log 20919 6281326592 Not Found: /apple-touch-icon.png
+WARNING 2026-07-14 12:49:31,387 log 20919 6264500224 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-14 12:49:31,387 log 20919 6298152960 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-14 12:49:31,387 log 20919 6281326592 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
