@@ -211,6 +211,27 @@
                         </div>
                     </label>
                 </div>
+
+                <!-- IRD e-Billing (CBMS) -->
+                <div class="mt-4 border border-amber-200 bg-amber-50 p-4 space-y-3">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        {{ form.enable_ebilling }}
+                        <div>
+                            <p class="text-sm font-semibold text-amber-800">IRD e-Billing (CBMS)</p>
+                            <p class="text-xs text-amber-700">Real-time bill submission to Nepal IRD CBMS. Requires VAT number and CBMS credentials.</p>
+                        </div>
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="sm:flex">
+                            <span class="flex items-center px-4 py-2 bg-white text-amber-800 font-semibold border border-amber-300 sm:border-r-0 sm:w-40 w-full text-sm">CBMS Username</span>
+                            {{ form.cbms_username|add_class:"w-full border border-amber-300 px-4 py-2 focus:ring-2 focus:ring-amber-600" }}
+                        </div>
+                        <div class="sm:flex">
+                            <span class="flex items-center px-4 py-2 bg-white text-amber-800 font-semibold border border-amber-300 sm:border-r-0 sm:w-40 w-full text-sm">CBMS Password</span>
+                            {{ form.cbms_password|add_class:"w-full border border-amber-300 px-4 py-2 focus:ring-2 focus:ring-amber-600" }}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

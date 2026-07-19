@@ -519,7 +519,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         miniCard.querySelector('.mini-name').textContent  = selectedText.length > 55 ? selectedText.slice(0, 55) + '…' : selectedText;
                         miniCard.querySelector('.mini-price').textContent = data.price ? '₹ ' + parseFloat(data.price).toFixed(2) : '—';
                         miniCard.querySelector('.mini-hs').textContent    = data.hscode ? 'HS: ' + data.hscode : '';
-                        miniCard.querySelector('.mini-stock').textContent = data.stock != null ? 'Stock: ' + data.stock : '';
+                        const stockEl = miniCard.querySelector('.mini-stock');
+                        if (data.stock != null) {
+                            const low = data.minimum_stock != null && data.stock <= data.minimum_stock;
+                            stockEl.textContent = low ? 'Low stock: ' + data.stock : 'Stock: ' + data.stock;
+                            stockEl.className = 'mini-stock ' + (low ? 'text-amber-700 font-semibold' : 'text-gray-400');
+                        } else {
+                            stockEl.textContent = '';
+                        }
                         miniCard.style.display = '';
                     }
                     updateCalculations();

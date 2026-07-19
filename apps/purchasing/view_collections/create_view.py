@@ -10,7 +10,7 @@ class PurchaseOrderCreateView(AuthMixin, PurchaseOrderMixin, CreateView):
     def get_initial(self):
         return {
             'date': timezone.now().date(),
-            'status': 'DRAFT',
+            'status': 'SENT',
             'purchase_order_number': generate_po_number()
         }
 

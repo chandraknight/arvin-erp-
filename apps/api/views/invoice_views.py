@@ -35,7 +35,7 @@ class InvoiceListView(APIView):
 
     Returns a paginated list of invoices for the token's company.
     Query params:
-        ?status=ISSUED|DRAFT|CANCELLED
+        ?status=ISSUED|ESTIMATE|CANCELLED
         ?customer=<uuid>
         ?from_date=YYYY-MM-DD
         ?to_date=YYYY-MM-DD

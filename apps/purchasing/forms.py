@@ -35,7 +35,7 @@ class PurchaseOrderForm(FiscalYearDateMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if not self.instance.pk:
-            self.fields['status'].initial = 'DRAFT'
+            self.fields['status'].initial = 'SENT'
 
         if self.request and hasattr(self.request.user, 'company'):
             self.fields['vendor'].queryset = Vendor.active_objects.filter(
@@ -165,6 +165,15 @@ class VendorBillForm(FiscalYearDateMixin, forms.ModelForm):
             raise forms.ValidationError("VAT rate cannot be greater than 100%.")
         return tax_percent
 
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('collect_payment'):
+            if not cleaned_data.get('payment_amount'):
+                self.add_error('payment_amount', 'Payment amount is required to record payment.')
+            if not cleaned_data.get('payment_method'):
+                self.add_error('payment_method', 'Payment method is required to record payment.')
+        return cleaned_data
+
 class VendorPaymentForm(FiscalYearDateMixin, forms.ModelForm):
     payment_date = NepaliDateField(widget=NepaliDateWidget(), required=True, label='Payment Date (BS)')
 
@@ -205,7 +214,7 @@ class VendorBillItemForm(forms.ModelForm):
         if company:
             self.fields['product'].queryset = Product.active_objects.filter(company=company)
         else:
-            self.fields['product'].queryset = Product.active_objects.all()
+            self.fields['product'].queryset = Product.active_objects.none()
 
 
 def vendor_bill_item_formset_factory(company=None):

@@ -969,7 +969,7 @@ def purchase_order_list_report(request):
         'date_to': date_to,
         'status': status,
         'vendor_q': vendor_q,
-        'PURCHASE_STATUS_CHOICES': [('DRAFT','Draft'),('SENT','Sent'),('RECEIVED','Received'),('CANCELLED','Cancelled')],
+        'PURCHASE_STATUS_CHOICES': [('SENT','Sent'),('RECEIVED','Received'),('CANCELLED','Cancelled')],
     }
     return render(request, 'reports/purchasing/purchase_order_list_report.html', context)
 

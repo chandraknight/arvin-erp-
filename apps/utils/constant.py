@@ -18,7 +18,6 @@ VENDOR_BILL_STATUS_CHOICES = [
 
 
 class StatusChoicesEnum(Enum):
-    Draft = 'DRAFT'
     Issued = 'ISSUED'
     Sent = 'SENT'
     Applied = 'APPLIED'
@@ -50,20 +49,17 @@ class BillingTypeEnum(Enum):
     VendorBill = 'VENDOR_BILL'
 
 
-# Notes are applied immediately on creation — there is no draft stage.
 DEBIT_CREDIT_NOTE_STATUS_CHOICES = [
+    ('ISSUED', 'Issued'),
     ('APPLIED', 'Applied'),
     ('CANCELLED', 'Cancelled'),
 ]
 
 DEBIT_CREDIT_NOTE_REMARK = [
-    ('APPLIED', 'The note has been applied to an invoice or vendor bill.'),
+    ('ISSUED', 'The note is complete and officially issued — but not yet applied to any invoice.'),
+    ('APPLIED', 'The note has been partially or fully applied to an invoice or vendor bill.'),
     ('CANCELLED', 'The note was voided or invalidated — it no longer affects any financials.'),
 ]
-
-
-def is_draft(self):
-    return self.status == 'DRAFT'
 
 
 def is_paid(self):
@@ -86,7 +82,6 @@ PAYMENT_TYPE_CHOICES = [
 ]
 
 PURCHASE_STATUS_CHOICES = [
-    ('DRAFT', 'Draft'),
     ('SENT', 'Sent'),
     ('RECEIVED', 'Received'),
     ('CANCELLED', 'Cancelled'),
@@ -122,8 +117,7 @@ DEFAULT_ACCOUNTS = [
     {"name": "Discount Given",       "account_type": "EXPENSE",   "code": "5100"},
     # Input VAT (recoverable) — debit side when receiving a vendor VAT bill
     {"name": "Input VAT",            "account_type": "ASSET",     "code": "1300"},
-    # NFRS presentation: revenue/purchases are reported net of returns, but the
-    # returns themselves are tracked in contra accounts for disclosure.
+    # NFRS presentation: revenue and purchases reported net of returns
     {"name": "Sales Returns",        "account_type": "REVENUE",   "code": "4100"},
     {"name": "Purchase Returns",     "account_type": "EXPENSE",   "code": "5200"},
 ]

@@ -322,7 +322,7 @@ class WorkOrderUpdateView(AuthMixin, UpdateView):
     def get_queryset(self):
         return WorkOrder.active_objects.filter(
             company=self.request.user_company,
-            status__in=['DRAFT', 'PLANNED']
+            status='PLANNED'
         )
 
     def get_form_kwargs(self):

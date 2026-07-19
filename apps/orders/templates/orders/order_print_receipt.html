@@ -213,7 +213,7 @@
   </table>
 
   <div>
-    <span class="r-status {% if order.status == 'DELIVERED' %}delivered{% elif order.status == 'CANCELLED' %}cancelled{% elif order.status == 'DRAFT' %}draft{% else %}other{% endif %}">
+    <span class="r-status {% if order.status == 'DELIVERED' %}delivered{% elif order.status == 'CANCELLED' %}cancelled{% else %}other{% endif %}">
       {{ order.get_status_display }}
     </span>
   </div>

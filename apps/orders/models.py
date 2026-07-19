@@ -8,7 +8,7 @@ Enabled per-company via Company.enable_order_management = True.
 Models
 ------
 SalesOrder       — A confirmed customer order before invoicing.
-                   Lifecycle: DRAFT → CONFIRMED → PROCESSING → DISPATCHED → DELIVERED → CANCELLED
+                   Lifecycle: CONFIRMED → PROCESSING → DISPATCHED → DELIVERED → CANCELLED
 SalesOrderItem   — Line items on a sales order.
 DeliveryNote     — A delivery document linked to a SalesOrder.
                    Tracks what was actually dispatched and when.
@@ -23,7 +23,6 @@ from django.utils import timezone
 
 
 ORDER_STATUS_CHOICES = [
-    ('DRAFT',       'Draft'),
     ('CONFIRMED',   'Confirmed'),
     ('PROCESSING',  'Processing'),
     ('DISPATCHED',  'Dispatched'),
@@ -71,7 +70,7 @@ class SalesOrder(BaseModel):
     order_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
     order_date = models.DateField(default=timezone.now)
     expected_delivery_date = models.DateField(null=True, blank=True)
-    status = models.CharField(max_length=15, choices=ORDER_STATUS_CHOICES, default='DRAFT')
+    status = models.CharField(max_length=15, choices=ORDER_STATUS_CHOICES, default='CONFIRMED')
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='NORMAL')
 
     # Financials (computed from items)

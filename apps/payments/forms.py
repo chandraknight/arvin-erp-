@@ -25,8 +25,8 @@ class PaymentForm(FiscalYearDateMixin, forms.ModelForm):
         model = Payment
         fields = ['payment_type', 'invoice', 'date', 'amount', 'discount_amount', 'method', 'bank_account', 'ledger_account', 'reference_number', 'description']
         widgets = {
-            'amount':           forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'discount_amount':  forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'amount':           forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'discount_amount':  forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'method':           forms.Select(attrs={'class': 'form-control'}),
             'bank_account':     forms.Select(attrs={'class': 'form-control'}),
             'payment_type':     forms.Select(attrs={'class': 'form-control'}),
@@ -90,6 +90,10 @@ class PaymentForm(FiscalYearDateMixin, forms.ModelForm):
         # Validate amount is positive
         if amount is not None and amount <= 0:
             raise forms.ValidationError("Payment amount must be greater than zero.")
+
+        discount_amount = cleaned_data.get('discount_amount')
+        if discount_amount is not None and discount_amount < 0:
+            raise forms.ValidationError("Discount amount cannot be negative.")
 
         return cleaned_data
 

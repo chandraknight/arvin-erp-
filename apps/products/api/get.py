@@ -27,10 +27,12 @@ def get_product_price(request, product_id):
             if last_purchase:
                 price = last_purchase
 
-        # Stock info so the frontend can show available qty
+        # Stock info so the frontend can show available qty inline
         stock = 0
+        minimum_stock = 0
         try:
             stock = product.productstock.stock
+            minimum_stock = product.productstock.minimum_stock
         except Exception:
             pass
 
@@ -38,6 +40,7 @@ def get_product_price(request, product_id):
             'price': str(price),
             'hscode': product.hscode or '',
             'stock': stock,
+            'minimum_stock': minimum_stock,
             'cost_price': str(product.cost_price),
         })
     except Product.DoesNotExist:

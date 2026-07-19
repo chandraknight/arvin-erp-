@@ -49,32 +49,21 @@ def create_journal_entry_for_invoice(sender, instance, created, **kwargs):
 # ─────────────────────────────────────────────────────────────────────────────
 # CREDIT NOTE
 # ─────────────────────────────────────────────────────────────────────────────
-def _note_tax_amount(instance):
+def _note_tax_amount(instance, source=None, source_total=None):
     """
-    Return the VAT portion for a credit/debit note.
-    Uses instance.tax_amount if set; otherwise pro-rates from the linked
-    invoice (sales side) or vendor bill (purchase-return side).
-    Pro-rating: note_amount / document_gross_total * document_tax_amount
+    VAT portion for a credit/debit note. Uses instance.tax_amount if set;
+    otherwise pro-rates from the source document:
+    note_amount / source_total * source.tax_amount
     """
     from decimal import Decimal
     if instance.tax_amount and instance.tax_amount > 0:
         return instance.tax_amount
-    inv = instance.invoice
-    if inv and inv.total and inv.total > 0 and inv.tax_amount and inv.tax_amount > 0:
-        return (instance.amount / inv.total * inv.tax_amount).quantize(Decimal('0.01'))
-    bill = getattr(instance, 'vendor_bill', None)
-    if bill and bill.tax_amount and bill.tax_amount > 0:
-        gross = (bill.total_amount or Decimal('0.00')) + bill.tax_amount
-        if gross > 0:
-            return (instance.amount / gross * bill.tax_amount).quantize(Decimal('0.01'))
+    if source is None:
+        source = instance.invoice
+        source_total = source.total if source else None
+    if source and source_total and source_total > 0 and source.tax_amount and source.tax_amount > 0:
+        return (instance.amount / source_total * source.tax_amount).quantize(Decimal('0.01'))
     return Decimal('0.00')
-
-
-def _set_note_journal(instance, entry):
-    # Queryset update — an instance.save() here would re-fire this post_save
-    # handler (status is still APPLIED) and recurse forever.
-    type(instance).objects.filter(pk=instance.pk).update(journal_entry=entry)
-    instance.journal_entry = entry
 
 
 @receiver(post_save, sender=CreditNote)
@@ -91,12 +80,14 @@ def create_journal_entry_for_credit_note(sender, instance, created, **kwargs):
         ar_account = instance.customer.related_ledger_account
     else:
         ar_account = _get_ledger(instance.company, "Accounts Receivable")
-    # NFRS: post to the Sales Returns contra account so revenue is reported
-    # net of returns while the returns remain visible for disclosure.
-    returns_account = _get_ledger(instance.company, "Sales Returns") or _get_ledger(instance.company, "Sales Revenue")
+    # NFRS presentation: sales returns hit the contra-revenue account, not gross revenue
+    sales_returns_account = (
+        _get_ledger(instance.company, "Sales Returns")
+        or _get_ledger(instance.company, "Sales Revenue")
+    )
     tax_account = _get_ledger(instance.company, "Tax Payable")
 
-    if not ar_account or not returns_account:
+    if not ar_account or not sales_returns_account:
         logger.error(
             "Missing ledger accounts for credit note %s", instance.credit_note_number
         )
@@ -107,14 +98,12 @@ def create_journal_entry_for_credit_note(sender, instance, created, **kwargs):
 
     entry = JournalEntry.objects.create(
         company=instance.company,
-        # NFRS: the return is recognised in the period it occurs,
-        # not back-dated to the original invoice date.
-        date=instance.created_at.date(),
+        date=instance.invoice.transaction_date if instance.invoice else instance.created_at.date(),
         description=f"Credit Note {instance.credit_note_number}",
     )
     lines = [
-        JournalEntryLine(journal_entry=entry, account=returns_account, entry_type="DEBIT",  amount=net_sales),
-        JournalEntryLine(journal_entry=entry, account=ar_account,      entry_type="CREDIT", amount=instance.amount),
+        JournalEntryLine(journal_entry=entry, account=sales_returns_account, entry_type="DEBIT", amount=net_sales),
+        JournalEntryLine(journal_entry=entry, account=ar_account,    entry_type="CREDIT", amount=instance.amount),
     ]
     # NFRS: reverse the VAT liability that was posted on the original invoice
     if tax_amt > 0 and tax_account:
@@ -127,7 +116,8 @@ def create_journal_entry_for_credit_note(sender, instance, created, **kwargs):
             instance.credit_note_number,
         )
     JournalEntryLine.objects.bulk_create(lines)
-    _set_note_journal(instance, entry)
+    instance.journal_entry = entry
+    instance.save(update_fields=["journal_entry"])
 
     audit_logger.info(
         "CREDIT_NOTE_APPLIED credit_note=%s journal_entry=%s company=%s tax_amt=%s",
@@ -136,7 +126,7 @@ def create_journal_entry_for_credit_note(sender, instance, created, **kwargs):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DEBIT NOTE — fixed: removed the early-exit guard that prevented re-creation
+# DEBIT NOTE — purchase return: DR Accounts Payable, CR Purchase Returns + Input VAT
 # ─────────────────────────────────────────────────────────────────────────────
 @receiver(post_save, sender=DebitNote)
 def create_journal_entry_for_debit_note(sender, instance, created, **kwargs):
@@ -148,90 +138,45 @@ def create_journal_entry_for_debit_note(sender, instance, created, **kwargs):
         reverse_journal(old_entry, reason=f'Debit note {instance.debit_note_number} re-applied')
     setup_default_ledger_accounts(instance.company)
 
-    # ── Purchase return: debit note issued to a vendor ──────────────────────
-    if instance.vendor or instance.vendor_bill:
-        ap_account = _get_ledger(instance.company, "Accounts Payable")
-        returns_account = _get_ledger(instance.company, "Purchase Returns") or _get_ledger(instance.company, "Purchase Expense")
-        input_vat_account = _get_ledger(instance.company, "Input VAT")
+    ap_account = _get_ledger(instance.company, "Accounts Payable")
+    purchase_returns_account = (
+        _get_ledger(instance.company, "Purchase Returns")
+        or _get_ledger(instance.company, "Purchase Expense")
+    )
+    input_vat_account = _get_ledger(instance.company, "Input VAT")
 
-        if not ap_account or not returns_account:
-            logger.error(
-                "Missing ledger accounts for purchase-return debit note %s",
-                instance.debit_note_number,
-            )
-            return
-
-        tax_amt = _note_tax_amount(instance)
-        net_purchase = instance.amount - tax_amt
-
-        entry = JournalEntry.objects.create(
-            company=instance.company,
-            # NFRS: recognise the return in the period it occurs
-            date=instance.created_at.date(),
-            description=f"Debit Note {instance.debit_note_number}",
-        )
-        lines = [
-            JournalEntryLine(journal_entry=entry, account=ap_account,      entry_type="DEBIT",  amount=instance.amount),
-            JournalEntryLine(journal_entry=entry, account=returns_account, entry_type="CREDIT", amount=net_purchase),
-        ]
-        # NFRS: reverse the recoverable Input VAT claimed on the original bill
-        if tax_amt > 0 and input_vat_account:
-            lines.append(JournalEntryLine(
-                journal_entry=entry, account=input_vat_account, entry_type="CREDIT", amount=tax_amt,
-            ))
-        elif tax_amt > 0:
-            logger.warning(
-                "Input VAT account not found — debit note %s VAT leg omitted",
-                instance.debit_note_number,
-            )
-        JournalEntryLine.objects.bulk_create(lines)
-        _set_note_journal(instance, entry)
-
-        audit_logger.info(
-            "DEBIT_NOTE_APPLIED debit_note=%s journal_entry=%s company=%s tax_amt=%s vendor=%s",
-            instance.debit_note_number, entry.id, instance.company_id, tax_amt, instance.vendor_id,
-        )
-        return
-
-    # ── Legacy customer-side debit note (supplementary charge) ──────────────
-    if instance.customer and instance.customer.related_ledger_account:
-        ar_account = instance.customer.related_ledger_account
-    else:
-        ar_account = _get_ledger(instance.company, "Accounts Receivable")
-    sales_account = _get_ledger(instance.company, "Sales Revenue")
-    tax_account = _get_ledger(instance.company, "Tax Payable")
-
-    if not ar_account or not sales_account:
+    if not ap_account or not purchase_returns_account:
         logger.error(
             "Missing ledger accounts for debit note %s", instance.debit_note_number
         )
         return
 
-    tax_amt = _note_tax_amount(instance)
-    net_sales = instance.amount - tax_amt
+    bill = instance.vendor_bill
+    tax_amt = _note_tax_amount(instance, source=bill, source_total=bill.total_amount if bill else None)
+    net_purchase = instance.amount - tax_amt
 
     entry = JournalEntry.objects.create(
         company=instance.company,
-        # NFRS: recognise the adjustment in the period it occurs
-        date=instance.created_at.date(),
+        date=bill.bill_date if bill else instance.created_at.date(),
         description=f"Debit Note {instance.debit_note_number}",
     )
     lines = [
-        JournalEntryLine(journal_entry=entry, account=ar_account,    entry_type="DEBIT",  amount=instance.amount),
-        JournalEntryLine(journal_entry=entry, account=sales_account, entry_type="CREDIT", amount=net_sales),
+        JournalEntryLine(journal_entry=entry, account=ap_account, entry_type="DEBIT", amount=instance.amount),
+        JournalEntryLine(journal_entry=entry, account=purchase_returns_account, entry_type="CREDIT", amount=net_purchase),
     ]
-    # NFRS: record the additional VAT liability on the debit note
-    if tax_amt > 0 and tax_account:
+    # NFRS: returning goods surrenders the recoverable Input VAT claimed on the bill
+    if tax_amt > 0 and input_vat_account:
         lines.append(JournalEntryLine(
-            journal_entry=entry, account=tax_account, entry_type="CREDIT", amount=tax_amt,
+            journal_entry=entry, account=input_vat_account, entry_type="CREDIT", amount=tax_amt,
         ))
     elif tax_amt > 0:
         logger.warning(
-            "Tax Payable account not found — debit note %s VAT leg omitted",
+            "Input VAT account not found — debit note %s VAT leg omitted",
             instance.debit_note_number,
         )
     JournalEntryLine.objects.bulk_create(lines)
-    _set_note_journal(instance, entry)
+    instance.journal_entry = entry
+    instance.save(update_fields=["journal_entry"])
 
     audit_logger.info(
         "DEBIT_NOTE_APPLIED debit_note=%s journal_entry=%s company=%s tax_amt=%s",

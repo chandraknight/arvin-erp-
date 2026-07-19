@@ -11,6 +11,7 @@ from datetime import timedelta
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from apps.utils.htmx import is_htmx, toast_trigger
+from apps.utils.mixins import module_required
 from django.core.exceptions import PermissionDenied
 
 from .models import Department, Employee, Earning, Deduction, PayrollRun, Payslip, PayslipEarning, PayslipDeduction, Attendance
@@ -660,6 +661,7 @@ def _post_payroll_journal(payroll_run, user):
 
 
 @login_required
+@module_required('enable_hr_payroll')
 @transaction.atomic
 def generate_payslips(request, pk):
     # Lock the run row to prevent concurrent double-generation
@@ -819,6 +821,7 @@ class MonthlyAttendanceReportView(LoginRequiredMixin, HRPayrollPermissionMixin, 
         return context
 
 @login_required
+@module_required('enable_hr_payroll')
 def download_payslip_pdf(request, pk):
     # payslip = get_object_or_404(Payslip, pk=pk)
     #
@@ -1049,6 +1052,7 @@ class JobApplicationUpdateView(LoginRequiredMixin, HRPayrollPermissionMixin, Upd
 
 
 @login_required
+@module_required('enable_hr_payroll')
 def application_move_stage(request, pk):
     """Quick HTMX action to advance/change application status."""
     if request.method == 'POST':
@@ -1067,6 +1071,7 @@ def application_move_stage(request, pk):
 
 
 @login_required
+@module_required('enable_hr_payroll')
 def hire_applicant(request, pk):
     """Convert a HIRED application into an Employee record."""
     app = get_object_or_404(JobApplication, pk=pk)
@@ -1119,6 +1124,7 @@ def hire_applicant(request, pk):
 # ── Interviews ────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_hr_payroll')
 def interview_create(request, application_pk):
     app = get_object_or_404(JobApplication, pk=application_pk)
     if not request.user.is_superuser and app.company != request.user.company:
@@ -1138,6 +1144,7 @@ def interview_create(request, application_pk):
 
 
 @login_required
+@module_required('enable_hr_payroll')
 def interview_update_result(request, pk):
     interview = get_object_or_404(Interview, pk=pk)
     if not request.user.is_superuser and interview.application.company != request.user.company:
@@ -1240,6 +1247,7 @@ class LeaveRequestCreateView(LoginRequiredMixin, HRPayrollPermissionMixin, Creat
 
 
 @login_required
+@module_required('enable_hr_payroll')
 def leave_request_approve(request, pk):
     """Approve or reject a leave request."""
     lr = get_object_or_404(LeaveRequest, pk=pk)
@@ -1275,6 +1283,7 @@ def leave_request_approve(request, pk):
 # ── Employee Documents ────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_hr_payroll')
 def employee_document_create(request, employee_pk):
     employee = get_object_or_404(Employee, pk=employee_pk)
     if not request.user.is_superuser and employee.company != request.user.company:
@@ -1294,6 +1303,7 @@ def employee_document_create(request, employee_pk):
 
 
 @login_required
+@module_required('enable_hr_payroll')
 def employee_document_delete(request, pk):
     doc = get_object_or_404(EmployeeDocument, pk=pk)
     if not request.user.is_superuser and doc.employee.company != request.user.company:
@@ -1367,6 +1377,7 @@ class PerformanceReviewUpdateView(LoginRequiredMixin, HRPayrollPermissionMixin, 
 # ── HR Notes ──────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_hr_payroll')
 def employee_note_create(request, employee_pk):
     employee = get_object_or_404(Employee, pk=employee_pk)
     if not request.user.is_superuser and employee.company != request.user.company:
@@ -1387,6 +1398,7 @@ def employee_note_create(request, employee_pk):
 
 
 @login_required
+@module_required('enable_hr_payroll')
 def employee_note_delete(request, pk):
     note = get_object_or_404(EmployeeNote, pk=pk)
     if not request.user.is_superuser and note.employee.company != request.user.company:
@@ -1401,6 +1413,7 @@ def employee_note_delete(request, pk):
 # ── Separation / Offboarding ──────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_hr_payroll')
 def employee_separate(request, employee_pk):
     """Initiate offboarding — create a Separation record and deactivate the employee."""
     employee = get_object_or_404(Employee, pk=employee_pk)
@@ -1447,6 +1460,7 @@ def employee_separate(request, employee_pk):
 # ── Modern HR Dashboard ───────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_hr_payroll')
 def hrpayroll_dashboard(request):
     from django.db.models import Count, Q
     from django.utils import timezone
@@ -1475,7 +1489,7 @@ def hrpayroll_dashboard(request):
                 employee__company=company, status='PENDING'
             ).count(),
             'pending_reviews': PerformanceReview.active_objects.filter(
-                company=company, status='DRAFT'
+                company=company, status='SUBMITTED'
             ).count(),
             'recent_hires': employees.filter(
                 hire_date__gte=today.replace(day=1)
@@ -1494,6 +1508,7 @@ def hrpayroll_dashboard(request):
 # ── Bulk Attendance Upload ─────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_hr_payroll')
 def attendance_bulk_upload(request):
     if request.method == 'GET':
         employees = Employee.active_objects.filter(

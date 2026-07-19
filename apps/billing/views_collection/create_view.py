@@ -61,23 +61,17 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
                     if user_branch is not None:
                         form.instance.branch = user_branch
 
-                    # Handle action (Issue vs Pending)
-                    action = self.request.POST.get('action', 'issue')
                     company = getattr(self.request.user, 'company', None)
                     is_non_vat = company and not company.vat_registered
 
-                    if action == 'issue':
-                        if not form.instance.invoice_number:
-                            doc_type = 'ORD' if is_non_vat else 'INV'
-                            invoice_number, seq_number, fy = generate_invoice_number(self.request.user.company.id, doc_type=doc_type)
-                            form.instance.invoice_number = invoice_number
-                            form.instance.sequence_number = seq_number
-                            form.instance.fiscal_year = fy
-                        # Non-VAT companies: treat as estimate — no journal, no AR impact
-                        form.instance.status = 'ESTIMATE' if is_non_vat else 'ISSUED'
-                    else:
-                        # Save as draft — no invoice number assigned yet
-                        form.instance.status = 'DRAFT'
+                    if not form.instance.invoice_number:
+                        doc_type = 'ORD' if is_non_vat else 'INV'
+                        invoice_number, seq_number, fy = generate_invoice_number(self.request.user.company.id, doc_type=doc_type)
+                        form.instance.invoice_number = invoice_number
+                        form.instance.sequence_number = seq_number
+                        form.instance.fiscal_year = fy
+                    # Non-VAT companies: treat as estimate — no journal, no AR impact
+                    form.instance.status = 'ESTIMATE' if is_non_vat else 'ISSUED'
 
                     # Handle BS Date — NepaliDateField returns a datetime.date already
                     due_date_bs = form.cleaned_data.get('due_date_bs')
@@ -267,7 +261,7 @@ class VendorBillCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
                     form.instance.branch = user_branch
 
                 if not form.instance.status:
-                    form.instance.status = 'DRAFT'
+                    form.instance.status = 'UNPAID'
 
                 self.object = form.save()
 
@@ -363,7 +357,7 @@ class VendorBillCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
         return reverse_lazy('accounts:user_dashboard')
 
 
-class CreditNoteCreateView(AuthMixin, NoteCreateUpdateMixin, CreateView):
+class CreditNoteCreateView(AuthMixin, FiscalYearOpenMixin, NoteCreateUpdateMixin, CreateView):
     model = CreditNote
     form_class = CreditNoteForm
     template_name = 'billing/notes/credit_note_form.html'
@@ -378,7 +372,7 @@ class CreditNoteCreateView(AuthMixin, NoteCreateUpdateMixin, CreateView):
         return reverse_lazy('accounts:user_dashboard')
 
 
-class DebitNoteCreateView(AuthMixin, NoteCreateUpdateMixin, CreateView):
+class DebitNoteCreateView(AuthMixin, FiscalYearOpenMixin, NoteCreateUpdateMixin, CreateView):
     model = DebitNote
     form_class = DebitNoteForm
     template_name = 'billing/notes/debit_note_form.html'

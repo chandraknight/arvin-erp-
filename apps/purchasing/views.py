@@ -501,10 +501,9 @@ def purchasing_hub(request):
     month_start = today.replace(day=1)
 
     po_stats = po_qs.aggregate(
-        count_draft=Count('id', filter=Q(status='DRAFT')),
         count_sent=Count('id', filter=Q(status='SENT')),
         count_received=Count('id', filter=Q(status='RECEIVED')),
-        total_pending_value=Sum('total_amount', filter=Q(status__in=['DRAFT', 'SENT'])),
+        total_pending_value=Sum('total_amount', filter=Q(status='SENT')),
         total_received_month=Sum(
             'total_amount',
             filter=Q(status='RECEIVED', date__gte=month_start)
@@ -525,7 +524,6 @@ def purchasing_hub(request):
 
     context = {
         'po_stats': {
-            'count_draft':          po_stats['count_draft'] or 0,
             'count_sent':           po_stats['count_sent'] or 0,
             'count_received':       po_stats['count_received'] or 0,
             'total_pending_value':  po_stats['total_pending_value'] or Decimal('0'),

@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from django import forms
 from .models import Invoice, InvoiceItem, VendorBill, VendorBillItem, CreditNote, DebitNote
 from django.forms import BaseInlineFormSet
@@ -8,20 +6,6 @@ from apps.customers.models import Customer
 from apps.company.models import Branch
 from apps.bookkeeping.models import LedgerAccount
 from ..products.models import CategoryType
-
-
-class ProductSelectWithStock(forms.Select):
-    """Select widget that embeds data-stock on each option for JS consumption."""
-    def __init__(self, *args, stock_map=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._stock_map = stock_map or {}
-
-    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
-        option = super().create_option(name, value, label, selected, index, subindex=subindex, attrs=attrs)
-        pk = str(value.value if hasattr(value, 'value') else value)
-        if pk in self._stock_map:
-            option['attrs']['data-stock'] = self._stock_map[pk]
-        return option
 
 
 class RequestInlineFormSet(BaseInlineFormSet):
@@ -146,6 +130,15 @@ class InvoiceForm(FiscalYearDateMixin, forms.ModelForm):
             if not self.initial.get('transaction_date') and not self.data.get('transaction_date'):
                 self.fields['transaction_date'].initial = today
 
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('collect_payment'):
+            if not cleaned_data.get('payment_amount'):
+                self.add_error('payment_amount', 'Payment amount is required to collect payment.')
+            if not cleaned_data.get('payment_method'):
+                self.add_error('payment_method', 'Payment method is required to collect payment.')
+        return cleaned_data
+
 class InvoiceItemForm(forms.ModelForm):
     category_type = forms.ModelChoiceField(
         queryset=CategoryType.active_objects.none(),
@@ -184,20 +177,6 @@ class InvoiceItemForm(forms.ModelForm):
 
             self.fields['product'].queryset = product_qs
             self.fields['package'].queryset = package_qs
-
-            # Attach stock data to options so the frontend can display it
-            from apps.products.models import ProductStock
-            stock_map = {
-                str(ps['product_id']): ps['stock']
-                for ps in ProductStock.objects.filter(
-                    product__company=company, is_deleted=False
-                ).values('product_id', 'stock')
-            }
-            new_widget = ProductSelectWithStock(stock_map=stock_map)
-            # Django does not auto-transfer ModelChoiceIterator to a replacement
-            # widget, so we must copy the field's choices explicitly.
-            new_widget.choices = self.fields['product'].choices
-            self.fields['product'].widget = new_widget
 
         if user and user.is_superuser:
             self.fields['category_type'].queryset = CategoryType.active_objects.all()
@@ -246,7 +225,7 @@ class VendorBillForm(FiscalYearDateMixin, forms.ModelForm):
         model = VendorBill
         fields = ['vendor', 'purchase_order', 'bill_number', 'bill_date', 'due_date', 'total_amount']
         widgets = {
-            'total_amount': forms.TextInput(attrs={'min': '0'}),
+            'total_amount': forms.NumberInput(attrs={'min': '0', 'step': '0.01'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -260,13 +239,22 @@ class VendorBillForm(FiscalYearDateMixin, forms.ModelForm):
 
         self.inject_fiscal_year(self.request)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('collect_payment'):
+            if not cleaned_data.get('payment_amount'):
+                self.add_error('payment_amount', 'Payment amount is required to record payment.')
+            if not cleaned_data.get('payment_method'):
+                self.add_error('payment_method', 'Payment method is required to record payment.')
+        return cleaned_data
+
 class VendorBillItemForm(forms.ModelForm):
     class Meta:
         model = VendorBillItem
         fields = ['product', 'description', 'hscode', 'quantity', 'price']
         widgets = {
-            'price': forms.TextInput(attrs={'min': '0'}),
-            'quantity': forms.TextInput(attrs={'min': '0'}),
+            'price': forms.NumberInput(attrs={'min': '0', 'step': '0.01'}),
+            'quantity': forms.NumberInput(attrs={'min': '0', 'step': '1'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -305,8 +293,6 @@ class BaseNoteForm(forms.ModelForm):
                 invoice_number__isnull=False,
             ).exclude(invoice_number='').order_by('-created_at')
 
-            pass  # status is set by business logic, not the form
-
 
 class CreditNoteForm(BaseNoteForm):
     class Meta:
@@ -322,77 +308,30 @@ class CreditNoteForm(BaseNoteForm):
             raise forms.ValidationError("Amount must be positive.")
         return amount
 
-    def clean(self):
-        cleaned = super().clean()
-        invoice = cleaned.get('invoice')
-        amount = cleaned.get('amount')
-        if invoice and amount:
-            outstanding = invoice.outstanding_balance or Decimal('0.00')
-            # On re-apply the note's previous effect is reverted first,
-            # so its old amount counts as available headroom.
-            if self.instance.pk and self.instance.invoice_id == invoice.pk \
-                    and self.instance.status == 'APPLIED':
-                outstanding += self.instance.amount
-            if amount > outstanding:
-                raise forms.ValidationError(
-                    f"Credit note amount ({amount}) exceeds the invoice outstanding balance ({outstanding})."
-                )
-        return cleaned
 
-
-class DebitNoteForm(BaseNoteForm):
+class DebitNoteForm(forms.ModelForm):
     class Meta:
         model = DebitNote
-        fields = ['company', 'vendor', 'vendor_bill', 'invoice', 'customer', 'amount', 'reason']
+        fields = ['company', 'vendor', 'vendor_bill', 'amount', 'reason']
         widgets = {
             'reason': forms.Textarea(attrs={'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
         if self.request and hasattr(self.request.user, 'company'):
             company = self.request.user.company
+            self.fields['company'].initial = company
+            self.fields['company'].disabled = True
             from apps.vendors.models import Vendor
-            self.fields['vendor'].queryset = Vendor.objects.filter(company=company).order_by('name')
+            self.fields['vendor'].queryset = Vendor.objects.filter(company=company).order_by('-created_at')
             self.fields['vendor_bill'].queryset = VendorBill.objects.filter(
-                company=company, is_deleted=False,
-            ).order_by('-bill_date')
-        self.fields['vendor'].help_text = 'For a purchase return, select the vendor.'
-        self.fields['vendor_bill'].help_text = 'Vendor bill the goods are returned against.'
+                vendor__company=company, is_deleted=False,
+            ).exclude(status='CANCELLED').order_by('-bill_date')
 
     def clean_amount(self):
         amount = self.cleaned_data['amount']
         if amount <= 0:
             raise forms.ValidationError("Amount must be positive.")
         return amount
-
-    def clean(self):
-        cleaned = super().clean()
-        vendor = cleaned.get('vendor')
-        vendor_bill = cleaned.get('vendor_bill')
-        invoice = cleaned.get('invoice')
-        customer = cleaned.get('customer')
-        amount = cleaned.get('amount')
-
-        if not (vendor or vendor_bill) and not (invoice or customer):
-            raise forms.ValidationError(
-                "Select a vendor/vendor bill for a purchase return, "
-                "or an invoice/customer for a customer debit note."
-            )
-        if (vendor or vendor_bill) and (invoice or customer):
-            raise forms.ValidationError(
-                "A debit note is either a purchase return (vendor) or a customer "
-                "adjustment (invoice/customer) — not both."
-            )
-        if vendor_bill:
-            if vendor and vendor_bill.vendor_id != vendor.pk:
-                raise forms.ValidationError("Selected vendor bill does not belong to the selected vendor.")
-            if not vendor:
-                cleaned['vendor'] = vendor_bill.vendor
-            if amount:
-                bill_gross = (vendor_bill.total_amount or Decimal('0.00')) + (vendor_bill.tax_amount or Decimal('0.00'))
-                if amount > bill_gross:
-                    raise forms.ValidationError(
-                        f"Debit note amount ({amount}) exceeds the vendor bill total ({bill_gross})."
-                    )
-        return cleaned

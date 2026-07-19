@@ -89,7 +89,6 @@
             <td class="px-4 py-3">
               <span class="px-2 py-0.5 rounded text-xs font-medium
                 {% if inv.status == 'ISSUED' %}bg-green-100 text-green-700
-                {% elif inv.status == 'DRAFT' %}bg-yellow-100 text-yellow-700
                 {% else %}bg-gray-100 text-gray-600{% endif %}">
                 {{ inv.status }}
               </span>

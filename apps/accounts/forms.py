@@ -48,7 +48,7 @@ class UserChangeForm(BaseUserChangeForm):
                 company = self.request.user.company
                 self.fields['company'].queryset = Company.objects.filter(id=company.id)
                 self.fields['company'].initial = company
-                self.fields['company'].widget.attrs['readonly'] = True
+                self.fields['company'].disabled = True
                 self.fields['groups'].queryset = _roles_for_company(company)
                 for field_name in ('is_staff', 'is_superuser', 'is_company_admin', 'user_permissions'):
                     if field_name in self.fields:
@@ -81,7 +81,7 @@ class CustomUserCreationForm(UserCreationForm):
             company = self.request.user.company
             self.fields['company'].queryset = Company.active_objects.filter(id=company.id)
             self.fields['company'].initial = company
-            self.fields['company'].widget.attrs['readonly'] = True
+            self.fields['company'].disabled = True
             self.fields['role'].queryset = _roles_for_company(company)
         else:
             self.fields['role'].queryset = Group.objects.none()

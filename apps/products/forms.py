@@ -56,6 +56,10 @@ class ItemForm(forms.ModelForm):
                 categories = Category.active_objects.filter(company=user.company)
                 category_types = CategoryType.objects.filter(company=user.company)
                 vendors = Vendor.objects.filter(company=user.company)
+        else:
+            categories = Category.active_objects.none()
+            category_types = CategoryType.objects.none()
+            vendors = Vendor.objects.none()
 
         self.fields['category'].queryset = categories
         self.fields['category_type'].queryset = category_types
@@ -221,6 +225,13 @@ class BasePackageItemFormSet(BaseInlineFormSet):
             # Skip forms that are marked for deletion
             if form.cleaned_data.get('DELETE', False):
                 continue
+
+            product = form.cleaned_data.get('product')
+            if not product:
+                continue
+            if product in products:
+                raise forms.ValidationError('Duplicate product in package items: each product can only appear once.')
+            products.add(product)
 
 
 PackageItemFormSet = inlineformset_factory(

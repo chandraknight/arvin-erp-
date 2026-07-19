@@ -8,13 +8,74 @@ AuthMixin
 CompanyRequiredMixin
     Ensures the authenticated user belongs to a company.
     Combine with AuthMixin for full protection.
+
+ModuleRequiredMixin / module_required
+    Blocks access to a CBV or function view when the company hasn't
+    enabled the relevant `Company.enable_*` flag. Superusers are exempt.
 """
 import logging
+from functools import wraps
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
 
 logger = logging.getLogger('audit')
+
+
+def _module_enabled(request, module_flag):
+    if request.user.is_superuser:
+        return True
+    company = getattr(request, 'user_company', None) or getattr(request.user, 'company', None)
+    return bool(company and getattr(company, module_flag, False))
+
+
+class ModuleRequiredMixin:
+    """
+    Blocks access to a CBV unless the company has the given module flag enabled.
+
+    Set `module_flag` to the Company boolean field name::
+
+        class DiningOrderListView(AuthMixin, ModuleRequiredMixin, ListView):
+            module_flag = 'enable_restaurant'
+    """
+
+    module_flag = None
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        if self.module_flag and not _module_enabled(request, self.module_flag):
+            messages.warning(
+                request,
+                f"This module is not enabled for your company."
+            )
+            return redirect('accounts:user_dashboard')
+
+        return super().dispatch(request, *args, **kwargs)
+
+
+def module_required(module_flag):
+    """
+    Decorator for function-based views — blocks access unless the company
+    has the given module flag enabled::
+
+        @login_required
+        @module_required('enable_hr_payroll')
+        def generate_payslips(request, pk):
+            ...
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapped(request, *args, **kwargs):
+            if not _module_enabled(request, module_flag):
+                messages.warning(request, "This module is not enabled for your company.")
+                return redirect('accounts:user_dashboard')
+            return view_func(request, *args, **kwargs)
+        return wrapped
+    return decorator
 
 
 class AuthMixin(LoginRequiredMixin):
@@ -124,7 +185,7 @@ class RequestFormMixin:
     If you need custom form_valid logic, call super() first::
 
         def form_valid(self, form):
-            form.instance.status = 'DRAFT'
+            form.instance.status = 'ISSUED'
             return super().form_valid(form)
     """
 

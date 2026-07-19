@@ -17,7 +17,6 @@
             <input type="text" name="q" value="{{ q }}" placeholder="Search WO # or product…" class="w-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-green-600">
             <select name="status" class="border border-gray-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-600">
                 <option value="">All Statuses</option>
-                <option value="DRAFT" {% if status == 'DRAFT' %}selected{% endif %}>Draft</option>
                 <option value="PLANNED" {% if status == 'PLANNED' %}selected{% endif %}>Planned</option>
                 <option value="IN_PROGRESS" {% if status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
                 <option value="COMPLETED" {% if status == 'COMPLETED' %}selected{% endif %}>Completed</option>

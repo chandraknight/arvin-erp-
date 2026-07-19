@@ -26,7 +26,6 @@ from django.utils import timezone
 
 
 WORK_ORDER_STATUS = [
-    ('DRAFT',       'Draft'),
     ('PLANNED',     'Planned'),
     ('IN_PROGRESS', 'In Progress'),
     ('COMPLETED',   'Completed'),
@@ -144,7 +143,7 @@ class WorkOrder(BaseModel):
         help_text='BOM to use for this production run.'
     )
     work_order_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    status = models.CharField(max_length=15, choices=WORK_ORDER_STATUS, default='DRAFT')
+    status = models.CharField(max_length=15, choices=WORK_ORDER_STATUS, default='PLANNED')
 
     # Quantities
     planned_quantity = models.DecimalField(max_digits=10, decimal_places=3)

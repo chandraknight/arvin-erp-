@@ -80,6 +80,9 @@ class AttendanceForm(FiscalYearDateMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
+        if self.request and not self.request.user.is_superuser:
+            company = self.request.user_company
+            self.fields['employee'].queryset = Employee.active_objects.filter(company=company)
         self.inject_fiscal_year(self.request)
 
 
@@ -93,6 +96,10 @@ class PayslipForm(FiscalYearDateMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
+        if self.request and not self.request.user.is_superuser:
+            company = self.request.user_company
+            self.fields['employee'].queryset = Employee.active_objects.filter(company=company)
+            self.fields['payroll_run'].queryset = PayrollRun.objects.filter(company=company)
         self.inject_fiscal_year(self.request)
 
 

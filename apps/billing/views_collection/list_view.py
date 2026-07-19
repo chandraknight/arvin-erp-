@@ -30,10 +30,6 @@ def billing_dashboard(request):
         'customer', 'company'
     ).order_by('-transaction_date', '-created_at')[:10]
 
-    draft_invoices = qs.filter(status='DRAFT').select_related(
-        'customer'
-    ).order_by('-created_at')[:5]
-
     context = {
         'stats': {
             'total_issued':         stats['total_issued'] or 0,
@@ -43,7 +39,6 @@ def billing_dashboard(request):
             'count_overdue':        stats['count_overdue'] or 0,
         },
         'recent_invoices': recent_invoices,
-        'draft_invoices':  draft_invoices,
         'today':           today,
         'rupee':           RUPEE,
     }
@@ -131,10 +126,6 @@ def credit_note_list(request):
 
     if not request.user.is_superuser and hasattr(request.user, 'company'):
         base_queryset = base_queryset.filter(company=request.user.company)
-        # Branch isolation — restrict to the user's branch when assigned
-        user_branch = getattr(request, 'user_branch', None)
-        if user_branch is not None:
-            base_queryset = base_queryset.filter(branch=user_branch)
 
     try:
         paginate_by = int(request.GET.get('paginate_by', 10))
@@ -158,10 +149,6 @@ def debit_note_list(request):
 
     if not request.user.is_superuser and hasattr(request.user, 'company'):
         base_queryset = base_queryset.filter(company=request.user.company)
-        # Branch isolation — restrict to the user's branch when assigned
-        user_branch = getattr(request, 'user_branch', None)
-        if user_branch is not None:
-            base_queryset = base_queryset.filter(branch=user_branch)
 
     try:
         paginate_by = int(request.GET.get('paginate_by', 10))

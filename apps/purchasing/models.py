@@ -16,7 +16,7 @@ class PurchaseOrder(BaseModel):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='purchase_orders')
     purchase_order_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
     date = models.DateField(default=timezone.now)
-    status = models.CharField(max_length=10, choices=PURCHASE_STATUS_CHOICES, default='DRAFT')
+    status = models.CharField(max_length=10, choices=PURCHASE_STATUS_CHOICES, default='SENT')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):

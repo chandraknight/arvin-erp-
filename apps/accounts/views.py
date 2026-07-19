@@ -7,7 +7,6 @@ from django.conf import settings
 from .services.all_services import *
 from ..utils.global_models import *
 from .utils import get_latest_tag
-from .services.helper_views import is_erp_user
 from ..payments.models import Payment
 
 logger = logging.getLogger(__name__)
@@ -18,9 +17,7 @@ def login_view(request):
     if request.GET.get('session_expired'):
         messages.warning(request, "Your session has expired. Please login again.")
     if request.user.is_authenticated:
-        if is_erp_user(request.user):
-            return redirect('accounts:user_dashboard')
-        return redirect('ecom:account')
+        return redirect('home')
     tag = get_latest_tag()
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -90,9 +87,7 @@ def login_view(request):
                             "reloaded_user_id": reloaded_user_id,
                         },
                     )
-            if is_erp_user(user):
-                return redirect('accounts:user_dashboard')
-            return redirect('ecom:account')
+            return redirect('home')
     else:
         form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form,'current_tag': tag})
@@ -184,7 +179,7 @@ def user_dashboard(request):
             total_vendors = Vendor.objects.filter(company=company).count()
             pending_po_count = PurchaseOrder.objects.filter(
                 company=company,
-                status__in=['DRAFT', 'SENT']
+                status='SENT'
             ).count()
             context.update({
                 'total_vendors': total_vendors,
@@ -197,7 +192,7 @@ def user_dashboard(request):
             from apps.orders.models import SalesOrder
             pending_orders_count = SalesOrder.active_objects.filter(
                 company=company,
-                status__in=['DRAFT', 'CONFIRMED', 'PROCESSING']
+                status__in=['CONFIRMED', 'PROCESSING']
             ).count()
             context.update({
                 'pending_orders_count': pending_orders_count,

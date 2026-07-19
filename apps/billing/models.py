@@ -10,7 +10,6 @@ from decimal import Decimal
 
 
 INVOICE_STATUS_CHOICES = [
-    ('DRAFT',     'Draft'),
     ('ISSUED',    'Issued'),
     ('ESTIMATE',  'Estimate'),
     ('CANCELLED', 'Cancelled'),
@@ -50,8 +49,8 @@ class Invoice(BaseModel):
     status = models.CharField(
         max_length=10,
         choices=INVOICE_STATUS_CHOICES,
-        default='DRAFT',
-        help_text='DRAFT = editable; ISSUED = locked; CANCELLED = voided.',
+        default='ISSUED',
+        help_text='ISSUED = locked; ESTIMATE = no journal; CANCELLED = voided.',
     )
     reference_number = models.CharField(
         max_length=100, blank=True, null=True,
@@ -176,7 +175,7 @@ class CreditNote(BaseModel):
     invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='credit_notes')
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     credit_note_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='APPLIED')
+    status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='ISSUED')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal('0.00'),
@@ -189,20 +188,19 @@ class CreditNote(BaseModel):
         return f"{self.credit_note_number if self.credit_note_number else self.id}"
 
 class DebitNote(BaseModel):
+    """Purchase return — raised against a vendor bill, reduces Accounts Payable."""
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='debit_notes_company', null=True, blank=True)
+    # Legacy columns kept nullable — debit notes were previously (incorrectly) raised against customer invoices
     invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_notes')
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
-    # Purchase return (Nepali practice: debit note issued to the vendor).
-    # When vendor/vendor_bill are set, the note reverses a purchase instead of
-    # adjusting a customer invoice.
     vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_notes')
     vendor_bill = models.ForeignKey('VendorBill', on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_notes')
     debit_note_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='APPLIED')
+    status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='ISSUED')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal('0.00'),
-        help_text='VAT/tax portion of this note. Pro-rated from the linked invoice when available.',
+        help_text='VAT/tax portion of this note. Pro-rated from the linked vendor bill when available.',
     )
     reason = models.TextField(blank=True, null=True)
     journal_entry = models.OneToOneField(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_note')

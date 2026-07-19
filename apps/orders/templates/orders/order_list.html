@@ -25,7 +25,6 @@
                     hx-get="{% url 'orders:order_list' %}" hx-target="#order-list-container" hx-swap="innerHTML" hx-trigger="change" hx-include="[name='q']" hx-push-url="true">
                 <option value="">All Statuses</option>
                 {% for val, label in order.status.field.choices|default:"" %}{% endfor %}
-                <option value="DRAFT" {% if status == 'DRAFT' %}selected{% endif %}>Draft</option>
                 <option value="CONFIRMED" {% if status == 'CONFIRMED' %}selected{% endif %}>Confirmed</option>
                 <option value="PROCESSING" {% if status == 'PROCESSING' %}selected{% endif %}>Processing</option>
                 <option value="DISPATCHED" {% if status == 'DISPATCHED' %}selected{% endif %}>Dispatched</option>

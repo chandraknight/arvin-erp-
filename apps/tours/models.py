@@ -131,7 +131,6 @@ class TourEnquiry(BaseModel):
 
 class TourBooking(BaseModel):
     BOOKING_STATUS_CHOICES = [
-        ('DRAFT', 'Draft'),
         ('CONFIRMED', 'Confirmed'),
         ('IN_PROGRESS', 'In Progress'),
         ('COMPLETED', 'Completed'),
@@ -152,7 +151,7 @@ class TourBooking(BaseModel):
     num_adults = models.PositiveIntegerField(default=1)
     num_children = models.PositiveIntegerField(default=0)
 
-    status = models.CharField(max_length=20, choices=BOOKING_STATUS_CHOICES, default='DRAFT')
+    status = models.CharField(max_length=20, choices=BOOKING_STATUS_CHOICES, default='CONFIRMED')
     special_requests = models.TextField(blank=True)
     internal_notes = models.TextField(blank=True)
 

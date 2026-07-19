@@ -18,8 +18,7 @@
                 {% else %}bg-gray-100 text-gray-600{% endif %}">
                 {{ order.get_status_display }}
             </span>
-            {% if order.status == 'DRAFT' %}
-                <a href="{% url 'orders:order_confirm' order.pk %}" class="px-4 py-1.5 text-sm bg-green-600 text-white hover:bg-green-700 transition">Confirm</a>
+            {% if order.status == 'CONFIRMED' %}
                 <a href="{% url 'orders:order_update' order.pk %}" class="px-4 py-1.5 text-sm bg-amber-600 text-white hover:bg-amber-700 transition">Edit</a>
             {% endif %}
             {% if order.status in 'CONFIRMED,PROCESSING' %}
@@ -28,7 +27,7 @@
             {% if order.status != 'CANCELLED' and not order.invoice %}
                 <a href="{% url 'orders:order_to_invoice' order.pk %}" class="px-4 py-1.5 text-sm bg-purple-600 text-white hover:bg-purple-700 transition">Convert to Invoice</a>
             {% endif %}
-            {% if order.status in 'DRAFT,CONFIRMED,PROCESSING' %}
+            {% if order.status in 'CONFIRMED,PROCESSING' %}
                 <a href="{% url 'orders:order_cancel' order.pk %}" class="px-4 py-1.5 text-sm bg-red-600 text-white hover:bg-red-700 transition" onclick="return confirm('Cancel this order? This cannot be undone.')">Cancel</a>
             {% endif %}
             <a href="{% url 'orders:order_print_receipt' order.pk %}?mode=a4" target="_blank"

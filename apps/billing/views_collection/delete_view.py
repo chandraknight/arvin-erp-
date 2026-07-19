@@ -3,7 +3,6 @@ Cancel views for Invoice and VendorBill.
 
 Design rules enforced here:
   - Issued invoices and vendor bills CANNOT be deleted — only cancelled.
-  - DRAFT documents may be soft-deleted (they were never sent to a customer/vendor).
   - Cancellation requires a reason (POST field: `reason`).
   - All actions are logged to the audit logger.
 """
@@ -46,8 +45,6 @@ def invoice_cancel(request, pk):
     GET  → confirmation page showing the invoice and a reason field.
     POST → sets status=CANCELLED, records reason, redirects to dashboard.
 
-    A DRAFT invoice (never issued) can be soft-deleted instead via
-    invoice_delete below.
     """
     invoice = get_object_or_404(Invoice, pk=pk)
 
@@ -86,7 +83,7 @@ def invoice_cancel(request, pk):
 @auth_required('billing.delete_invoice')
 def invoice_delete(request, pk):
     """
-    Soft-delete a DRAFT invoice (one that was never issued).
+    Soft-delete an unissued invoice.
     Issued or cancelled invoices cannot be deleted — cancel them instead.
     """
     invoice = get_object_or_404(Invoice, pk=pk)
@@ -113,7 +110,7 @@ def invoice_delete(request, pk):
             'INVOICE_DELETED invoice=%s actor=%s company=%s',
             ref, request.user.email, request.user_company,
         )
-        messages.success(request, f"Draft invoice {ref} has been deleted.")
+        messages.success(request, f"Invoice {ref} has been deleted.")
         return redirect('accounts:user_dashboard')
 
     return render(request, 'billing/invoices/invoice_delete_confirm.html', {'invoice': invoice})

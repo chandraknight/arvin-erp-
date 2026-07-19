@@ -1047,15 +1047,21 @@
                         priceInput.value = data.price || '0';
                         hscodeInput.value = data.hscode || '';
 
-                        // Show stock badge next to price input
+                        // Show stock badge next to price input — amber when at/below minimum stock
                         const row = priceInput.closest('.item-form');
                         let badge = row.querySelector('.stock-badge');
                         if (!badge) {
                             badge = document.createElement('span');
-                            badge.className = 'stock-badge text-xs text-gray-500 ml-1';
+                            badge.className = 'stock-badge text-xs ml-1';
                             priceInput.parentNode.appendChild(badge);
                         }
-                        badge.textContent = data.stock !== undefined ? `Stock: ${data.stock}` : '';
+                        if (data.stock !== undefined) {
+                            const low = data.minimum_stock !== undefined && data.stock <= data.minimum_stock;
+                            badge.className = `stock-badge text-xs ml-1 ${low ? 'text-amber-700 font-semibold' : 'text-gray-500'}`;
+                            badge.textContent = low ? `Low stock: ${data.stock}` : `Stock: ${data.stock}`;
+                        } else {
+                            badge.textContent = '';
+                        }
 
                         updateItemTotal(row);
                         updateCalculations();

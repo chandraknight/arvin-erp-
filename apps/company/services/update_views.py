@@ -69,7 +69,7 @@ class CompanyUpdateView(AuthMixin, UpdateView):
                 ('Point of Sale',     company.enable_pos),
                 ('Tours',            company.enable_tours),
                 ('E-Commerce Store', company.enable_ecom),
-                ('E-Billing (CBMS)', company.enable_ebilling),
+                ('IRD e-Billing',    company.enable_ebilling),
             ]
         return context
 

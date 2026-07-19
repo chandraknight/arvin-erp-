@@ -81,6 +81,13 @@ class DiningOrderItemForm(forms.ModelForm):
                 company=self.request.user_company
             )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        product = cleaned_data.get('product')
+        if product:
+            cleaned_data['unit_price'] = product.price
+        return cleaned_data
+
 
 class TableTransferForm(forms.Form):
     """Move an open dining order from one table to another."""

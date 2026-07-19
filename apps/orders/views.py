@@ -35,7 +35,6 @@ def order_dashboard(request):
 
     stats = {
         'total': orders.count(),
-        'draft': orders.filter(status='DRAFT').count(),
         'confirmed': orders.filter(status='CONFIRMED').count(),
         'processing': orders.filter(status='PROCESSING').count(),
         'dispatched': orders.filter(status='DISPATCHED').count(),
@@ -194,7 +193,7 @@ class SalesOrderUpdateView(AuthMixin, UpdateView):
     def get_queryset(self):
         qs = SalesOrder.active_objects.filter(
             company=self.request.user_company,
-            status__in=['DRAFT', 'CONFIRMED']
+            status='CONFIRMED'
         )
         user_branch = getattr(self.request, 'user_branch', None)
         if user_branch is not None:
@@ -260,7 +259,7 @@ class SalesOrderDeleteView(AuthMixin, DeleteView):
 
     def get_queryset(self):
         qs = SalesOrder.active_objects.filter(
-            company=self.request.user_company, status='DRAFT'
+            company=self.request.user_company, status='CONFIRMED'
         )
         user_branch = getattr(self.request, 'user_branch', None)
         if user_branch is not None:
@@ -276,7 +275,7 @@ class SalesOrderDeleteView(AuthMixin, DeleteView):
 @login_required
 def confirm_order(request, pk):
     order = get_object_or_404(
-        SalesOrder, pk=pk, company=request.user_company, status='DRAFT'
+        SalesOrder, pk=pk, company=request.user_company, status='CONFIRMED'
     )
     # Branch isolation
     user_branch = getattr(request, 'user_branch', None)
@@ -298,7 +297,7 @@ def confirm_order(request, pk):
 def cancel_order(request, pk):
     order = get_object_or_404(
         SalesOrder, pk=pk, company=request.user_company,
-        status__in=['DRAFT', 'CONFIRMED', 'PROCESSING']
+        status__in=['CONFIRMED', 'PROCESSING']
     )
     # Branch isolation
     user_branch = getattr(request, 'user_branch', None)

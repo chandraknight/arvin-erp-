@@ -8,7 +8,7 @@ class CompanyForm(forms.ModelForm):
     class Meta:
         model = Company
         fields = [
-            'name', 'address', 'phone', 'email', 'logo', 'tax_rate',
+            'name', 'address', 'phone', 'email', 'logo', 'tax_rate', 'cit_rate',
             'organisation_type',
             'vat_registered', 'vat_number', 'vat_inclusive',
             'enable_branch_accounting', 'enable_project_tracking', 'enable_forecasting',
@@ -57,16 +57,9 @@ class CompanyForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
         if cleaned.get('enable_ebilling'):
-            missing = []
-            if not cleaned.get('vat_number'):
-                missing.append('VAT number')
-            if not cleaned.get('cbms_username'):
-                missing.append('CBMS username')
-            if not cleaned.get('cbms_password'):
-                missing.append('CBMS password')
-            if missing:
+            if not all(cleaned.get(f) for f in ('vat_number', 'cbms_username', 'cbms_password')):
                 raise forms.ValidationError(
-                    f"E-Billing (IRD CBMS) requires: {', '.join(missing)}."
+                    'E-Billing requires a VAT number, CBMS username and CBMS password.'
                 )
         return cleaned
 
@@ -121,22 +114,22 @@ class CompanyAdminUserForm(forms.Form):
 
 
 class BranchForm(forms.ModelForm):
+    phone = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Enter numbers or hyphens only',
+            'pattern': '^[0-9-]*$',
+            'maxlength': '20'
+        }),
+        help_text="Only numbers and hyphens are allowed"
+    )
+
     class Meta:
-        phone = forms.CharField(
-            max_length=20,
-            required=False,
-            widget=forms.TextInput(attrs={
-                'placeholder': 'Enter numbers or hyphens only',
-                'pattern': '^[0-9-]*$',
-                'maxlength': '20'
-            }),
-            help_text="Only numbers and hyphens are allowed"
-        )
         model = Branch
         fields = ['company', 'name', 'address', 'phone', 'email', 'is_main_branch']
         widgets = {
             'address': forms.Textarea(attrs={'rows': 1}),
-
         }
 
 

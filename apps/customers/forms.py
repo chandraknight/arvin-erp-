@@ -36,8 +36,6 @@ class CustomerForm(forms.ModelForm):
         if not (user and user.is_superuser):
             self.fields.pop('company', None)
 
-        self.fields['address'].widget = forms.TextInput(attrs={'maxlength': 200})
-
     def clean_phone(self):
         return self.cleaned_data.get('phone') or None
 

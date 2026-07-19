@@ -61,7 +61,7 @@ def create_sales_order_from_ecom(ecom_order):
         customer=customer,
         order_number=so_number,
         order_date=timezone.now().date(),
-        status='DRAFT',
+        status='CONFIRMED',
         notes=f"[ECOM #{ecom_order.order_number}] {ecom_order.notes or ''}".strip(),
         delivery_address=ecom_order.delivery_address,
         delivery_contact=ecom_order.customer_name,
@@ -170,49 +170,3 @@ def notify_admin_new_order(ecom_order):
         )
     except Exception:
         logger.exception('notify_admin_new_order failed for order %s', ecom_order.order_number)
-
-
-def send_newsletter(campaign):
-    """
-    Send a newsletter campaign to all active subscribers of its company.
-    Recipients go in BCC (batches of 50) so addresses are never exposed
-    to each other. Returns the number of recipients mailed.
-    """
-    from django.core.mail import EmailMessage
-    from django.utils import timezone
-    from apps.ecom.models import NewsletterSubscriber, SiteSettings
-
-    emails = list(
-        NewsletterSubscriber.objects.filter(
-            company=campaign.company, is_active=True,
-        ).values_list('email', flat=True)
-    )
-    if not emails:
-        return 0
-
-    site = SiteSettings.objects.filter(company=campaign.company).first()
-    store_name = site.store_name if site and site.store_name else 'Our Store'
-    subject = f'[{store_name}] {campaign.subject}'
-
-    sent = 0
-    batch_size = 50
-    for i in range(0, len(emails), batch_size):
-        batch = emails[i:i + batch_size]
-        try:
-            EmailMessage(
-                subject=subject,
-                body=campaign.body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[settings.DEFAULT_FROM_EMAIL],
-                bcc=batch,
-            ).send(fail_silently=False)
-            sent += len(batch)
-        except Exception:
-            logger.exception(
-                'send_newsletter batch failed campaign=%s batch_start=%s', campaign.pk, i,
-            )
-
-    campaign.sent_at = timezone.now()
-    campaign.recipient_count = sent
-    campaign.save(update_fields=['sent_at', 'recipient_count'])
-    return sent

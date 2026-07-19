@@ -99,7 +99,7 @@ def generate_invoice_number(company_id, doc_type: str = "INV") -> tuple:
     return invoice_number, sequence, fiscal_year
 
 def can_approve(status: str) -> bool:
-    return status in [StatusChoicesEnum.Draft, StatusChoicesEnum.Submitted]
+    return status in [StatusChoicesEnum.Submitted]
 
 def can_pay(status: str) -> bool:
     return status in [StatusChoicesEnum.Approved, StatusChoicesEnum.Sent]

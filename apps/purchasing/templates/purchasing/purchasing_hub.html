@@ -25,12 +25,7 @@
   </div>
 
   <!-- Stats -->
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Draft POs</p>
-      <p class="text-2xl font-bold text-yellow-600 mt-1">{{ po_stats.count_draft }}</p>
-      <p class="text-xs text-gray-400 mt-0.5">awaiting approval</p>
-    </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
       <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Sent / Open</p>
       <p class="text-2xl font-bold text-blue-600 mt-1">{{ po_stats.count_sent }}</p>
@@ -39,7 +34,7 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
       <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Pending Value</p>
       <p class="text-xl font-bold text-orange-600 mt-1">{{ rupee }} {{ po_stats.total_pending_value|floatformat:0|intcomma }}</p>
-      <p class="text-xs text-gray-400 mt-0.5">draft + sent</p>
+      <p class="text-xs text-gray-400 mt-0.5">sent to vendors</p>
     </div>
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
       <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Received (MTD)</p>
@@ -99,15 +94,13 @@
           <div class="min-w-0 flex-1">
             <a href="{% url 'purchasing:purchase_order_detail' po.pk %}"
                class="text-sm font-semibold text-blue-700 hover:underline truncate block">
-              {{ po.purchase_order_number|default:"Draft" }}
+              {{ po.purchase_order_number|default:"—" }}
             </a>
             <p class="text-xs text-gray-500 truncate">{{ po.vendor.name }} &nbsp;·&nbsp; {{ po.date }}</p>
           </div>
           <div class="ml-4 text-right flex-shrink-0">
             <p class="text-sm font-bold text-gray-800">{{ rupee }} {{ po.total_amount|floatformat:0|intcomma }}</p>
-            {% if po.status == 'DRAFT' %}
-              <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Draft</span>
-            {% elif po.status == 'SENT' %}
+            {% if po.status == 'SENT' %}
               <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Sent</span>
             {% elif po.status == 'RECEIVED' %}
               <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Received</span>

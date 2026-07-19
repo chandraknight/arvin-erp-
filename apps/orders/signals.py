@@ -9,7 +9,6 @@ def sync_ecom_order_status(sender, instance, **kwargs):
         return
 
     so_to_ecom = {
-        'DRAFT':       'PENDING',
         'CONFIRMED':   'CONFIRMED',
         'PROCESSING':  'PROCESSING',
         'DISPATCHED':  'DISPATCHED',

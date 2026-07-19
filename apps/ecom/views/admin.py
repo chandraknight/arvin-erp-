@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
-from apps.products.models import Product, Category, ProductStock
+from apps.products.models import Product, Category
 from apps.ecom.models import EcomOrder, DiscountCoupon, SiteSettings
 from apps.ecom.services import create_sales_order_from_ecom
 from apps.company.models import Company
@@ -21,44 +21,16 @@ def _get_company(request):
 
 @login_required
 def dashboard(request):
-    from django.utils import timezone
-    from django.db.models import Sum, Count
-    from apps.products.models import Package, ProductStock
-
     company = _get_company(request)
-    today = timezone.now().date()
-
     ecom_products_count = Product.objects.filter(company=company, show_on_ecom=True).count()
     pending_orders = EcomOrder.objects.filter(company=company, status='PENDING').count()
-    today_orders = EcomOrder.objects.filter(company=company, created_at__date=today).count()
-    dispatched_orders = EcomOrder.objects.filter(company=company, status='DISPATCHED').count()
-    active_bundles = Package.objects.filter(company=company, show_on_ecom=True).count()
-
-    revenue_data = EcomOrder.objects.filter(
-        company=company, status__in=['DELIVERED', 'DISPATCHED', 'PROCESSING']
-    ).aggregate(total=Sum('total'))
-    total_revenue = revenue_data['total'] or 0
-
-    recent_orders = EcomOrder.objects.filter(company=company).select_related('sales_order').order_by('-created_at')[:10]
+    recent_orders = EcomOrder.objects.filter(company=company).select_related('sales_order')[:10]
     site = SiteSettings.objects.filter(company=company).first()
-
-    # Low stock: ecom products with ecom_stock ≤ 5
-    low_stock_products = (
-        ProductStock.objects
-        .filter(product__company=company, product__show_on_ecom=True, ecom_stock__lte=5, ecom_stock__gt=0)
-        .select_related('product')
-        .order_by('ecom_stock')[:8]
-    )
 
     return render(request, 'ecom/admin/dashboard.html', {
         'ecom_products_count': ecom_products_count,
         'pending_orders': pending_orders,
-        'today_orders': today_orders,
-        'dispatched_orders': dispatched_orders,
-        'active_bundles': active_bundles,
-        'total_revenue': total_revenue,
         'recent_orders': recent_orders,
-        'low_stock_products': low_stock_products,
         'site': site,
     })
 
@@ -204,7 +176,6 @@ def update_order_status(request, order_id):
     # Mirror status to the linked SalesOrder
     if order.sales_order:
         status_map = {
-            'PENDING':    'DRAFT',
             'CONFIRMED':  'CONFIRMED',
             'PROCESSING': 'PROCESSING',
             'DISPATCHED': 'DISPATCHED',
@@ -451,17 +422,12 @@ def package_create(request):
             pkg.save(update_fields=['ecom_image'])
         product_ids = request.POST.getlist('product_ids')
         quantities = request.POST.getlist('quantities')
-        item_types = request.POST.getlist('item_types')
-        for pid, qty, itype in zip(product_ids, quantities, item_types or []):
+        for pid, qty in zip(product_ids, quantities):
             if pid and qty:
                 from apps.products.models import Product as Prod
                 try:
                     product = Prod.objects.get(id=pid, company=company)
-                    PackageItem.objects.create(
-                        package=pkg, product=product,
-                        quantity=int(qty),
-                        item_type=itype if itype in ('core', 'optional', 'addon') else 'core',
-                    )
+                    PackageItem.objects.create(package=pkg, product=product, quantity=int(qty))
                 except Exception:
                     pass
         messages.success(request, f'Package "{pkg.name}" created.')
@@ -488,16 +454,11 @@ def package_edit(request, package_id):
         pkg.items.all().delete()
         product_ids = request.POST.getlist('product_ids')
         quantities = request.POST.getlist('quantities')
-        item_types = request.POST.getlist('item_types')
-        for pid, qty, itype in zip(product_ids, quantities, item_types or []):
+        for pid, qty in zip(product_ids, quantities):
             if pid and qty:
                 try:
                     product = Prod.objects.get(id=pid, company=company)
-                    PackageItem.objects.create(
-                        package=pkg, product=product,
-                        quantity=int(qty),
-                        item_type=itype if itype in ('core', 'optional', 'addon') else 'core',
-                    )
+                    PackageItem.objects.create(package=pkg, product=product, quantity=int(qty))
                 except Exception:
                     pass
         messages.success(request, f'Package "{pkg.name}" updated.')

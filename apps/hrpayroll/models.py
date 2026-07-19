@@ -66,7 +66,6 @@ DOCUMENT_TYPE_CHOICES = [
 ]
 
 REVIEW_STATUS_CHOICES = [
-    ('DRAFT',       'Draft'),
     ('SUBMITTED',   'Submitted'),
     ('ACKNOWLEDGED','Acknowledged'),
 ]
@@ -500,7 +499,7 @@ class PerformanceReview(BaseModel):
     next_period_goals = models.TextField(blank=True, null=True)
     reviewer_comments = models.TextField(blank=True, null=True)
     employee_comments = models.TextField(blank=True, null=True, help_text='Employee self-assessment or response.')
-    status = models.CharField(max_length=15, choices=REVIEW_STATUS_CHOICES, default='DRAFT')
+    status = models.CharField(max_length=15, choices=REVIEW_STATUS_CHOICES, default='SUBMITTED')
 
     class Meta:
         ordering = ['-review_period_end']

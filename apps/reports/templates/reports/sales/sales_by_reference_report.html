@@ -34,7 +34,6 @@
       <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
       <select name="status" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500">
         <option value="">All</option>
-        <option value="DRAFT" {% if status_filter == "DRAFT" %}selected{% endif %}>Draft</option>
         <option value="ISSUED" {% if status_filter == "ISSUED" %}selected{% endif %}>Issued</option>
         <option value="ESTIMATE" {% if status_filter == "ESTIMATE" %}selected{% endif %}>Estimate</option>
       </select>
@@ -96,8 +95,6 @@
           <td class="px-5 py-3 text-center">
             {% if inv.status == 'ISSUED' %}
               <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Issued</span>
-            {% elif inv.status == 'DRAFT' %}
-              <span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">Draft</span>
             {% elif inv.status == 'ESTIMATE' %}
               <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Estimate</span>
             {% endif %}
