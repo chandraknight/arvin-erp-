@@ -100,8 +100,7 @@ def user_dashboard(request):
     from apps.products.models import ProductStock
     from apps.purchasing.models import PurchaseOrder
     from apps.vendors.models import Vendor
-    from apps.utils.nepali_date import today_bs, ad_date_to_bs_str
-    from apps.company.models import FiscalYear
+    from apps.utils.nepali_date import today_bs, ad_date_to_bs_str, get_active_fiscal_year
 
     context = {
         'user': request.user,
@@ -133,20 +132,22 @@ def user_dashboard(request):
             outstanding_balance__gt=0
         ).count()
 
-        # Active fiscal year
-        active_fiscal_year = FiscalYear.objects.filter(
-            company=company,
-            is_active=True
-        ).first()
+        active_fiscal_year = get_active_fiscal_year(request)
 
-        # Recent data — always shown
-        recent_invoices = Invoice.objects.filter(
+        recent_invoice_qs = Invoice.objects.filter(
             company=company
-        ).order_by('-created_at')[:5]
+        )
+        recent_payment_qs = Payment.objects.filter(
+            company=company
+        )
 
-        recent_payments = Payment.objects.filter(
-            company=company
-        ).order_by('-created_at')[:5]
+        if active_fiscal_year:
+            recent_invoice_qs = recent_invoice_qs.filter(fiscal_year=active_fiscal_year)
+            recent_payment_qs = recent_payment_qs.filter(fiscal_year=active_fiscal_year)
+
+        # Recent data — scoped to the active fiscal year when one is selected
+        recent_invoices = recent_invoice_qs.order_by('-created_at')[:5]
+        recent_payments = recent_payment_qs.order_by('-created_at')[:5]
 
         context.update({
             'recent_invoices': recent_invoices,

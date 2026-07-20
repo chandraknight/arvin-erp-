@@ -15,10 +15,10 @@
     {% include 'includes/toast.html' %}
 
     <div class="w-full mt-3">
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
         {# ── Main form (3/4) ── #}
-        <div class="lg:col-span-3 bg-white border border-gray-200 shadow-sm p-5">
+        <div class="lg:col-span-4 bg-white border border-gray-200 shadow-sm p-5">
         <div class="flex flex-col sm:flex-row justify-between items-center mb-3 gap-3 border-b border-gray-100 pb-2">
             <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight">
                 {% if invoice %}Update Invoice{% else %}Create Invoice{% endif %}
@@ -126,19 +126,14 @@
                     </button>
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="invoice-items-table-wrap">
                     <table class="w-full border border-gray-200 text-sm" style="table-layout:fixed">
                         <thead class="bg-gray-50 text-green-800 hidden sm:table-header-group">
                         <tr>
-                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:190px;min-width:190px">Item <span class="font-normal text-gray-400 normal-case">(name/SKU)</span></th>
-                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200">Desc</th>
-                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:80px">HS Code</th>
-                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:56px">Qty</th>
-                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:80px">Price</th>
-                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:56px">Disc%</th>
-                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:72px">Disc(₹)</th>
-                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:80px">Total (₹)</th>
-                            <th class="py-2 px-2 text-center text-xs font-semibold border-b border-gray-200" style="width:32px"></th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:660px;min-width:660px">Item <span class="font-normal text-gray-400 normal-case">(name/SKU/barcode)</span></th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:64px">Qty</th>
+                            <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:88px">Price</th>
+                            <th class="py-2 px-2 text-center text-xs font-semibold border-b border-gray-200" style="width:40px"></th>
                         </tr>
                         </thead>
                         <tbody id="items-container">
@@ -696,9 +691,8 @@
             let formCount = parseInt(totalForms.value);
             const emptyForm = container.querySelector('.item-form').cloneNode(true);
             const submitButtons = document.querySelectorAll('button[type="submit"]');
+            let focusScannerAfterAdd = false;
 
-            // Disable add button initially
-            addButton.disabled = true;
             submitButtons.forEach(b => b.disabled = true);
 
             // Initialize Select2 on product and package selects
@@ -749,7 +743,7 @@
                         }
                     }
                 });
-                addButton.disabled = !hasSelectedItem;
+                addButton.disabled = false;
                 // The issue button is further gated by syncIssueButton (payment validation)
                 // so only set non-issue submit buttons directly
                 submitButtons.forEach(b => {
@@ -774,16 +768,17 @@
 
                 // Toggle button styles
                 row.querySelectorAll('.item-type-btn').forEach(b => {
-                    b.classList.remove('bg-green-600', 'text-white', 'active');
-                    b.classList.add('bg-gray-200', 'text-gray-700');
+                    b.classList.remove('bg-green-600', 'text-white', 'active', 'shadow-sm');
+                    b.classList.add('bg-white', 'text-gray-700');
                 });
                 const activeBtn = row.querySelector(`.item-type-btn[data-type="${type}"]`);
                 if (activeBtn) {
-                    activeBtn.classList.remove('bg-gray-200', 'text-gray-700');
-                    activeBtn.classList.add('bg-green-600', 'text-white', 'active');
+                    activeBtn.classList.remove('bg-white', 'text-gray-700');
+                    activeBtn.classList.add('bg-green-600', 'text-white', 'active', 'shadow-sm');
                 }
 
                 // Hide all type fields, show the selected one
+                row.querySelector('.barcode-field')?.classList.toggle('hidden', type !== 'product');
                 Object.values(TYPE_FIELD_MAP).forEach(sel => {
                     const el = row.querySelector(sel);
                     if (el) el.classList.add('hidden');
@@ -843,13 +838,30 @@
             initSelect2OnProductSelects();
 
             // Add new item row via HTMX
-            addButton.addEventListener('click', function () {
-                // Update the hx-get URL with the current form index
+            function requestNewItemRow(focusScanner) {
                 const newIndex = formCount;
-                const baseUrl = this.getAttribute('hx-get').split('?')[0];
-                this.setAttribute('hx-get', `${baseUrl}?index=${newIndex}`);
-                // Let HTMX handle the request
-                htmx.trigger(this, 'click');
+                const baseUrl = addButton.getAttribute('hx-get').split('?')[0];
+                addButton.setAttribute('hx-get', `${baseUrl}?index=${newIndex}`);
+                focusScannerAfterAdd = !!focusScanner;
+                if (window.htmx && typeof htmx.ajax === 'function') {
+                    htmx.ajax('GET', `${baseUrl}?index=${newIndex}`, {
+                        target: '#items-container',
+                        swap: 'beforeend',
+                    });
+                }
+            }
+
+            function focusRowScanner(row) {
+                const barcodeInput = row?.querySelector('.barcode-input');
+                if (!barcodeInput) return;
+                barcodeInput.focus();
+                barcodeInput.select();
+            }
+
+            addButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                requestNewItemRow(false);
             });
 
             // Initialize new row after HTMX swap
@@ -868,9 +880,11 @@
                         // Add event listeners to new fields
                         addItemEventListeners(newForm);
 
-                        // Disable add button until this new item has a selection
-                        addButton.disabled = true;
-                        submitButtons.forEach(b => b.disabled = true);
+                        if (focusScannerAfterAdd) {
+                            focusScannerAfterAdd = false;
+                            requestAnimationFrame(() => focusRowScanner(newForm));
+                        }
+                        checkAddButtonState();
                     }
                 }
             });
@@ -901,6 +915,7 @@
             function addItemEventListeners(form) {
                 const productSelect = form.querySelector('.product-select');
                 const packageSelect = form.querySelector('.package-select');
+                const barcodeInput = form.querySelector('.barcode-input');
                 const serviceNameInput = form.querySelector('.service-name-input');
                 const otherNameInput = form.querySelector('.other-name-input');
                 const quantityInput = form.querySelector('.quantity-input');
@@ -920,6 +935,55 @@
                     otherNameInput.addEventListener('input', function () {
                         if (descriptionInput) descriptionInput.value = this.value;
                         checkAddButtonState();
+                    });
+                }
+
+                function selectProductFromScan(product) {
+                    if (!productSelect || !product?.id) return false;
+                    if (!productSelect.querySelector(`option[value="${product.id}"]`)) {
+                        productSelect.append(new Option(product.name || product.label || product.value, product.id, false, false));
+                    }
+                    $(productSelect).val(product.id).trigger('change');
+                    if (descriptionInput && product.name && !descriptionInput.value) {
+                        descriptionInput.value = product.name;
+                    }
+                    if (barcodeInput) barcodeInput.value = '';
+                    return true;
+                }
+
+                function resolveScannedProduct(rawValue) {
+                    const term = (rawValue || '').trim();
+                    if (!term) return;
+                    barcodeInput.disabled = true;
+                    fetch(`/products/api/search-products/?term=${encodeURIComponent(term)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const products = data.products || [];
+                            const normalizedTerm = term.toLowerCase();
+                            const exact = products.find(product => {
+                                return [product.barcode, product.sku, product.value]
+                                    .filter(Boolean)
+                                    .some(value => String(value).toLowerCase() === normalizedTerm);
+                            });
+                            const product = exact || (products.length === 1 ? products[0] : null);
+                            if (!product || !selectProductFromScan(product)) {
+                                barcodeInput.classList.add('ring-2', 'ring-red-400');
+                                setTimeout(() => barcodeInput.classList.remove('ring-2', 'ring-red-400'), 1200);
+                                return;
+                            }
+                            setTimeout(() => requestNewItemRow(true), 150);
+                        })
+                        .catch(error => console.error('Error resolving scanned item:', error))
+                        .finally(() => {
+                            barcodeInput.disabled = false;
+                        });
+                }
+
+                if (barcodeInput) {
+                    barcodeInput.addEventListener('keydown', function (event) {
+                        if (event.key !== 'Enter') return;
+                        event.preventDefault();
+                        resolveScannedProduct(this.value);
                     });
                 }
 
@@ -1177,17 +1241,20 @@
     </script>
     <style>
         /* Constrain Select2 rendered text in item column — prevents long product names pushing columns off screen */
-        .item-form td[style*="width:190px"] .select2-container,
-        .item-form td[style*="width:190px"] .select2-selection {
-            max-width: 186px !important;
+        .item-form td[style*="width:660px"] .select2-container,
+        .item-form td[style*="width:660px"] .select2-selection {
+            max-width: 460px !important;
         }
         .item-form .select2-selection__rendered {
             overflow: hidden !important;
             text-overflow: ellipsis !important;
             white-space: nowrap !important;
-            max-width: 160px;
+            max-width: 430px;
         }
         /* Fix table layout so columns respect fixed widths */
+        .invoice-items-table-wrap {
+            overflow: visible;
+        }
         #items-container { table-layout: fixed; }
         button:disabled {
             cursor: not-allowed;
@@ -1196,7 +1263,7 @@
         }
 
         .product-select, .package-select {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0;
         }
 
         /* Item row Select2 must match py-1 inputs (not the global py-2 ERP default) */
@@ -1205,6 +1272,9 @@
         }
         .item-form .select2-container--default .select2-selection--single .select2-selection__arrow {
             height: 26px;
+        }
+        .item-form .item-entry-line .select2-container {
+            min-width: 0;
         }
 
         input[type="checkbox"][name$="-DELETE"] {

@@ -67,7 +67,16 @@ def select_fiscal_year(request, id):
     fiscal_year_queryset = FiscalYear.active_objects.all() if request.user.is_superuser else FiscalYear.active_objects.filter(
         company=request.user.company)
     fiscal_year = get_object_or_404(fiscal_year_queryset, pk=id)
-    request.session['active_fiscal_year_id'] = fiscal_year.id
+
+    if fiscal_year.is_closed:
+        messages.error(request, f"Fiscal year {fiscal_year} is closed and cannot be set as active.")
+        return redirect('company:fiscalyear_list')
+
+    FiscalYear.objects.filter(company=fiscal_year.company).exclude(pk=fiscal_year.pk).update(is_active=False)
+    fiscal_year.is_active = True
+    fiscal_year.save(update_fields=['is_active'])
+
+    request.session['active_fiscal_year_id'] = str(fiscal_year.id)
     messages.success(request, f"Fiscal year {fiscal_year} selected as active.")
     return redirect('company:fiscalyear_list')
 

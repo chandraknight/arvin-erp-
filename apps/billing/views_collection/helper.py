@@ -1,4 +1,5 @@
 from ..forms import *
+from ..services.note_service import generate_credit_note_number, generate_debit_note_number
 
 class NoteCreateUpdateMixin:
     def get_form_kwargs(self):
@@ -9,10 +10,17 @@ class NoteCreateUpdateMixin:
     def form_valid(self, form):
         is_new = not form.instance.pk
         if is_new:
+            company = getattr(self.request.user, 'company', None)
             if isinstance(form, CreditNoteForm):
-                form.instance.credit_note_number = generate_credit_note_number()
+                number, seq, fy = generate_credit_note_number(company.id if company else None)
+                form.instance.credit_note_number = number
+                form.instance.sequence_number = seq
+                form.instance.fiscal_year = fy
             elif isinstance(form, DebitNoteForm):
-                form.instance.debit_note_number = generate_debit_note_number()
+                number, seq, fy = generate_debit_note_number(company.id if company else None)
+                form.instance.debit_note_number = number
+                form.instance.sequence_number = seq
+                form.instance.fiscal_year = fy
 
         response = super().form_valid(form)
 

@@ -221,19 +221,29 @@ def delete_package(request, package_id):
 def search_items_by_barcode(request):
     logger.info(f"search_items_by_barcode received request. Method: {request.method}")
     if request.method == 'GET':
-        query = request.GET.get('term', '')
+        query = request.GET.get('term', '').strip()
         logger.info(f"Search query received: '{query}'")
         if query:
             try:
                 products = Product.objects.filter(
-                    Q(barcode__startswith=query) | Q(sku__startswith=query) | Q(name__icontains=query) | Q(is_service=True)
-                )[:10]
+                    Q(barcode__istartswith=query) |
+                    Q(sku__istartswith=query) |
+                    Q(name__icontains=query)
+                )
+                company = getattr(request.user, 'company', None)
+                if company and not request.user.is_superuser:
+                    products = products.filter(company=company)
+                products = products.order_by('name')[:10]
                 results = []
                 for product in products:
+                    barcode_or_sku = product.barcode or product.sku or ''
                     results.append({
                         'id': product.id,
-                        'label': f'{product.name} ({product.barcode}) - Rs. {product.price}',
-                        'value': product.barcode,
+                        'label': f'{product.name} ({barcode_or_sku}) - Rs. {product.price}',
+                        'value': barcode_or_sku,
+                        'barcode': product.barcode or '',
+                        'sku': product.sku or '',
+                        'hscode': product.hscode or '',
                         'price': str(product.price),
                         'name': product.name,
                     })

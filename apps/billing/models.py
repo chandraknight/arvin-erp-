@@ -175,6 +175,14 @@ class CreditNote(BaseModel):
     invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='credit_notes')
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     credit_note_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='credit_notes',
+        db_constraint=False,
+    )
     status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='ISSUED')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(
@@ -183,6 +191,15 @@ class CreditNote(BaseModel):
     )
     reason = models.TextField(blank=True, null=True)
     journal_entry = models.OneToOneField(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name='credit_note')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company', 'fiscal_year', 'sequence_number'],
+                name='unique_credit_note_seq_per_company_fy',
+                condition=models.Q(sequence_number__isnull=False),
+            )
+        ]
 
     def __str__(self):
         return f"{self.credit_note_number if self.credit_note_number else self.id}"
@@ -196,6 +213,14 @@ class DebitNote(BaseModel):
     vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_notes')
     vendor_bill = models.ForeignKey('VendorBill', on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_notes')
     debit_note_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='debit_notes',
+        db_constraint=False,
+    )
     status = models.CharField(max_length=10, choices=DEBIT_CREDIT_NOTE_STATUS_CHOICES, default='ISSUED')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     tax_amount = models.DecimalField(
@@ -204,6 +229,15 @@ class DebitNote(BaseModel):
     )
     reason = models.TextField(blank=True, null=True)
     journal_entry = models.OneToOneField(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name='debit_note')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company', 'fiscal_year', 'sequence_number'],
+                name='unique_debit_note_seq_per_company_fy',
+                condition=models.Q(sequence_number__isnull=False),
+            )
+        ]
 
     def __str__(self):
         return f"{self.debit_note_number if self.debit_note_number else self.id}"

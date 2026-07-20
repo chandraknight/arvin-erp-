@@ -120,6 +120,12 @@ def cash_flow_report(request):
     if fiscal_year_id:
         fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id, company=user_company).first()
 
+    # Custom range within the active fiscal year — falls back to the full FY.
+    start_date_str = request.GET.get('start_date', '').strip()
+    end_date_str = request.GET.get('end_date', '').strip()
+    range_start = bs_str_to_ad(start_date_str) if start_date_str else (fiscal_year.start_date if fiscal_year else None)
+    range_end = bs_str_to_ad(end_date_str) if end_date_str else (fiscal_year.end_date if fiscal_year else None)
+
     cash_bank_accounts = LedgerAccount.objects.filter(
         company=user_company,
         account_type='ASSET',
@@ -132,22 +138,35 @@ def cash_flow_report(request):
         journal_entry__company=user_company,
         journal_entry__is_deleted=False,
     ).select_related('journal_entry', 'account')
-    lines_qs = filter_by_fiscal_year(lines_qs, fiscal_year, date_field='journal_entry__date')
+    if range_start:
+        lines_qs = lines_qs.filter(journal_entry__date__gte=range_start)
+    if range_end:
+        lines_qs = lines_qs.filter(journal_entry__date__lte=range_end)
 
-    # Opening cash balance (before period start)
+    # Opening cash balance as of range_start — the fiscal year's opening
+    # balance plus every movement between FY start and range_start, not
+    # just movements before the fiscal year began. A mid-year custom range
+    # must not be treated as if it opened at zero.
     opening_cash = Decimal('0.00')
-    if fiscal_year:
-        open_qs = JournalEntryLine.objects.filter(
-            account__in=cash_bank_accounts,
-            journal_entry__company=user_company,
-            journal_entry__is_deleted=False,
-            journal_entry__date__lt=fiscal_year.start_date,
-        )
-        d = open_qs.aggregate(
-            dr=Coalesce(Sum('amount', filter=Q(entry_type='DEBIT')),  Decimal('0')),
-            cr=Coalesce(Sum('amount', filter=Q(entry_type='CREDIT')), Decimal('0')),
-        )
-        opening_cash = d['dr'] - d['cr']
+    if range_start:
+        for acc in cash_bank_accounts:
+            ob = LedgerOpeningBalance.objects.filter(account=acc, fiscal_year=fiscal_year).first() if fiscal_year else None
+            acc_opening = (ob.amount if ob.opening_type == 'DEBIT' else -ob.amount) if ob else Decimal('0')
+
+            movement_start = fiscal_year.start_date if fiscal_year else None
+            pre_range_qs = JournalEntryLine.objects.filter(
+                account=acc,
+                journal_entry__company=user_company,
+                journal_entry__is_deleted=False,
+                journal_entry__date__lt=range_start,
+            )
+            if movement_start:
+                pre_range_qs = pre_range_qs.filter(journal_entry__date__gte=movement_start)
+            d = pre_range_qs.aggregate(
+                dr=Coalesce(Sum('amount', filter=Q(entry_type='DEBIT')),  Decimal('0')),
+                cr=Coalesce(Sum('amount', filter=Q(entry_type='CREDIT')), Decimal('0')),
+            )
+            opening_cash += acc_opening + d['dr'] - d['cr']
 
     operating_in  = Decimal('0.00')
     operating_out = Decimal('0.00')
@@ -226,6 +245,8 @@ def cash_flow_report(request):
     context = {
         'fiscal_year':      fiscal_year,
         'company':          user_company,
+        'start_date_bs':    ad_date_to_bs_str(range_start) if range_start else '',
+        'end_date_bs':      ad_date_to_bs_str(range_end) if range_end else '',
         'opening_cash':     opening_cash,
         'closing_cash':     closing_cash,
         'operating_lines':  operating_lines,

@@ -1,9 +1,10 @@
 from django.views.generic import UpdateView
 from apps.utils.mixins import AuthMixin
+from apps.company.fiscal_year_guard import FiscalYearOpenMixin
 from .helper import *
 
 
-class PurchaseOrderUpdateView(AuthMixin, PurchaseOrderMixin, UpdateView):
+class PurchaseOrderUpdateView(AuthMixin, FiscalYearOpenMixin, PurchaseOrderMixin, UpdateView):
     permission_required = ['purchasing.change_purchaseorder']
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

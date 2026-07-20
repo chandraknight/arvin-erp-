@@ -15,9 +15,26 @@ class PurchaseOrder(BaseModel):
     )
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='purchase_orders')
     purchase_order_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='purchase_orders',
+        db_constraint=False,
+    )
     date = models.DateField(default=timezone.now)
     status = models.CharField(max_length=10, choices=PURCHASE_STATUS_CHOICES, default='SENT')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company', 'fiscal_year', 'sequence_number'],
+                name='unique_po_seq_per_company_fy',
+                condition=models.Q(sequence_number__isnull=False),
+            )
+        ]
 
     def __str__(self):
         return f"{self.purchase_order_number if self.purchase_order_number else self.id} from {self.vendor.name}"

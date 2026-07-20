@@ -5,6 +5,7 @@ from .view_collections.all_views import *
 import logging
 from django.contrib import messages
 from django.shortcuts import redirect
+from apps.company.fiscal_year_guard import fiscal_year_open_required
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ def purchase_order_detail(request, pk):
     return render(request, 'purchasing/purchase_order_detail.html', {'purchase_order': purchase_order})
 
 @login_required
+@fiscal_year_open_required
 def receive_purchase_order(request, pk):
     guard = _purchasing_guard(request)
     if guard:
@@ -156,6 +158,7 @@ def vendor_bill_list(request):
     })
 
 @login_required
+@fiscal_year_open_required
 def vendor_bill_create(request):
     guard = _purchasing_guard(request)
     if guard:
@@ -321,6 +324,7 @@ def vendor_payment_list(request):
     })
 
 @login_required
+@fiscal_year_open_required
 def vendor_payment_create(request):
     guard = _purchasing_guard(request)
     if guard:

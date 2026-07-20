@@ -24,14 +24,25 @@ from .models import FiscalYear
 
 
 def get_active_fiscal_year(request):
-    """Return the FiscalYear currently active in the session, or None."""
-    fy_id = request.session.get('active_fiscal_year_id')
-    if not fy_id:
-        return None
+    """
+    Return the FiscalYear currently active for this request.
+
+    Prefers the session's selection; falls back to the company's active
+    FiscalYear (FiscalYear.is_active=True) when the session hasn't picked
+    one yet — e.g. a fresh session, or a different user who never clicked
+    "Select" on the fiscal years page.
+    """
     company = getattr(request.user, 'company', None)
     if not company:
         return None
-    return FiscalYear.objects.filter(id=fy_id, company=company).first()
+
+    fy_id = request.session.get('active_fiscal_year_id')
+    if fy_id:
+        fy = FiscalYear.objects.filter(id=fy_id, company=company).first()
+        if fy:
+            return fy
+
+    return FiscalYear.objects.filter(company=company, is_active=True).first()
 
 
 def is_fiscal_year_closed(request):
