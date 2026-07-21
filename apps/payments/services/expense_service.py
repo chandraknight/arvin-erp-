@@ -1,7 +1,8 @@
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from django.db import transaction as db_transaction
 
-from apps.bookkeeping.models import JournalEntry, JournalEntryLine, reverse_journal
+from apps.bookkeeping.models import reverse_journal, post_journal_entry
 from apps.utils.nepali_date import bs_str_to_ad
 from ..models import Expense
 
@@ -34,36 +35,28 @@ def create_expense_batch(expense_rows: list, payment_rows: list, date_bs, compan
         if len(expense_rows) > 3:
             description += f" +{len(expense_rows) - 3} more"
 
-        je = JournalEntry.objects.create(
+        expense_total = sum((Decimal(str(r['amount'])) for r in expense_rows), Decimal('0'))
+        payment_total = sum((Decimal(str(p['amount'])) for p in payment_rows), Decimal('0'))
+        if expense_total != payment_total:
+            raise ValidationError(
+                f"Expense batch is unbalanced: expenses total {expense_total} "
+                f"but payments total {payment_total}."
+            )
+
+        lines = [
+            {'account': row['expense_account'], 'entry_type': 'DEBIT', 'amount': row['amount'], 'narration': row['title']}
+            for row in expense_rows
+        ] + [
+            {'account': pay['payment_account'], 'entry_type': 'CREDIT', 'amount': pay['amount'], 'narration': f"Paid via {pay['payment_method']}"}
+            for pay in payment_rows
+        ]
+        je = post_journal_entry(
             company=company,
             date=ad_date,
             description=f"Expenses: {description}",
+            lines=lines,
             created_by=user,
         )
-
-        # DR each expense line
-        debit_lines = []
-        for row in expense_rows:
-            debit_lines.append(JournalEntryLine(
-                journal_entry=je,
-                account=row['expense_account'],
-                entry_type='DEBIT',
-                narration=row['title'],
-                amount=row['amount'],
-            ))
-        JournalEntryLine.objects.bulk_create(debit_lines)
-
-        # CR each payment split
-        credit_lines = []
-        for pay in payment_rows:
-            credit_lines.append(JournalEntryLine(
-                journal_entry=je,
-                account=pay['payment_account'],
-                entry_type='CREDIT',
-                narration=f"Paid via {pay['payment_method']}",
-                amount=pay['amount'],
-            ))
-        JournalEntryLine.objects.bulk_create(credit_lines)
 
         # Use first payment row's account/method for Expense records (for display)
         primary_pay = payment_rows[0]
@@ -89,49 +82,40 @@ def create_expense_batch(expense_rows: list, payment_rows: list, date_bs, compan
     # ── Per-row mode: one journal per expense, CR side may be split ───
     expenses = []
     for row in expense_rows:
-        je = JournalEntry.objects.create(
-            company=company,
-            date=ad_date,
-            description=f"Expense: {row['title']}",
-            created_by=user,
-        )
-
-        # DR the expense account
-        JournalEntryLine.objects.create(
-            journal_entry=je,
-            account=row['expense_account'],
-            entry_type='DEBIT',
-            narration=row['title'],
-            amount=row['amount'],
-        )
+        lines = [
+            {'account': row['expense_account'], 'entry_type': 'DEBIT', 'amount': row['amount'], 'narration': row['title']},
+        ]
 
         splits = row.get('payment_splits') or []
         if splits:
-            # CR each payment split
-            credit_lines = [
-                JournalEntryLine(
-                    journal_entry=je,
-                    account=pay['payment_account'],
-                    entry_type='CREDIT',
-                    narration=f"Paid via {pay['payment_method']}",
-                    amount=pay['amount'],
+            split_total = sum((Decimal(str(pay['amount'])) for pay in splits), Decimal('0'))
+            if split_total != Decimal(str(row['amount'])):
+                raise ValidationError(
+                    f"Expense '{row['title']}' payment splits total {split_total} "
+                    f"but the expense amount is {row['amount']}."
                 )
+            lines += [
+                {'account': pay['payment_account'], 'entry_type': 'CREDIT', 'amount': pay['amount'], 'narration': f"Paid via {pay['payment_method']}"}
                 for pay in splits
             ]
-            JournalEntryLine.objects.bulk_create(credit_lines)
             primary = splits[0]
             pay_account = primary['payment_account']
             pay_method = primary['payment_method']
         else:
-            JournalEntryLine.objects.create(
-                journal_entry=je,
-                account=row['payment_account'],
-                entry_type='CREDIT',
-                narration=f"Paid via {row['payment_method']}",
-                amount=row['amount'],
-            )
+            lines.append({
+                'account': row['payment_account'], 'entry_type': 'CREDIT', 'amount': row['amount'],
+                'narration': f"Paid via {row['payment_method']}",
+            })
             pay_account = row['payment_account']
             pay_method = row['payment_method']
+
+        je = post_journal_entry(
+            company=company,
+            date=ad_date,
+            description=f"Expense: {row['title']}",
+            lines=lines,
+            created_by=user,
+        )
 
         exp = Expense.objects.create(
             company=company,

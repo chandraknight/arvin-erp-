@@ -1,5 +1,6 @@
 from django.urls import reverse
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from apps.utils.baseModel import *
 import nepali_datetime
 
@@ -245,11 +246,64 @@ class FiscalYear(BaseModel):
         unique_together = ('company', 'start_date', 'end_date')
         ordering = ['start_date']
 
+    def clean(self):
+        super().clean()
+        if self.start_date_bs and self.end_date_bs:
+            self._validate_nepali_fiscal_year_bounds()
+
+    def _validate_nepali_fiscal_year_bounds(self):
+        """
+        Nepal's statutory fiscal year runs Shrawan 1 (BS month 4, day 1) to
+        the last day of Ashad (BS month 3) of the following year. start_date_bs
+        / end_date_bs are user-entered free text, so nothing previously
+        checked they actually align to this convention.
+        """
+        import re
+        import nepali_datetime as nd
+        import datetime
+
+        date_format = r'^\d{4}-\d{2}-\d{2}$'
+        if not re.match(date_format, self.start_date_bs) or not re.match(date_format, self.end_date_bs):
+            return  # format errors are already caught by the form
+
+        start_year, start_month, start_day = (int(p) for p in self.start_date_bs.split('-'))
+        end_year, end_month, end_day = (int(p) for p in self.end_date_bs.split('-'))
+
+        errors = {}
+        if not (start_month == 4 and start_day == 1):
+            errors['start_date_bs'] = (
+                "Nepali fiscal year must start on Shrawan 1 (BS month 04, day 01), "
+                f"got {self.start_date_bs}."
+            )
+        if end_month != 3:
+            errors['end_date_bs'] = (
+                f"Nepali fiscal year must end in Ashad (BS month 03), got {self.end_date_bs}."
+            )
+        else:
+            next_month_first = nd.date(end_year, 4, 1)
+            last_ashad_day = (
+                next_month_first.to_datetime_date() - datetime.timedelta(days=1)
+            )
+            last_ashad_bs = nd.date.from_datetime_date(last_ashad_day)
+            if end_day != last_ashad_bs.day:
+                errors['end_date_bs'] = (
+                    f"Ashad {end_year} has {last_ashad_bs.day} days; "
+                    f"fiscal year must end on {end_year}-03-{last_ashad_bs.day:02d}, got {self.end_date_bs}."
+                )
+        if end_year != start_year + 1:
+            errors.setdefault('end_date_bs',
+                f"Fiscal year end year ({end_year}) must be the year after the start year ({start_year}).")
+
+        if errors:
+            raise ValidationError(errors)
+
     def save(self, *args, **kwargs):
         if not self.name and self.start_date_bs and self.end_date_bs:
             start_year = self.start_date_bs.split("-")[0]
             end_year = self.end_date_bs.split("-")[0]
             self.name = f"{start_year}/{end_year[-2:]}"
+        if self.start_date_bs and self.end_date_bs:
+            self._validate_nepali_fiscal_year_bounds()
         super().save(*args, **kwargs)
 
     @property
@@ -372,7 +426,7 @@ class FiscalYear(BaseModel):
         After both steps the year is marked is_closed=True, is_active=False.
         """
         from django.utils import timezone as tz
-        from django.db.models import Sum
+        from django.db import transaction as db_transaction
         from apps.bookkeeping.models import (
             JournalEntry, JournalEntryLine, LedgerAccount, LedgerOpeningBalance
         )
@@ -381,6 +435,14 @@ class FiscalYear(BaseModel):
         if self.is_closed:
             raise ValueError("Fiscal year is already closed.")
 
+        with db_transaction.atomic():
+            self._close_within_transaction(
+                tz, JournalEntry, JournalEntryLine, LedgerAccount, LedgerOpeningBalance, Decimal, closed_by_user
+            )
+
+    def _close_within_transaction(self, tz, JournalEntry, JournalEntryLine, LedgerAccount, LedgerOpeningBalance, Decimal, closed_by_user):
+        """Body of close(), run inside a single db transaction so a failure partway never leaves a half-posted closing entry or half-seeded next fiscal year."""
+        from django.db.models import Sum
         company = self.company
 
         # ── helpers ──────────────────────────────────────────────────────────
@@ -474,20 +536,14 @@ class FiscalYear(BaseModel):
             })
 
         if closing_lines:
-            entry = JournalEntry.objects.create(
+            from apps.bookkeeping.models import post_journal_entry
+            post_journal_entry(
                 company=company,
                 date=self.end_date,
                 description=f"Year-End Closing Entry — FY {self.name}",
                 created_by=closed_by_user,
+                lines=[{**line, 'narration': 'Year-end closing'} for line in closing_lines],
             )
-            for line in closing_lines:
-                JournalEntryLine.objects.create(
-                    journal_entry=entry,
-                    account=line['account'],
-                    entry_type=line['entry_type'],
-                    amount=line['amount'],
-                    narration='Year-end closing',
-                )
 
         # ── STEP 2: Carry-forward opening balances to next fiscal year ────
 
@@ -550,6 +606,8 @@ class FiscalYear(BaseModel):
                 fiscal_year=next_fy,
                 defaults={'opening_type': ob_type, 'amount': amount},
             )
+
+        LedgerOpeningBalance.assert_fiscal_year_balanced(next_fy)
 
         # ── Mark closed ───────────────────────────────────────────────────
         self.is_closed = True

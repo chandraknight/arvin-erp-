@@ -31,6 +31,9 @@
 
       <div class="store-hero-visual" aria-label="Multi-faith essentials, gifts, and ceremony kits">
         <div class="store-hero-panel">
+          {% if hero_banners %}
+          <img src="{{ hero_banners.0.image.url }}" alt="{{ hero_banners.0.title|default:'Multi-faith essentials, gifts, and ceremony kits' }}" style="width:100%;height:100%;object-fit:cover;border-radius:22px;">
+          {% else %}
           <div class="store-hero-icons" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M7.5 20V9.5c0-1.2 1.8-1.2 1.8 0V15M9.3 15V6.5c0-1.3 1.9-1.3 1.9 0V15M11.2 15V5.5c0-1.3 1.9-1.3 1.9 0V15M13.1 15V7c0-1.2 1.9-1.2 1.9 0v7.6l2.2-2.5c.8-.9 2.2.2 1.5 1.2l-4.1 5.8c-.5.7-1.2 1-2 1H7.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -45,6 +48,7 @@
             </svg>
           </div>
           <p>[ Multi-faith essentials, gifts, and ceremony kits ]</p>
+          {% endif %}
         </div>
       </div>
     </div>

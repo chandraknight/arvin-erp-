@@ -98,6 +98,24 @@ def report_dashboard(request):
     })
 
 
+def _opening_balance_lookup(company, as_of_date):
+    """
+    Opening balances (per-account, per-DEBIT/CREDIT) from the latest fiscal
+    year whose start_date <= as_of_date — mirrors the Postgres fn_get_account_balance
+    / fn_get_trial_balance opening-balance lookup, so the Python-side Trial
+    Balance and Balance Sheet reports agree with the DB-side reporting functions.
+    """
+    fy = FiscalYear.objects.filter(
+        company=company, start_date__lte=as_of_date
+    ).order_by('-start_date').first()
+    if not fy:
+        return {}
+    lookup = {}
+    for row in LedgerOpeningBalance.objects.filter(fiscal_year=fy):
+        lookup.setdefault(row.account_id, {})[row.opening_type] = row.amount
+    return lookup
+
+
 @login_required
 def cash_flow_report(request):
     """
@@ -2002,11 +2020,13 @@ def trial_balance_report(request):
         tb_lookup.setdefault(row['account_id'], {})[row['entry_type']] = row['total']
 
     account_map = {a.id: a for a in ledger_accounts}
+    ob_lookup = _opening_balance_lookup(user_company, report_date)
 
     for account in ledger_accounts:
         sums = tb_lookup.get(account.id, {})
-        debit_balance = sums.get('DEBIT', Decimal('0.00'))
-        credit_balance = sums.get('CREDIT', Decimal('0.00'))
+        ob = ob_lookup.get(account.id, {})
+        debit_balance = sums.get('DEBIT', Decimal('0.00')) + ob.get('DEBIT', Decimal('0.00'))
+        credit_balance = sums.get('CREDIT', Decimal('0.00')) + ob.get('CREDIT', Decimal('0.00'))
 
         if account.account_type in ['ASSET', 'EXPENSE']:
             net_balance = debit_balance - credit_balance
@@ -2064,45 +2084,22 @@ def trial_balance_report(request):
     return render(request, 'reports/trial_balance_report.html', context)
 
 
-@login_required
-def balance_sheet_report(request):
-    user_company = request.user_company
-    if not user_company:
-        messages.warning(
-            request, "Your account is not associated with a company. Please contact an administrator.")
-        return redirect('accounts:user_dashboard')
-
-    fiscal_year_id = request.session.get('active_fiscal_year_id')
-    fiscal_year = None
-    report_date = timezone.now().date()  # Default to today
-    if fiscal_year_id:
-        fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
-        if fiscal_year:
-            report_date = fiscal_year.end_date
-
-    if request.method == 'POST':
-        report_date_str = request.POST.get('report_date')
-        if report_date_str:
-            try:
-                converted = bs_str_to_ad(report_date_str)
-                if converted is None:
-                    raise ValueError("Unparseable date")
-                report_date = converted
-            except ValueError:
-                messages.error(request, "Invalid date format.")
-                report_date = timezone.now().date()
-
-    # Calculate balances for all relevant accounts up to the report_date, filtered by company
+def _compute_balance_sheet(user_company, report_date, fiscal_year=None):
+    """
+    Shared NFRS balance-sheet computation — single source of truth reused by
+    the on-screen report and the Excel/PDF/print exports, so a fix here
+    (e.g. including opening balances, or folding net income into equity)
+    can't silently drift out of sync between them again.
+    """
     assets = []
     liabilities = []
     equity = []
-    total_assets = 0
-    total_liabilities = 0
-    total_equity = 0
+    total_assets = Decimal('0.00')
+    total_liabilities = Decimal('0.00')
+    total_equity = Decimal('0.00')
     relevant_accounts = LedgerAccount.objects.filter(
         account_type__in=['ASSET', 'LIABILITY', 'EQUITY'], company=user_company)
 
-    # Single grouped query replaces 2×N per-account queries
     bs_rows = (
         JournalEntryLine.objects
         .filter(
@@ -2117,11 +2114,13 @@ def balance_sheet_report(request):
     bs_lookup: dict = {}
     for row in bs_rows:
         bs_lookup.setdefault(row['account_id'], {})[row['entry_type']] = row['total']
+    ob_lookup = _opening_balance_lookup(user_company, report_date)
 
     for account in relevant_accounts:
         sums = bs_lookup.get(account.id, {})
-        balance_debits = sums.get('DEBIT', Decimal('0.00'))
-        balance_credits = sums.get('CREDIT', Decimal('0.00'))
+        ob = ob_lookup.get(account.id, {})
+        balance_debits = sums.get('DEBIT', Decimal('0.00')) + ob.get('DEBIT', Decimal('0.00'))
+        balance_credits = sums.get('CREDIT', Decimal('0.00')) + ob.get('CREDIT', Decimal('0.00'))
         if account.account_type == 'ASSET':
             balance = balance_debits - balance_credits
             assets.append({'account': account, 'balance': balance})
@@ -2134,7 +2133,7 @@ def balance_sheet_report(request):
             balance = balance_credits - balance_debits
             equity.append({'account': account, 'balance': balance})
             total_equity += balance
-    # Use filter_by_fiscal_year for net income calculation
+
     revenue_qs = JournalEntryLine.objects.filter(
         account__account_type='REVENUE',
         journal_entry__company=user_company,
@@ -2165,9 +2164,7 @@ def balance_sheet_report(request):
     noncurrent_liabilities  = [l for l in liabilities if not l['account'].is_current]
     total_equity_all = total_equity + net_income_up_to_date
 
-    context = {
-        'report_date': report_date,
-        'report_date_bs': ad_date_to_bs_str(report_date),
+    return {
         'assets': assets,
         'current_assets': current_assets,
         'noncurrent_assets': noncurrent_assets,
@@ -2180,9 +2177,46 @@ def balance_sheet_report(request):
         'total_liabilities': total_liabilities,
         'total_equity': total_equity_all,
         'balance_sheet_balanced': abs(total_assets - (total_liabilities + total_equity_all)) < Decimal('0.01'),
+    }
+
+
+@login_required
+def balance_sheet_report(request):
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    fiscal_year_id = request.session.get('active_fiscal_year_id')
+    fiscal_year = None
+    report_date = timezone.now().date()  # Default to today
+    if fiscal_year_id:
+        fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
+        if fiscal_year:
+            report_date = fiscal_year.end_date
+
+    if request.method == 'POST':
+        report_date_str = request.POST.get('report_date')
+        if report_date_str:
+            try:
+                converted = bs_str_to_ad(report_date_str)
+                if converted is None:
+                    raise ValueError("Unparseable date")
+                report_date = converted
+            except ValueError:
+                messages.error(request, "Invalid date format.")
+                report_date = timezone.now().date()
+
+    bs_data = _compute_balance_sheet(user_company, report_date, fiscal_year)
+
+    context = {
+        'report_date': report_date,
+        'report_date_bs': ad_date_to_bs_str(report_date),
         'report_title': 'Statement of Financial Position',
         'fiscal_year': fiscal_year,
         'company': user_company,
+        **bs_data,
     }
     return render(request, 'reports/balance_sheet_report.html', context)
 
@@ -2197,73 +2231,13 @@ def export_balance_sheet_report_excel(request):
 
     report_date_str = request.GET.get('report_date')
     report_date = bs_str_to_ad(report_date_str) if report_date_str else timezone.now().date()
-
-    # Assets
-    asset_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='ASSET')
-    assets_data = []
-    total_assets = 0
-    for account in asset_accounts:
-        balance_debits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='DEBIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance_credits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='CREDIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance = balance_debits - balance_credits
-        assets_data.append({'account': account, 'balance': balance})
-        total_assets += balance
-
-    # Liabilities
-    liability_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='LIABILITY')
-    liabilities_data = []
-    total_liabilities = 0
-    for account in liability_accounts:
-        balance_debits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='DEBIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance_credits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='CREDIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        # Liabilities have natural credit balance
-        balance = balance_credits - balance_debits
-        liabilities_data.append({'account': account, 'balance': balance})
-        total_liabilities += balance
-
-    # Equity (Owners' Equity)
-    equity_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='EQUITY')
-    equity_data = []
-    total_equity = 0
-    for account in equity_accounts:
-        balance_debits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='DEBIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance_credits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='CREDIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance = balance_credits - balance_debits
-        equity_data.append({'account': account, 'balance': balance})
-        total_equity += balance
+    bs_data = _compute_balance_sheet(user_company, report_date)
+    assets_data = bs_data['assets']
+    liabilities_data = bs_data['liabilities']
+    equity_data = bs_data['equity']
+    total_assets = bs_data['total_assets']
+    total_liabilities = bs_data['total_liabilities']
+    total_equity = bs_data['total_equity']
 
     # Prepare data for Excel export
     data = []
@@ -2280,6 +2254,7 @@ def export_balance_sheet_report_excel(request):
     data.append(['Equity', ''])
     data.extend([[item['account'].name, item['balance']]
                 for item in equity_data])
+    data.append(['Net Income (current period)', float(bs_data['current_year_profit'])])
     data.append(['Total Equity', float(total_equity)])
     data.append(['', ''])
     data.append(['Liabilities + Equity',
@@ -2307,79 +2282,19 @@ def export_balance_sheet_report_pdf(request):
 
     report_date_str = request.GET.get('report_date')
     report_date = bs_str_to_ad(report_date_str) if report_date_str else timezone.now().date()
-
-    asset_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='ASSET')
-    assets_data = []
-    total_assets = 0
-    for account in asset_accounts:
-        balance_debits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='DEBIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance_credits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='CREDIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance = balance_debits - balance_credits
-        assets_data.append({'account': account, 'balance': balance})
-        total_assets += balance
-
-    liability_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='LIABILITY')
-    liabilities_data = []
-    total_liabilities = 0
-    for account in liability_accounts:
-        balance_debits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='DEBIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance_credits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='CREDIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance = balance_credits - balance_debits
-        liabilities_data.append({'account': account, 'balance': balance})
-        total_liabilities += balance
-
-    equity_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='EQUITY')
-    equity_data = []
-    total_equity = 0
-    for account in equity_accounts:
-        balance_debits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='DEBIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance_credits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='CREDIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance = balance_credits - balance_debits
-        equity_data.append({'account': account, 'balance': balance})
-        total_equity += balance
+    bs_data = _compute_balance_sheet(user_company, report_date)
 
     context = {
         'report_date': report_date,
-        'assets_data': assets_data,
-        'total_assets': total_assets,
-        'liabilities_data': liabilities_data,
-        'total_liabilities': total_liabilities,
-        'equity_data': equity_data,
-        'total_equity': total_equity,
-        'total_liabilities_and_equity': total_liabilities + total_equity,
+        'report_date_bs': ad_date_to_bs_str(report_date),
+        'assets_data': bs_data['assets'],
+        'total_assets': bs_data['total_assets'],
+        'liabilities_data': bs_data['liabilities'],
+        'total_liabilities': bs_data['total_liabilities'],
+        'equity_data': bs_data['equity'],
+        'current_year_profit': bs_data['current_year_profit'],
+        'total_equity': bs_data['total_equity'],
+        'total_liabilities_and_equity': bs_data['total_liabilities'] + bs_data['total_equity'],
         'company': user_company,
     }
 
@@ -2400,79 +2315,19 @@ def print_balance_sheet_report(request):
 
     report_date_str = request.GET.get('report_date')
     report_date = bs_str_to_ad(report_date_str) if report_date_str else timezone.now().date()
-
-    asset_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='ASSET')
-    assets_data = []
-    total_assets = 0
-    for account in asset_accounts:
-        balance_debits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='DEBIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance_credits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='CREDIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance = balance_debits - balance_credits
-        assets_data.append({'account': account, 'balance': balance})
-        total_assets += balance
-
-    liability_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='LIABILITY')
-    liabilities_data = []
-    total_liabilities = 0
-    for account in liability_accounts:
-        balance_debits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='DEBIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance_credits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='CREDIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance = balance_credits - balance_debits
-        liabilities_data.append({'account': account, 'balance': balance})
-        total_liabilities += balance
-
-    equity_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='EQUITY')
-    equity_data = []
-    total_equity = 0
-    for account in equity_accounts:
-        balance_debits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='DEBIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance_credits = JournalEntryLine.objects.filter(
-            account=account,
-            journal_entry__company=user_company,
-            journal_entry__date__lte=report_date,
-            entry_type='CREDIT'
-        ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        balance = balance_credits - balance_debits
-        equity_data.append({'account': account, 'balance': balance})
-        total_equity += balance
+    bs_data = _compute_balance_sheet(user_company, report_date)
 
     context = {
         'report_date': report_date,
-        'assets_data': assets_data,
-        'total_assets': total_assets,
-        'liabilities_data': liabilities_data,
-        'total_liabilities': total_liabilities,
-        'equity_data': equity_data,
-        'total_equity': total_equity,
-        'total_liabilities_and_equity': total_liabilities + total_equity,
+        'report_date_bs': ad_date_to_bs_str(report_date),
+        'assets_data': bs_data['assets'],
+        'total_assets': bs_data['total_assets'],
+        'liabilities_data': bs_data['liabilities'],
+        'total_liabilities': bs_data['total_liabilities'],
+        'equity_data': bs_data['equity'],
+        'current_year_profit': bs_data['current_year_profit'],
+        'total_equity': bs_data['total_equity'],
+        'total_liabilities_and_equity': bs_data['total_liabilities'] + bs_data['total_equity'],
         'company': user_company,
     }
     return render(request, 'reports/print/balance_sheet_report_print.html', context)

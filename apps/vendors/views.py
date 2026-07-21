@@ -21,7 +21,8 @@ def _post_opening_balance_journal(vendor, amount, opening_type):
         DR  Accounts Payable – {Vendor}
         CR  Opening Balance Equity
     """
-    from apps.bookkeeping.models import LedgerAccount, JournalEntry, JournalEntryLine
+    from django.utils import timezone
+    from apps.bookkeeping.models import LedgerAccount, post_journal_entry
     from apps.company.services.company_services import setup_default_ledger_accounts
     from decimal import Decimal
 
@@ -41,12 +42,6 @@ def _post_opening_balance_journal(vendor, amount, opening_type):
     if not vendor_account:
         return
 
-    entry = JournalEntry.objects.create(
-        company=company,
-        date=__import__('django.utils.timezone', fromlist=['timezone']).now().date(),
-        description=f'Opening Balance – {vendor.name}',
-    )
-
     if opening_type == 'CREDIT':
         # We owe vendor → increase payable
         debit_account, credit_account = equity_account, vendor_account
@@ -54,10 +49,15 @@ def _post_opening_balance_journal(vendor, amount, opening_type):
         # Vendor owes us → reverse
         debit_account, credit_account = vendor_account, equity_account
 
-    JournalEntryLine.objects.bulk_create([
-        JournalEntryLine(journal_entry=entry, account=debit_account, entry_type='DEBIT', amount=amount),
-        JournalEntryLine(journal_entry=entry, account=credit_account, entry_type='CREDIT', amount=amount),
-    ])
+    post_journal_entry(
+        company=company,
+        date=timezone.now().date(),
+        description=f'Opening Balance – {vendor.name}',
+        lines=[
+            {'account': debit_account, 'entry_type': 'DEBIT', 'amount': amount},
+            {'account': credit_account, 'entry_type': 'CREDIT', 'amount': amount},
+        ],
+    )
 
 @auth_required('vendors.add_vendor')
 def vendor_create(request):

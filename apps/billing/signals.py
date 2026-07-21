@@ -4,7 +4,7 @@ from django.db import DatabaseError
 import logging
 
 from apps.billing.models import Invoice, CreditNote, DebitNote, VendorBill
-from apps.bookkeeping.models import JournalEntry, JournalEntryLine, LedgerAccount, reverse_journal
+from apps.bookkeeping.models import JournalEntry, LedgerAccount, reverse_journal, post_journal_entry
 from apps.company.services.company_services import setup_default_ledger_accounts
 from apps.utils.constant import StatusChoicesEnum
 
@@ -94,28 +94,29 @@ def create_journal_entry_for_credit_note(sender, instance, created, **kwargs):
         return
 
     tax_amt = _note_tax_amount(instance)
-    net_sales = instance.amount - tax_amt
+    # NFRS: reverse the VAT liability posted on the original invoice. If there's
+    # no Tax Payable account to receive that leg, the VAT amount must stay on
+    # the sales-returns debit instead of vanishing — otherwise the CREDIT side
+    # (always the full instance.amount) would exceed the DEBIT side.
+    if tax_amt > 0 and not tax_account:
+        logger.warning(
+            "Tax Payable account not found — credit note %s VAT folded into sales returns",
+            instance.credit_note_number,
+        )
+    lines = []
+    if tax_amt > 0 and tax_account:
+        lines.append({'account': sales_returns_account, 'entry_type': 'DEBIT', 'amount': instance.amount - tax_amt})
+        lines.append({'account': tax_account, 'entry_type': 'DEBIT', 'amount': tax_amt})
+    else:
+        lines.append({'account': sales_returns_account, 'entry_type': 'DEBIT', 'amount': instance.amount})
+    lines.append({'account': ar_account, 'entry_type': 'CREDIT', 'amount': instance.amount})
 
-    entry = JournalEntry.objects.create(
+    entry = post_journal_entry(
         company=instance.company,
         date=instance.invoice.transaction_date if instance.invoice else instance.created_at.date(),
         description=f"Credit Note {instance.credit_note_number}",
+        lines=lines,
     )
-    lines = [
-        JournalEntryLine(journal_entry=entry, account=sales_returns_account, entry_type="DEBIT", amount=net_sales),
-        JournalEntryLine(journal_entry=entry, account=ar_account,    entry_type="CREDIT", amount=instance.amount),
-    ]
-    # NFRS: reverse the VAT liability that was posted on the original invoice
-    if tax_amt > 0 and tax_account:
-        lines.insert(1, JournalEntryLine(
-            journal_entry=entry, account=tax_account, entry_type="DEBIT", amount=tax_amt,
-        ))
-    elif tax_amt > 0:
-        logger.warning(
-            "Tax Payable account not found — credit note %s VAT leg omitted",
-            instance.credit_note_number,
-        )
-    JournalEntryLine.objects.bulk_create(lines)
     instance.journal_entry = entry
     instance.save(update_fields=["journal_entry"])
 
@@ -153,28 +154,32 @@ def create_journal_entry_for_debit_note(sender, instance, created, **kwargs):
 
     bill = instance.vendor_bill
     tax_amt = _note_tax_amount(instance, source=bill, source_total=bill.total_amount if bill else None)
-    net_purchase = instance.amount - tax_amt
 
-    entry = JournalEntry.objects.create(
+    # NFRS: returning goods surrenders the recoverable Input VAT claimed on the
+    # bill. If there's no Input VAT account to receive that leg, the amount
+    # must stay on the purchase-returns credit instead of vanishing —
+    # otherwise the DEBIT side (always the full instance.amount) would exceed
+    # the CREDIT side.
+    if tax_amt > 0 and not input_vat_account:
+        logger.warning(
+            "Input VAT account not found — debit note %s VAT folded into purchase returns",
+            instance.debit_note_number,
+        )
+    lines = [
+        {'account': ap_account, 'entry_type': 'DEBIT', 'amount': instance.amount},
+    ]
+    if tax_amt > 0 and input_vat_account:
+        lines.append({'account': purchase_returns_account, 'entry_type': 'CREDIT', 'amount': instance.amount - tax_amt})
+        lines.append({'account': input_vat_account, 'entry_type': 'CREDIT', 'amount': tax_amt})
+    else:
+        lines.append({'account': purchase_returns_account, 'entry_type': 'CREDIT', 'amount': instance.amount})
+
+    entry = post_journal_entry(
         company=instance.company,
         date=bill.bill_date if bill else instance.created_at.date(),
         description=f"Debit Note {instance.debit_note_number}",
+        lines=lines,
     )
-    lines = [
-        JournalEntryLine(journal_entry=entry, account=ap_account, entry_type="DEBIT", amount=instance.amount),
-        JournalEntryLine(journal_entry=entry, account=purchase_returns_account, entry_type="CREDIT", amount=net_purchase),
-    ]
-    # NFRS: returning goods surrenders the recoverable Input VAT claimed on the bill
-    if tax_amt > 0 and input_vat_account:
-        lines.append(JournalEntryLine(
-            journal_entry=entry, account=input_vat_account, entry_type="CREDIT", amount=tax_amt,
-        ))
-    elif tax_amt > 0:
-        logger.warning(
-            "Input VAT account not found — debit note %s VAT leg omitted",
-            instance.debit_note_number,
-        )
-    JournalEntryLine.objects.bulk_create(lines)
     instance.journal_entry = entry
     instance.save(update_fields=["journal_entry"])
 
@@ -228,31 +233,21 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
         return
 
     from django.utils.timezone import now as tz_now
-    entry = JournalEntry.objects.create(
-        company=company,
-        date=instance.bill_date or tz_now().date(),
-        description=f"Vendor Bill {instance.bill_number}",
-    )
+    from decimal import Decimal
 
     lines = []
-    from decimal import Decimal
     items_subtotal = Decimal("0.00")
+    fallback_expense_account = None
     for item in instance.items.all():
         debit_account = item.debit_account or _get_ledger(company, "Purchase Expense")
         if not debit_account:
             continue
-        lines.append(JournalEntryLine(
-            journal_entry=entry,
-            account=debit_account,
-            entry_type="DEBIT",
-            amount=item.total_price,
-        ))
+        lines.append({'account': debit_account, 'entry_type': 'DEBIT', 'amount': item.total_price})
         items_subtotal += item.total_price
+        fallback_expense_account = fallback_expense_account or debit_account
 
     if not lines:
-        # Soft-delete the empty shell entry — no lines means nothing to post
-        entry.is_deleted = True
-        entry.save(update_fields=['is_deleted'])
+        # No lines means nothing to post — no entry created, nothing to clean up.
         return
 
     # ── VAT leg: when vendor charged VAT, debit Input VAT (recoverable asset) ──
@@ -260,28 +255,25 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
     if tax_amount > Decimal("0.00"):
         input_vat_account = _get_ledger(company, "Input VAT")
         if input_vat_account:
-            lines.append(JournalEntryLine(
-                journal_entry=entry,
-                account=input_vat_account,
-                entry_type="DEBIT",
-                amount=tax_amount,
-            ))
+            lines.append({'account': input_vat_account, 'entry_type': 'DEBIT', 'amount': tax_amount})
         else:
-            # Fallback: no Input VAT account yet — warn but don't block
+            # No Input VAT account yet — fold the tax into the expense leg
+            # instead of dropping it, so the entry still balances against the
+            # AP credit below (which always includes the full tax-inclusive total).
             logger.warning(
                 "No 'Input VAT' ledger account for company %s — VAT of %s on vendor bill %s "
-                "will not be journalised. Create the account to fix this.",
+                "folded into Purchase Expense. Create the account to track it separately.",
                 company, tax_amount, instance.bill_number,
             )
-            # Still include the tax in AP so the books at least balance
-            # (will appear as part of Purchase Expense implicitly)
+            lines.append({'account': fallback_expense_account, 'entry_type': 'DEBIT', 'amount': tax_amount})
 
     # AP CREDIT = full payable amount to vendor (items subtotal + VAT)
     ap_total = items_subtotal + tax_amount
-    lines.append(JournalEntryLine(
-        journal_entry=entry,
-        account=ap_account,
-        entry_type="CREDIT",
-        amount=ap_total,
-    ))
-    JournalEntryLine.objects.bulk_create(lines)
+    lines.append({'account': ap_account, 'entry_type': 'CREDIT', 'amount': ap_total})
+
+    post_journal_entry(
+        company=company,
+        date=instance.bill_date or tz_now().date(),
+        description=f"Vendor Bill {instance.bill_number}",
+        lines=lines,
+    )

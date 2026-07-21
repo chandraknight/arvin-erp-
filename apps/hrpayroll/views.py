@@ -619,9 +619,8 @@ def _post_payroll_journal(payroll_run, user):
     """
     if not payroll_run.total_gross_pay or payroll_run.total_gross_pay <= 0:
         return
-    from apps.bookkeeping.models import JournalEntry, JournalEntryLine
+    from apps.bookkeeping.models import post_journal_entry, LedgerAccount
     from apps.company.services.company_services import setup_default_ledger_accounts
-    from apps.bookkeeping.models import LedgerAccount
 
     company = payroll_run.company
     setup_default_ledger_accounts(company)
@@ -637,18 +636,16 @@ def _post_payroll_journal(payroll_run, user):
         )
         return
 
-    entry = JournalEntry.objects.create(
+    entry = post_journal_entry(
         company=company,
         date=payroll_run.payroll_date,
         description=f"Payroll: {payroll_run.period_start_date} – {payroll_run.period_end_date}",
         created_by=user,
+        lines=[
+            {'account': salary_expense, 'entry_type': 'DEBIT', 'amount': payroll_run.total_gross_pay, 'narration': 'Gross payroll cost'},
+            {'account': salary_payable, 'entry_type': 'CREDIT', 'amount': payroll_run.total_gross_pay, 'narration': 'Salary payable to employees'},
+        ],
     )
-    JournalEntryLine.objects.bulk_create([
-        JournalEntryLine(journal_entry=entry, account=salary_expense, entry_type='DEBIT',
-                         amount=payroll_run.total_gross_pay, narration='Gross payroll cost'),
-        JournalEntryLine(journal_entry=entry, account=salary_payable, entry_type='CREDIT',
-                         amount=payroll_run.total_gross_pay, narration='Salary payable to employees'),
-    ])
 
     from apps.activity_log.models import ActivityLog
     ActivityLog.log(

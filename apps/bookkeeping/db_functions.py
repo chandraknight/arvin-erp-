@@ -57,7 +57,7 @@ def _post_invoice_journal_orm(invoice_id: UUID | str) -> UUID | None:
     """
     from django.db import transaction as db_transaction
     from apps.billing.models import Invoice
-    from apps.bookkeeping.models import JournalEntry, JournalEntryLine, LedgerAccount
+    from apps.bookkeeping.models import JournalEntry, LedgerAccount, post_journal_entry
 
     def _ledger(company, name):
         return LedgerAccount.objects.filter(company=company, name=name, is_deleted=False).first()
@@ -113,31 +113,27 @@ def _post_invoice_journal_orm(invoice_id: UUID | str) -> UUID | None:
             reversed_reason=f'Replaced by re-post of invoice {inv.invoice_number}',
         )
 
-        from django.utils.timezone import now as _now
         from datetime import date as _date
-        entry = JournalEntry.objects.create(
-            company=company,
-            date=inv.transaction_date or _date.today(),
-            description=description,
-        )
 
         discount = inv.discount_amount or Decimal('0.00')
         tax      = inv.tax_amount      or Decimal('0.00')
         calc_sales = inv.total + discount - tax
 
         lines = [
-            JournalEntryLine(journal_entry=entry, account=debit_account, entry_type='DEBIT',  amount=inv.total),
-            JournalEntryLine(journal_entry=entry, account=sales_account, entry_type='CREDIT', amount=calc_sales),
+            {'account': debit_account, 'entry_type': 'DEBIT', 'amount': inv.total},
+            {'account': sales_account, 'entry_type': 'CREDIT', 'amount': calc_sales},
         ]
         if tax > 0:
-            lines.append(JournalEntryLine(
-                journal_entry=entry, account=tax_account, entry_type='CREDIT', amount=tax,
-            ))
+            lines.append({'account': tax_account, 'entry_type': 'CREDIT', 'amount': tax})
         if discount > 0:
-            lines.append(JournalEntryLine(
-                journal_entry=entry, account=disc_account, entry_type='DEBIT', amount=discount,
-            ))
-        JournalEntryLine.objects.bulk_create(lines)
+            lines.append({'account': disc_account, 'entry_type': 'DEBIT', 'amount': discount})
+
+        entry = post_journal_entry(
+            company=company,
+            date=inv.transaction_date or _date.today(),
+            description=description,
+            lines=lines,
+        )
 
         logger.info("post_invoice_journal (ORM) invoice=%s journal_entry=%s", invoice_id, entry.id)
         return entry.id
@@ -154,7 +150,7 @@ def _post_payment_journal_orm(payment_id: UUID | str) -> UUID:
     """
     from django.db import transaction as db_transaction
     from apps.payments.models import Payment
-    from apps.bookkeeping.models import JournalEntry, JournalEntryLine, LedgerAccount
+    from apps.bookkeeping.models import LedgerAccount, post_journal_entry
 
     def _ledger(company, name):
         return LedgerAccount.objects.filter(company=company, name=name, is_deleted=False).first()
@@ -204,15 +200,15 @@ def _post_payment_journal_orm(payment_id: UUID | str) -> UUID:
                 f"Destination ledger account not found for payment {payment_id} type={pay.payment_type}"
             )
 
-        entry = JournalEntry.objects.create(
+        entry = post_journal_entry(
             company=company,
             date=pay.date,
             description=description,
+            lines=[
+                {'account': cash_bank, 'entry_type': 'DEBIT', 'amount': pay.amount},
+                {'account': dest, 'entry_type': 'CREDIT', 'amount': pay.amount},
+            ],
         )
-        JournalEntryLine.objects.bulk_create([
-            JournalEntryLine(journal_entry=entry, account=cash_bank, entry_type='DEBIT',  amount=pay.amount),
-            JournalEntryLine(journal_entry=entry, account=dest,      entry_type='CREDIT', amount=pay.amount),
-        ])
 
         Payment.objects.filter(pk=payment_id).update(
             journal_entry=entry,

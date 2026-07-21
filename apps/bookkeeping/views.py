@@ -5,9 +5,11 @@ from django.urls import reverse_lazy
 from django.db.models import Q, Sum, Case, When, Value, DecimalField
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.db import transaction
 from datetime import datetime, date
 from decimal import Decimal
-from .models import JournalEntry, LedgerAccount, JournalEntryLine, LedgerOpeningBalance
+from .models import JournalEntry, LedgerAccount, JournalEntryLine, LedgerOpeningBalance, post_journal_entry
 from ..utils.constant import RUPEE
 from ..utils.mixins import AuthMixin
 from ..utils.nepali_date import bs_str_to_ad, ad_date_to_bs_str
@@ -315,6 +317,7 @@ class LedgerReportView(AuthMixin, View):
         
         return render(request, self.template_name, context)
 
+    @method_decorator(transaction.atomic)
     def post(self, request, account_id):
         """HTMX POST — set opening balance and create journal entry."""
         from django.contrib import messages
@@ -364,28 +367,16 @@ class LedgerReportView(AuthMixin, View):
         )
 
         if contra:
-            journal = JournalEntry.objects.create(
+            counter_type = 'CREDIT' if opening_type == 'DEBIT' else 'DEBIT'
+            post_journal_entry(
                 company=account.company,
                 date=entry_date,
                 description=f"Opening Balance – {account.name}",
+                lines=[
+                    {'account': account, 'entry_type': opening_type, 'amount': amount, 'narration': 'Opening Balance'},
+                    {'account': contra, 'entry_type': counter_type, 'amount': amount, 'narration': 'Opening Balance'},
+                ],
             )
-            counter_type = 'CREDIT' if opening_type == 'DEBIT' else 'DEBIT'
-            JournalEntryLine.objects.bulk_create([
-                JournalEntryLine(
-                    journal_entry=journal,
-                    account=account,
-                    entry_type=opening_type,
-                    amount=amount,
-                    narration="Opening Balance",
-                ),
-                JournalEntryLine(
-                    journal_entry=journal,
-                    account=contra,
-                    entry_type=counter_type,
-                    amount=amount,
-                    narration="Opening Balance",
-                ),
-            ])
             messages.success(
                 request,
                 f"Opening balance of {amount} ({opening_type}) set and journal entry created."
