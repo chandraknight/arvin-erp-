@@ -96,6 +96,8 @@ urlpatterns = [
          views.export_stock_movement_report_pdf, name='export_stock_movement_report_pdf'),
     path('products/stock-movement/print/',
          views.print_stock_movement_report, name='print_stock_movement_report'),
+    path('products/stock-valuation/', views.stock_valuation_report,
+         name='stock_valuation_report'),
     path('customers/acquisition/', views.customer_acquisition_report,
          name='customer_acquisition_report'),
     path('purchasing/purchase-order-list/',
@@ -171,6 +173,23 @@ urlpatterns = [
          name='ap_aging_report'),
     path('financial/ap-aging/export/excel/', views.export_ap_aging_excel,
          name='export_ap_aging_excel'),
+
+    path('financial/debtors-creditors/', views.debtors_creditors_report,
+         name='debtors_creditors_report'),
+
+    path('bookkeeping/cash-book/', views.cash_book_report,
+         name='cash_book_report'),
+    path('bookkeeping/bank-book/', views.bank_book_report,
+         name='bank_book_report'),
+    path('bookkeeping/party-ledger/', views.party_ledger_report,
+         name='party_ledger_report'),
+    path('bookkeeping/general-ledger/', views.general_ledger_report,
+         name='general_ledger_report'),
+
+    path('tax/vat-sales-register/', views.vat_sales_register,
+         name='vat_sales_register'),
+    path('tax/vat-purchase-register/', views.vat_purchase_register,
+         name='vat_purchase_register'),
 
     path('financial/tax-report/', views.tax_report,
          name='tax_report'),

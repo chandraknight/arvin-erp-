@@ -68,11 +68,11 @@
                 {% endif %}
                 {% if user.is_company_admin or user|group_has_perm:'billing.view_creditnote' %}
                 <a href="{% url 'billing:credit_note_list' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-list nav-icon"></i>Credit Notes (Sales Returns)</a>
+                    ><i class="fas fa-undo-alt nav-icon"></i>Sales Returns</a>
                 {% endif %}
                 {% if user.is_company_admin or user|group_has_perm:'billing.add_creditnote' %}
                 <a href="{% url 'billing:credit_note_create' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-undo-alt nav-icon"></i>Add Credit Note</a>
+                    ><i class="fas fa-plus nav-icon"></i>New Sales Return</a>
                 {% endif %}
 
             </div>
@@ -128,11 +128,11 @@
                 {% endif %}
                 {% if user.is_company_admin or user|group_has_perm:'billing.view_debitnote' %}
                 <a href="{% url 'billing:debit_note_list' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-list nav-icon"></i>Debit Notes (Purchase Returns)</a>
+                    ><i class="fas fa-undo-alt nav-icon"></i>Purchase Returns</a>
                 {% endif %}
                 {% if user.is_company_admin or user|group_has_perm:'billing.add_debitnote' %}
                 <a href="{% url 'billing:debit_note_create' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-receipt nav-icon"></i>Add Debit Note</a>
+                    ><i class="fas fa-plus nav-icon"></i>New Purchase Return</a>
                 {% endif %}
             </div>
         </div>
@@ -362,85 +362,15 @@
                 <a href="{% url 'reports:report_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-tachometer-alt nav-icon"></i>Dashboard</a>
 
-                <p class="section-sublabel">Financial</p>
-                <a href="{% url 'reports:profit_and_loss_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-file-invoice-dollar nav-icon"></i>Profit & Loss</a>
-                <a href="{% url 'reports:balance_sheet_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-balance-scale nav-icon"></i>Balance Sheet</a>
-                <a href="{% url 'reports:cash_flow_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-water nav-icon"></i>Cash Flow</a>
-                <a href="{% url 'reports:trial_balance_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-balance-scale-left nav-icon"></i>Trial Balance</a>
-                <a href="{% url 'reports:tax_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-receipt nav-icon"></i>Tax / VAT</a>
-                <a href="{% url 'reports:vat_period_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-calendar-check nav-icon"></i>VAT Filing Periods</a>
-                <a href="{% url 'reports:cash_position_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-wallet nav-icon"></i>Cash Position</a>
-                <a href="{% url 'reports:ratio_analysis_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-percentage nav-icon"></i>Ratio Analysis</a>
-
-                {% if user.is_superuser or user.company and user.company.enable_order_management %}
-                <p class="section-sublabel">Sales</p>
-                <a href="{% url 'reports:detailed_sales_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-chart-line nav-icon"></i>Sales Report</a>
-                <a href="{% url 'reports:outstanding_invoices_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-file-invoice nav-icon"></i>Outstanding Invoices</a>
-                <a href="{% url 'reports:payment_history_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-money-bill-wave nav-icon"></i>Payment History</a>
-                <a href="{% url 'reports:ar_aging_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-hourglass-half nav-icon"></i>A/R Aging</a>
-                <a href="{% url 'reports:customer_acquisition_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-user-plus nav-icon"></i>Customer Acquisition</a>
-                <a href="{% url 'reports:referral_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-handshake nav-icon"></i>Referral Report</a>
-                <a href="{% url 'reports:debit_credit_note_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-receipt nav-icon"></i>Debit/Credit Notes</a>
-                <a href="{% url 'reports:profitability_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-percentage nav-icon"></i>Profitability</a>
+                {% for section in sidebar_report_sections %}
+                {% if section.name != 'Manufacturing' and section.name != 'Tours & Travel' and section.name != 'Projects' %}
+                <p class="section-sublabel">{{ section.name }}</p>
+                {% for report in section.reports %}
+                <a href="{% url report.url_name %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="{{ report.icon }} nav-icon"></i>{{ report.label }}</a>
+                {% endfor %}
                 {% endif %}
-
-                {% if user.is_superuser or user.company and user.company.enable_inventory %}
-                <p class="section-sublabel">Inventory</p>
-                <a href="{% url 'reports:inventory_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-boxes nav-icon"></i>Inventory</a>
-                <a href="{% url 'reports:stock_movement_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-exchange-alt nav-icon"></i>Stock Movement</a>
-                <a href="{% url 'reports:product_sales_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-box nav-icon"></i>Product Sales</a>
-                <a href="{% url 'reports:cogs_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-calculator nav-icon"></i>COGS</a>
-                {% endif %}
-
-                {% if user.is_superuser or user.company and user.company.enable_purchasing %}
-                <p class="section-sublabel">Purchasing</p>
-                <a href="{% url 'reports:purchase_order_list_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-file-signature nav-icon"></i>Purchase Orders</a>
-                <a href="{% url 'reports:vendor_bill_list_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-file-invoice nav-icon"></i>Vendor Bills</a>
-                <a href="{% url 'reports:vendor_payment_list_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-money-check-alt nav-icon"></i>Vendor Payments</a>
-                <a href="{% url 'reports:ap_aging_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-hourglass-half nav-icon"></i>AP Aging</a>
-                {% endif %}
-
-                <p class="section-sublabel">Bookkeeping</p>
-                <a href="{% url 'reports:daybook_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-calendar-day nav-icon"></i>Day Book</a>
-                <a href="{% url 'reports:ledger_account_list_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-book nav-icon"></i>Ledger Accounts</a>
-                <a href="{% url 'reports:journal_entry_list_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-book-open nav-icon"></i>Journal Entries</a>
-                <a href="{% url 'reports:payment_list_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-list nav-icon"></i>Payment List</a>
-                <a href="{% url 'reports:fiscal_year_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-calendar-check nav-icon"></i>Fiscal Year</a>
-
-                {% if user.is_superuser or user.company and user.company.enable_hr_payroll %}
-                <p class="section-sublabel">HR & Payroll</p>
-                <a href="{% url 'reports:payroll_summary_report' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-users nav-icon"></i>Payroll Summary</a>
-                {% endif %}
+                {% endfor %}
 
                 {% if user.is_superuser or user.company and user.company.enable_project_tracking %}
                 <p class="section-sublabel">Projects</p>
@@ -482,8 +412,6 @@
                     ><i class="fas fa-paint-brush nav-icon"></i>Content (CMS)</a>
                 <a href="{% url 'ecom:coupon_list' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-tag nav-icon"></i>Discount Coupons</a>
-                <a href="{% url 'ecom:cms_newsletter_list' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-envelope-open-text nav-icon"></i>Newsletter Subscribers</a>
                 <a href="/store/" target="_blank" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-external-link-alt nav-icon"></i>View Store</a>
             </div>
@@ -706,7 +634,15 @@
 <style>
 /* ── Sidebar shell ── */
 #main-sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
-@media (min-width: 768px) { #main-sidebar { transform: translateX(0) !important; } }
+@media (min-width: 768px) {
+    #main-sidebar { transform: translateX(0); }
+    body.sidebar-collapsed #main-sidebar {
+        transform: translateX(-100%) !important;
+    }
+    body.sidebar-collapsed .app-shell-content {
+        margin-left: 0 !important;
+    }
+}
 #main-sidebar.sidebar-open { transform: translateX(0); }
 
 /* ── Dashboard pill ── */

@@ -46,6 +46,31 @@
     </div>
   </div>
 
+  {% if user.is_superuser %}
+  <!-- Upload a dump file to restore -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+    <form method="post" action="{% url 'backup:backup_upload' %}" enctype="multipart/form-data"
+          class="flex flex-wrap items-center gap-3">
+      {% csrf_token %}
+      <div class="flex-shrink-0">
+        <div class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <i class="fas fa-upload text-gray-400"></i> Upload a dump to restore
+        </div>
+        <div class="text-xs text-gray-400">PostgreSQL .dump (pg_dump -F c) or MySQL .sql — max 2 GB.</div>
+      </div>
+      <input type="file" name="dump_file" accept=".dump,.sql" required
+             class="flex-1 min-w-[220px] text-sm text-gray-600 border border-gray-200 rounded-lg px-3 py-2 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+      <button type="submit"
+              class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm">
+        <i class="fas fa-upload" style="font-size:11px;color:#fff;"></i> Upload
+      </button>
+    </form>
+    <p class="text-xs text-gray-400 mt-2">
+      Uploading only stores the file — it lists below like any other backup. Nothing is restored until you click <strong>Restore</strong> on it and confirm.
+    </p>
+  </div>
+  {% endif %}
+
   <!-- Flash messages -->
   {% for message in messages %}
   <div class="flex items-start gap-2 px-4 py-3 rounded-lg text-sm font-medium border

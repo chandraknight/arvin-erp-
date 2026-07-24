@@ -15,6 +15,7 @@ from .services import (
     delete_backup,
     restore_company_backup,
     restore_full_backup,
+    save_uploaded_backup,
 )
 
 
@@ -61,6 +62,34 @@ def backup_create(request):
             messages.success(request, f"Backup for {company.name} completed successfully.")
     except Exception as exc:
         messages.error(request, f"Backup failed: {exc}")
+
+    return redirect('backup:backup_list')
+
+
+@login_required
+@require_POST
+def backup_upload(request):
+    # Uploaded dumps are fed straight into pg_restore/mysql against the live
+    # database — same trust level as triggering a full backup/restore, so
+    # this is superuser-only, no exceptions.
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
+    uploaded_file = request.FILES.get('dump_file')
+    if not uploaded_file:
+        messages.error(request, "Choose a .dump or .sql file to upload.")
+        return redirect('backup:backup_list')
+
+    try:
+        record = save_uploaded_backup(uploaded_file, request.user)
+        messages.success(
+            request,
+            f"'{record.file_name}' uploaded. Review it and click Restore when ready."
+        )
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    except Exception as exc:
+        messages.error(request, f"Upload failed: {exc}")
 
     return redirect('backup:backup_list')
 

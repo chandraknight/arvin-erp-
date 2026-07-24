@@ -113,6 +113,21 @@ class JournalEntry(BaseModel):
         return self.debit_total - self.credit_total
 
 
+def assert_balanced(entry):
+    """
+    Raise ValueError if the given JournalEntry's debit and credit totals
+    don't match within BALANCE_TOLERANCE. ORM-level backstop used by callers
+    that build entries outside post_journal_entry (e.g. bulk_create), and by
+    non-Postgres backends where the DB-level trigger isn't present.
+    """
+    debit = entry.debit_total
+    credit = entry.credit_total
+    if abs(debit - credit) > BALANCE_TOLERANCE:
+        raise ValueError(
+            f"Unbalanced journal entry (id={entry.pk}): debit={debit} credit={credit}."
+        )
+
+
 def post_journal_entry(company, date, description, lines, created_by=None):
     """
     Single, safe entry point for posting a balanced double-entry transaction.

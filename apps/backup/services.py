@@ -155,12 +155,19 @@ def _pg_restore(db, fpath):
         '--clean',
         '--if-exists',
         '--no-owner',
+        # Run the whole restore as one transaction: if anything fails partway
+        # through, Postgres rolls back everything instead of leaving the
+        # database half-dropped/half-restored (which is what silently broke
+        # login/sessions after a bad upload previously — --clean had already
+        # dropped tables before the failure, and nothing rolled it back).
+        '--single-transaction',
         fpath,
     ]
     result = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=600)
-    # pg_restore exits non-zero for warnings with --clean; only fail on ERROR lines
-    if result.returncode != 0 and 'ERROR' in result.stderr:
-        raise RuntimeError(f"pg_restore failed: {result.stderr.strip()}")
+    # With --single-transaction, a non-zero exit reliably means the whole
+    # restore was rolled back — no more guessing from stderr wording.
+    if result.returncode != 0:
+        raise RuntimeError(f"pg_restore failed (rolled back, no changes applied): {result.stderr.strip()}")
 
 
 def _mysql_backup(db, fpath):
@@ -285,3 +292,57 @@ def delete_backup(record):
     if record.file_path and os.path.exists(record.file_path):
         os.remove(record.file_path)
     record.delete()
+
+
+# Extensions accepted for an uploaded full-DB dump, mapped to the restore
+# engine that will handle them (matches restore_full_backup's own detection).
+UPLOAD_EXTENSIONS = {'.dump': 'postgresql', '.sql': 'mysql'}
+MAX_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024  # 2 GB
+
+
+def save_uploaded_backup(uploaded_file, user):
+    """
+    Persist an admin-uploaded dump file as a FULL BackupRecord so it can go
+    through the existing (confirm-then-restore) restore flow untouched.
+    Never trusts the uploaded filename beyond its extension — writes under a
+    freshly generated name to avoid path traversal / overwrite tricks.
+    """
+    ext = os.path.splitext(uploaded_file.name)[1].lower()
+    if ext not in UPLOAD_EXTENSIONS:
+        raise ValueError(
+            f"Unsupported file type '{ext or '(none)'}'. Upload a PostgreSQL "
+            f".dump (from pg_dump -F c) or MySQL .sql file."
+        )
+    if uploaded_file.size > MAX_UPLOAD_SIZE:
+        raise ValueError(f"File too large ({uploaded_file.size / (1024**3):.2f} GB). Max is 2 GB.")
+
+    engine = UPLOAD_EXTENSIONS[ext]
+    record = BackupRecord.objects.create(
+        backup_type='FULL',
+        file_name='',
+        file_path='',
+        status='PENDING',
+        created_by=user,
+        notes=f'{engine} (uploaded)',
+    )
+    try:
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        fname = f"uploaded_{ts}{ext}"
+        dest = _ensure_backup_dir('full')
+        fpath = os.path.join(dest, fname)
+
+        with open(fpath, 'wb') as out:
+            for chunk in uploaded_file.chunks():
+                out.write(chunk)
+
+        record.file_name = fname
+        record.file_path = fpath
+        record.file_size = os.path.getsize(fpath)
+        record.status = 'COMPLETED'
+        record.save(update_fields=['file_name', 'file_path', 'file_size', 'status'])
+    except Exception as exc:
+        record.status = 'FAILED'
+        record.notes = str(exc)
+        record.save(update_fields=['status', 'notes'])
+        raise
+    return record

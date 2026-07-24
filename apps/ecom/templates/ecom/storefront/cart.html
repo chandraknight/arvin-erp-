@@ -5,161 +5,155 @@
 
 {% block content %}
 
+{% comment %}
+Shared product-thumbnail macro-ish block: real product image if present,
+otherwise the store logo (falls back to the brand mark if no logo is set).
+{% endcomment %}
 
-<section class="section-box shop-template mt-15 mb-15">
+<section style="padding:28px 0;">
   <div class="container">
     {% if cart_items %}
-    <div class="row">
+    <h1 style="font-size:22px;font-weight:800;color:#1c1917;margin:0 0 18px;">Your Cart</h1>
+    <div class="row" style="row-gap:20px;">
 
-      {# Left: cart table #}
-      <div class="col-lg-8 mb-40">
-        <div class="table-responsive">
-          <table class="table shopping-summery">
-            <thead>
-              <tr class="main-heading">
-                <th class="start pl-30">Product</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Subtotal</th>
-                <th class="end">Remove</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in cart_items %}
-              <tr>
-                {# Product image + name #}
-                <td class="image product-thumbnail pl-30">
-                  <div class="d-flex align-items-center">
-                    {% with item.product.images.first as img %}
-                    {% if img %}
-                      <img src="{{ img.image.url }}" alt="{{ item.product.name }}"
-                           style="width:80px;height:80px;object-fit:cover;border-radius:4px;margin-right:15px;flex-shrink:0;">
-                    {% else %}
-                      <img src="{% static 'ecom/assets/imgs/template/devices.svg' %}" alt="{{ item.product.name }}"
-                           style="width:80px;height:80px;object-fit:contain;padding:10px;border-radius:4px;margin-right:15px;background:#f8f8fb;flex-shrink:0;">
-                    {% endif %}
-                    {% endwith %}
-                    <div>
-                      <a class="color-brand-3 font-sm-bold" href="{% url 'ecom:product_detail' item.product.id %}">
-                        {{ item.product.name }}
-                      </a>
-                      {% if item.product.category %}
-                      <br><span class="font-xs color-gray-500">{{ item.product.category.name }}</span>
-                      {% endif %}
-                    </div>
-                  </div>
-                </td>
+      {# Left: cart items #}
+      <div class="col-lg-8">
 
-                {# Price #}
-                <td class="price" data-title="Price">
-                  <span class="font-md color-brand-3 font-medium">Rs.{{ item.product.price|floatformat:"2" }}</span>
-                </td>
-
-                {# Quantity: DPSdabu input-quantity stepper + update form #}
-                <td data-title="Quantity">
-                  <form method="post" action="{% url 'ecom:update_cart' item.product.id %}"
-                        class="d-flex align-items-center" style="gap:8px;">
-                    {% csrf_token %}
-                    <div class="input-quantity" style="display:inline-flex;align-items:center;">
-                      <span class="minus-cart" style="cursor:pointer;"></span>
-                      <input class="font-xl color-brand-3 text-center" type="text"
-                             name="quantity" value="{{ item.quantity }}"
-                             style="width:50px;border:none;text-align:center;background:transparent;">
-                      <span class="plus-cart" style="cursor:pointer;"></span>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-buy">Update</button>
-                  </form>
-                </td>
-
-                {# Line subtotal #}
-                <td class="price" data-title="Subtotal">
-                  <span class="font-md color-brand-3 font-medium">Rs.{{ item.line_total|floatformat:"2" }}</span>
-                </td>
-
-                {# Remove #}
-                <td class="action" data-title="Remove">
-                  <form method="post" action="{% url 'ecom:remove_from_cart' item.product.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-delete" title="Remove item"></button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        {# Package groups — removable only as a whole, not item-by-item #}
+        {% for group in bundle_groups %}
+        <div style="border:1.5px solid #f3c988;border-radius:12px;margin-bottom:14px;overflow:hidden;background:#fff;">
+          <div style="background:#fdf6ee;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#D97706;">Package</span>
+              <div style="font-size:14px;font-weight:700;color:#6b0000;">{{ group.name }}</div>
+            </div>
+            <form method="post" action="{% url 'ecom:remove_bundle_from_cart' group.package_id %}">
+              {% csrf_token %}
+              <button type="submit" title="Remove whole package"
+                style="background:transparent;border:1px solid #dc2626;color:#dc2626;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+                Remove Package
+              </button>
+            </form>
+          </div>
+          <div>
+            {% for item in group.items %}
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;{% if not forloop.last %}border-bottom:1px solid #f5f0e8;{% endif %}">
+              {% with img=item.product.images.first %}
+              {% if img %}
+                <img src="{{ img.image.url }}" alt="{{ item.product.name }}"
+                     style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;">
+              {% elif cms.logo %}
+                <img src="{{ cms.logo.url }}" alt="{{ item.product.name }}"
+                     style="width:44px;height:44px;object-fit:contain;border-radius:8px;background:#fdf6ee;padding:6px;flex-shrink:0;">
+              {% else %}
+                <div style="width:44px;height:44px;border-radius:8px;background:#800000;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🙏</div>
+              {% endif %}
+              {% endwith %}
+              <a href="{% url 'ecom:product_detail' item.product.id %}" style="flex:1;font-size:13px;font-weight:600;color:#1c1917;text-decoration:none;">{{ item.product.name }}</a>
+              <span style="font-size:13px;color:#78716c;width:50px;text-align:center;flex-shrink:0;">× {{ item.quantity }}</span>
+              <span style="font-size:13px;font-weight:700;color:#6b0000;width:70px;text-align:right;flex-shrink:0;">Rs.{{ item.line_total|floatformat:"2" }}</span>
+            </div>
+            {% endfor %}
+          </div>
         </div>
+        {% endfor %}
 
-        <div class="divider-2 mb-30 mt-10"></div>
-        <div class="cart-action d-flex justify-content-between align-items-center">
-          <a href="{% url 'ecom:product_list' %}" class="btn btn-md">← Continue Shopping</a>
+        {# Standalone items #}
+        {% if standalone_items %}
+        <div style="border:1px solid #eee;border-radius:12px;overflow:hidden;background:#fff;">
+          {% for item in standalone_items %}
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;{% if not forloop.last %}border-bottom:1px solid #f5f0e8;{% endif %}">
+            {% with img=item.product.images.first %}
+            {% if img %}
+              <img src="{{ img.image.url }}" alt="{{ item.product.name }}"
+                   style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;">
+            {% elif cms.logo %}
+              <img src="{{ cms.logo.url }}" alt="{{ item.product.name }}"
+                   style="width:52px;height:52px;object-fit:contain;border-radius:8px;background:#fdf6ee;padding:8px;flex-shrink:0;">
+            {% else %}
+              <div style="width:52px;height:52px;border-radius:8px;background:#800000;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🙏</div>
+            {% endif %}
+            {% endwith %}
+
+            <div style="flex:1;min-width:0;">
+              <a href="{% url 'ecom:product_detail' item.product.id %}" style="font-size:13px;font-weight:600;color:#1c1917;text-decoration:none;">{{ item.product.name }}</a>
+              {% if item.product.category %}
+              <div style="font-size:11px;color:#a8a29e;">{{ item.product.category.name }}</div>
+              {% endif %}
+            </div>
+
+            <span style="font-size:13px;color:#57534e;width:64px;flex-shrink:0;">Rs.{{ item.product.price|floatformat:"2" }}</span>
+
+            <form method="post" action="{% url 'ecom:update_cart' item.product.id %}"
+                  class="cart-stepper" style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+              {% csrf_token %}
+              <div class="input-quantity">
+                <span class="minus-cart"></span>
+                <input type="text" name="quantity" value="{{ item.quantity }}">
+                <span class="plus-cart"></span>
+              </div>
+              <button type="submit" style="font-size:11px;font-weight:700;color:#800000;background:none;border:none;cursor:pointer;padding:4px 6px;">Update</button>
+            </form>
+
+            <span style="font-size:13px;font-weight:700;color:#6b0000;width:70px;text-align:right;flex-shrink:0;">Rs.{{ item.line_total|floatformat:"2" }}</span>
+
+            <form method="post" action="{% url 'ecom:remove_from_cart' item.product.id %}" style="flex-shrink:0;">
+              {% csrf_token %}
+              <button type="submit" title="Remove item"
+                style="background:none;border:none;color:#a8a29e;cursor:pointer;font-size:16px;line-height:1;padding:4px;"
+                onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#a8a29e'">✕</button>
+            </form>
+          </div>
+          {% endfor %}
         </div>
+        {% endif %}
+
+        <a href="{% url 'ecom:product_list' %}" style="display:inline-block;margin-top:16px;font-size:13px;font-weight:600;color:#800000;text-decoration:none;">← Continue Shopping</a>
       </div>
 
       {# Right: totals + checkout #}
       <div class="col-lg-4">
-        <div class="border p-md-4 cart-totals">
-          <div class="table-responsive">
-            <table class="table no-border">
-              <tbody>
-                <tr>
-                  <td class="cart_total_label">
-                    <h6 class="color-gray-600 font-sm">Subtotal</h6>
-                  </td>
-                  <td class="cart_total_amount text-end">
-                    <h5 class="color-brand-3 font-md-bold">Rs.<span id="cart-subtotal">{{ subtotal|floatformat:"2" }}</span></h5>
-                  </td>
-                </tr>
-                {# Coupon row — hidden until applied #}
-                <tr id="cart-discount-row" style="display:none;">
-                  <td class="cart_total_label">
-                    <h6 class="font-sm" style="color:#3bb77e;">Discount (<span id="cart-coupon-label"></span>)</h6>
-                  </td>
-                  <td class="cart_total_amount text-end">
-                    <h6 class="font-sm-bold" style="color:#3bb77e;">- Rs.<span id="cart-discount-amt">0</span></h6>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="cart_total_label">
-                    <h6 class="color-gray-600 font-sm">Delivery Charge</h6>
-                  </td>
-                  <td class="cart_total_amount text-end">
-                    {% if delivery_charge %}
-                    <span class="font-sm color-brand-3">Rs.{{ delivery_charge|floatformat:"0" }}</span>
-                    {% else %}
-                    <span class="font-sm color-success">Free</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% if delivery_charge and free_shipping_threshold %}
-                <tr>
-                  <td colspan="2" style="font-size:11px;color:#888;padding-top:2px;">
-                    Free delivery on orders above Rs.{{ free_shipping_threshold }}
-                  </td>
-                </tr>
-                {% endif %}
-                <tr>
-                  <td class="cart_total_label">
-                    <h6 class="color-gray-600 font-sm-bold">Total</h6>
-                  </td>
-                  <td class="cart_total_amount text-end">
-                    <h4 class="color-brand-3 font-xl-bold">Rs.<span id="cart-total">{{ order_total|floatformat:"2" }}</span></h4>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        <div style="border:1px solid #eee;border-radius:12px;padding:18px;background:#fff;position:sticky;top:84px;">
+
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#57534e;margin-bottom:10px;">
+            <span>Subtotal</span>
+            <span style="font-weight:700;color:#1c1917;">Rs.<span id="cart-subtotal">{{ subtotal|floatformat:"2" }}</span></span>
           </div>
 
-          {# Coupon input #}
-          <div class="mb-15">
-            <div class="d-flex gap-2">
-              <input type="text" id="cart-coupon-input" placeholder="Have a coupon?" style="flex:1;padding:7px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
-              <button type="button" onclick="cartApplyCoupon()" style="padding:7px 14px;background:#3bb77e;color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;">Apply</button>
-            </div>
-            <div id="cart-coupon-msg" style="font-size:12px;margin-top:4px;"></div>
+          <div id="cart-discount-row" style="display:none;justify-content:space-between;font-size:13px;color:#3bb77e;margin-bottom:10px;">
+            <span>Discount (<span id="cart-coupon-label"></span>)</span>
+            <span style="font-weight:700;">− Rs.<span id="cart-discount-amt">0</span></span>
           </div>
 
-          <a class="btn btn-md btn-buy w-100 text-center mt-20"
-             href="{% url 'ecom:checkout' %}">Proceed To CheckOut →</a>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#57534e;margin-bottom:4px;">
+            <span>Delivery Charge</span>
+            {% if delivery_charge %}
+            <span style="color:#1c1917;">Rs.{{ delivery_charge|floatformat:"0" }}</span>
+            {% else %}
+            <span style="color:#16a34a;font-weight:600;">Free</span>
+            {% endif %}
+          </div>
+          {% if delivery_charge and free_shipping_threshold %}
+          <div style="font-size:11px;color:#a8a29e;margin-bottom:10px;">Free delivery on orders above Rs.{{ free_shipping_threshold }}</div>
+          {% endif %}
+
+          <div style="border-top:1px solid #f0ede9;margin:12px 0;padding-top:12px;display:flex;justify-content:space-between;align-items:baseline;">
+            <span style="font-size:13px;font-weight:700;color:#1c1917;">Total</span>
+            <span style="font-size:20px;font-weight:800;color:#6b0000;">Rs.<span id="cart-total">{{ order_total|floatformat:"2" }}</span></span>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:6px;">
+            <input type="text" id="cart-coupon-input" placeholder="Have a coupon?"
+                   style="flex:1;padding:8px 10px;border:1px solid #e7e5e4;border-radius:8px;font-size:12px;">
+            <button type="button" onclick="cartApplyCoupon()"
+              style="padding:8px 14px;background:#3bb77e;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Apply</button>
+          </div>
+          <div id="cart-coupon-msg" style="font-size:11px;margin-bottom:10px;"></div>
+
+          <a href="{% url 'ecom:checkout' %}"
+             style="display:block;width:100%;text-align:center;background:#800000;color:#fff;padding:13px 0;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">
+            Proceed To Checkout →
+          </a>
         </div>
       </div>
 
@@ -179,7 +173,7 @@
             document.getElementById('cart-coupon-label').textContent = code;
             document.getElementById('cart-discount-amt').textContent = parseFloat(data.discount).toFixed(2);
             document.getElementById('cart-total').textContent = (parseFloat(data.final_total) + _cartDelivery).toFixed(2);
-            document.getElementById('cart-discount-row').style.display = '';
+            document.getElementById('cart-discount-row').style.display = 'flex';
             msgEl.style.color = '#3bb77e';
             msgEl.textContent = '✓ Coupon valid! Apply it at checkout.';
           } else {
@@ -194,11 +188,12 @@
 
     </div>
     {% else %}
-    <div class="cart-empty-state text-center">
+    <div style="text-align:center;padding:60px 0;">
       <img src="{% static 'ecom/assets/imgs/template/cart.svg' %}" alt=""
            style="height:70px;opacity:0.3;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto;">
-      <h3 class="color-gray-500 mb-20">Your cart is empty</h3>
-      <a href="{% url 'ecom:product_list' %}" class="btn btn-brand-2">Start Shopping</a>
+      <h3 style="color:#78716c;font-size:18px;margin-bottom:20px;">Your cart is empty</h3>
+      <a href="{% url 'ecom:product_list' %}"
+         style="display:inline-block;background:#800000;color:#fff;padding:11px 24px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">Start Shopping</a>
     </div>
     {% endif %}
   </div>
@@ -208,18 +203,22 @@
 
 {% block extra_js %}
 <script>
-$(document).ready(function () {
+document.addEventListener('click', function (e) {
   // +/- quantity inside cart rows
-  $('.plus-cart').on('click', function () {
-    var $input = $(this).siblings('input[name="quantity"]');
-    var val = parseInt($input.val()) || 1;
-    $input.val(val + 1);
-  });
-  $('.minus-cart').on('click', function () {
-    var $input = $(this).siblings('input[name="quantity"]');
-    var val = parseInt($input.val()) || 1;
-    if (val > 1) $input.val(val - 1);
-  });
+  var plus = e.target.closest('.plus-cart');
+  var minus = e.target.closest('.minus-cart');
+  if (!plus && !minus) return;
+
+  var btn = plus || minus;
+  var input = btn.parentElement.querySelector('input[name="quantity"]');
+  if (!input) return;
+
+  var val = parseInt(input.value, 10) || 1;
+  if (plus) {
+    input.value = val + 1;
+  } else if (val > 1) {
+    input.value = val - 1;
+  }
 });
 </script>
 {% endblock %}

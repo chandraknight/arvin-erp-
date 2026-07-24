@@ -55,7 +55,7 @@
     <div class="print-header" style="display: none;">
         <h1>{{ request.user.company.name|default:"Company Name" }}</h1>
         <h2>Cash Flow Statement</h2>
-        <p>For the period ending {{ "now"|date:"M d, Y" }}</p>
+        <p>For the period ending {{ end_date_bs|default:"today" }}</p>
     </div>
 
     <!-- Date Filter Section -->
@@ -89,7 +89,7 @@
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900">Statement of Cash Flows</h3>
-            <p class="text-sm text-gray-600">For the period ending {{ "now"|date:"M d, Y" }}</p>
+            <p class="text-sm text-gray-600">For the period ending {{ end_date_bs|default:"today" }}</p>
         </div>
         
         <div class="p-6">

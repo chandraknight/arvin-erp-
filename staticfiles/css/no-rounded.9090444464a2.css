@@ -1,0 +1,122 @@
+/* =============================================================================
+   no-rounded.css  —  Remove ALL border-radius from the ERP theme
+   Strategy: target every element type AND every Tailwind class directly.
+   Using both approaches because:
+     - [class*="rounded"] only removes Tailwind-applied radius (class-based)
+     - Direct element selectors remove browser UA stylesheet defaults
+   ============================================================================= */
+
+/* ── 1. Universal reset — catches everything not covered below ───────────── */
+*,
+*::before,
+*::after {
+    border-radius: 0 !important;
+}
+
+/* ── 2. Explicit element targets (belt-and-suspenders for UA defaults) ────── */
+a,
+button,
+input,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="password"],
+input[type="date"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"],
+input[type="submit"],
+input[type="reset"],
+input[type="button"],
+select,
+textarea,
+label,
+span,
+div,
+section,
+article,
+aside,
+nav,
+header,
+footer,
+main,
+form,
+fieldset,
+table,
+thead,
+tbody,
+tfoot,
+tr,
+th,
+td,
+ul,
+li,
+p,
+h1, h2, h3, h4, h5, h6,
+img,
+svg,
+figure,
+blockquote,
+pre,
+code {
+    border-radius: 0 !important;
+}
+
+/* ── 3. Flatpickr ────────────────────────────────────────────────────────── */
+.flatpickr-calendar,
+.flatpickr-calendar *,
+.flatpickr-day,
+.flatpickr-day.selected,
+.flatpickr-day.today,
+.flatpickr-months,
+.flatpickr-month,
+.flatpickr-current-month,
+.flatpickr-time,
+.flatpickr-input,
+.flatpickr-wrapper {
+    border-radius: 0 !important;
+}
+
+/* ── 4. Select2 ──────────────────────────────────────────────────────────── */
+.select2,
+.select2 *,
+.select2-container,
+.select2-container *,
+.select2-dropdown,
+.select2-dropdown *,
+.select2-selection,
+.select2-selection *,
+.select2-results,
+.select2-results *,
+.select2-search,
+.select2-search * {
+    border-radius: 0 !important;
+}
+
+/* ── 5. Nepali datepicker ────────────────────────────────────────────────── */
+.nepali-datepicker,
+.nepali-datepicker *,
+.ndp-calendar,
+.ndp-calendar * {
+    border-radius: 0 !important;
+}
+
+/* ── 6. Webkit / browser UI chrome ──────────────────────────────────────── */
+::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-track,
+::-webkit-inner-spin-button,
+::-webkit-outer-spin-button,
+::-webkit-search-decoration,
+::-webkit-search-cancel-button {
+    border-radius: 0 !important;
+}
+
+/* ── 7. Focus rings — keep visible but square ────────────────────────────── */
+*:focus,
+*:focus-visible {
+    border-radius: 0 !important;
+    outline-offset: 1px;
+}

@@ -1,6 +1,6 @@
 <!-- reports/templates/reports/balance_sheet_report.html -->
 {% extends 'base.html' %}
-{% load static humanize %}
+{% load static humanize global_filter %}
 
 {% block title %}Balance Sheet Report{% endblock %}
 
@@ -14,7 +14,7 @@
         {% if fiscal_year %}
         <div class="alert alert-info mb-4">
             Showing balance sheet for fiscal year:
-            <strong>{{ fiscal_year.start_date }} to {{ fiscal_year.end_date }}</strong>
+            <strong>{{ fiscal_year.start_date_bs|default:fiscal_year.start_date }} to {{ fiscal_year.end_date_bs|default:fiscal_year.end_date }}</strong>
         </div>
         {% endif %}
 
@@ -35,7 +35,7 @@
             </div>
         </form>
 
-        <h2 class="text-2xl font-semibold mb-4 text-gray-700">As of {{ report_date|date:"Y-m-d" }}</h2>
+        <h2 class="text-2xl font-semibold mb-4 text-gray-700">As of {{ report_date_bs|default:report_date }}</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
@@ -50,12 +50,24 @@
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 text-sm font-light">
-                                {% for account in assets %}
+                                {% if current_assets %}
+                                <tr class="bg-gray-50"><td colspan="2" class="py-2 px-6 font-semibold text-left">Current Assets</td></tr>
+                                {% for account in current_assets %}
                                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                                         <td class="py-3 px-6 text-left whitespace-nowrap">{{ account.account.name }}</td>
                                         <td class="py-3 px-6 text-right whitespace-nowrap">{{ account.balance|floatformat:2|intcomma }}</td>
                                     </tr>
                                 {% endfor %}
+                                {% endif %}
+                                {% if noncurrent_assets %}
+                                <tr class="bg-gray-50"><td colspan="2" class="py-2 px-6 font-semibold text-left">Non-Current Assets</td></tr>
+                                {% for account in noncurrent_assets %}
+                                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                        <td class="py-3 px-6 text-left whitespace-nowrap">{{ account.account.name }}</td>
+                                        <td class="py-3 px-6 text-right whitespace-nowrap">{{ account.balance|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                {% endfor %}
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>
@@ -78,12 +90,24 @@
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 text-sm font-light">
-                                {% for account in liabilities %}
+                                {% if current_liabilities %}
+                                <tr class="bg-gray-50"><td colspan="2" class="py-2 px-6 font-semibold text-left">Current Liabilities</td></tr>
+                                {% for account in current_liabilities %}
                                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                                         <td class="py-3 px-6 text-left whitespace-nowrap">{{ account.account.name }}</td>
                                         <td class="py-3 px-6 text-right whitespace-nowrap">{{ account.balance|floatformat:2|intcomma }}</td>
                                     </tr>
                                 {% endfor %}
+                                {% endif %}
+                                {% if noncurrent_liabilities %}
+                                <tr class="bg-gray-50"><td colspan="2" class="py-2 px-6 font-semibold text-left">Non-Current Liabilities</td></tr>
+                                {% for account in noncurrent_liabilities %}
+                                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                        <td class="py-3 px-6 text-left whitespace-nowrap">{{ account.account.name }}</td>
+                                        <td class="py-3 px-6 text-right whitespace-nowrap">{{ account.balance|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                {% endfor %}
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>

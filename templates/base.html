@@ -202,12 +202,31 @@
 {% block extra_styles %}{% endblock %}
 </head>
 
-<body x-data="{ sidebarOpen: false, modalOpen: false }"
+<body x-data="{
+        sidebarOpen: false,
+        modalOpen: false,
+        desktopSidebarCollapsed: localStorage.getItem('desktop-sidebar-collapsed') === '1',
+        toggleDesktopSidebar() {
+            this.desktopSidebarCollapsed = !this.desktopSidebarCollapsed;
+            localStorage.setItem('desktop-sidebar-collapsed', this.desktopSidebarCollapsed ? '1' : '0');
+        }
+      }"
       x-effect="
         const s = document.getElementById('main-sidebar');
         if (s) { sidebarOpen ? s.classList.add('sidebar-open') : s.classList.remove('sidebar-open'); }
+        document.body.classList.toggle('sidebar-collapsed', desktopSidebarCollapsed);
       ">
 {% include "includes/sidebar.html" %}
+
+<button type="button"
+        id="desktop-sidebar-toggle"
+        class="hidden md:inline-flex fixed top-3 z-[60] h-10 w-10 items-center justify-center border border-gray-200 bg-white text-green-700 shadow-sm hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300"
+        :style="desktopSidebarCollapsed ? 'left: 0.75rem' : 'left: 16.75rem'"
+        @click="toggleDesktopSidebar()"
+        :aria-label="desktopSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'"
+        :title="desktopSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'">
+    <i class="fas" :class="desktopSidebarCollapsed ? 'fa-bars' : 'fa-angle-left'"></i>
+</button>
 
 <!-- HTMX global loading bar -->
 <div id="htmx-loading-bar"
@@ -249,7 +268,7 @@
     </div>
 </header>
 
-<div class="ml-0 md:ml-64 pt-16 md:pt-0 min-h-screen transition-all duration-300 bg-gray-50/50">
+<div id="app-shell-content" class="app-shell-content ml-0 md:ml-64 pt-16 md:pt-0 min-h-screen transition-all duration-300 bg-gray-50/50">
     {% include 'includes/toast.html' %}
     <main class="w-full max-w-none px-2 sm:px-4 lg:px-6">
         {% block content %}

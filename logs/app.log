@@ -13217,3 +13217,911 @@ WARNING 2026-07-21 09:27:14,174 log 5336 6248869888 Not Found: /apple-touch-icon
 WARNING 2026-07-21 09:27:14,172 log 5336 6232043520 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
 WARNING 2026-07-21 09:27:14,174 log 5336 6265696256 "GET /favicon.ico HTTP/1.1" 404 7431
 WARNING 2026-07-21 09:27:14,175 log 5336 6248869888 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-24 10:54:58,355 log 72761 6266466304 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-24 10:54:58,358 log 72761 6283292672 Not Found: /apple-touch-icon.png
+WARNING 2026-07-24 10:54:58,361 log 72761 6300119040 Not Found: /favicon.ico
+WARNING 2026-07-24 10:54:58,361 log 72761 6266466304 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-24 10:54:58,361 log 72761 6283292672 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-24 10:54:58,361 log 72761 6300119040 "GET /favicon.ico HTTP/1.1" 404 7431
+ERROR 2026-07-24 11:17:42,680 log 22390 6167949312 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:17:42,684 log 22390 6167949312 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:18:02,299 log 22390 6167949312 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:18:02,302 log 22390 6167949312 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:18:03,248 log 22390 6167949312 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:18:03,249 log 22390 6167949312 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:18:19,349 log 22390 6167949312 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:18:19,352 log 22390 6167949312 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:18:20,253 log 22390 6167949312 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:18:20,255 log 22390 6167949312 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:18:21,010 log 22390 6167949312 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:18:21,011 log 22390 6167949312 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:18:24,781 log 24354 6170521600 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:18:24,786 log 24354 6170521600 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:19:39,956 log 24354 6170521600 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:19:39,959 log 24354 6170521600 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:19:40,886 log 24354 6170521600 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:19:40,887 log 24354 6170521600 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:19:41,558 log 24354 6170521600 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:19:41,560 log 24354 6170521600 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:19:42,168 log 24354 6170521600 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:19:42,170 log 24354 6170521600 "GET /store/ HTTP/1.1" 500 4032
+ERROR 2026-07-24 11:19:43,818 log 24354 6170521600 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 144, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 116, in render
+    url = self.url(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 113, in url
+    return self.handle_simple(path)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/templatetags/static.py", line 129, in handle_simple
+    return staticfiles_storage.url(path)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 205, in url
+    return self._url(self.stored_name, name, force)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 184, in _url
+    hashed_name = hashed_name_func(*args)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/staticfiles/storage.py", line 524, in stored_name
+    raise ValueError(
+        "Missing staticfiles manifest entry for '%s'" % clean_name
+    )
+ValueError: Missing staticfiles manifest entry for 'ecom/assets/css/style.css'
+ERROR 2026-07-24 11:19:43,819 log 24354 6170521600 "GET /store/ HTTP/1.1" 500 4032
+WARNING 2026-07-24 14:54:21,875 log 87435 6138310656 Not Found: /store/this-does-not-exist/
+WARNING 2026-07-24 14:54:21,875 log 87435 6138310656 "GET /store/this-does-not-exist/ HTTP/1.1" 404 30892
+WARNING 2026-07-24 14:54:45,877 log 87435 6170816512 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
+WARNING 2026-07-24 14:54:48,507 log 87435 6137163776 Not Found: /store/this-does-not-exist/
+WARNING 2026-07-24 14:54:48,507 log 87435 6137163776 "GET /store/this-does-not-exist/ HTTP/1.1" 404 30892
+WARNING 2026-07-24 14:57:59,120 log 95390 6128611328 Not Found: /store/this-does-not-exist/
+WARNING 2026-07-24 14:57:59,120 log 95390 6128611328 "GET /store/this-does-not-exist/ HTTP/1.1" 404 15398
+WARNING 2026-07-24 14:58:05,615 log 95390 6128037888 Not Found: /store/this-does-not-exist/
+WARNING 2026-07-24 14:58:05,616 log 95390 6128037888 "GET /store/this-does-not-exist/ HTTP/1.1" 404 15398
+WARNING 2026-07-24 14:58:48,869 log 97200 6165442560 Not Found: /store/this-does-not-exist/
+WARNING 2026-07-24 14:58:48,869 log 97200 6165442560 "GET /store/this-does-not-exist/ HTTP/1.1" 404 15398
+WARNING 2026-07-24 14:59:13,425 log 87435 6137163776 Method Not Allowed (GET): /store/cart/add/0c4638b9-852c-43d9-b4f8-9037761dade0/
+WARNING 2026-07-24 14:59:13,426 log 87435 6137163776 "GET /store/cart/add/0c4638b9-852c-43d9-b4f8-9037761dade0/ HTTP/1.1" 405 0
+WARNING 2026-07-24 15:05:03,192 log 10474 6236499968 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
+WARNING 2026-07-24 15:05:45,010 log 10474 6202847232 Method Not Allowed (GET): /store/cart/add/0c4638b9-852c-43d9-b4f8-9037761dade0/
+WARNING 2026-07-24 15:05:45,011 log 10474 6202847232 "GET /store/cart/add/0c4638b9-852c-43d9-b4f8-9037761dade0/ HTTP/1.1" 405 0
+WARNING 2026-07-24 15:06:45,003 log 10474 6202847232 Method Not Allowed (GET): /store/cart/add/0c4638b9-852c-43d9-b4f8-9037761dade0/
+WARNING 2026-07-24 15:06:45,003 log 10474 6202847232 "GET /store/cart/add/0c4638b9-852c-43d9-b4f8-9037761dade0/ HTTP/1.1" 405 0
+WARNING 2026-07-24 15:08:03,385 log 10474 6219673600 Method Not Allowed (GET): /store/cart/add/0c4638b9-852c-43d9-b4f8-9037761dade0/
+WARNING 2026-07-24 15:08:03,385 log 10474 6219673600 "GET /store/cart/add/0c4638b9-852c-43d9-b4f8-9037761dade0/ HTTP/1.1" 405 0
+WARNING 2026-07-24 15:11:02,688 log 10474 6236499968 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
+WARNING 2026-07-24 15:11:13,681 log 10474 6236499968 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
+WARNING 2026-07-24 15:12:46,400 log 26842 6205075456 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
+WARNING 2026-07-24 15:28:28,546 log 60589 6136623104 Method Not Allowed (GET): /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/
+WARNING 2026-07-24 15:28:28,549 log 60589 6136623104 "GET /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/ HTTP/1.1" 405 0
+WARNING 2026-07-24 15:28:48,605 log 60589 6136623104 Method Not Allowed (GET): /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/
+WARNING 2026-07-24 15:28:48,611 log 60589 6136623104 "GET /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/ HTTP/1.1" 405 0
+WARNING 2026-07-24 15:28:49,758 log 60589 6136623104 Method Not Allowed (GET): /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/
+WARNING 2026-07-24 15:28:49,762 log 60589 6136623104 "GET /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/ HTTP/1.1" 405 0
+WARNING 2026-07-24 15:28:50,468 log 60589 6136623104 Method Not Allowed (GET): /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/
+WARNING 2026-07-24 15:28:50,472 log 60589 6136623104 "GET /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/ HTTP/1.1" 405 0
+WARNING 2026-07-24 15:28:51,198 log 60589 6136623104 Method Not Allowed (GET): /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/
+WARNING 2026-07-24 15:28:51,205 log 60589 6136623104 "GET /store/cart/remove/608e163c-83b1-4b15-baf1-7dc804e389d4/ HTTP/1.1" 405 0
+ERROR 2026-07-24 15:28:58,065 log 60589 6136623104 Internal Server Error: /store/cart/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 577, in parse
+    compile_func = self.tags[command]
+                   ~~~~~~~~~^^^^^^^^^
+KeyError: 'endblock'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 328, in cart_view
+    return render(request, 'ecom/storefront/cart.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 79, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 186, in get_template
+    template, origin = self.find_template(template_name)
+                       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+        contents,
+    ...<2 lines>...
+        self.engine,
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 157, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 199, in compile_nodelist
+    nodelist = parser.parse()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 585, in parse
+    raise self.error(token, e)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 583, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 307, in do_extends
+    nodelist = parser.parse()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 585, in parse
+    raise self.error(token, e)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 583, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 235, in do_block
+    nodelist = parser.parse(("endblock",))
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 585, in parse
+    raise self.error(token, e)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 583, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/defaulttags.py", line 994, in do_if
+    nodelist = parser.parse(("elif", "else", "endif"))
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 579, in parse
+    self.invalid_block_tag(token, command, parse_until)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 634, in invalid_block_tag
+    raise self.error(
+    ...<8 lines>...
+    )
+django.template.exceptions.TemplateSyntaxError: Template: /Users/chandraghimire/Django/arvin-erp/apps/ecom/templates/ecom/storefront/cart.html, Invalid block tag on line 255: 'endblock', expected 'elif', 'else' or 'endif'. Did you forget to register or load this tag?
+ERROR 2026-07-24 15:28:58,069 log 60589 6136623104 "GET /store/cart/ HTTP/1.1" 500 250476
+ERROR 2026-07-24 15:28:59,404 log 60589 6136623104 Internal Server Error: /store/cart/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 577, in parse
+    compile_func = self.tags[command]
+                   ~~~~~~~~~^^^^^^^^^
+KeyError: 'endblock'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 328, in cart_view
+    return render(request, 'ecom/storefront/cart.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 79, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 186, in get_template
+    template, origin = self.find_template(template_name)
+                       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+        contents,
+    ...<2 lines>...
+        self.engine,
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 157, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 199, in compile_nodelist
+    nodelist = parser.parse()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 585, in parse
+    raise self.error(token, e)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 583, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 307, in do_extends
+    nodelist = parser.parse()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 585, in parse
+    raise self.error(token, e)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 583, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 235, in do_block
+    nodelist = parser.parse(("endblock",))
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 585, in parse
+    raise self.error(token, e)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 583, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/defaulttags.py", line 994, in do_if
+    nodelist = parser.parse(("elif", "else", "endif"))
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 579, in parse
+    self.invalid_block_tag(token, command, parse_until)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 634, in invalid_block_tag
+    raise self.error(
+    ...<8 lines>...
+    )
+django.template.exceptions.TemplateSyntaxError: Template: /Users/chandraghimire/Django/arvin-erp/apps/ecom/templates/ecom/storefront/cart.html, Invalid block tag on line 255: 'endblock', expected 'elif', 'else' or 'endif'. Did you forget to register or load this tag?
+ERROR 2026-07-24 15:28:59,406 log 60589 6136623104 "GET /store/cart/ HTTP/1.1" 500 250476
+WARNING 2026-07-24 15:57:46,928 log 11485 6200946688 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-24 15:57:46,928 log 11485 6200946688 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-24 15:57:46,948 log 11485 6217773056 Not Found: /apple-touch-icon.png
+WARNING 2026-07-24 15:57:46,948 log 11485 6217773056 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-24 15:57:46,949 log 11485 6234599424 Not Found: /favicon.ico
+WARNING 2026-07-24 15:57:46,949 log 11485 6234599424 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-24 16:04:13,822 log 36686 8308170112 Forbidden (Permission denied): /backup/upload/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/decorators/http.py", line 64, in inner
+    return func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/backup/views.py", line 76, in backup_upload
+    raise PermissionDenied
+django.core.exceptions.PermissionDenied

@@ -79,6 +79,19 @@ def _save_cart(request, cart):
     request.session.modified = True
 
 
+# Tracks which cart line items came from a package purchase, so the cart page
+# can group them and only allow removing the whole package at once — a
+# customer shouldn't be able to pull a single core item out of a kit while
+# leaving the rest, since that's no longer the kit they were sold.
+def _get_cart_bundles(request):
+    return request.session.get('ecom_cart_bundles', {})
+
+
+def _save_cart_bundles(request, bundles):
+    request.session['ecom_cart_bundles'] = bundles
+    request.session.modified = True
+
+
 def _cart_totals(cart, products_map):
     subtotal = 0
     items = []
@@ -201,10 +214,22 @@ def add_to_cart(request, product_id):
     return redirect('ecom:cart')
 
 
+def _pid_bundle_key(request, pid):
+    """Return the cart-bundle key that owns this product id, if any."""
+    for key, b in _get_cart_bundles(request).items():
+        if pid in b.get('product_ids', []):
+            return key
+    return None
+
+
 @require_POST
 def remove_from_cart(request, product_id):
     cart = _get_cart(request)
-    cart.pop(str(product_id), None)
+    pid = str(product_id)
+    if _pid_bundle_key(request, pid):
+        messages.error(request, "This item is part of a package — remove the whole package instead.")
+        return redirect('ecom:cart')
+    cart.pop(pid, None)
     _save_cart(request, cart)
     return redirect('ecom:cart')
 
@@ -213,12 +238,30 @@ def remove_from_cart(request, product_id):
 def update_cart(request, product_id):
     cart = _get_cart(request)
     pid = str(product_id)
+    if _pid_bundle_key(request, pid):
+        messages.error(request, "This item is part of a package — its quantity can't be changed individually.")
+        return redirect('ecom:cart')
     qty = int(request.POST.get('quantity', 1))
     if qty <= 0:
         cart.pop(pid, None)
     else:
         cart[pid] = qty
     _save_cart(request, cart)
+    return redirect('ecom:cart')
+
+
+@require_POST
+def remove_bundle_from_cart(request, package_id):
+    cart = _get_cart(request)
+    bundles = _get_cart_bundles(request)
+    key = str(package_id)
+    bundle = bundles.pop(key, None)
+    if bundle:
+        for pid in bundle.get('product_ids', []):
+            cart.pop(pid, None)
+        _save_cart(request, cart)
+        _save_cart_bundles(request, bundles)
+        messages.success(request, f'"{bundle["name"]}" removed from cart.')
     return redirect('ecom:cart')
 
 
@@ -245,6 +288,25 @@ def cart_view(request):
         for p in Product.objects.filter(id__in=cart.keys(), show_on_ecom=True).prefetch_related('images')
     }
     items, subtotal = _cart_totals(cart, products_map)
+
+    # Split cart lines into package groups (removable only as a whole) vs
+    # standalone items (removable/editable individually).
+    items_by_pid = {str(i['product'].id): i for i in items}
+    grouped_pids = set()
+    bundle_groups = []
+    for key, b in _get_cart_bundles(request).items():
+        group_items = [items_by_pid[pid] for pid in b.get('product_ids', []) if pid in items_by_pid]
+        if not group_items:
+            continue
+        grouped_pids.update(pid for pid in b.get('product_ids', []) if pid in items_by_pid)
+        bundle_groups.append({
+            'package_id': key,
+            'name': b['name'],
+            'items': group_items,
+            'total': sum(i['line_total'] for i in group_items),
+        })
+    standalone_items = [i for i in items if str(i['product'].id) not in grouped_pids]
+
     site = SiteSettings.objects.filter(company=company).first()
     delivery_charge = Decimal('0.00')
     if site and site.delivery_charge > 0:
@@ -255,6 +317,8 @@ def cart_view(request):
     ctx.update({
         'company': company,
         'cart_items': items,
+        'bundle_groups': bundle_groups,
+        'standalone_items': standalone_items,
         'subtotal': subtotal,
         'delivery_charge': delivery_charge,
         'order_total': Decimal(str(subtotal)) + delivery_charge,
@@ -1004,8 +1068,14 @@ def add_bundle_to_cart(request, bundle_id):
     bundle = get_object_or_404(Package, id=bundle_id, company=company, show_on_ecom=True)
     cart = _get_cart(request)
     skipped = []
+    added_pids = []
 
-    # Customer's optional/addon selections from the customisation form
+    # Customer's optional/addon selections from the customisation form.
+    # `customized` marks that this submission came from the customize-kit form
+    # (always present there, even if every optional item was unchecked) — so an
+    # empty optional_items list means "deliberately deselected all", not
+    # "legacy form, include everything".
+    is_customized     = request.POST.get('customized') == '1'
     selected_optional = set(request.POST.getlist('optional_items'))
     selected_addon    = set(request.POST.getlist('addon_items'))
 
@@ -1018,12 +1088,13 @@ def add_bundle_to_cart(request, bundle_id):
         if item.item_type == 'core':
             include = True
         elif item.item_type == 'optional':
-            # included if the customer left it checked (pid in selected_optional)
-            # If the form submitted nothing for optional_items at all, default to include
-            if selected_optional:
+            # included if the customer left it checked (pid in selected_optional).
+            # Only fall back to "include everything" for legacy callers that
+            # don't send the customized marker at all.
+            if is_customized:
                 include = pid_str in selected_optional
             else:
-                include = True  # legacy: no selection = add all
+                include = True  # legacy: no customize form = add all
         elif item.item_type == 'addon':
             include = pid_str in selected_addon
         else:
@@ -1041,10 +1112,23 @@ def add_bundle_to_cart(request, bundle_id):
         current = cart.get(pid_str, 0)
         if avail > 0 and current + qty <= avail:
             cart[pid_str] = current + qty
+            added_pids.append(pid_str)
         else:
             skipped.append(item.product.name)
 
     _save_cart(request, cart)
+
+    if added_pids:
+        bundles = _get_cart_bundles(request)
+        key = str(bundle.id)
+        existing_pids = bundles.get(key, {}).get('product_ids', [])
+        bundles[key] = {
+            'package_id': key,
+            'name': bundle.name,
+            'product_ids': sorted(set(existing_pids) | set(added_pids)),
+        }
+        _save_cart_bundles(request, bundles)
+
     if skipped:
         messages.warning(request, f'Some items were not added (out of stock): {", ".join(skipped)}')
     else:

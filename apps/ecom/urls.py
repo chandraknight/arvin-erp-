@@ -13,6 +13,7 @@ urlpatterns = [
     path('cart/add/<uuid:product_id>/', storefront.add_to_cart, name='add_to_cart'),
     path('cart/remove/<uuid:product_id>/', storefront.remove_from_cart, name='remove_from_cart'),
     path('cart/update/<uuid:product_id>/', storefront.update_cart, name='update_cart'),
+    path('cart/remove-bundle/<uuid:package_id>/', storefront.remove_bundle_from_cart, name='remove_bundle_from_cart'),
     path('checkout/', storefront.checkout, name='checkout'),
     path('checkout/place/', storefront.place_order, name='place_order'),
     path('order/success/<str:order_number>/', storefront.order_success, name='order_success'),

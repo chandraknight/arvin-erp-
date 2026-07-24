@@ -118,6 +118,8 @@ def post_depreciation(asset, period_start: date, period_end: date, posted_by=Non
         amount=amount,
         narration=f'Accumulated depreciation {asset.name}',
     )
+    from .models import assert_balanced
+    assert_balanced(entry)
 
     asset.accumulated_depreciation += amount
     asset.save(update_fields=['accumulated_depreciation', 'updated_at'])

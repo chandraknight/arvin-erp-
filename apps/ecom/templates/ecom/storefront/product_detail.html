@@ -43,9 +43,11 @@
           {% if first_img %}
           <img src="{{ first_img.image.url }}" alt="{{ product.name }}"
                id="zoom-main" data-zoom-image="{{ first_img.image.url }}">
+          {% elif cms.logo %}
+          <img src="{{ cms.logo.url }}" alt="{{ product.name }}"
+               id="zoom-main" class="pd-img-placeholder" style="object-fit:contain;padding:15%;">
           {% else %}
-          <img src="{% static 'ecom/assets/imgs/template/devices.svg' %}" alt="{{ product.name }}"
-               id="zoom-main" class="pd-img-placeholder">
+          <div id="zoom-main" class="pd-img-placeholder" style="width:100%;height:100%;min-height:280px;display:flex;align-items:center;justify-content:center;background:#800000;font-size:56px;border-radius:12px;">🙏</div>
           {% endif %}
           {% endwith %}
           <div id="pd-zoom-lens"></div>

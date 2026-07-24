@@ -19,7 +19,7 @@
            onerror="this.src='{% static "ecom/assets/imgs/template/favicon.svg" %}';this.style.width='120px';this.style.opacity='.3';"
            alt="Sign In">
       <h4>Welcome Back!</h4>
-      <p>Sign in to continue shopping<br>with DPS Dabu.</p>
+      <p>Sign in to continue shopping<br>with {{ company.name|default:"us" }}.</p>
     </div>
 
     {# Right form panel #}

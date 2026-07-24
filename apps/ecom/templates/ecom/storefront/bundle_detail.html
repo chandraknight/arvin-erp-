@@ -183,6 +183,7 @@
 
         <form method="post" action="{% url 'ecom:add_bundle_to_cart' bundle.id %}" id="bundle-form" style="margin-top:18px;">
           {% csrf_token %}
+          <input type="hidden" name="customized" value="1">
           {# Hidden inputs for selected optional/addon items are injected by JS on submit #}
           <div id="selected-items-inputs"></div>
           <button type="submit"

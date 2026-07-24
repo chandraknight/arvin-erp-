@@ -34,7 +34,7 @@
             </div>
         </form>
 
-        <h2 class="text-2xl font-semibold mb-4 text-gray-700">As of {{ report_date|date:"Y-m-d" }}</h2>
+        <h2 class="text-2xl font-semibold mb-4 text-gray-700">As of {{ report_date_bs|default:report_date }}</h2>
 
         {% if trial_balance_data %}
             <div class="overflow-x-auto">

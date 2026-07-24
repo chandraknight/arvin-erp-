@@ -47,7 +47,7 @@
       {% if ann.link_url %}<a href="{{ ann.link_url }}" style="color:#fcd34d;font-weight:700;text-decoration:none;">{{ ann.link_label|default:"Learn more →" }}</a>{% endif %}
     {% endfor %}
   {% else %}
-    <span>&#127561; Free Shipping on orders over <strong style="color:#fcd34d;">Rs. {{ cms.free_shipping_threshold|default:"5,000" }}</strong></span>
+    <span>&#128666; Free Shipping on orders over <strong style="color:#fcd34d;">Rs. {{ cms.free_shipping_threshold|default:"5,000" }}</strong></span>
     {% if cms and cms.contact_phone %}
       <span style="margin-left:24px;opacity:0.8;">&#9742; {{ cms.contact_phone }}</span>
     {% endif %}
@@ -295,27 +295,8 @@ document.getElementById('mobile-nav-toggle') && document.getElementById('mobile-
   </div>
 </footer>
 
-<script src="{% static 'ecom/assets/js/vendors/modernizr-3.6.0.min.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/jquery-3.6.0.min.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/bootstrap.bundle.min.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/waypoints.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/wow.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/magnific-popup.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/perfect-scrollbar.min.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/select2.min.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/isotope.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/scrollup.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/swiper-bundle.min.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/noUISlider.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/slider.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/counterup.js' %}"></script>
-<script src="{% static 'ecom/assets/js/vendors/jquery.countdown.min.js' %}"></script>
 <script src="{% static 'ecom/assets/js/main.js' %}"></script>
 {% block extra_js %}{% endblock %}
-<script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
-<script>
-  htmx.config.scrollBehavior = 'smooth';
-</script>
+<script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js" defer onload="htmx.config.scrollBehavior='smooth';"></script>
 </body>
 </html>

@@ -2883,7 +2883,6 @@ a.text-brand-3:hover {
   position: relative;
   height: calc(var(--uib-size) / 2);
   width: var(--uib-size);
-  filter: url("style.css");
   animation: rotate calc(var(--uib-speed) * 2) linear infinite;
 }
 .preloader-dots::before {
@@ -10877,8 +10876,8 @@ a:hover span {
 }
 
 /* =============================================
-   DPS DABU — Brand Theme
-   Palette: #800000 Navy | #D97706 Gold | #89A19F Sage
+   Storefront — Brand Theme
+   Palette: #800000 Maroon | #D97706 Gold | #89A19F Sage
    ============================================= */
 
 /* ── Header Logo ── */

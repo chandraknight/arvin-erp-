@@ -16,7 +16,7 @@
   <div class="mb-4 text-sm text-gray-600">
     <strong>{{ company.name }}</strong>
     {% if fiscal_year %}
-      &nbsp;|&nbsp; Period: {{ fiscal_year.start_date }} to {{ fiscal_year.end_date }}
+      &nbsp;|&nbsp; Period: {{ fiscal_year.start_date_bs|default:fiscal_year.start_date }} to {{ fiscal_year.end_date_bs|default:fiscal_year.end_date }}
     {% endif %}
   </div>
 

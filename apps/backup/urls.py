@@ -6,6 +6,7 @@ app_name = 'backup'
 urlpatterns = [
     path('', views.backup_list, name='backup_list'),
     path('create/', views.backup_create, name='backup_create'),
+    path('upload/', views.backup_upload, name='backup_upload'),
     path('<uuid:pk>/download/', views.backup_download, name='backup_download'),
     path('<uuid:pk>/restore/', views.backup_confirm_restore, name='backup_confirm_restore'),
     path('<uuid:pk>/restore/confirm/', views.backup_restore, name='backup_restore'),
