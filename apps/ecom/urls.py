@@ -59,6 +59,8 @@ urlpatterns = [
     path('manage/packages/create/', ecom_admin.package_create, name='admin_package_create'),
     path('manage/packages/<uuid:package_id>/edit/', ecom_admin.package_edit, name='admin_package_edit'),
     path('manage/packages/<uuid:package_id>/delete/', ecom_admin.package_delete, name='admin_package_delete'),
+    path('manage/packages/images/', ecom_admin.package_image_list, name='admin_package_images'),
+    path('manage/packages/<uuid:package_id>/image/', ecom_admin.update_package_image, name='admin_update_package_image'),
 
     # ── Coupons ───────────────────────────────────────────
     path('manage/coupons/', ecom_admin.coupon_list, name='coupon_list'),

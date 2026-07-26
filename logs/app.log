@@ -14125,3 +14125,27 @@ Traceback (most recent call last):
   File "/Users/chandraghimire/Django/arvin-erp/apps/backup/views.py", line 76, in backup_upload
     raise PermissionDenied
 django.core.exceptions.PermissionDenied
+WARNING 2026-07-26 14:19:17,959 log 44325 6238990336 Not Found: /apple-touch-icon.png
+WARNING 2026-07-26 14:19:17,961 log 44325 6255816704 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-26 14:19:17,964 log 44325 6255816704 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-26 14:19:17,963 log 44325 6289469440 Not Found: /favicon.ico
+WARNING 2026-07-26 14:19:17,964 log 44325 6238990336 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-26 14:19:17,964 log 44325 6289469440 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-26 14:19:48,088 log 44325 6289469440 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-26 14:19:48,089 log 44325 6222163968 Not Found: /favicon.ico
+WARNING 2026-07-26 14:19:48,090 log 44325 6289469440 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-26 14:19:48,090 log 44325 6222163968 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-26 14:19:48,092 log 44325 6272643072 Not Found: /apple-touch-icon.png
+WARNING 2026-07-26 14:19:48,093 log 44325 6272643072 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-26 14:25:07,560 log 67267 6170816512 Not Found: /apple-touch-icon.png
+WARNING 2026-07-26 14:25:07,560 log 67267 6170816512 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-26 14:25:07,561 log 67267 6187642880 Not Found: /favicon.ico
+WARNING 2026-07-26 14:25:07,562 log 67267 6187642880 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-26 14:25:07,562 log 67267 6153990144 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-26 14:25:07,563 log 67267 6153990144 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-26 15:29:36,212 log 73248 6133002240 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-26 15:29:36,214 log 73248 6133002240 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-26 15:29:36,226 log 73248 6166654976 Not Found: /favicon.ico
+WARNING 2026-07-26 15:29:36,226 log 73248 6166654976 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-26 15:29:36,227 log 73248 6149828608 Not Found: /apple-touch-icon.png
+WARNING 2026-07-26 15:29:36,227 log 73248 6149828608 "GET /apple-touch-icon.png HTTP/1.1" 404 7458

@@ -169,7 +169,7 @@ def edit_item(request, id):
         if form.is_valid():
             form.save()
             messages.success(request, f"'{product.name}' updated successfully")
-            return redirect('products:add_item')
+            return redirect('products:inventory_management')
 
     context = {
         'form': form,

@@ -10,6 +10,7 @@ urlpatterns = [
     # Cart HTMX endpoints
     path('cart/add/',       views.pos_add_item,    name='add_item'),
     path('cart/update/',    views.pos_update_qty,  name='update_qty'),
+    path('cart/update-price/', views.pos_update_price, name='update_price'),
     path('cart/remove/',    views.pos_remove_item, name='remove_item'),
     path('cart/customer/',  views.pos_set_customer, name='set_customer'),
     path('cart/referrer/',  views.pos_set_referrer, name='set_referrer'),

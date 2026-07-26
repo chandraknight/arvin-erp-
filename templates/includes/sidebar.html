@@ -404,8 +404,12 @@
                     ><i class="fas fa-shopping-bag nav-icon"></i>Online Orders</a>
                 <a href="{% url 'ecom:admin_ecom_inventory' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-warehouse nav-icon"></i>Ecom Inventory</a>
+                <a href="{% url 'ecom:admin_package_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-box-open nav-icon"></i>Packages &amp; Bundles</a>
                 <a href="{% url 'ecom:admin_category_images' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-images nav-icon"></i>Category Images</a>
+                <a href="{% url 'ecom:admin_package_images' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-image nav-icon"></i>Package Images</a>
                 <a href="{% url 'ecom:media_library' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-photo-video nav-icon"></i>Media Manager</a>
                 <a href="{% url 'ecom:cms_dashboard' %}" class="nav-link" @click="sidebarOpen = false"

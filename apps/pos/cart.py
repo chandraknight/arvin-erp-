@@ -102,6 +102,22 @@ def update_item_qty(request, product_id: str, quantity: int) -> dict:
     return cart
 
 
+def update_item_price(request, product_id: str, price) -> dict:
+    """
+    Override the unit price of a cart item — e.g. selling a custom weighed
+    quantity (50g off a 10kg sack) at an agreed price rather than
+    qty × Product.price. Ignored if price is negative.
+    """
+    cart = get_cart(request)
+    if product_id in cart['items']:
+        new_price = _q(price)
+        if new_price >= 0:
+            cart['items'][product_id]['price'] = str(new_price)
+            _recalc_item(cart['items'][product_id])
+    _save(request, cart)
+    return cart
+
+
 def remove_item(request, product_id: str) -> dict:
     """Remove a product from the cart entirely."""
     cart = get_cart(request)

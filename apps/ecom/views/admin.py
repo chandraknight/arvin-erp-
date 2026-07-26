@@ -239,6 +239,33 @@ def update_category_image(request, category_id):
     return redirect('ecom:admin_category_images')
 
 
+@login_required
+def package_image_list(request):
+    from apps.products.models import Package
+    company = _get_company(request)
+    packages = Package.objects.filter(company=company).order_by('name')
+    return render(request, 'ecom/admin/package_image_list.html', {'packages': packages})
+
+
+@login_required
+@require_POST
+def update_package_image(request, package_id):
+    from apps.products.models import Package
+    company = _get_company(request)
+    pkg = get_object_or_404(Package, id=package_id, company=company)
+    if 'clear' in request.POST:
+        if pkg.ecom_image:
+            pkg.ecom_image.delete(save=False)
+            pkg.ecom_image = None
+            pkg.save(update_fields=['ecom_image'])
+        messages.success(request, f'Image removed from "{pkg.name}".')
+    elif 'ecom_image' in request.FILES:
+        pkg.ecom_image = request.FILES['ecom_image']
+        pkg.save(update_fields=['ecom_image'])
+        messages.success(request, f'Image updated for "{pkg.name}".')
+    return redirect('ecom:admin_package_images')
+
+
 # ── Coupon management ─────────────────────────────────────────────────────────
 
 @login_required
@@ -422,12 +449,17 @@ def package_create(request):
             pkg.save(update_fields=['ecom_image'])
         product_ids = request.POST.getlist('product_ids')
         quantities = request.POST.getlist('quantities')
-        for pid, qty in zip(product_ids, quantities):
+        item_types = request.POST.getlist('item_types')
+        valid_types = {c[0] for c in PackageItem._meta.get_field('item_type').choices}
+        for pid, qty, item_type in zip(product_ids, quantities, item_types):
             if pid and qty:
                 from apps.products.models import Product as Prod
                 try:
                     product = Prod.objects.get(id=pid, company=company)
-                    PackageItem.objects.create(package=pkg, product=product, quantity=int(qty))
+                    PackageItem.objects.create(
+                        package=pkg, product=product, quantity=int(qty),
+                        item_type=item_type if item_type in valid_types else 'core',
+                    )
                 except Exception:
                     pass
         messages.success(request, f'Package "{pkg.name}" created.')
@@ -448,17 +480,25 @@ def package_edit(request, package_id):
         pkg.compare_at_price = request.POST.get('compare_at_price', '').strip() or None
         pkg.show_on_ecom = request.POST.get('show_on_ecom') == 'on'
         pkg.ecom_description = request.POST.get('ecom_description', '').strip() or None
-        if request.FILES.get('ecom_image'):
+        if request.POST.get('clear_image') == '1' and pkg.ecom_image:
+            pkg.ecom_image.delete(save=False)
+            pkg.ecom_image = None
+        elif request.FILES.get('ecom_image'):
             pkg.ecom_image = request.FILES['ecom_image']
         pkg.save()
         pkg.items.all().delete()
         product_ids = request.POST.getlist('product_ids')
         quantities = request.POST.getlist('quantities')
-        for pid, qty in zip(product_ids, quantities):
+        item_types = request.POST.getlist('item_types')
+        valid_types = {c[0] for c in PackageItem._meta.get_field('item_type').choices}
+        for pid, qty, item_type in zip(product_ids, quantities, item_types):
             if pid and qty:
                 try:
                     product = Prod.objects.get(id=pid, company=company)
-                    PackageItem.objects.create(package=pkg, product=product, quantity=int(qty))
+                    PackageItem.objects.create(
+                        package=pkg, product=product, quantity=int(qty),
+                        item_type=item_type if item_type in valid_types else 'core',
+                    )
                 except Exception:
                     pass
         messages.success(request, f'Package "{pkg.name}" updated.')

@@ -39,6 +39,16 @@
         </div>
         {% endif %}
 
+        <div class="border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+          <p class="font-semibold">In plain terms</p>
+          <p class="mt-1">
+            A Purchase Order records what you're ordering from a vendor before you pay for it.
+            Use <strong>Stock</strong> lines for items you'll resell or keep in inventory — these update your
+            product cost (NFRS 2). Use <strong>Service</strong> or <strong>Non-Stock</strong> lines for things like
+            rent, repairs, or one-off expenses that don't go into inventory — pick the expense account they belong to.
+          </p>
+        </div>
+
         <!-- PO Header Fields -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
@@ -84,7 +94,8 @@
             <table class="min-w-full text-sm">
               <thead class="bg-green-700 text-white text-xs uppercase">
                 <tr>
-                  <th class="px-3 py-2.5 text-left border-r border-green-800">Product</th>
+                  <th class="px-3 py-2.5 text-left border-r border-green-800 w-28">Type</th>
+                  <th class="px-3 py-2.5 text-left border-r border-green-800">Product / Description</th>
                   <th class="px-3 py-2.5 text-left border-r border-green-800 w-24">HS Code</th>
                   <th class="px-3 py-2.5 text-center border-r border-green-800 w-20">Qty</th>
                   <th class="px-3 py-2.5 text-right border-r border-green-800 w-24">Price</th>
@@ -96,15 +107,20 @@
                 {% for item_form in formset %}
                 <tr class="item-form {% cycle 'bg-white' 'bg-gray-50' %} border-b border-gray-200">
                   {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
-                  {# item_type always STOCK — hidden, not shown as a column #}
-                  <input type="hidden" name="{{ item_form.item_type.html_name }}" value="STOCK">
                   {% if item_form.instance.pk %}{{ item_form.DELETE }}{% endif %}
+                  <td class="px-2 py-2 border-r border-gray-200">
+                    {{ item_form.item_type|add_class:"item-type-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                  </td>
                   <td class="px-2 py-2 border-r border-gray-200">
                     <div class="product-field">
                       {{ item_form.product|add_class:"product-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                      {% if item_form.product.errors %}<p class="text-red-500 text-xs mt-1">{{ item_form.product.errors }}</p>{% endif %}
                     </div>
-                    <div class="description-field hidden">
+                    <div class="description-field hidden space-y-1">
                       {{ item_form.description|add_class:"description-input w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                      {{ item_form.expense_account|add_class:"expense-account-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500" }}
+                      {% if item_form.description.errors %}<p class="text-red-500 text-xs">{{ item_form.description.errors }}</p>{% endif %}
+                      {% if item_form.expense_account.errors %}<p class="text-red-500 text-xs">{{ item_form.expense_account.errors }}</p>{% endif %}
                     </div>
                   </td>
                   <td class="px-2 py-2 border-r border-gray-200">
@@ -219,10 +235,22 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ── Stock vs Service/Non-Stock: toggle which fields are visible ─────
+    function applyItemTypeVisibility(row) {
+        const typeSelect = row.querySelector('.item-type-select');
+        const productField = row.querySelector('.product-field');
+        const descField = row.querySelector('.description-field');
+        if (!typeSelect || !productField || !descField) return;
+        const isStock = typeSelect.value === 'STOCK';
+        productField.classList.toggle('hidden', !isStock);
+        descField.classList.toggle('hidden', isStock);
+    }
+
     // ── Initial setup ──────────────────────────────────────────────────
     container.querySelectorAll('.item-form').forEach(row => {
         addRowListeners(row);
         updateRowTotal(row);
+        applyItemTypeVisibility(row);
     });
     initProductSelect2(container);
     updateGrandTotal();
@@ -236,6 +264,7 @@ document.addEventListener('DOMContentLoaded', function () {
         totalForms.value = formCount;
         addRowListeners(row);
         initProductSelect2(row);
+        applyItemTypeVisibility(row);
         updateGrandTotal();
         updateSidebar();
     });
@@ -260,6 +289,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function addRowListeners(row) {
+        row.querySelector('.item-type-select')?.addEventListener('change', function () {
+            applyItemTypeVisibility(row);
+        });
+
         const productSelect = row.querySelector('.product-select');
         if (productSelect) {
             // Must use jQuery .on() — Select2 fires change via jQuery's event system;
@@ -353,12 +386,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
         row.innerHTML = `
             <input type="hidden" name="items-${idx}-id" value="">
-            <input type="hidden" name="items-${idx}-item_type" value="STOCK">
             <td class="px-2 py-2 border-r border-gray-200">
-                <select name="items-${idx}-product" class="product-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500">
-                    <option value="">— select product —</option>
-                    ${getProductOptions()}
+                <select name="items-${idx}-item_type" class="item-type-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500">
+                    ${getItemTypeOptions()}
                 </select>
+            </td>
+            <td class="px-2 py-2 border-r border-gray-200">
+                <div class="product-field">
+                    <select name="items-${idx}-product" class="product-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500">
+                        <option value="">— select product —</option>
+                        ${getProductOptions()}
+                    </select>
+                </div>
+                <div class="description-field hidden space-y-1">
+                    <input type="text" name="items-${idx}-description"
+                           class="description-input w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500"
+                           placeholder="Service or expense description">
+                    <select name="items-${idx}-expense_account" class="expense-account-select w-full border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500">
+                        <option value="">— select account —</option>
+                        ${getExpenseAccountOptions()}
+                    </select>
+                </div>
             </td>
             <td class="px-2 py-2 border-r border-gray-200">
                 <input type="text" name="items-${idx}-hscode"
@@ -388,6 +436,18 @@ document.addEventListener('DOMContentLoaded', function () {
     function getProductOptions() {
         const existing = container.querySelector('.product-select');
         if (!existing) return '';
+        return Array.from(existing.options).map(o => `<option value="${o.value}">${o.text}</option>`).join('');
+    }
+
+    function getExpenseAccountOptions() {
+        const existing = container.querySelector('.expense-account-select');
+        if (!existing) return '';
+        return Array.from(existing.options).map(o => `<option value="${o.value}">${o.text}</option>`).join('');
+    }
+
+    function getItemTypeOptions() {
+        const existing = container.querySelector('.item-type-select');
+        if (!existing) return '<option value="STOCK">Stock</option>';
         return Array.from(existing.options).map(o => `<option value="${o.value}">${o.text}</option>`).join('');
     }
 

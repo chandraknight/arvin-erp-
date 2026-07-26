@@ -27,7 +27,18 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="font-medium text-sm text-gray-800 truncate">{{ item.name }}</div>
-              <div class="text-gray-500 text-xs">NPR {{ item.price }} × {{ item.quantity }}</div>
+              <div class="text-gray-500 text-xs flex items-center gap-1">
+                NPR
+                <input type="number" step="0.01" min="0" value="{{ item.price }}"
+                       class="w-16 border border-gray-200 px-1 py-0.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-green-500"
+                       title="Override this line's unit price — e.g. a custom weighed quantity sold for an agreed price"
+                       hx-post="{% url 'pos:update_price' %}"
+                       hx-trigger="change"
+                       hx-vals='js:{"product_id": "{{ pid }}", "price": event.target.value}'
+                       hx-target="#cart-container"
+                       hx-swap="innerHTML">
+                × {{ item.quantity }}
+              </div>
             </div>
             <div class="text-right flex-shrink-0">
               <div class="font-semibold text-sm text-gray-800">NPR {{ item.line_total }}</div>

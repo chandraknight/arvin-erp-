@@ -8,10 +8,16 @@
       <h1 class="text-2xl font-bold text-gray-800">Packages &amp; Bundles</h1>
       <p class="text-sm text-gray-500 mt-1">Create product bundles to display and sell on your e-commerce store.</p>
     </div>
-    <a href="{% url 'ecom:admin_package_create' %}"
-       class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
-      + New Package
-    </a>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'ecom:admin_package_images' %}"
+         class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition">
+        <i class="fas fa-image text-gray-400"></i> Manage Images
+      </a>
+      <a href="{% url 'ecom:admin_package_create' %}"
+         class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+        + New Package
+      </a>
+    </div>
   </div>
 
   {% if messages %}

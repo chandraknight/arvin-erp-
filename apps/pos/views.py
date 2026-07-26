@@ -47,6 +47,7 @@ from apps.utils.decorator import auth_required
 from .cart import (
     add_item, clear_cart, get_cart, get_totals,
     remove_item, set_customer, set_delivery_charge, set_discount, set_referrer, set_tax, update_item_qty,
+    update_item_price,
 )
 from .models import POSSale, Referrer
 from .services import checkout
@@ -231,6 +232,28 @@ def pos_update_qty(request):
 
     cart = update_item_qty(request, product_id, qty)
     return _cart_partial(request, cart, stock_warning=stock_warning)
+
+
+@require_POST
+@auth_required('pos.add_possale')
+def pos_update_price(request):
+    """
+    HTMX POST — override a cart line's unit price.
+    Lets a cashier sell a custom weighed/measured quantity (e.g. 50g off a
+    10kg sack) at an agreed price instead of qty × Product.price.
+    """
+    guard = _require_pos(request)
+    if guard:
+        return guard
+
+    product_id = request.POST.get('product_id', '').strip()
+    try:
+        price = Decimal(request.POST.get('price', '0'))
+    except (InvalidOperation, TypeError):
+        price = Decimal('0')
+
+    cart = update_item_price(request, product_id, price)
+    return _cart_partial(request, cart)
 
 
 @require_POST
