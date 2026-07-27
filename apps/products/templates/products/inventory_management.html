@@ -36,6 +36,10 @@
          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition shadow">
         <i class="fas fa-download"></i> Download Inventory (CSV)
       </a>
+      <a href="{% url 'products:export_inventory_excel' %}"
+         class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white transition shadow">
+        <i class="fas fa-file-excel"></i> Download Inventory (Excel)
+      </a>
       <a href="{% url 'products:bulk_product_upload' %}"
          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gray-700 hover:bg-gray-800 text-white transition shadow">
         <i class="fas fa-upload"></i> Bulk Upload Products (CSV)
@@ -52,6 +56,9 @@
                 </div>
                 <div class="ml-3">
                     <h3 class="text-lg font-medium text-yellow-800">Low Stock Alert</h3>
+                    <p class="mt-1 text-sm text-yellow-800 font-medium">
+                        Remaining stock value across low-stock items: {{ rupee }} {{ low_stock_total_value|floatformat:"2" }}
+                    </p>
                     <div class="mt-2 text-sm text-yellow-700">
                         <ul class="list-disc list-inside space-y-1">
                             {% for product in low_stock_products|slice:":3" %}

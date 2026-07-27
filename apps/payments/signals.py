@@ -123,6 +123,7 @@ def create_journal_entry_for_vendor_payment(sender, instance, created, **kwargs)
             {'account': ap_account, 'entry_type': 'DEBIT', 'amount': instance.amount},
             {'account': cash_bank, 'entry_type': 'CREDIT', 'amount': instance.amount},
         ],
+        source_type='PAYMENT',
     )
 
     audit_logger.info(

@@ -645,6 +645,7 @@ def _post_payroll_journal(payroll_run, user):
             {'account': salary_expense, 'entry_type': 'DEBIT', 'amount': payroll_run.total_gross_pay, 'narration': 'Gross payroll cost'},
             {'account': salary_payable, 'entry_type': 'CREDIT', 'amount': payroll_run.total_gross_pay, 'narration': 'Salary payable to employees'},
         ],
+        source_type='PAYROLL',
     )
 
     from apps.activity_log.models import ActivityLog

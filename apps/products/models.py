@@ -173,6 +173,7 @@ class StockTransaction(BaseModel):
         ('ADD', 'Add Stock'),
         ('REMOVE', 'Remove Stock'),
         ('ADJUST', 'Adjust Stock'),
+        ('DISPOSE', 'Dispose Stock'),
     )
     STOCK_TYPES = (
         ('POS', 'POS Stock'),
@@ -187,6 +188,28 @@ class StockTransaction(BaseModel):
 
     def __str__(self):
         return f"{self.transaction_type} {self.quantity} x {self.product.name}"
+
+
+class StockDisposal(BaseModel):
+    """Write-off of damaged/unusable stock. Posts an NFRS journal entry: DR Inventory Write-off / CR Inventory."""
+    STOCK_TYPES = StockTransaction.STOCK_TYPES
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='disposals')
+    stock_type = models.CharField(max_length=10, choices=STOCK_TYPES, default='POS')
+    quantity = models.PositiveIntegerField()
+    reason = models.TextField()
+    unit_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    total_value = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    disposed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_disposals')
+    journal_entry = models.ForeignKey(
+        'bookkeeping.JournalEntry', on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_disposals'
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Disposed {self.quantity} x {self.product.name}"
 
 
 class Package(BaseModel):

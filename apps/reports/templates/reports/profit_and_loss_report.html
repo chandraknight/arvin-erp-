@@ -78,11 +78,23 @@
                        value="{{ end_date_bs|default:'' }}"
                        class="nepali-datepicker w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
-            <button type="submit" 
+            <button type="submit"
                     class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                 Apply Filter
             </button>
         </form>
+        {% if tax_expense > 0 %}
+        <form method="post" action="{% url 'reports:post_income_tax_provision' %}" class="mt-4 no-print">
+            {% csrf_token %}
+            <input type="hidden" name="start_date" value="{{ start_date_bs|default:'' }}">
+            <input type="hidden" name="end_date" value="{{ end_date_bs|default:'' }}">
+            <button type="submit"
+                    onclick="return confirm('Post income tax provision of {{ tax_expense|floatformat:2 }} (CIT @ {{ cit_rate }}%) for this period?');"
+                    class="px-6 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 text-sm">
+                <i class="fas fa-landmark mr-1"></i> Post Tax Provision ({{ tax_expense|floatformat:2 }})
+            </button>
+        </form>
+        {% endif %}
     </div>
 
     <!-- P&L Report -->

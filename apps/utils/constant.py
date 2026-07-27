@@ -106,6 +106,29 @@ JOURNAL_ENTRY_TYPES = [
     ('CREDIT', 'Credit'),
 ]
 
+JOURNAL_SOURCE_TYPES = [
+    ('SALES_INVOICE', 'Sales Invoice'),
+    ('CREDIT_NOTE', 'Credit Note'),
+    ('DEBIT_NOTE', 'Debit Note'),
+    ('VENDOR_BILL', 'Vendor Bill'),
+    ('PAYMENT', 'Payment'),
+    ('EXPENSE', 'Expense'),
+    ('PAYROLL', 'Payroll'),
+    ('DEPRECIATION', 'Depreciation'),
+    ('STOCK_DISPOSAL', 'Stock Disposal'),
+    ('OPENING_BALANCE', 'Opening Balance'),
+    ('CLOSING_ENTRY', 'Year-End Closing'),
+    ('MANUAL_JOURNAL', 'Manual Journal Voucher'),
+    ('REVERSAL', 'Reversal'),
+    ('BAD_DEBT_WRITEOFF', 'Bad Debt Write-off'),
+    ('DOUBTFUL_DEBT_PROVISION', 'Provision for Doubtful Debts'),
+    ('ACCRUED_EXPENSE', 'Accrued Expense'),
+    ('PREPAID_AMORTIZATION', 'Prepaid Expense Amortization'),
+    ('FX_ADJUSTMENT', 'Foreign Exchange Gain/Loss'),
+    ('TAX_PROVISION', 'Income Tax Provision'),
+    ('OTHER', 'Other'),
+]
+
 DEFAULT_ACCOUNTS = [
     {"name": "Accounts Receivable", "account_type": "ASSET",     "code": "1100"},
     {"name": "Sales Revenue",        "account_type": "REVENUE",   "code": "4000"},

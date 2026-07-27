@@ -8,4 +8,12 @@ def sub(value, arg):
     try:
         return float(value) - float(arg)
     except (ValueError, TypeError):
-        return '' # Return empty string or handle error as appropriate 
+        return '' # Return empty string or handle error as appropriate
+
+
+@register.filter(name='dictkey')
+def dictkey(d, key):
+    """Looks up `key` in dict `d` — for use where the key is a template variable."""
+    if not d:
+        return None
+    return d.get(key)

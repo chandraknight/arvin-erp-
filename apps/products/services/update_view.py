@@ -120,6 +120,53 @@ def update_stock(request, item_id):
     })
 
 
+@auth_required('products.change_product')
+def dispose_stock_view(request, item_id):
+    from django.core.exceptions import ValidationError
+    from ..services.disposal_service import dispose_stock
+
+    product = get_object_or_404(Product, id=item_id)
+    stock_instance, _ = ProductStock.objects.get_or_create(product=product)
+
+    if request.method == 'POST':
+        form = StockDisposalForm(request.POST)
+        if form.is_valid():
+            try:
+                dispose_stock(
+                    product=product,
+                    quantity=form.cleaned_data['quantity'],
+                    stock_type=form.cleaned_data['stock_type'],
+                    reason=form.cleaned_data['reason'],
+                    user=request.user,
+                )
+                messages.success(request, f"Disposed stock for {product.name}.")
+                return redirect('products:update_stock', item_id=product.id)
+            except ValidationError as e:
+                messages.error(request, '; '.join(e.messages) if hasattr(e, 'messages') else str(e))
+    else:
+        form = StockDisposalForm()
+
+    return render(request, 'products/dispose_stock.html', {
+        'form': form,
+        'product': product,
+        'stock': stock_instance,
+    })
+
+
+@auth_required('products.view_product')
+def disposal_history(request):
+    from ..models import StockDisposal
+
+    company = request.user.company if hasattr(request.user, 'company') else None
+    disposals = StockDisposal.objects.select_related('product', 'disposed_by', 'journal_entry').order_by('-created_at')
+    if company:
+        disposals = disposals.filter(product__company=company)
+
+    return render(request, 'products/disposal_history.html', {
+        'disposals': disposals,
+    })
+
+
 @auth_required('products.change_category')
 def edit_category(request, category_id):
     category = get_object_or_404(Category, id=category_id)

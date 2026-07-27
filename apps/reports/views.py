@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, F, DecimalField, ExpressionWrapper, Case, When, Q
 from django.db.models.functions import Coalesce, Cast
@@ -26,6 +27,8 @@ from apps.purchasing.models import PurchaseOrder
 from apps.billing.models import VendorBill
 from apps.payments.models import VendorPayment
 from apps.vendors.models import Vendor
+from apps.pos.models import POSSale
+from apps.utils.constant import PAYMENT_METHOD_CHOICES
 from apps.reports.models import Report, UserReportAccess
 from apps.reports.report_registry import (
     REPORT_REGISTRY, get_user_visible_reports, get_dashboard_sections,
@@ -1101,6 +1104,186 @@ def debtors_creditors_report(request):
         'net_position': total_debtors - total_creditors,
     }
     return render(request, 'reports/debtors_creditors_report.html', context)
+
+
+@login_required
+def export_debtors_creditors_excel(request):
+    """Excel export of the debtors/creditors schedule — same queries as the report view."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+
+    user_company = request.user_company
+    if not user_company:
+        return redirect('accounts:user_dashboard')
+
+    as_of_date_str = request.GET.get('as_of_date')
+    as_of_date = bs_str_to_ad(as_of_date_str) if as_of_date_str else date.today()
+
+    debtors = (
+        Invoice.objects.filter(
+            company=user_company, outstanding_balance__gt=0, created_at__date__lte=as_of_date,
+        )
+        .values('customer_id', 'customer__name')
+        .annotate(balance=Sum('outstanding_balance'), invoice_count=Count('id'))
+        .order_by('-balance')
+    )
+    total_debtors = sum((row['balance'] for row in debtors), Decimal('0'))
+
+    creditors = []
+    bills = VendorBill.objects.filter(
+        vendor__company=user_company, status='UNPAID', bill_date__lte=as_of_date,
+    ).select_related('vendor')
+    vendor_totals = {}
+    vendor_bill_counts = {}
+    for bill in bills:
+        paid = bill.payments.aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
+        outstanding = bill.total_amount - paid
+        if outstanding <= 0:
+            continue
+        vendor_totals[bill.vendor_id] = vendor_totals.get(bill.vendor_id, Decimal('0')) + outstanding
+        vendor_bill_counts[bill.vendor_id] = vendor_bill_counts.get(bill.vendor_id, 0) + 1
+    vendor_names = {bill.vendor_id: bill.vendor.name for bill in bills}
+    for vendor_id, balance in sorted(vendor_totals.items(), key=lambda kv: kv[1], reverse=True):
+        creditors.append({
+            'vendor__name': vendor_names.get(vendor_id, ''),
+            'balance': balance,
+            'bill_count': vendor_bill_counts[vendor_id],
+        })
+    total_creditors = sum((row['balance'] for row in creditors), Decimal('0'))
+
+    wb = Workbook()
+    bold = Font(bold=True)
+
+    ws1 = wb.active
+    ws1.title = 'Debtors'
+    ws1.append(['Customer', 'Outstanding Balance', 'Invoice Count'])
+    for cell in ws1[1]:
+        cell.font = bold
+    for row in debtors:
+        ws1.append([row['customer__name'], float(row['balance']), row['invoice_count']])
+    ws1.append(['Total Debtors', float(total_debtors), ''])
+    for cell in ws1[ws1.max_row]:
+        cell.font = bold
+
+    ws2 = wb.create_sheet('Creditors')
+    ws2.append(['Vendor', 'Outstanding Balance', 'Bill Count'])
+    for cell in ws2[1]:
+        cell.font = bold
+    for row in creditors:
+        ws2.append([row['vendor__name'], float(row['balance']), row['bill_count']])
+    ws2.append(['Total Creditors', float(total_creditors), ''])
+    for cell in ws2[ws2.max_row]:
+        cell.font = bold
+
+    ws3 = wb.create_sheet('Summary')
+    ws3.append(['As of Date', str(as_of_date)])
+    ws3.append(['Total Debtors', float(total_debtors)])
+    ws3.append(['Total Creditors', float(total_creditors)])
+    ws3.append(['Net Position', float(total_debtors - total_creditors)])
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="debtors_creditors_report.xlsx"'
+    wb.save(response)
+    return response
+
+
+def _daily_sales_by_payment_method_data(request, user_company):
+    date_from_str = request.GET.get('date_from')
+    date_to_str = request.GET.get('date_to')
+    date_from = bs_str_to_ad(date_from_str) if date_from_str else date.today()
+    date_to = bs_str_to_ad(date_to_str) if date_to_str else date.today()
+
+    branch = get_report_branch(request, user_company)
+    sales = POSSale.objects.filter(
+        company=user_company,
+        created_at__date__gte=date_from,
+        created_at__date__lte=date_to,
+    )
+    sales = apply_branch_filters(sales, branch, 'branch')
+
+    rows = sales.values('created_at__date', 'payment_method').annotate(
+        total=Sum('total'), count=Count('id'),
+    ).order_by('created_at__date', 'payment_method')
+
+    payment_method_labels = dict(PAYMENT_METHOD_CHOICES)
+    methods = sorted({r['payment_method'] for r in rows})
+
+    by_date = {}
+    for r in rows:
+        d = r['created_at__date']
+        by_date.setdefault(d, {}).update({r['payment_method']: r['total']})
+
+    daily_rows = []
+    grand_totals = {m: Decimal('0') for m in methods}
+    for d in sorted(by_date.keys()):
+        method_amounts = by_date[d]
+        day_total = sum(method_amounts.values(), Decimal('0'))
+        for m in methods:
+            grand_totals[m] += method_amounts.get(m, Decimal('0'))
+        daily_rows.append({
+            'date': d,
+            'amounts': {m: method_amounts.get(m, Decimal('0')) for m in methods},
+            'day_total': day_total,
+        })
+    grand_total = sum(grand_totals.values(), Decimal('0'))
+
+    return {
+        'date_from': date_from,
+        'date_to': date_to,
+        'branch': branch,
+        'methods': methods,
+        'payment_method_labels': payment_method_labels,
+        'daily_rows': daily_rows,
+        'grand_totals': grand_totals,
+        'grand_total': grand_total,
+    }
+
+
+@login_required
+def daily_sales_by_payment_method_report(request):
+    """Daily sales totals broken down by payment method (cash, bank transfer, etc.)."""
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    data = _daily_sales_by_payment_method_data(request, user_company)
+    context = {
+        'company': user_company,
+        **data,
+        **report_branch_context(user_company, data['branch']),
+    }
+    return render(request, 'reports/daily_sales_by_payment_method_report.html', context)
+
+
+@login_required
+def export_daily_sales_by_payment_method_excel(request):
+    user_company = request.user_company
+    if not user_company:
+        return redirect('accounts:user_dashboard')
+
+    data = _daily_sales_by_payment_method_data(request, user_company)
+    payment_method_labels = data['payment_method_labels']
+    methods = data['methods']
+
+    records = []
+    for row in data['daily_rows']:
+        record = {'Date': row['date']}
+        for m in methods:
+            record[payment_method_labels.get(m, m)] = float(row['amounts'][m])
+        record['Total'] = float(row['day_total'])
+        records.append(record)
+
+    columns = ['Date'] + [payment_method_labels.get(m, m) for m in methods] + ['Total']
+    df = pd.DataFrame(records, columns=columns) if records else pd.DataFrame(columns=columns)
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="daily_sales_by_payment_method.xlsx"'
+    df.to_excel(response, index=False, sheet_name='Daily Sales by Payment Method')
+    return response
 
 
 @login_required
@@ -4365,6 +4548,107 @@ def profit_and_loss_report(request):
     return render(request, 'reports/profit_and_loss_report.html', context)
 
 
+@login_required
+def post_income_tax_provision(request):
+    """
+    Post the CIT provision shown on the P&L report: DR Income Tax Expense / CR Income Tax Payable.
+
+    Recomputes profit_before_tax/tax_expense server-side from the same date params
+    the report uses — never trusts a client-supplied amount — and refuses to post
+    twice for the same company/period-end date.
+    """
+    from apps.bookkeeping.models import post_journal_entry, get_or_create_system_account
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    if request.method != 'POST':
+        return redirect('reports:profit_and_loss_report')
+
+    start_date_str = request.POST.get('start_date')
+    end_date_str = request.POST.get('end_date')
+    fiscal_year_id = request.session.get('active_fiscal_year_id')
+
+    fiscal_year = None
+    start_date = None
+    end_date = None
+    if fiscal_year_id:
+        fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id, company=user_company).first()
+        if fiscal_year:
+            start_date = fiscal_year.start_date
+            end_date = fiscal_year.end_date
+    if start_date_str:
+        start_date = bs_str_to_ad(start_date_str)
+    if end_date_str:
+        end_date = bs_str_to_ad(end_date_str)
+
+    if not end_date:
+        end_date = date.today()
+
+    def _line_filter(qs):
+        if start_date:
+            qs = qs.filter(journal_entry__date__gte=start_date)
+        if end_date:
+            qs = qs.filter(journal_entry__date__lte=end_date)
+        return qs
+
+    total_revenue = Decimal('0.00')
+    for acc in LedgerAccount.objects.filter(company=user_company, account_type='REVENUE', is_deleted=False):
+        cr = _line_filter(JournalEntryLine.objects.filter(
+            account=acc, journal_entry__company=user_company, entry_type='CREDIT'
+        )).aggregate(s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        dr = _line_filter(JournalEntryLine.objects.filter(
+            account=acc, journal_entry__company=user_company, entry_type='DEBIT'
+        )).aggregate(s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        total_revenue += (cr - dr)
+
+    total_expenses = Decimal('0.00')
+    for acc in LedgerAccount.objects.filter(company=user_company, account_type='EXPENSE', is_deleted=False):
+        dr = _line_filter(JournalEntryLine.objects.filter(
+            account=acc, journal_entry__company=user_company, entry_type='DEBIT'
+        )).aggregate(s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        cr = _line_filter(JournalEntryLine.objects.filter(
+            account=acc, journal_entry__company=user_company, entry_type='CREDIT'
+        )).aggregate(s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        total_expenses += (dr - cr)
+
+    profit_before_tax = total_revenue - total_expenses
+    cit_rate = Decimal(str(getattr(user_company, 'cit_rate', 25) or 25))
+    tax_expense = Decimal('0.00')
+    if profit_before_tax > Decimal('0.00'):
+        tax_expense = (profit_before_tax * cit_rate / Decimal('100')).quantize(Decimal('0.01'))
+
+    if tax_expense <= Decimal('0.00'):
+        messages.error(request, "No taxable profit for this period — nothing to provision.")
+        return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
+
+    already_posted = JournalEntry.objects.filter(
+        company=user_company, source_type='TAX_PROVISION', date=end_date, is_deleted=False,
+    ).exists()
+    if already_posted:
+        messages.error(request, f"An income tax provision has already been posted for period ending {end_date}.")
+        return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
+
+    tax_expense_acc = get_or_create_system_account(user_company, 'Income Tax Expense', 'EXPENSE', code='5950')
+    tax_payable_acc = get_or_create_system_account(user_company, 'Income Tax Payable', 'LIABILITY', code='2210', is_current=True)
+
+    post_journal_entry(
+        company=user_company,
+        date=end_date,
+        description=f"Income tax provision — period ending {end_date} (CIT @ {cit_rate}%)",
+        lines=[
+            {'account': tax_expense_acc, 'entry_type': 'DEBIT', 'amount': tax_expense, 'narration': 'Income tax provision'},
+            {'account': tax_payable_acc, 'entry_type': 'CREDIT', 'amount': tax_expense, 'narration': 'Income tax provision'},
+        ],
+        created_by=request.user,
+        source_type='TAX_PROVISION',
+    )
+    messages.success(request, f"Income tax provision of {tax_expense} posted for period ending {end_date}.")
+    return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # RATIO ANALYSIS REPORT
 # ═══════════════════════════════════════════════════════════════════════════
@@ -4635,11 +4919,70 @@ def ap_aging_report(request):
 
 @login_required
 def export_ap_aging_excel(request):
-    from openpyxl import Workbook
     user_company = request.user_company
     if not user_company:
         return redirect('accounts:user_dashboard')
-    return redirect('reports:ap_aging_report')
+
+    as_of_date_str = request.GET.get('as_of_date')
+    as_of_date = bs_str_to_ad(as_of_date_str) if as_of_date_str else date.today()
+
+    bills = VendorBill.objects.filter(
+        vendor__company=user_company,
+        status='UNPAID',
+    ).select_related('vendor').order_by('due_date')
+
+    aging_data = []
+    for bill in bills:
+        paid = bill.payments.aggregate(
+            t=Coalesce(Sum('amount'), Decimal('0'))
+        )['t']
+        outstanding = bill.total_amount - paid
+        if outstanding <= 0:
+            continue
+
+        days_overdue = (as_of_date - bill.due_date).days if bill.due_date else 0
+        if days_overdue <= 0:
+            aging_category = 'Current'
+        elif days_overdue <= 30:
+            aging_category = '0-30 Days'
+        elif days_overdue <= 60:
+            aging_category = '31-60 Days'
+        elif days_overdue <= 90:
+            aging_category = '61-90 Days'
+        else:
+            aging_category = '>90 Days'
+
+        aging_data.append({
+            'bill_number': bill.bill_number,
+            'vendor_name': bill.vendor.name if bill.vendor else 'N/A',
+            'total_amount': bill.total_amount,
+            'due_date': bill.due_date,
+            'days_overdue': days_overdue,
+            'aging_category': aging_category,
+            'outstanding': outstanding,
+        })
+
+    df = pd.DataFrame(aging_data)
+
+    ordered_columns = ['Current', '0-30 Days', '31-60 Days', '61-90 Days', '>90 Days']
+    if not df.empty:
+        pivot_table = df.pivot_table(values='outstanding', index='vendor_name',
+                                     columns='aging_category', aggfunc='sum', fill_value=0)
+        for col in ordered_columns:
+            if col not in pivot_table.columns:
+                pivot_table[col] = 0
+        pivot_table = pivot_table[ordered_columns]
+        pivot_table['Total Outstanding'] = pivot_table.sum(axis=1)
+    else:
+        pivot_table = pd.DataFrame(columns=ordered_columns + ['Total Outstanding'])
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="ap_aging_report.xlsx"'
+
+    pivot_table.to_excel(response, index=True, sheet_name='AP Aging Report')
+
+    return response
 
 
 # ═══════════════════════════════════════════════════════════════════════════

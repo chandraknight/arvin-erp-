@@ -133,6 +133,7 @@ def _post_invoice_journal_orm(invoice_id: UUID | str) -> UUID | None:
             date=inv.transaction_date or _date.today(),
             description=description,
             lines=lines,
+            source_type='SALES_INVOICE',
         )
 
         logger.info("post_invoice_journal (ORM) invoice=%s journal_entry=%s", invoice_id, entry.id)
@@ -208,6 +209,7 @@ def _post_payment_journal_orm(payment_id: UUID | str) -> UUID:
                 {'account': cash_bank, 'entry_type': 'DEBIT', 'amount': pay.amount},
                 {'account': dest, 'entry_type': 'CREDIT', 'amount': pay.amount},
             ],
+            source_type='PAYMENT',
         )
 
         Payment.objects.filter(pk=payment_id).update(

@@ -49,6 +49,7 @@ class JournalEntryCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
             journal_entry = form.save(commit=False)
             journal_entry.company = request.user.company
             journal_entry.created_by = request.user
+            journal_entry.source_type = 'MANUAL_JOURNAL'
             journal_entry.save()
             formset.instance = journal_entry
             formset.save()

@@ -543,6 +543,7 @@ class FiscalYear(BaseModel):
                 description=f"Year-End Closing Entry — FY {self.name}",
                 created_by=closed_by_user,
                 lines=[{**line, 'narration': 'Year-end closing'} for line in closing_lines],
+                source_type='CLOSING_ENTRY',
             )
 
         # ── STEP 2: Carry-forward opening balances to next fiscal year ────

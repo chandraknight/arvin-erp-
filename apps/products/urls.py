@@ -11,6 +11,8 @@ urlpatterns = [
 
     path('inventory/add-category-type/', views.create_categorytype, name='add_category_type'),
     path('inventory/update-stock/<uuid:item_id>/', views.update_stock, name='update_stock'),
+    path('inventory/<uuid:item_id>/dispose/', views.dispose_stock_view, name='dispose_stock'),
+    path('inventory/disposals/', views.disposal_history, name='disposal_history'),
     path('inventory/add-category/', views.add_category, name='add_category'),
     path('inventory/edit-category/<uuid:category_id>/', views.edit_category, name='edit_category'),
 
@@ -26,6 +28,7 @@ urlpatterns = [
     path('inventory/bulk-upload/', views.bulk_product_upload, name='bulk_product_upload'),
     path('inventory/bulk-upload/sample/', views.bulk_product_sample_csv, name='bulk_product_sample_csv'),
     path('inventory/bulk-upload/export/', views.bulk_product_export, name='bulk_product_export'),
+    path('inventory/export/excel/', views.export_inventory_excel, name='export_inventory_excel'),
     path('inventory/print-labels/', views.print_labels_selector, name='print_labels'),
     path('inventory/print-labels/generate/', views.print_labels, name='print_labels_generate'),
 

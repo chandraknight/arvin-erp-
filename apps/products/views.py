@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import JsonResponse
+from decimal import Decimal
 import traceback
 
 from ..utils.global_models import *
@@ -48,6 +49,10 @@ def inventory_management(request):
             Q(productstock__ecom_stock__lte=F('productstock__ecom_minimum_stock'))
         ).prefetch_related('productstock')
         low_stock_products_count = low_stock_products.count()
+        low_stock_total_value = sum(
+            (p.productstock.stock * p.cost_price for p in low_stock_products if getattr(p, 'productstock', None)),
+            Decimal('0'),
+        )
         transactions = StockTransaction.objects.filter(
             product__company=request.user.company
         ).order_by('-created_at')[:10]
@@ -79,6 +84,10 @@ def inventory_management(request):
             Q(productstock__ecom_stock__lte=F('productstock__ecom_minimum_stock'))
         ).prefetch_related('productstock')
         low_stock_products_count = low_stock_products.count()
+        low_stock_total_value = sum(
+            (p.productstock.stock * p.cost_price for p in low_stock_products if getattr(p, 'productstock', None)),
+            Decimal('0'),
+        )
         transactions = StockTransaction.active_objects.all().order_by('-created_at')[:10]
 
         categories_queryset = Category.active_objects.all().select_related('type').order_by('type__name', 'name')
@@ -129,6 +138,7 @@ def inventory_management(request):
     return render(request, 'products/inventory_management.html', {
         'products_count': products_count,
         'low_stock_products_count': low_stock_products_count,
+        'low_stock_total_value': low_stock_total_value,
         'categories_count': categories_count,
         'packages_count': packages_count,
         'products': products,
@@ -557,6 +567,45 @@ def bulk_product_export(request):
     resp = HttpResponse(content, content_type='text/csv')
     resp['Content-Disposition'] = 'attachment; filename="inventory_export.csv"'
     return resp
+
+
+@login_required
+def export_inventory_excel(request):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+    from django.http import HttpResponse
+
+    company = request.user_company if hasattr(request, 'user_company') else getattr(request.user, 'company', None)
+    if not company:
+        messages.error(request, 'No company associated with your account.')
+        return redirect('products:inventory_management')
+
+    products = (
+        Product.active_objects.filter(company=company)
+        .select_related('productstock')
+        .order_by('name')
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Inventory'
+    ws.append(['Item Name', 'SKU', 'Barcode', 'Quantity'])
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+    for product in products:
+        stock = getattr(product, 'productstock', None)
+        ws.append([
+            product.name,
+            product.sku or '',
+            product.barcode or '',
+            stock.stock if stock else 0,
+        ])
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="inventory_export.xlsx"'
+    wb.save(response)
+    return response
 
 
 @login_required

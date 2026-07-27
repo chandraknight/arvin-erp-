@@ -56,6 +56,7 @@ def create_expense_batch(expense_rows: list, payment_rows: list, date_bs, compan
             description=f"Expenses: {description}",
             lines=lines,
             created_by=user,
+            source_type='EXPENSE',
         )
 
         # Use first payment row's account/method for Expense records (for display)
@@ -115,6 +116,7 @@ def create_expense_batch(expense_rows: list, payment_rows: list, date_bs, compan
             description=f"Expense: {row['title']}",
             lines=lines,
             created_by=user,
+            source_type='EXPENSE',
         )
 
         exp = Expense.objects.create(

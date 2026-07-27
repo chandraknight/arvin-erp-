@@ -10,9 +10,10 @@ from decimal import Decimal
 
 
 INVOICE_STATUS_CHOICES = [
-    ('ISSUED',    'Issued'),
-    ('ESTIMATE',  'Estimate'),
-    ('CANCELLED', 'Cancelled'),
+    ('ISSUED',     'Issued'),
+    ('ESTIMATE',   'Estimate'),
+    ('CANCELLED',  'Cancelled'),
+    ('WRITTEN_OFF', 'Written Off'),
 ]
 
 
@@ -47,7 +48,7 @@ class Invoice(BaseModel):
         db_constraint=False,
     )
     status = models.CharField(
-        max_length=10,
+        max_length=11,
         choices=INVOICE_STATUS_CHOICES,
         default='ISSUED',
         help_text='ISSUED = locked; ESTIMATE = no journal; CANCELLED = voided.',
@@ -95,7 +96,11 @@ class Invoice(BaseModel):
     @property
     def is_locked(self):
         """True when the invoice must not be edited or deleted."""
-        return self.status in ('ISSUED', 'CANCELLED')
+        return self.status in ('ISSUED', 'CANCELLED', 'WRITTEN_OFF')
+
+    @property
+    def is_written_off(self):
+        return self.status == 'WRITTEN_OFF'
 
     @property
     def is_estimate(self):
@@ -169,6 +174,26 @@ class InvoiceItem(models.Model):
     def __str__(self):
         item_name = self.product.name if self.product else (self.package.name if self.package else self.description or "Unknown Item")
         return f"{self.quantity}x {item_name} @ ${self.price:.2f} on Invoice #{self.invoice.id}"
+
+class BadDebtWriteOff(BaseModel):
+    """NFRS 9 — write-off of an invoice balance deemed uncollectible."""
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='bad_debt_writeoffs')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    reason = models.TextField()
+    written_off_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='bad_debt_writeoffs',
+    )
+    journal_entry = models.ForeignKey(
+        JournalEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name='bad_debt_writeoffs'
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Write-off {self.amount} — Invoice #{self.invoice.invoice_number}"
+
 
 class CreditNote(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='credit_notes_company', null=True, blank=True)

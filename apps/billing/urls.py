@@ -16,6 +16,7 @@ urlpatterns = [
     path('invoice/update/<uuid:pk>/', views.InvoiceUpdateView.as_view(), name='invoice_update'),
     path('invoice/<uuid:pk>/pdf/', views.invoice_pdf_view, name='invoice_pdf'),
     path('invoice/<uuid:pk>/cancel/', views.invoice_cancel, name='invoice_cancel'),
+    path('invoice/<uuid:pk>/write-off/', views.write_off_bad_debt, name='write_off_bad_debt'),
     path('invoice/<uuid:pk>/delete/', views.invoice_delete, name='invoice_delete'),
 
     # ── HTMX endpoints ─────────────────────────────────────────────────────

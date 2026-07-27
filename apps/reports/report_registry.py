@@ -102,6 +102,15 @@ REPORT_REGISTRY = {
         'color': 'yellow',
         'module_flag': None,
     },
+    'daily_sales_by_payment_method_report': {
+        'label': 'Daily Sales by Payment Method',
+        'description': 'POS sales grouped by day and payment method (cash, bank, etc.)',
+        'url_name': 'reports:daily_sales_by_payment_method_report',
+        'section': 'Sales Reports',
+        'icon': 'fas fa-cash-register',
+        'color': 'emerald',
+        'module_flag': None,
+    },
     'revenue_by_time_report': {
         'label': 'Revenue by Time',
         'description': 'Monthly and yearly revenue trends',

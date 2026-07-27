@@ -17,6 +17,8 @@
                    class="border border-gray-300 rounded-md text-sm px-3 py-2">
         </div>
         <button type="submit" class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition text-sm">Apply</button>
+        <a href="{% url 'reports:export_debtors_creditors_excel' %}?as_of_date={{ as_of_date|date:'Y-m-d' }}"
+           class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition text-sm">Export Excel</a>
     </form>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

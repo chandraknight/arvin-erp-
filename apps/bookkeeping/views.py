@@ -8,8 +8,11 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.db import transaction
 from datetime import datetime, date
-from decimal import Decimal
-from .models import JournalEntry, LedgerAccount, JournalEntryLine, LedgerOpeningBalance, post_journal_entry
+from decimal import Decimal, InvalidOperation
+from .models import (
+    JournalEntry, LedgerAccount, JournalEntryLine, LedgerOpeningBalance,
+    post_journal_entry, get_or_create_system_account,
+)
 from ..utils.constant import RUPEE
 from ..utils.mixins import AuthMixin
 from ..utils.nepali_date import bs_str_to_ad, ad_date_to_bs_str
@@ -376,6 +379,7 @@ class LedgerReportView(AuthMixin, View):
                     {'account': account, 'entry_type': opening_type, 'amount': amount, 'narration': 'Opening Balance'},
                     {'account': contra, 'entry_type': counter_type, 'amount': amount, 'narration': 'Opening Balance'},
                 ],
+                source_type='OPENING_BALANCE',
             )
             messages.success(
                 request,
@@ -527,3 +531,297 @@ class JournalAuditLogView(AuthMixin, View):
             'show': show,
             'currency_symbol': RUPEE,
         })
+
+
+def _parse_ad_date(date_str):
+    """Parse a plain HTML5 <input type="date"> value (ISO Gregorian YYYY-MM-DD). Returns None if empty/invalid."""
+    if not date_str:
+        return None
+    try:
+        return datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NFRS — Ad-hoc provisioning & adjustment postings
+# ═══════════════════════════════════════════════════════════════════════════
+
+@login_required
+def provision_doubtful_debts_create(request):
+    """Post a period-end provision for doubtful debts: DR Bad Debt Expense / CR Provision for Doubtful Debts."""
+    company = request.user_company
+    if not company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    if request.method == 'POST':
+        amount_str = request.POST.get('amount', '').strip()
+        date_str = request.POST.get('date', '').strip()
+        reason = request.POST.get('reason', '').strip()
+        try:
+            amount = Decimal(amount_str)
+            if amount <= 0:
+                raise ValueError
+        except (InvalidOperation, ValueError):
+            messages.error(request, "Enter a valid amount greater than zero.")
+            return render(request, 'bookkeeping/provision_doubtful_debts_form.html', {})
+
+        entry_date = _parse_ad_date(date_str) or date.today()
+
+        bad_debt_expense_acc = get_or_create_system_account(company, 'Bad Debt Expense', 'EXPENSE', code='5930')
+        provision_acc = get_or_create_system_account(
+            company, 'Provision for Doubtful Debts', 'ASSET', code='1210', is_current=True
+        )
+
+        post_journal_entry(
+            company=company,
+            date=entry_date,
+            description=f"Provision for doubtful debts ({reason[:150]})" if reason else "Provision for doubtful debts",
+            lines=[
+                {'account': bad_debt_expense_acc, 'entry_type': 'DEBIT', 'amount': amount, 'narration': 'Doubtful debts provision'},
+                {'account': provision_acc, 'entry_type': 'CREDIT', 'amount': amount, 'narration': 'Doubtful debts provision'},
+            ],
+            created_by=request.user,
+            source_type='DOUBTFUL_DEBT_PROVISION',
+        )
+        messages.success(request, f"Provision for doubtful debts of {amount} posted.")
+        return redirect('bookkeeping:journal_entry_list')
+
+    return render(request, 'bookkeeping/provision_doubtful_debts_form.html', {})
+
+
+@login_required
+def accrued_expense_create(request):
+    """Post a period-end accrual: DR <chosen expense account> / CR Accrued Expenses."""
+    company = request.user_company
+    if not company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    expense_accounts = LedgerAccount.objects.filter(
+        company=company, account_type='EXPENSE', is_deleted=False
+    ).order_by('name')
+
+    if request.method == 'POST':
+        expense_account_id = request.POST.get('expense_account')
+        amount_str = request.POST.get('amount', '').strip()
+        date_str = request.POST.get('date', '').strip()
+        reason = request.POST.get('reason', '').strip()
+
+        expense_account = expense_accounts.filter(pk=expense_account_id).first()
+        try:
+            amount = Decimal(amount_str)
+            if amount <= 0:
+                raise ValueError
+        except (InvalidOperation, ValueError):
+            expense_account = None
+
+        if not expense_account:
+            messages.error(request, "Select a valid expense account and a positive amount.")
+            return render(request, 'bookkeeping/accrued_expense_form.html', {'expense_accounts': expense_accounts})
+
+        entry_date = _parse_ad_date(date_str) or date.today()
+        accrued_liability_acc = get_or_create_system_account(
+            company, 'Accrued Expenses', 'LIABILITY', code='2110', is_current=True
+        )
+
+        post_journal_entry(
+            company=company,
+            date=entry_date,
+            description=f"Accrued expense — {expense_account.name} ({reason[:100]})" if reason else f"Accrued expense — {expense_account.name}",
+            lines=[
+                {'account': expense_account, 'entry_type': 'DEBIT', 'amount': amount, 'narration': 'Accrued expense'},
+                {'account': accrued_liability_acc, 'entry_type': 'CREDIT', 'amount': amount, 'narration': 'Accrued expense'},
+            ],
+            created_by=request.user,
+            source_type='ACCRUED_EXPENSE',
+        )
+        messages.success(
+            request,
+            f"Accrued expense of {amount} posted against {expense_account.name}. "
+            "Reverse it from the Journal Entries list once the actual bill is recorded."
+        )
+        return redirect('bookkeeping:journal_entry_list')
+
+    return render(request, 'bookkeeping/accrued_expense_form.html', {'expense_accounts': expense_accounts})
+
+
+@login_required
+def fx_adjustment_create(request):
+    """Manual foreign exchange gain/loss posting against an affected account (e.g. bank, AR, AP)."""
+    company = request.user_company
+    if not company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    accounts = LedgerAccount.objects.filter(company=company, is_deleted=False).order_by('name')
+
+    if request.method == 'POST':
+        account_id = request.POST.get('affected_account')
+        direction = request.POST.get('direction')
+        amount_str = request.POST.get('amount', '').strip()
+        date_str = request.POST.get('date', '').strip()
+        reason = request.POST.get('reason', '').strip()
+
+        affected_account = accounts.filter(pk=account_id).first()
+        try:
+            amount = Decimal(amount_str)
+            if amount <= 0:
+                raise ValueError
+        except (InvalidOperation, ValueError):
+            affected_account = None
+
+        if not affected_account or direction not in ('GAIN', 'LOSS'):
+            messages.error(request, "Select a valid account, direction, and a positive amount.")
+            return render(request, 'bookkeeping/fx_adjustment_form.html', {'accounts': accounts})
+
+        entry_date = _parse_ad_date(date_str) or date.today()
+
+        if direction == 'LOSS':
+            fx_loss_acc = get_or_create_system_account(company, 'Foreign Exchange Loss', 'EXPENSE', code='5960')
+            lines = [
+                {'account': fx_loss_acc, 'entry_type': 'DEBIT', 'amount': amount, 'narration': 'FX loss'},
+                {'account': affected_account, 'entry_type': 'CREDIT', 'amount': amount, 'narration': 'FX loss'},
+            ]
+        else:
+            fx_gain_acc = get_or_create_system_account(company, 'Foreign Exchange Gain', 'REVENUE', code='4900')
+            lines = [
+                {'account': affected_account, 'entry_type': 'DEBIT', 'amount': amount, 'narration': 'FX gain'},
+                {'account': fx_gain_acc, 'entry_type': 'CREDIT', 'amount': amount, 'narration': 'FX gain'},
+            ]
+
+        post_journal_entry(
+            company=company,
+            date=entry_date,
+            description=f"Foreign exchange {direction.lower()} — {affected_account.name} ({reason[:100]})" if reason
+                        else f"Foreign exchange {direction.lower()} — {affected_account.name}",
+            lines=lines,
+            created_by=request.user,
+            source_type='FX_ADJUSTMENT',
+        )
+        messages.success(request, f"Foreign exchange {direction.lower()} of {amount} posted.")
+        return redirect('bookkeeping:journal_entry_list')
+
+    return render(request, 'bookkeeping/fx_adjustment_form.html', {'accounts': accounts})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NFRS 1 — Prepaid Expenses
+# ═══════════════════════════════════════════════════════════════════════════
+
+@login_required
+def prepaid_expense_list(request):
+    from .models import PrepaidExpense
+    company = request.user_company
+    if not company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    prepaid_expenses = PrepaidExpense.objects.filter(
+        company=company, is_deleted=False
+    ).order_by('-start_date')
+
+    return render(request, 'bookkeeping/prepaid_expense_list.html', {
+        'prepaid_expenses': prepaid_expenses,
+        'currency_symbol': RUPEE,
+    })
+
+
+@login_required
+def prepaid_expense_create(request):
+    from .prepaid_expense_service import create_prepaid_expense
+
+    company = request.user_company
+    if not company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    bank_cash_accounts = LedgerAccount.objects.filter(
+        company=company, account_type='ASSET', is_deleted=False
+    ).order_by('name')
+
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        amount_str = request.POST.get('total_amount', '').strip()
+        start_date_str = request.POST.get('start_date', '').strip()
+        end_date_str = request.POST.get('end_date', '').strip()
+        paid_from_id = request.POST.get('paid_from_account')
+
+        paid_from_account = bank_cash_accounts.filter(pk=paid_from_id).first()
+        try:
+            total_amount = Decimal(amount_str)
+            start_date = _parse_ad_date(start_date_str)
+            end_date = _parse_ad_date(end_date_str)
+            if not name or total_amount <= 0 or not start_date or not end_date or not paid_from_account:
+                raise ValueError
+        except (InvalidOperation, ValueError):
+            messages.error(request, "Fill in all fields with valid values.")
+            return render(request, 'bookkeeping/prepaid_expense_form.html', {'bank_cash_accounts': bank_cash_accounts})
+
+        try:
+            prepaid = create_prepaid_expense(
+                company=company, name=name, total_amount=total_amount,
+                start_date=start_date, end_date=end_date,
+                paid_from_account=paid_from_account, description=description,
+                created_by=request.user,
+            )
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return render(request, 'bookkeeping/prepaid_expense_form.html', {'bank_cash_accounts': bank_cash_accounts})
+
+        messages.success(request, f"Prepaid expense '{prepaid.name}' recorded.")
+        return redirect('bookkeeping:prepaid_expense_detail', pk=prepaid.pk)
+
+    return render(request, 'bookkeeping/prepaid_expense_form.html', {'bank_cash_accounts': bank_cash_accounts})
+
+
+@login_required
+def prepaid_expense_detail(request, pk):
+    from .models import PrepaidExpense
+    company = request.user_company
+    qs = PrepaidExpense.objects.filter(is_deleted=False)
+    if not request.user.is_superuser and company:
+        qs = qs.filter(company=company)
+    prepaid = get_object_or_404(qs, pk=pk)
+
+    return render(request, 'bookkeeping/prepaid_expense_detail.html', {
+        'prepaid': prepaid,
+        'amortization_logs': prepaid.amortization_logs.order_by('-period_end'),
+        'currency_symbol': RUPEE,
+    })
+
+
+@login_required
+def prepaid_expense_post_amortization(request, pk):
+    from .models import PrepaidExpense
+    from .prepaid_expense_service import post_prepaid_amortization
+
+    company = request.user_company
+    qs = PrepaidExpense.objects.filter(is_deleted=False)
+    if not request.user.is_superuser and company:
+        qs = qs.filter(company=company)
+    prepaid = get_object_or_404(qs, pk=pk)
+
+    if request.method == 'POST':
+        period_start_str = request.POST.get('period_start', '').strip()
+        period_end_str = request.POST.get('period_end', '').strip()
+        try:
+            period_start = _parse_ad_date(period_start_str)
+            period_end = _parse_ad_date(period_end_str)
+            if not period_start or not period_end:
+                raise ValueError
+        except ValueError:
+            messages.error(request, "Enter a valid period start and end date.")
+            return redirect('bookkeeping:prepaid_expense_detail', pk=pk)
+
+        try:
+            post_prepaid_amortization(prepaid, period_start, period_end, posted_by=request.user)
+            messages.success(request, f"Amortization posted for {prepaid.name} ({period_start} to {period_end}).")
+        except ValueError as exc:
+            messages.error(request, str(exc))
+
+        return redirect('bookkeeping:prepaid_expense_detail', pk=pk)
+
+    return redirect('bookkeeping:prepaid_expense_detail', pk=pk)

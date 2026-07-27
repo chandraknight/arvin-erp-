@@ -116,6 +116,7 @@ def create_journal_entry_for_credit_note(sender, instance, created, **kwargs):
         date=instance.invoice.transaction_date if instance.invoice else instance.created_at.date(),
         description=f"Credit Note {instance.credit_note_number}",
         lines=lines,
+        source_type='CREDIT_NOTE',
     )
     instance.journal_entry = entry
     instance.save(update_fields=["journal_entry"])
@@ -179,6 +180,7 @@ def create_journal_entry_for_debit_note(sender, instance, created, **kwargs):
         date=bill.bill_date if bill else instance.created_at.date(),
         description=f"Debit Note {instance.debit_note_number}",
         lines=lines,
+        source_type='DEBIT_NOTE',
     )
     instance.journal_entry = entry
     instance.save(update_fields=["journal_entry"])
@@ -276,4 +278,5 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
         date=instance.bill_date or tz_now().date(),
         description=f"Vendor Bill {instance.bill_number}",
         lines=lines,
+        source_type='VENDOR_BILL',
     )

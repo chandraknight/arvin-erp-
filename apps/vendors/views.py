@@ -57,6 +57,7 @@ def _post_opening_balance_journal(vendor, amount, opening_type):
             {'account': debit_account, 'entry_type': 'DEBIT', 'amount': amount},
             {'account': credit_account, 'entry_type': 'CREDIT', 'amount': amount},
         ],
+        source_type='OPENING_BALANCE',
     )
 
 @auth_required('vendors.add_vendor')

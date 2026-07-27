@@ -22,7 +22,8 @@ def handle_customer_payment_journal(instance):
         entry = JournalEntry.objects.create(
             company=instance.company,
             date=instance.date,
-            description=f"Payment for Invoice {instance.invoice.invoice_number}"
+            description=f"Payment for Invoice {instance.invoice.invoice_number}",
+            source_type='PAYMENT',
         )
 
         JournalEntryLine.objects.bulk_create([
@@ -67,7 +68,8 @@ def handle_other_payment_journal(instance):
         entry = JournalEntry.objects.create(
             company=instance.company,
             date=instance.date,
-            description=description
+            description=description,
+            source_type='PAYMENT',
         )
 
         # SALARY: DR expense/payable account, CR cash/bank (paying out money)

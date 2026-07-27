@@ -17,6 +17,8 @@ urlpatterns = [
          name='print_balance_sheet_report'),
     path('profit-and-loss/', views.profit_and_loss_report,
          name='profit_and_loss_report'),
+    path('profit-and-loss/post-tax-provision/', views.post_income_tax_provision,
+         name='post_income_tax_provision'),
     path('cash-flow/', views.cash_flow_report, name='cash_flow_report'),
     path('sales/detailed/', views.detailed_sales_report,
          name='detailed_sales_report'),
@@ -176,6 +178,13 @@ urlpatterns = [
 
     path('financial/debtors-creditors/', views.debtors_creditors_report,
          name='debtors_creditors_report'),
+    path('financial/debtors-creditors/export/excel/', views.export_debtors_creditors_excel,
+         name='export_debtors_creditors_excel'),
+
+    path('sales/daily-by-payment-method/', views.daily_sales_by_payment_method_report,
+         name='daily_sales_by_payment_method_report'),
+    path('sales/daily-by-payment-method/export/excel/', views.export_daily_sales_by_payment_method_excel,
+         name='export_daily_sales_by_payment_method_excel'),
 
     path('bookkeeping/cash-book/', views.cash_book_report,
          name='cash_book_report'),

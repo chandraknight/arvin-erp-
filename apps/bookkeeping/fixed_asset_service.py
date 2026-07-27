@@ -103,6 +103,7 @@ def post_depreciation(asset, period_start: date, period_end: date, posted_by=Non
         date=period_end,
         description=f'Depreciation — {asset.name} ({period_start} to {period_end})',
         created_by=posted_by,
+        source_type='DEPRECIATION',
     )
     JournalEntryLine.objects.create(
         journal_entry=entry,

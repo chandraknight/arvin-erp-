@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}New Prepaid Expense{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+  <div class="bg-white border border-teal-200 shadow-sm rounded">
+    <div class="px-6 py-4 bg-teal-700 text-white rounded-t">
+      <h1 class="text-lg font-bold">New Prepaid Expense</h1>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="bg-teal-50 border border-teal-200 rounded p-3 text-sm text-teal-700">
+        Records a payment made in advance (e.g. annual insurance, rent). Posts
+        <strong>DR Prepaid Expenses (asset) / CR the account paid from</strong> immediately;
+        amortize it to expense over its term afterward from the detail page.
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Name</label>
+          <input type="text" name="name" required placeholder="e.g. Annual Fire Insurance"
+                 class="w-full border border-gray-300 px-3 py-2 text-sm">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Paid From</label>
+          <select name="paid_from_account" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+            <option value="">Select bank/cash account…</option>
+            {% for acc in bank_cash_accounts %}
+              <option value="{{ acc.pk }}">{{ acc.code|default:"" }} {{ acc.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-600 mb-1">Period Start</label>
+            <input type="date" name="start_date" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-600 mb-1">Period End</label>
+            <input type="date" name="end_date" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Total Amount</label>
+          <input type="number" step="0.01" min="0.01" name="total_amount" required
+                 class="w-full border border-gray-300 px-3 py-2 text-sm">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Description <span class="text-gray-400 font-normal">(optional)</span></label>
+          <textarea name="description" rows="2" class="w-full border border-gray-300 px-3 py-2 text-sm"></textarea>
+        </div>
+        <div class="flex gap-3">
+          <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold">
+            Record Prepaid Expense
+          </button>
+          <a href="{% url 'bookkeeping:prepaid_expense_list' %}"
+             class="px-5 py-2 border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

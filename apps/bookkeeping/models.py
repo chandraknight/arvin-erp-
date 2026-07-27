@@ -39,12 +39,21 @@ class LedgerAccount(BaseModel):
     def __str__(self):
         return self.name
 
+    @property
+    def normal_balance(self):
+        """DEBIT for Asset/Expense accounts, CREDIT for Liability/Equity/Revenue — auto-derived from account_type."""
+        return 'DEBIT' if self.account_type in ('ASSET', 'EXPENSE') else 'CREDIT'
+
 
 
 class JournalEntry(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='journal_entries', null=True, blank=True)
     date = models.DateField(default=timezone.now)
     description = models.CharField(max_length=700, blank=True, null=True)
+    source_type = models.CharField(
+        max_length=30, choices=JOURNAL_SOURCE_TYPES, default='OTHER',
+        help_text='Categorises the entry for filtering/reporting (Journal Voucher Register, etc.).',
+    )
 
     # Reversal fields — once posted, entries are never deleted; reversals create a mirror entry
     is_reversed = models.BooleanField(default=False)
@@ -128,7 +137,25 @@ def assert_balanced(entry):
         )
 
 
-def post_journal_entry(company, date, description, lines, created_by=None):
+def get_or_create_system_account(company, name, account_type, code=None, is_current=True):
+    """
+    Lazily create a company-scoped system LedgerAccount (e.g. "Accrued Expenses",
+    "Provision for Doubtful Debts"). Shared helper for ad-hoc NFRS postings.
+    """
+    acc, _ = LedgerAccount.objects.get_or_create(
+        company=company,
+        name=name,
+        defaults={
+            'account_type': account_type,
+            'code': code,
+            'system_created': True,
+            'is_current': is_current,
+        },
+    )
+    return acc
+
+
+def post_journal_entry(company, date, description, lines, created_by=None, source_type='OTHER'):
     """
     Single, safe entry point for posting a balanced double-entry transaction.
 
@@ -154,6 +181,7 @@ def post_journal_entry(company, date, description, lines, created_by=None):
     with transaction.atomic():
         entry = JournalEntry.objects.create(
             company=company, date=date, description=description, created_by=created_by,
+            source_type=source_type,
         )
         for line in lines:
             JournalEntryLine.objects.create(
@@ -275,6 +303,7 @@ def reverse_journal(original: 'JournalEntry', reason: str = '', user=None) -> 'J
         date=tz.now().date(),
         description=f"REVERSAL: {original.description}",
         reversal_of=original,
+        source_type='REVERSAL',
     )
     lines = [
         JournalEntryLine(
@@ -452,6 +481,72 @@ class FixedAssetDepreciationLog(BaseModel):
     period_start = models.DateField()
     period_end = models.DateField()
     amount = models.DecimalField(max_digits=14, decimal_places=2)
+
+
+# ─── NFRS 1 — Prepaid Expenses ────────────────────────────────────────────────
+
+PREPAID_EXPENSE_STATUS_CHOICES = [
+    ('ACTIVE', 'Active'),
+    ('FULLY_AMORTIZED', 'Fully Amortized'),
+]
+
+
+class PrepaidExpense(BaseModel):
+    """
+    A payment made in advance for goods/services consumed over future periods
+    (e.g. annual insurance, rent). Amortized to expense over its term via
+    PrepaidExpenseAmortizationLog rows — mirrors the FixedAsset/depreciation pattern.
+    """
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='prepaid_expenses')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    start_date = models.DateField(help_text='First day of the period this prepayment covers')
+    end_date = models.DateField(help_text='Last day of the period this prepayment covers')
+    status = models.CharField(max_length=16, choices=PREPAID_EXPENSE_STATUS_CHOICES, default='ACTIVE')
+
+    accumulated_amortization = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    prepaid_asset_account = models.ForeignKey(
+        LedgerAccount, on_delete=models.PROTECT,
+        related_name='prepaid_expenses_asset', null=True, blank=True,
+        help_text='Prepaid Expense account (ASSET type). Auto-created if blank.')
+    amortization_expense_account = models.ForeignKey(
+        LedgerAccount, on_delete=models.PROTECT,
+        related_name='prepaid_expenses_expense', null=True, blank=True,
+        help_text='Expense account amortization is charged to. Auto-created if blank.')
+    paid_from_account = models.ForeignKey(
+        LedgerAccount, on_delete=models.PROTECT,
+        related_name='prepaid_expenses_paid_from',
+        help_text='Bank/Cash account the initial prepayment was paid from.')
+
+    class Meta:
+        ordering = ['-start_date']
+
+    def __str__(self):
+        return f"{self.name} ({self.total_amount})"
+
+    @property
+    def remaining_amount(self):
+        return self.total_amount - self.accumulated_amortization
+
+
+class PrepaidExpenseAmortizationLog(BaseModel):
+    """One row per amortization journal posting — audit trail, mirrors FixedAssetDepreciationLog."""
+    prepaid_expense = models.ForeignKey(
+        PrepaidExpense, on_delete=models.CASCADE, related_name='amortization_logs')
+    journal_entry = models.ForeignKey(
+        JournalEntry, on_delete=models.SET_NULL, null=True, blank=True)
+    period_start = models.DateField()
+    period_end = models.DateField()
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+
+    class Meta:
+        ordering = ['-period_end']
+
+    def __str__(self):
+        return f"Amortization {self.amount} for {self.prepaid_expense.name} ({self.period_end})"
 
     class Meta:
         ordering = ['-period_end']

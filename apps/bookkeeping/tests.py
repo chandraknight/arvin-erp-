@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from apps.company.models import Company, FiscalYear
@@ -64,18 +65,18 @@ class FiscalYearSpanTests(TestCase):
         fy = FiscalYear.objects.create(
             company=self.company,
             start_date=date(2024, 7, 16),
-            end_date=date(2025, 7, 15),
+            end_date=date(2025, 7, 16),
             start_date_bs="2081-04-01",
-            end_date_bs="2082-03-31",
+            end_date_bs="2082-03-32",
         )
         self.assertEqual(fy.name, "2081/82")
 
     def test_wrong_start_month_rejected(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             FiscalYear.objects.create(
                 company=self.company,
                 start_date=date(2024, 1, 1),
                 end_date=date(2025, 1, 1),
                 start_date_bs="2081-01-01",
-                end_date_bs="2082-03-31",
+                end_date_bs="2082-03-32",
             )

@@ -80,6 +80,51 @@ def invoice_cancel(request, pk):
     return render(request, 'billing/invoices/invoice_cancel_confirm.html', {'invoice': invoice})
 
 
+@auth_required('billing.change_invoice')
+def write_off_bad_debt(request, pk):
+    """
+    Write off an invoice's outstanding balance as an uncollectible bad debt.
+    GET  → confirmation page (amount defaults to full outstanding balance).
+    POST → posts DR Bad Debt Expense / CR customer AR, locks invoice as WRITTEN_OFF.
+    """
+    from decimal import Decimal, InvalidOperation
+    from django.core.exceptions import ValidationError
+    from apps.billing.services.bad_debt_service import write_off_bad_debt as _write_off
+
+    invoice = get_object_or_404(Invoice, pk=pk)
+
+    if not _company_owns_invoice(request, invoice):
+        raise PermissionDenied("You do not have access to this invoice.")
+
+    if invoice.is_written_off:
+        messages.warning(request, f"Invoice {invoice.invoice_number} is already written off.")
+        return redirect('accounts:user_dashboard')
+
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+        amount_str = request.POST.get('amount', '').strip()
+        try:
+            amount = Decimal(amount_str) if amount_str else invoice.outstanding_balance
+        except InvalidOperation:
+            messages.error(request, "Enter a valid write-off amount.")
+            return render(request, 'billing/invoices/invoice_writeoff_confirm.html', {'invoice': invoice})
+
+        try:
+            _write_off(invoice, amount, reason, request.user)
+            logger.info(
+                'INVOICE_BAD_DEBT_WRITTEN_OFF invoice=%s amount=%s actor=%s company=%s reason=%s',
+                invoice.invoice_number, amount, request.user.email, request.user_company, reason,
+            )
+            messages.success(request, f"Invoice {invoice.invoice_number} written off as bad debt.")
+        except ValidationError as exc:
+            messages.error(request, '; '.join(exc.messages) if hasattr(exc, 'messages') else str(exc))
+            return render(request, 'billing/invoices/invoice_writeoff_confirm.html', {'invoice': invoice})
+
+        return redirect('accounts:user_dashboard')
+
+    return render(request, 'billing/invoices/invoice_writeoff_confirm.html', {'invoice': invoice})
+
+
 @auth_required('billing.delete_invoice')
 def invoice_delete(request, pk):
     """
