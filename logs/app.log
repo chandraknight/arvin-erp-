@@ -14149,3 +14149,171 @@ WARNING 2026-07-26 15:29:36,226 log 73248 6166654976 Not Found: /favicon.ico
 WARNING 2026-07-26 15:29:36,226 log 73248 6166654976 "GET /favicon.ico HTTP/1.1" 404 7431
 WARNING 2026-07-26 15:29:36,227 log 73248 6149828608 Not Found: /apple-touch-icon.png
 WARNING 2026-07-26 15:29:36,227 log 73248 6149828608 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-27 12:36:19,559 log 78131 6254522368 Not Found: /apple-touch-icon.png
+WARNING 2026-07-27 12:36:19,561 log 78131 6204043264 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-27 12:36:19,562 log 78131 6204043264 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-27 12:36:19,565 log 78131 6254522368 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-27 12:36:19,564 log 78131 6220869632 Not Found: /favicon.ico
+WARNING 2026-07-27 12:36:19,565 log 78131 6220869632 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-27 12:37:11,982 log 78131 6237696000 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-27 12:37:11,984 log 78131 6237696000 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-27 12:37:11,984 log 78131 6288175104 Not Found: /apple-touch-icon.png
+WARNING 2026-07-27 12:37:11,984 log 78131 6288175104 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-27 12:37:11,993 log 78131 6254522368 Not Found: /favicon.ico
+WARNING 2026-07-27 12:37:11,993 log 78131 6254522368 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-27 15:54:08,720 log 78131 6204616704 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-27 15:54:08,720 log 78131 6204616704 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-27 15:54:08,729 log 78131 6238269440 Not Found: /favicon.ico
+WARNING 2026-07-27 15:54:08,729 log 78131 6238269440 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-27 15:54:08,730 log 78131 6221443072 Not Found: /apple-touch-icon.png
+WARNING 2026-07-27 15:54:08,730 log 78131 6221443072 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+ERROR 2026-07-27 16:19:59,683 log 32994 6168997888 Internal Server Error: /billing/htmx/invoice-item-form/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/mixins.py", line 74, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 145, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/htmx_views.py", line 19, in get
+    form_index = int(request.GET.get('index', 0))
+ValueError: invalid literal for int() with base 10: '__prefix__'
+ERROR 2026-07-27 16:19:59,686 log 32994 6168997888 "GET /billing/htmx/invoice-item-form/?index=__prefix__ HTTP/1.1" 500 95609
+ERROR 2026-07-27 16:20:00,548 log 32994 6168997888 Internal Server Error: /billing/htmx/invoice-item-form/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/mixins.py", line 74, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 145, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/htmx_views.py", line 19, in get
+    form_index = int(request.GET.get('index', 0))
+ValueError: invalid literal for int() with base 10: '__prefix__'
+ERROR 2026-07-27 16:20:00,549 log 32994 6168997888 "GET /billing/htmx/invoice-item-form/?index=__prefix__ HTTP/1.1" 500 95609
+ERROR 2026-07-27 16:20:01,106 log 32994 6168997888 Internal Server Error: /billing/htmx/invoice-item-form/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/mixins.py", line 74, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 145, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/htmx_views.py", line 19, in get
+    form_index = int(request.GET.get('index', 0))
+ValueError: invalid literal for int() with base 10: '__prefix__'
+ERROR 2026-07-27 16:20:01,107 log 32994 6168997888 "GET /billing/htmx/invoice-item-form/?index=__prefix__ HTTP/1.1" 500 95609
+ERROR 2026-07-27 16:20:01,591 log 32994 6168997888 Internal Server Error: /billing/htmx/invoice-item-form/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/mixins.py", line 74, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 145, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/htmx_views.py", line 19, in get
+    form_index = int(request.GET.get('index', 0))
+ValueError: invalid literal for int() with base 10: '__prefix__'
+ERROR 2026-07-27 16:20:01,592 log 32994 6168997888 "GET /billing/htmx/invoice-item-form/?index=__prefix__ HTTP/1.1" 500 95609
+ERROR 2026-07-27 16:20:01,994 log 32994 6168997888 Internal Server Error: /billing/htmx/invoice-item-form/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/mixins.py", line 74, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 145, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/htmx_views.py", line 19, in get
+    form_index = int(request.GET.get('index', 0))
+ValueError: invalid literal for int() with base 10: '__prefix__'
+ERROR 2026-07-27 16:20:01,995 log 32994 6168997888 "GET /billing/htmx/invoice-item-form/?index=__prefix__ HTTP/1.1" 500 95609
+ERROR 2026-07-27 16:20:02,831 log 32994 6168997888 Internal Server Error: /billing/htmx/invoice-item-form/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/mixins.py", line 74, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 145, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/htmx_views.py", line 19, in get
+    form_index = int(request.GET.get('index', 0))
+ValueError: invalid literal for int() with base 10: '__prefix__'
+ERROR 2026-07-27 16:20:02,832 log 32994 6168997888 "GET /billing/htmx/invoice-item-form/?index=__prefix__ HTTP/1.1" 500 95609
+ERROR 2026-07-27 16:22:16,476 log 32994 6185824256 Internal Server Error: /billing/htmx/invoice-item-form/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/mixins.py", line 74, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 145, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/htmx_views.py", line 19, in get
+    form_index = int(request.GET.get('index', 0))
+ValueError: invalid literal for int() with base 10: '__prefix__'
+ERROR 2026-07-27 16:22:16,478 log 32994 6185824256 "GET /billing/htmx/invoice-item-form/?index=__prefix__ HTTP/1.1" 500 95874
+ERROR 2026-07-27 16:26:28,931 log 32994 6185824256 Internal Server Error: /billing/htmx/invoice-item-form/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 106, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/mixins.py", line 74, in dispatch
+    return super().dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/views/generic/base.py", line 145, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/billing/htmx_views.py", line 19, in get
+    form_index = int(request.GET.get('index', 0))
+ValueError: invalid literal for int() with base 10: '__prefix__'
+ERROR 2026-07-27 16:26:28,933 log 32994 6185824256 "GET /billing/htmx/invoice-item-form/?index=__prefix__ HTTP/1.1" 500 95874
+WARNING 2026-07-27 17:13:11,337 log 16151 6123778048 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-27 17:13:11,337 log 16151 6123778048 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-27 17:13:11,348 log 16151 6157430784 Not Found: /favicon.ico
+WARNING 2026-07-27 17:13:11,349 log 16151 6157430784 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-27 17:13:11,349 log 16151 6140604416 Not Found: /apple-touch-icon.png
+WARNING 2026-07-27 17:13:11,349 log 16151 6140604416 "GET /apple-touch-icon.png HTTP/1.1" 404 7458

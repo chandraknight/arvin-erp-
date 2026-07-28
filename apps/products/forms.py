@@ -28,6 +28,12 @@ class ItemForm(forms.ModelForm):
 
     vendor = forms.ModelChoiceField(queryset=Vendor.objects.none(), required=False, label='Preferred Vendor')
 
+    stock_quantity = forms.IntegerField(
+        required=False, min_value=0,
+        label='Sale Unit Quantity',
+        help_text='How many you have in stock, counted in your Sale Unit above (not your Purchase Unit). Leave blank to skip.',
+    )
+
     class Meta:
         model = Product
         fields = [
@@ -84,6 +90,10 @@ class ItemForm(forms.ModelForm):
 
         if category_type:
             self.fields['category'].queryset = categories.filter(type=category_type)
+
+        if self.instance and self.instance.pk:
+            stock = getattr(self.instance, 'productstock', None)
+            self.fields['stock_quantity'].initial = stock.stock if stock else 0
 
     def clean(self):
         cleaned_data = super().clean()

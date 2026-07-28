@@ -125,11 +125,23 @@ document.addEventListener("DOMContentLoaded", function () {
         preview.textContent = `Conversion: 1 ${purchase} = ${value} ${sale}. Receiving 1 ${purchase} will add ${value} ${sale} to stock.`;
     }
 
+    // Make the Stock Quantity field say exactly what it's counting, e.g.
+    // "Sale Unit Quantity (in Gram)" instead of a generic label — so it's
+    // obvious this isn't the same thing as the Purchase Unit.
+    const stockQtyLabel = document.querySelector('label[for="id_stock_quantity"]');
+    const stockQtyBaseLabel = stockQtyLabel ? stockQtyLabel.textContent.trim() : '';
+    function updateStockQtyLabel() {
+        if (!stockQtyLabel) return;
+        const sale = selectedText(saleUnit);
+        stockQtyLabel.textContent = sale ? `${stockQtyBaseLabel} (in ${sale})` : stockQtyBaseLabel;
+    }
+
     [purchaseUnit, saleUnit, factor].forEach(el => {
-        el?.addEventListener("change", updateUnitPreview);
-        el?.addEventListener("input", updateUnitPreview);
+        el?.addEventListener("change", () => { updateUnitPreview(); updateStockQtyLabel(); });
+        el?.addEventListener("input", () => { updateUnitPreview(); updateStockQtyLabel(); });
     });
     updateUnitPreview();
+    updateStockQtyLabel();
 });
 </script>
 {% endblock %}

@@ -16,7 +16,10 @@ class InvoiceItemFormRowView(LoginRequiredMixin, View):
     """
 
     def get(self, request):
-        form_index = int(request.GET.get('index', 0))
+        try:
+            form_index = int(request.GET.get('index', 0))
+        except (TypeError, ValueError):
+            form_index = 0
         form = InvoiceItemForm(prefix=f'items-{form_index}', request=request)
         company = getattr(request.user, 'company', None)
         org_type = company.organisation_type if company else 'TRADING'

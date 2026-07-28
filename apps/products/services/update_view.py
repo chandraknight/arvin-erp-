@@ -214,7 +214,25 @@ def edit_item(request, id):
 
     if request.method == 'POST':
         if form.is_valid():
-            form.save()
+            with transaction.atomic():
+                form.save()
+
+                new_qty = form.cleaned_data.get('stock_quantity')
+                if new_qty is not None:
+                    stock_instance, _ = ProductStock.objects.get_or_create(product=product)
+                    diff = new_qty - stock_instance.stock
+                    if diff != 0:
+                        StockTransaction.objects.create(
+                            product=product,
+                            user=request.user,
+                            transaction_type='ADJUST',
+                            stock_type='POS',
+                            quantity=new_qty,
+                            reason='Stock quantity adjusted from item edit form',
+                        )
+                        stock_instance.stock = new_qty
+                        stock_instance.save(update_fields=['stock', 'updated_at'])
+
             messages.success(request, f"'{product.name}' updated successfully")
             return redirect('products:inventory_management')
 

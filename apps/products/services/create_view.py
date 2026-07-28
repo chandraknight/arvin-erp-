@@ -119,11 +119,21 @@ def add_item(request):
             product.company = request.user.company if request.user.company else None
             product.save()
 
+            opening_qty = form.cleaned_data.get('stock_quantity') or 0
             ProductStock.objects.create(
                 product=product,
-                stock=0,
+                stock=opening_qty,
                 minimum_stock=0
             )
+            if opening_qty > 0:
+                StockTransaction.objects.create(
+                    product=product,
+                    user=request.user,
+                    transaction_type='ADD',
+                    stock_type='POS',
+                    quantity=opening_qty,
+                    reason='Opening stock (set on item creation)',
+                )
             messages.success(request, f"Added '{product.name}' to inventory.")
             return redirect('products:add_item')
     else:

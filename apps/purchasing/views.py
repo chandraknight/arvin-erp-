@@ -122,7 +122,13 @@ def receive_purchase_order(request, pk):
                             )
 
                             if item.price and item.price > 0:
-                                item.product.cost_price = item.price
+                                # item.price is per purchase unit (e.g. Rs/kg); cost_price is
+                                # consumed everywhere (valuation, COGS, BOM costing) as a
+                                # per-sale-unit figure, so it must be converted the same way
+                                # stock quantity is above — otherwise it's overstated by
+                                # exactly conversion_factor for any item using unit conversion.
+                                cost_per_sale_unit = (Decimal(str(item.price)) / factor).quantize(Decimal('0.0001'))
+                                item.product.cost_price = cost_per_sale_unit
                                 item.product.save(update_fields=['cost_price'])
 
                 messages.success(request, f"Purchase Order {purchase_order.purchase_order_number} marked as received and inventory updated.")
