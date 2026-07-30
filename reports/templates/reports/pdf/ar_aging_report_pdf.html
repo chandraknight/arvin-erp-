@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>AR Aging Report</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 landscape; margin: 2cm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #777; } }
+html { width: 297mm; }
+body { font-family: Arial, sans-serif; font-size: 8.5pt; color: #000; margin: 0; }
+.rh { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; } .rh .co { font-size: 11pt; font-weight: bold; } .rh .sub { font-size: 8pt; color: #666; }
+h2 { font-size: 10pt; margin: 12px 0 3px; background: #e8e8e8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 3px 6px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+th, td { border: 1px solid #bbb; padding: 3px 6px; font-size: 8pt; }
+th { background: #ddd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; } thead { display: table-header-group; }
+.tr { text-align: right; } .tc { text-align: center; }
+</style></head>
+<body>
+<div class="rh">{% if company %}<div class="co">{{ company.name }}</div>{% endif %}<h1>AR Aging Report</h1><div class="sub">As of: {% now "Y-m-d" %}</div></div>
+{% if aging_30_days %}
+<h2>Current (0–30 Days Past Due)</h2>
+<table><thead><tr><th>Invoice #</th><th>Customer</th><th>Due Date</th><th class="tr">Total</th><th class="tr">Outstanding</th></tr></thead>
+<tbody>{% for inv in aging_30_days %}<tr><td>{{ inv.invoice_number|default:inv.id }}</td><td>{{ inv.customer.name|default:"N/A" }}</td><td>{{ inv.due_date|date:"Y-m-d" }}</td><td class="tr">{{ inv.total|floatformat:2 }}</td><td class="tr">{{ inv.outstanding_balance|floatformat:2 }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% if aging_60_days %}
+<h2>31–60 Days Past Due</h2>
+<table><thead><tr><th>Invoice #</th><th>Customer</th><th>Due Date</th><th class="tr">Total</th><th class="tr">Outstanding</th></tr></thead>
+<tbody>{% for inv in aging_60_days %}<tr><td>{{ inv.invoice_number|default:inv.id }}</td><td>{{ inv.customer.name|default:"N/A" }}</td><td>{{ inv.due_date|date:"Y-m-d" }}</td><td class="tr">{{ inv.total|floatformat:2 }}</td><td class="tr">{{ inv.outstanding_balance|floatformat:2 }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% if aging_90_days %}
+<h2>61–90 Days Past Due</h2>
+<table><thead><tr><th>Invoice #</th><th>Customer</th><th>Due Date</th><th class="tr">Total</th><th class="tr">Outstanding</th></tr></thead>
+<tbody>{% for inv in aging_90_days %}<tr><td>{{ inv.invoice_number|default:inv.id }}</td><td>{{ inv.customer.name|default:"N/A" }}</td><td>{{ inv.due_date|date:"Y-m-d" }}</td><td class="tr">{{ inv.total|floatformat:2 }}</td><td class="tr">{{ inv.outstanding_balance|floatformat:2 }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% if aging_over_90_days %}
+<h2>Over 90 Days Past Due</h2>
+<table><thead><tr><th>Invoice #</th><th>Customer</th><th>Due Date</th><th class="tr">Total</th><th class="tr">Outstanding</th></tr></thead>
+<tbody>{% for inv in aging_over_90_days %}<tr><td>{{ inv.invoice_number|default:inv.id }}</td><td>{{ inv.customer.name|default:"N/A" }}</td><td>{{ inv.due_date|date:"Y-m-d" }}</td><td class="tr">{{ inv.total|floatformat:2 }}</td><td class="tr">{{ inv.outstanding_balance|floatformat:2 }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% if not aging_30_days and not aging_60_days and not aging_90_days and not aging_over_90_days %}
+<p style="text-align:center;color:#555;font-style:italic;">No outstanding invoices found.</p>
+{% endif %}
+</body></html>

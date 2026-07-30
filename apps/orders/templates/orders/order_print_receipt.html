@@ -206,6 +206,12 @@
       <td>Rs {{ order.tax_amount|floatformat:2|intcomma }}</td>
     </tr>
     {% endif %}
+    {% if order.delivery_charge %}
+    <tr>
+      <td>Delivery Charge</td>
+      <td>Rs {{ order.delivery_charge|floatformat:2|intcomma }}</td>
+    </tr>
+    {% endif %}
     <tr class="grand">
       <td>TOTAL</td>
       <td>Rs {{ order.total|floatformat:2|intcomma }}</td>

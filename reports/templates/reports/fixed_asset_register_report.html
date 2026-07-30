@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Fixed Asset Register{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Fixed Asset Register</h1>
+      <p class="text-sm text-gray-500">NFRS 13 (IAS 16) — Property, Plant &amp; Equipment</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'bookkeeping:fixed_asset_create' %}" class="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+ Add Asset</a>
+      <a href="{% url 'reports:report_dashboard' %}" class="text-sm bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Back</a>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-blue-50 rounded p-4">
+      <p class="text-xs text-gray-500">Total Cost</p>
+      <p class="text-xl font-bold text-blue-800">NPR {{ total_cost|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="bg-orange-50 rounded p-4">
+      <p class="text-xs text-gray-500">Accumulated Depreciation</p>
+      <p class="text-xl font-bold text-orange-700">NPR {{ total_accum_dep|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="bg-green-50 rounded p-4">
+      <p class="text-xs text-gray-500">Net Book Value (NBV)</p>
+      <p class="text-xl font-bold text-green-700">NPR {{ total_nbv|floatformat:2|intcomma }}</p>
+    </div>
+  </div>
+
+  {% if asset_rows %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full border border-gray-200 text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="text-left px-3 py-2 border-b">Asset</th>
+          <th class="text-left px-3 py-2 border-b">Category</th>
+          <th class="text-left px-3 py-2 border-b">Method</th>
+          <th class="text-right px-3 py-2 border-b">Cost</th>
+          <th class="text-right px-3 py-2 border-b">Accum. Dep.</th>
+          <th class="text-right px-3 py-2 border-b">NBV</th>
+          <th class="text-left px-3 py-2 border-b">Status</th>
+          <th class="text-center px-3 py-2 border-b">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in asset_rows %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-3 py-2 border-b">
+            <p class="font-medium">{{ row.asset.name }}</p>
+            <p class="text-xs text-gray-400">{{ row.asset.asset_code }}</p>
+          </td>
+          <td class="px-3 py-2 border-b text-gray-600">{{ row.asset.category|default:"—" }}</td>
+          <td class="px-3 py-2 border-b">
+            <span class="text-xs bg-gray-100 px-2 py-0.5 rounded">{{ row.asset.get_depreciation_method_display }}</span>
+          </td>
+          <td class="text-right px-3 py-2 border-b">{{ row.asset.cost|floatformat:2|intcomma }}</td>
+          <td class="text-right px-3 py-2 border-b text-orange-600">{{ row.asset.accumulated_depreciation|floatformat:2|intcomma }}</td>
+          <td class="text-right px-3 py-2 border-b font-semibold text-green-700">{{ row.asset.net_book_value|floatformat:2|intcomma }}</td>
+          <td class="px-3 py-2 border-b">
+            {% if row.asset.status == 'ACTIVE' %}
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Active</span>
+            {% elif row.asset.status == 'DISPOSED' %}
+              <span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Disposed</span>
+            {% else %}
+              <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">{{ row.asset.status }}</span>
+            {% endif %}
+          </td>
+          <td class="text-center px-3 py-2 border-b">
+            <a href="{% url 'bookkeeping:fixed_asset_detail' row.asset.pk %}" class="text-blue-600 hover:underline text-xs">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="bg-gray-100 font-bold text-sm">
+        <tr>
+          <td colspan="3" class="px-3 py-2">Total</td>
+          <td class="text-right px-3 py-2">{{ total_cost|floatformat:2|intcomma }}</td>
+          <td class="text-right px-3 py-2 text-orange-600">{{ total_accum_dep|floatformat:2|intcomma }}</td>
+          <td class="text-right px-3 py-2 text-green-700">{{ total_nbv|floatformat:2|intcomma }}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-12 text-gray-400">
+    <p class="text-lg">No fixed assets recorded yet.</p>
+    <a href="{% url 'bookkeeping:fixed_asset_create' %}" class="mt-3 inline-block text-blue-600 hover:underline">Add your first asset →</a>
+  </div>
+  {% endif %}
+
+  <p class="mt-4 text-xs text-gray-400">Prepared in accordance with NFRS 13 (IAS 16). All amounts in NPR.</p>
+</div>
+{% endblock %}

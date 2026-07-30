@@ -992,58 +992,19 @@ def stock_valuation_report(request):
             request, "Your account is not associated with a company. Please contact an administrator.")
         return redirect('accounts:user_dashboard')
 
-    products = Product.objects.filter(
-        company=user_company, is_service=False
-    ).select_related('productstock', 'category').order_by('category__name', 'name')
-
     category_q = request.GET.get('category', '').strip()
-    if category_q:
-        products = products.filter(category_id=category_q)
 
-    rows = []
-    total_cost_value = Decimal('0')
-    total_nrv_value = Decimal('0')
-    total_carrying_value = Decimal('0')
-
-    for product in products:
-        stock = getattr(product, 'productstock', None)
-        qty = Decimal(stock.stock + stock.ecom_stock) if stock else Decimal('0')
-        if qty == 0:
-            continue
-
-        cost_price = product.cost_price or Decimal('0')
-        value_at_cost = qty * cost_price
-
-        nrv = product.nrv if product.nrv is not None else cost_price
-        value_at_nrv = qty * nrv
-
-        carrying_value = min(value_at_cost, value_at_nrv)
-        write_down = value_at_cost - carrying_value if value_at_nrv < value_at_cost else Decimal('0')
-
-        rows.append({
-            'product': product,
-            'category': product.category.name if product.category else '',
-            'cost_method': product.get_cost_method_display(),
-            'qty': qty,
-            'unit_cost': cost_price,
-            'value_at_cost': value_at_cost,
-            'nrv': nrv,
-            'value_at_nrv': value_at_nrv,
-            'carrying_value': carrying_value,
-            'write_down': write_down,
-        })
-        total_cost_value += value_at_cost
-        total_nrv_value += value_at_nrv
-        total_carrying_value += carrying_value
+    from apps.products.services.valuation_service import compute_stock_valuation
+    rows, totals = compute_stock_valuation(user_company, category_id=category_q or None)
 
     context = {
         'rows': rows,
         'category_q': category_q,
         'categories': Category.objects.filter(company=user_company).order_by('name'),
-        'total_cost_value': total_cost_value,
-        'total_nrv_value': total_nrv_value,
-        'total_carrying_value': total_carrying_value,
-        'total_write_down': total_cost_value - total_carrying_value,
+        'total_cost_value': totals['total_cost_value'],
+        'total_nrv_value': totals['total_nrv_value'],
+        'total_carrying_value': totals['total_carrying_value'],
+        'total_write_down': totals['total_write_down'],
         'as_of_date': date.today(),
     }
     return render(request, 'reports/products/stock_valuation_report.html', context)
@@ -1312,6 +1273,8 @@ def cash_book_report(request):
         'statement': statement,
         'date_from': date_from,
         'date_to': date_to,
+        'date_from_bs': date_from_str or '',
+        'date_to_bs': date_to_str or '',
     }
     return render(request, 'reports/bookkeeping/cash_book_report.html', context)
 
@@ -1347,8 +1310,134 @@ def bank_book_report(request):
         'statement': statement,
         'date_from': date_from,
         'date_to': date_to,
+        'date_from_bs': date_from_str or '',
+        'date_to_bs': date_to_str or '',
     }
     return render(request, 'reports/bookkeeping/bank_book_report.html', context)
+
+
+@login_required
+def bank_reconciliation_report(request):
+    """
+    NFRS Bank Reconciliation Statement (BRS).
+
+    Book balance (per the Bank ledger account, as of the statement date) is
+    reconciled to the bank statement's closing balance by listing items posted
+    in the books but not yet reflected on the bank statement:
+      - Cheques/payments issued but not yet presented (book DEBIT-side entries
+        reducing bank, i.e. CREDIT lines on the bank account, unreconciled)
+      - Deposits recorded but not yet credited by the bank (DEBIT lines on the
+        bank account, unreconciled)
+
+    Reconciliation status is a per-JournalEntryLine flag the user sets by
+    ticking each line against the physical/e-statement — see
+    bank_reconciliation_toggle_line. There is no bank-statement import in this
+    system, so the "statement balance" itself is entered by hand each visit;
+    only the cleared/uncleared state of each book entry is persisted.
+
+    Adjusted book balance = statement balance is the reconciliation check:
+        book_balance - uncleared_credits(payments not presented) + uncleared_debits(deposits not credited)
+        == statement_closing_balance
+    """
+    from apps.payments.models import BankAccount
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    bank_accounts = BankAccount.objects.filter(company=user_company, is_active=True).order_by('bank_name')
+    bank_account_id = request.GET.get('bank_account')
+    selected_bank_account = bank_accounts.filter(pk=bank_account_id).first() if bank_account_id else bank_accounts.first()
+
+    as_of_str = request.GET.get('as_of_date')
+    as_of_date = bs_str_to_ad(as_of_str) if as_of_str else date.today()
+
+    statement_balance_str = request.GET.get('statement_balance', '').strip()
+    try:
+        statement_balance = Decimal(statement_balance_str) if statement_balance_str else None
+    except Exception:
+        statement_balance = None
+
+    book_balance = None
+    uncleared_credits = []  # payments/cheques issued, not yet presented
+    uncleared_debits = []   # deposits recorded, not yet credited by bank
+    total_uncleared_credits = Decimal('0.00')
+    total_uncleared_debits = Decimal('0.00')
+    adjusted_book_balance = None
+    difference = None
+
+    ledger_account = selected_bank_account.ledger_account if selected_bank_account else None
+    if ledger_account:
+        all_lines = JournalEntryLine.objects.filter(
+            account=ledger_account,
+            journal_entry__company=user_company,
+            journal_entry__is_deleted=False,
+            journal_entry__date__lte=as_of_date,
+        ).select_related('journal_entry').order_by('journal_entry__date', 'id')
+
+        totals = all_lines.aggregate(
+            debit=Coalesce(Sum('amount', filter=Q(entry_type='DEBIT')), Decimal('0')),
+            credit=Coalesce(Sum('amount', filter=Q(entry_type='CREDIT')), Decimal('0')),
+        )
+        book_balance = totals['debit'] - totals['credit']
+
+        for line in all_lines.filter(is_reconciled=False):
+            if line.entry_type == 'CREDIT':
+                uncleared_credits.append(line)
+                total_uncleared_credits += line.amount
+            else:
+                uncleared_debits.append(line)
+                total_uncleared_debits += line.amount
+
+        adjusted_book_balance = book_balance - total_uncleared_credits + total_uncleared_debits
+        if statement_balance is not None:
+            difference = statement_balance - adjusted_book_balance
+
+    context = {
+        'company': user_company,
+        'bank_accounts': bank_accounts,
+        'selected_bank_account': selected_bank_account,
+        'as_of_date': as_of_date,
+        'as_of_date_bs': as_of_str or ad_date_to_bs_str(as_of_date),
+        'statement_balance': statement_balance,
+        'statement_balance_str': statement_balance_str,
+        'book_balance': book_balance,
+        'uncleared_credits': uncleared_credits,
+        'uncleared_debits': uncleared_debits,
+        'total_uncleared_credits': total_uncleared_credits,
+        'total_uncleared_debits': total_uncleared_debits,
+        'adjusted_book_balance': adjusted_book_balance,
+        'difference': difference,
+    }
+    return render(request, 'reports/bookkeeping/bank_reconciliation_report.html', context)
+
+
+@login_required
+def bank_reconciliation_toggle_line(request):
+    """
+    HTMX endpoint: marks a JournalEntryLine as reconciled from the BRS worksheet.
+    Ticking the checkbox is a one-way "mark cleared" action — the row is removed
+    from the outstanding-items worksheet by returning an empty swap, since an
+    already-reconciled line has nothing left to render there.
+    """
+    user_company = request.user_company
+    if not user_company or request.method != 'POST':
+        return HttpResponse(status=400)
+
+    line_id = request.POST.get('line_id')
+    line = JournalEntryLine.objects.filter(
+        pk=line_id, journal_entry__company=user_company, journal_entry__is_deleted=False,
+    ).first()
+    if not line:
+        return HttpResponse(status=404)
+
+    line.is_reconciled = True
+    line.reconciled_date = date.today()
+    line.save(update_fields=['is_reconciled', 'reconciled_date'])
+
+    return HttpResponse('')
 
 
 @login_required
@@ -1388,6 +1477,8 @@ def party_ledger_report(request):
         'statement': statement,
         'date_from': date_from,
         'date_to': date_to,
+        'date_from_bs': date_from_str or '',
+        'date_to_bs': date_to_str or '',
     }
     return render(request, 'reports/party_ledger_report.html', context)
 
@@ -1489,6 +1580,8 @@ def general_ledger_report(request):
         'statement': statement,
         'date_from': date_from,
         'date_to': date_to,
+        'date_from_bs': date_from_str or '',
+        'date_to_bs': date_to_str or '',
     }
     return render(request, 'reports/bookkeeping/general_ledger_report.html', context)
 
@@ -2608,7 +2701,15 @@ def trial_balance_report(request):
     
     # Filter out accounts with zero balance
     trial_balance_data = [item for item in trial_balance_data if item['debit_balance'] > 0 or item['credit_balance'] > 0]
-    
+
+    # Item-wise drill-down — underlying transactions for every account, plus a
+    # per-product breakdown for accounts that map to products (sales, purchases,
+    # COGS, closing stock). See apps/reports/services/account_drilldown.py.
+    from apps.reports.services.account_drilldown import get_account_transactions, get_product_breakdown
+    for item in trial_balance_data:
+        item['transactions'] = get_account_transactions(item['account'], date_to=report_date)
+        item['product_breakdown'] = get_product_breakdown(item['account'], user_company, date_to=report_date)
+
     # Check if trial balance is balanced
     is_balanced = abs(total_debits - total_credits) < Decimal('0.01')
     difference = total_debits - total_credits
@@ -2729,6 +2830,14 @@ def balance_sheet_report(request):
     current_liabilities     = [l for l in liabilities if l['account'].is_current]
     noncurrent_liabilities  = [l for l in liabilities if not l['account'].is_current]
     total_equity_all = total_equity + net_income_up_to_date
+
+    # Item-wise drill-down — underlying transactions for every account, plus a
+    # per-product breakdown for accounts that map to products (this is where
+    # "Closing Stock" gets its per-product valuation rows).
+    from apps.reports.services.account_drilldown import get_account_transactions, get_product_breakdown
+    for item in assets + liabilities + equity:
+        item['transactions'] = get_account_transactions(item['account'], date_to=report_date)
+        item['product_breakdown'] = get_product_breakdown(item['account'], user_company, date_to=report_date)
 
     context = {
         'report_date': report_date,
@@ -4522,6 +4631,25 @@ def profit_and_loss_report(request):
 
     profit_before_tax = total_revenue - total_expenses
 
+    # Item-wise drill-down — underlying transactions for every account, plus a
+    # per-product breakdown for accounts that map to products (revenue, COGS).
+    from apps.reports.services.account_drilldown import get_account_transactions, get_product_breakdown
+    for item in revenue_lines + expense_lines:
+        item['transactions'] = get_account_transactions(item['account'], date_from=start_date, date_to=end_date)
+        item['product_breakdown'] = get_product_breakdown(item['account'], user_company, date_from=start_date, date_to=end_date)
+
+    # NFRS Statement of Profit or Loss layout: split expenses into Cost of Sales
+    # (accounts feeding the Trading Account — Purchases and the Closing Stock
+    # contra-account credited by post_closing_stock) vs Operating Expenses, so
+    # Gross Profit can be shown before other opex, same account-name convention
+    # already used by the ratio/profitability report's gross-profit lookup.
+    COST_OF_SALES_ACCOUNT_NAMES = {'Purchase Expense', 'Purchases', 'Cost of Goods Sold', 'COGS'}
+    cost_of_sales_lines = [l for l in expense_lines if l['account'].name in COST_OF_SALES_ACCOUNT_NAMES]
+    operating_expense_lines = [l for l in expense_lines if l['account'].name not in COST_OF_SALES_ACCOUNT_NAMES]
+    total_cost_of_sales = sum((l['amount'] for l in cost_of_sales_lines), Decimal('0.00'))
+    total_operating_expenses = sum((l['amount'] for l in operating_expense_lines), Decimal('0.00'))
+    gross_profit = total_revenue - total_cost_of_sales
+
     # NFRS 12 (IAS 12): Corporate Income Tax provision
     # Nepal CIT rate: 25% for most companies (15% for special industries)
     cit_rate = Decimal(str(getattr(user_company, 'cit_rate', 25) or 25))
@@ -4531,8 +4659,13 @@ def profit_and_loss_report(request):
     profit_after_tax = profit_before_tax - tax_expense
 
     context = {
-        'revenue_lines':     revenue_lines,
-        'expense_lines':     expense_lines,
+        'revenue_lines':            revenue_lines,
+        'expense_lines':            expense_lines,
+        'cost_of_sales_lines':      cost_of_sales_lines,
+        'operating_expense_lines':  operating_expense_lines,
+        'total_cost_of_sales':      total_cost_of_sales,
+        'total_operating_expenses': total_operating_expenses,
+        'gross_profit':             gross_profit,
         'total_revenue':     total_revenue,
         'total_expenses':    total_expenses,
         'profit_before_tax': profit_before_tax,
@@ -4646,6 +4779,74 @@ def post_income_tax_provision(request):
         source_type='TAX_PROVISION',
     )
     messages.success(request, f"Income tax provision of {tax_expense} posted for period ending {end_date}.")
+    return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
+
+
+@login_required
+def post_closing_stock(request):
+    """
+    Post the NFRS 2 period-end closing stock adjustment: DR Closing Stock (asset)
+    / CR Cost of Goods Sold (expense), valued at the lower of cost or NRV.
+
+    Crediting a dedicated "Cost of Goods Sold" account (rather than the existing
+    "Purchase Expense" account) means it nets against Purchase Expense inside
+    profit_and_loss_report's existing "sum every EXPENSE account" aggregation
+    with no changes to that logic — total_expenses becomes Purchases − Closing
+    Stock (true COGS) automatically once this account has a balance.
+
+    Valuation is against LIVE current stock (see compute_stock_valuation) —
+    accurate only if posted at period-end before further stock movement.
+    """
+    from apps.bookkeeping.models import post_journal_entry, get_or_create_system_account
+    from apps.products.services.valuation_service import compute_stock_valuation
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    if request.method != 'POST':
+        return redirect('reports:profit_and_loss_report')
+
+    start_date_str = request.POST.get('start_date')
+    end_date_str = request.POST.get('end_date')
+    end_date = bs_str_to_ad(end_date_str) if end_date_str else date.today()
+
+    _, totals = compute_stock_valuation(user_company)
+    closing_stock_value = totals['total_carrying_value']
+
+    if closing_stock_value <= Decimal('0.00'):
+        messages.error(request, "No stock on hand to value — nothing to post.")
+        return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
+
+    already_posted = JournalEntry.objects.filter(
+        company=user_company, source_type='CLOSING_STOCK', date=end_date, is_deleted=False,
+    ).exists()
+    if already_posted:
+        messages.error(request, f"Closing stock has already been posted for period ending {end_date}.")
+        return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
+
+    # No hardcoded `code=` here — a fixed code can collide with an unrelated
+    # account that already occupies it in a given company's chart of accounts
+    # (the (company, code) DB constraint is separate from (company, name), so
+    # get_or_create's company+name lookup can't protect against that). The
+    # account name is what every other query in this feature actually matches
+    # on, so leaving code unset (NULL, not unique-constrained) is the safe choice.
+    closing_stock_acc = get_or_create_system_account(user_company, 'Closing Stock', 'ASSET', is_current=True)
+    cogs_acc = get_or_create_system_account(user_company, 'Cost of Goods Sold', 'EXPENSE')
+
+    post_journal_entry(
+        company=user_company,
+        date=end_date,
+        description=f"Closing stock adjustment — period ending {end_date} (lower of cost or NRV)",
+        lines=[
+            {'account': closing_stock_acc, 'entry_type': 'DEBIT', 'amount': closing_stock_value, 'narration': 'Closing stock'},
+            {'account': cogs_acc, 'entry_type': 'CREDIT', 'amount': closing_stock_value, 'narration': 'Closing stock'},
+        ],
+        created_by=request.user,
+        source_type='CLOSING_STOCK',
+    )
+    messages.success(request, f"Closing stock of {closing_stock_value} posted for period ending {end_date}.")
     return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
 
 
@@ -5942,6 +6143,299 @@ def fixed_asset_register_report(request):
         'report_title':     'Fixed Asset Register',
     }
     return render(request, 'reports/fixed_asset_register_report.html', context)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DELIVERY CHARGES REPORT
+# ═══════════════════════════════════════════════════════════════════════════
+
+@login_required
+def delivery_charges_report(request):
+    """
+    Invoice-level detail behind the 'Delivery Income' ledger balance shown in
+    P&L — which invoice/order it came from, ecom vs manual/order-management
+    origin, and the customer. The P&L's Delivery Income line is the NFRS
+    revenue-by-nature figure; this report is the transaction-level backup
+    for it (same relationship as the account_drilldown partial elsewhere in
+    this app, but as its own report since delivery charges span both the
+    ecom and orders apps and don't map to a single account-drilldown row).
+    """
+    from apps.orders.models import SalesOrder
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    start_date = bs_str_to_ad(start_date_str) if start_date_str else None
+    end_date = bs_str_to_ad(end_date_str) if end_date_str else None
+
+    invoices = Invoice.active_objects.filter(
+        company=user_company, delivery_charge__gt=0, status='ISSUED',
+    ).select_related('customer').order_by('-transaction_date')
+    if start_date:
+        invoices = invoices.filter(transaction_date__gte=start_date)
+    if end_date:
+        invoices = invoices.filter(transaction_date__lte=end_date)
+
+    # Tag each invoice with its originating SalesOrder (if any) so ecom vs
+    # order-management vs directly-billed origin is visible on the report.
+    orders_by_invoice = {
+        so.invoice_id: so
+        for so in SalesOrder.objects.filter(invoice__in=invoices).only('id', 'invoice_id', 'order_number', 'notes')
+    }
+    rows = []
+    for inv in invoices:
+        so = orders_by_invoice.get(inv.id)
+        origin = 'Direct Invoice'
+        if so:
+            origin = 'Ecom Order' if so.notes and so.notes.startswith('[ECOM #') else 'Sales Order'
+        rows.append({'invoice': inv, 'order': so, 'origin': origin})
+
+    total_delivery_income = invoices.aggregate(t=Coalesce(Sum('delivery_charge'), Decimal('0.00')))['t']
+
+    context = {
+        'company': user_company,
+        'rows': rows,
+        'total_delivery_income': total_delivery_income,
+        'start_date': start_date,
+        'end_date': end_date,
+        'start_date_bs': start_date_str or '',
+        'end_date_bs': end_date_str or '',
+    }
+    return render(request, 'reports/delivery_charges_report.html', context)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NOTES TO THE FINANCIAL STATEMENTS (NFRS disclosure requirements)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@login_required
+def notes_to_accounts_report(request):
+    """
+    NFRS Notes to the Financial Statements — the disclosure notes that must
+    accompany the primary statements (Balance Sheet, P&L, Cash Flow, Changes
+    in Equity). Composed from data the system already tracks (PPE from the
+    Fixed Asset Register, provisions/accruals from journal source types,
+    receivables/payables from the debtors-creditors schedule) plus the two
+    disclosure registers that have no other source (Related Party
+    Transactions, Contingent Liabilities) and the free-text accounting
+    policy statement.
+    """
+    from apps.bookkeeping.models import FixedAsset
+    from apps.reports.models import AccountingPolicyNote, RelatedPartyTransaction, ContingentLiability
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    as_of_date_str = request.GET.get('as_of_date')
+    as_of_date = bs_str_to_ad(as_of_date_str) if as_of_date_str else date.today()
+
+    fiscal_year_id = request.session.get('active_fiscal_year_id')
+    fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id, company=user_company).first() if fiscal_year_id else None
+
+    policy_note, _ = AccountingPolicyNote.objects.get_or_create(company=user_company)
+
+    # Note: PPE — reuse the Fixed Asset Register totals.
+    assets = FixedAsset.objects.filter(company=user_company, is_deleted=False)
+    ppe_total_cost = assets.aggregate(t=Coalesce(Sum('cost'), Decimal('0')))['t']
+    ppe_count = assets.count()
+
+    # Note: Provisions & accruals — balances of accounts posted via those
+    # journal source types, since that's the only place this data lives.
+    provision_source_types = ['DOUBTFUL_DEBT_PROVISION', 'ACCRUED_EXPENSE', 'PREPAID_AMORTIZATION']
+    provision_lines = JournalEntryLine.objects.filter(
+        journal_entry__company=user_company,
+        journal_entry__source_type__in=provision_source_types,
+        journal_entry__is_deleted=False,
+        journal_entry__date__lte=as_of_date,
+    ).select_related('journal_entry', 'account')
+    provision_rows = (
+        provision_lines.values('journal_entry__source_type', 'account__name')
+        .annotate(
+            debit=Coalesce(Sum('amount', filter=Q(entry_type='DEBIT')), Decimal('0')),
+            credit=Coalesce(Sum('amount', filter=Q(entry_type='CREDIT')), Decimal('0')),
+        )
+        .order_by('journal_entry__source_type')
+    )
+
+    # Note: Trade Receivables / Payables — same figures as the debtors-creditors schedule.
+    total_debtors = Invoice.objects.filter(
+        company=user_company, outstanding_balance__gt=0, created_at__date__lte=as_of_date,
+    ).aggregate(t=Coalesce(Sum('outstanding_balance'), Decimal('0')))['t']
+
+    total_creditors = Decimal('0')
+    for bill in VendorBill.objects.filter(vendor__company=user_company, status='UNPAID', bill_date__lte=as_of_date):
+        paid = bill.payments.aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
+        outstanding = bill.total_amount - paid
+        if outstanding > 0:
+            total_creditors += outstanding
+
+    related_party_transactions = RelatedPartyTransaction.objects.filter(
+        company=user_company, transaction_date__lte=as_of_date,
+    ).order_by('-transaction_date')
+
+    contingent_liabilities = ContingentLiability.objects.filter(
+        company=user_company, as_of_date__lte=as_of_date,
+    ).order_by('-as_of_date')
+    total_contingent = contingent_liabilities.filter(status='OPEN').aggregate(
+        t=Coalesce(Sum('estimated_amount'), Decimal('0'))
+    )['t']
+
+    context = {
+        'company': user_company,
+        'fiscal_year': fiscal_year,
+        'as_of_date': as_of_date,
+        'as_of_date_bs': as_of_date_str or ad_date_to_bs_str(as_of_date),
+        'policy_note': policy_note,
+        'ppe_total_cost': ppe_total_cost,
+        'ppe_count': ppe_count,
+        'provision_rows': provision_rows,
+        'total_debtors': total_debtors,
+        'total_creditors': total_creditors,
+        'related_party_transactions': related_party_transactions,
+        'contingent_liabilities': contingent_liabilities,
+        'total_contingent': total_contingent,
+    }
+    return render(request, 'reports/notes_to_accounts_report.html', context)
+
+
+@login_required
+def edit_accounting_policy_note(request):
+    """Company admin: edit the free-text 'Significant Accounting Policies' note shown in Notes to Accounts."""
+    from apps.reports.forms import AccountingPolicyNoteForm
+    from apps.reports.models import AccountingPolicyNote
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+    if not (request.user.is_superuser or request.user.is_company_admin):
+        messages.error(request, "Only company admins can edit accounting policies.")
+        return redirect('reports:notes_to_accounts_report')
+
+    policy_note, _ = AccountingPolicyNote.objects.get_or_create(company=user_company)
+
+    if request.method == 'POST':
+        form = AccountingPolicyNoteForm(request.POST, instance=policy_note)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Accounting policy note updated.")
+            return redirect('reports:notes_to_accounts_report')
+    else:
+        form = AccountingPolicyNoteForm(instance=policy_note)
+
+    return render(request, 'reports/edit_accounting_policy_note.html', {'form': form})
+
+
+@login_required
+def related_party_transaction_list(request):
+    from apps.reports.models import RelatedPartyTransaction
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    transactions = RelatedPartyTransaction.objects.filter(company=user_company).order_by('-transaction_date')
+    return render(request, 'reports/related_party_transaction_list.html', {'transactions': transactions})
+
+
+@login_required
+def related_party_transaction_create(request):
+    from apps.reports.forms import RelatedPartyTransactionForm
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    if request.method == 'POST':
+        form = RelatedPartyTransactionForm(request.POST)
+        if form.is_valid():
+            rpt = form.save(commit=False)
+            rpt.company = user_company
+            rpt.fiscal_year_id = request.session.get('active_fiscal_year_id')
+            rpt.created_by = request.user
+            rpt.save()
+            messages.success(request, "Related party transaction recorded.")
+            return redirect('reports:related_party_transaction_list')
+    else:
+        form = RelatedPartyTransactionForm()
+
+    return render(request, 'reports/related_party_transaction_form.html', {'form': form})
+
+
+@login_required
+def related_party_transaction_delete(request, pk):
+    from apps.reports.models import RelatedPartyTransaction
+
+    user_company = request.user_company
+    rpt = get_object_or_404(RelatedPartyTransaction, pk=pk, company=user_company)
+    if request.method == 'POST':
+        rpt.is_deleted = True
+        rpt.deleted_by = request.user
+        rpt.save(update_fields=['is_deleted', 'deleted_by'])
+        messages.success(request, "Related party transaction removed.")
+        return redirect('reports:related_party_transaction_list')
+    return render(request, 'reports/confirm_delete.html', {'object': rpt})
+
+
+@login_required
+def contingent_liability_list(request):
+    from apps.reports.models import ContingentLiability
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    liabilities = ContingentLiability.objects.filter(company=user_company).order_by('-as_of_date')
+    return render(request, 'reports/contingent_liability_list.html', {'liabilities': liabilities})
+
+
+@login_required
+def contingent_liability_create(request):
+    from apps.reports.forms import ContingentLiabilityForm
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    if request.method == 'POST':
+        form = ContingentLiabilityForm(request.POST)
+        if form.is_valid():
+            cl = form.save(commit=False)
+            cl.company = user_company
+            cl.fiscal_year_id = request.session.get('active_fiscal_year_id')
+            cl.created_by = request.user
+            cl.save()
+            messages.success(request, "Contingent liability recorded.")
+            return redirect('reports:contingent_liability_list')
+    else:
+        form = ContingentLiabilityForm()
+
+    return render(request, 'reports/contingent_liability_form.html', {'form': form})
+
+
+@login_required
+def contingent_liability_delete(request, pk):
+    from apps.reports.models import ContingentLiability
+
+    user_company = request.user_company
+    cl = get_object_or_404(ContingentLiability, pk=pk, company=user_company)
+    if request.method == 'POST':
+        cl.is_deleted = True
+        cl.deleted_by = request.user
+        cl.save(update_fields=['is_deleted', 'deleted_by'])
+        messages.success(request, "Contingent liability removed.")
+        return redirect('reports:contingent_liability_list')
+    return render(request, 'reports/confirm_delete.html', {'object': cl})
 
 
 # ── Company Admin: Report Access Management ───────────────────────────────────

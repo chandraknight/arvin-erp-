@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Purchase Returns (Debit Notes){% endblock %}
+
+{% block content %}
+    <div class="w-full mt-2">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Purchase Returns (Debit Notes)</h1>
+            <a href="{% url 'billing:debit_note_create' %}" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200 ease-in-out text-sm">New Purchase Return</a>
+        </div>
+
+        {% if object_list %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white shadow-md rounded">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                            <th class="py-3 px-6 text-left">Number</th>
+                            <th class="py-3 px-6 text-left">Date</th>
+                            <th class="py-3 px-6 text-left">Vendor</th>
+                            <th class="py-3 px-6 text-left">Vendor Bill</th>
+                            <th class="py-3 px-6 text-right">Amount</th>
+                            <th class="py-3 px-6 text-left">Reason</th>
+                            <th class="py-3 px-6 text-left">Status</th>
+                            <th class="py-3 px-6 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        {% for note in object_list %}
+                            <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                <td class="py-3 px-6 text-left whitespace-nowrap">{{ note.debit_note_number|default:note.id }}</td>
+                                <td class="py-3 px-6 text-left whitespace-nowrap">{{ note.created_at|date:"Y-m-d" }}</td>
+                                <td class="py-3 px-6 text-left">{{ note.vendor.name|default:"N/A" }}</td>
+                                <td class="py-3 px-6 text-left">{{ note.vendor_bill.bill_number|default:"—" }}</td>
+                                <td class="py-3 px-6 text-right whitespace-nowrap">{{ note.amount }}</td>
+                                <td class="py-3 px-6 text-left">{{ note.reason|default:"-"|truncatechars:50 }}</td>
+                                <td class="py-3 px-6 text-left">{{ note.get_status_display }}</td>
+                                <td class="py-3 px-6 text-center">
+                                    <a href="{% url 'billing:debit_note_update' pk=note.pk %}" class="text-blue-600 hover:underline">Edit</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if page_obj.has_other_pages %}
+            <div class="flex items-center gap-3 mt-4 text-sm">
+                {% if page_obj.has_previous %}<a class="text-blue-600 hover:underline" href="?page={{ page_obj.previous_page_number }}">← Prev</a>{% endif %}
+                <span class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}<a class="text-blue-600 hover:underline" href="?page={{ page_obj.next_page_number }}">Next →</a>{% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <p class="text-gray-600 italic">No purchase returns found.</p>
+        {% endif %}
+    </div>
+{% endblock %}

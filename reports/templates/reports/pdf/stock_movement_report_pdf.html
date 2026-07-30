@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ report_title }}</title>
+        <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: sans-serif; font-size: 10pt; color: #000; margin: 0; }
+        h1 { color: #333; text-align: center; font-size: 14pt; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #999; padding: 5px 7px; text-align: left; font-size: 9pt; }
+        th { background-color: #e8e8e8; font-weight: bold; }
+        tr { page-break-inside: avoid; }
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <h1>{{ report_title }}</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Product</th>
+                <th>Movement Type</th>
+                <th class="text-right">Quantity</th>
+                <th>Location</th>
+                <th>Related Document</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in stock_movements %}
+                <tr>
+                    <td>{{ transaction.date|date:"Y-m-d H:i" }}</td>
+                    <td>{{ transaction.product.name|default:"N/A" }}</td>
+                    <td>{{ transaction.get_movement_type_display|default:"N/A" }}</td>
+                    <td class="text-right">{{ transaction.quantity }}</td>
+                    <td>{{ transaction.location.name|default:"N/A" }}</td>
+                    <td>N/A</td> {# Placeholder for related document #}
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">No stock movements found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html> 

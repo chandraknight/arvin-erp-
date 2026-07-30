@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Sales Summary Report{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Sales Summary Report</h1>
+        <a href="{% url 'reports:report_dashboard' %}" class="inline-block bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200 text-sm">Back to Reports</a>
+    </div>
+
+    {% if fiscal_year %}
+    <div class="alert alert-info mb-4">
+        Showing sales for fiscal year:
+        <strong>{{ fiscal_year.start_date }} to {{ fiscal_year.end_date }}</strong>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-gray-100 p-4 rounded-md">
+            <h2 class="text-lg font-semibold text-gray-700">Total Sales Amount</h2>
+            <p class="text-2xl font-bold text-green-600">NPR {{ total_sales_amount|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-gray-100 p-4 rounded-md">
+            <h2 class="text-lg font-semibold text-gray-700">Number of Sales</h2>
+            <p class="text-2xl font-bold text-blue-600">{{ number_of_sales|intcomma }}</p>
+        </div>
+        <div class="bg-gray-100 p-4 rounded-md">
+            <h2 class="text-lg font-semibold text-gray-700">Average Sale Value</h2>
+            <p class="text-2xl font-bold text-purple-600">NPR {{ average_sale_value|floatformat:2|intcomma }}</p>
+        </div>
+    </div>
+
+    {# Optional: Add date range filter form here later #}
+
+</div>
+{% endblock %} 

@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Vendor-wise Inventory Report{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-semibold text-gray-800">Vendor-wise Inventory Report</h1>
+    <a href="{% url 'reports:export_vendor_wise_inventory_excel' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
+       class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition">
+      Export Excel
+    </a>
+  </div>
+
+  {# Filters #}
+  <form method="get" class="bg-white rounded shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end">
+    <div>
+      <label class="block text-xs font-medium text-gray-600 mb-1">Vendor</label>
+      <select name="vendor" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500">
+        <option value="">All Vendors</option>
+        {% for v in vendors %}
+          <option value="{{ v.id }}" {% if selected_vendor_id == v.id|stringformat:"s" %}selected{% endif %}>{{ v.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition">Filter</button>
+    <a href="{% url 'reports:vendor_wise_inventory_report' %}" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded hover:bg-gray-50 transition">Reset</a>
+  </form>
+
+  {# Summary #}
+  <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-4 text-sm text-blue-800">
+    Grand Total Stock Value: <strong>NPR {{ grand_total_value|floatformat:"2" }}</strong>
+  </div>
+
+  {% for group in vendor_groups %}
+  <div class="bg-white rounded shadow-md overflow-hidden mb-6">
+    <div class="px-5 py-3 bg-gray-100 flex justify-between items-center">
+      <div>
+        <span class="font-semibold text-gray-800">
+          {% if group.vendor %}
+            {{ group.vendor.name }}
+            {% if group.vendor.phone %}<span class="text-gray-500 font-normal text-xs ml-2">{{ group.vendor.phone }}</span>{% endif %}
+          {% else %}
+            <span class="italic text-gray-500">No Vendor Assigned</span>
+          {% endif %}
+        </span>
+        <span class="ml-3 text-xs text-gray-500">{{ group.total_products }} product{% if group.total_products != 1 %}s{% endif %}</span>
+        {% if group.low_stock_count > 0 %}
+          <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">{{ group.low_stock_count }} low stock</span>
+        {% endif %}
+      </div>
+      <span class="text-sm font-semibold text-gray-700">NPR {{ group.total_stock_value|floatformat:"2" }}</span>
+    </div>
+
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+          <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+          <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+          <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cost Price</th>
+          <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Selling Price</th>
+          <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Stock</th>
+          <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Min Stock</th>
+          <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase">Stock Value</th>
+          <th class="px-5 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-100">
+        {% for row in group.products %}
+        <tr class="{% if row.low_stock %}bg-red-50{% endif %} hover:bg-gray-50">
+          <td class="px-5 py-3 font-medium text-gray-900">{{ row.product.name }}</td>
+          <td class="px-5 py-3 text-gray-500">{{ row.product.sku|default:"—" }}</td>
+          <td class="px-5 py-3 text-gray-500">{{ row.product.category.name|default:"—" }}</td>
+          <td class="px-5 py-3 text-right text-gray-700">NPR {{ row.product.cost_price|floatformat:"2" }}</td>
+          <td class="px-5 py-3 text-right text-gray-700">NPR {{ row.product.price|floatformat:"2" }}</td>
+          <td class="px-5 py-3 text-right font-medium {% if row.low_stock %}text-red-600{% else %}text-gray-900{% endif %}">{{ row.current_stock }}</td>
+          <td class="px-5 py-3 text-right text-gray-500">{{ row.minimum_stock }}</td>
+          <td class="px-5 py-3 text-right text-gray-700">NPR {{ row.stock_value|floatformat:"2" }}</td>
+          <td class="px-5 py-3 text-center">
+            {% if row.low_stock %}
+              <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">Low Stock</span>
+            {% else %}
+              <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">OK</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% empty %}
+  <div class="bg-white rounded shadow-md p-8 text-center text-gray-500">No inventory data found.</div>
+  {% endfor %}
+</div>
+{% endblock %}

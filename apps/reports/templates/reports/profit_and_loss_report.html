@@ -83,8 +83,9 @@
                 Apply Filter
             </button>
         </form>
+        <div class="flex flex-wrap gap-3 mt-4">
         {% if tax_expense > 0 %}
-        <form method="post" action="{% url 'reports:post_income_tax_provision' %}" class="mt-4 no-print">
+        <form method="post" action="{% url 'reports:post_income_tax_provision' %}" class="no-print">
             {% csrf_token %}
             <input type="hidden" name="start_date" value="{{ start_date_bs|default:'' }}">
             <input type="hidden" name="end_date" value="{{ end_date_bs|default:'' }}">
@@ -95,6 +96,21 @@
             </button>
         </form>
         {% endif %}
+        <form method="post" action="{% url 'reports:post_closing_stock' %}" class="no-print">
+            {% csrf_token %}
+            <input type="hidden" name="start_date" value="{{ start_date_bs|default:'' }}">
+            <input type="hidden" name="end_date" value="{{ end_date_bs|default:'' }}">
+            <button type="submit"
+                    onclick="return confirm('Post closing stock at lower of cost or NRV for this period? This values stock as of right now — post at period-end, before further transactions, for an accurate figure.');"
+                    class="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 text-sm">
+                <i class="fas fa-boxes-stacked mr-1"></i> Post Closing Stock
+            </button>
+        </form>
+        </div>
+        <p class="no-print text-xs text-amber-700 mt-2">
+            <i class="fas fa-triangle-exclamation mr-1"></i>
+            Closing stock is valued from current live stock-on-hand — post it right at period-end, before any further purchases or sales, for an accurate NFRS 2 figure.
+        </p>
     </div>
 
     <!-- P&L Report -->
@@ -108,31 +124,83 @@
             <!-- Revenue Section -->
             <div class="mb-6">
                 <h4 class="text-md font-semibold text-gray-800 mb-3">Revenue</h4>
-                <div class="space-y-2">
-                    <div class="flex justify-between py-2">
-                        <span class="text-gray-700">Sales Revenue</span>
-                        <span class="font-medium">{{ total_revenue|floatformat:2|intcomma }}</span>
-                    </div>
-                    <div class="flex justify-between py-2 border-t border-gray-200 font-semibold">
-                        <span>Total Revenue</span>
-                        <span>{{ total_revenue|floatformat:2|intcomma }}</span>
-                    </div>
-                </div>
+                <table class="min-w-full text-sm">
+                    {% for line in revenue_lines %}
+                    <tbody x-data="{open: false}">
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" @click="open = !open">
+                            <td class="py-2 text-gray-700">
+                                <i class="fas fa-chevron-right text-gray-400 text-xs mr-2 transition-transform" :class="{'rotate-90': open}"></i>{{ line.account.name }}
+                            </td>
+                            <td class="py-2 text-right font-medium">{{ line.amount|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% include 'reports/partials/account_drilldown.html' with row=line colspan=2 %}
+                    </tbody>
+                    {% empty %}
+                    <tbody><tr><td colspan="2" class="py-2 text-gray-400 italic">No revenue recorded for this period.</td></tr></tbody>
+                    {% endfor %}
+                    <tfoot>
+                        <tr class="border-t border-gray-200 font-semibold">
+                            <td class="py-2">Total Revenue</td>
+                            <td class="py-2 text-right">{{ total_revenue|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
 
-            <!-- Expenses Section -->
+            <!-- Cost of Sales / Gross Profit -->
             <div class="mb-6">
-                <h4 class="text-md font-semibold text-gray-800 mb-3">Expenses</h4>
-                <div class="space-y-2">
-                    <div class="flex justify-between py-2">
-                        <span class="text-gray-700">Operating Expenses</span>
-                        <span class="font-medium">{{ total_expenses|floatformat:2|intcomma }}</span>
-                    </div>
-                    <div class="flex justify-between py-2 border-t border-gray-200 font-semibold">
-                        <span>Total Expenses</span>
-                        <span>{{ total_expenses|floatformat:2|intcomma }}</span>
-                    </div>
-                </div>
+                <h4 class="text-md font-semibold text-gray-800 mb-3">Cost of Sales</h4>
+                <table class="min-w-full text-sm">
+                    {% for line in cost_of_sales_lines %}
+                    <tbody x-data="{open: false}">
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" @click="open = !open">
+                            <td class="py-2 text-gray-700">
+                                <i class="fas fa-chevron-right text-gray-400 text-xs mr-2 transition-transform" :class="{'rotate-90': open}"></i>{{ line.account.name }}
+                            </td>
+                            <td class="py-2 text-right font-medium">{{ line.amount|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% include 'reports/partials/account_drilldown.html' with row=line colspan=2 %}
+                    </tbody>
+                    {% empty %}
+                    <tbody><tr><td colspan="2" class="py-2 text-gray-400 italic">No purchases/COGS recorded for this period.</td></tr></tbody>
+                    {% endfor %}
+                    <tfoot>
+                        <tr class="border-t border-gray-200 font-semibold">
+                            <td class="py-2">Total Cost of Sales</td>
+                            <td class="py-2 text-right">{{ total_cost_of_sales|floatformat:2|intcomma }}</td>
+                        </tr>
+                        <tr class="border-t-2 border-gray-300 font-bold {% if gross_profit >= 0 %}text-green-700{% else %}text-red-700{% endif %}">
+                            <td class="py-2">Gross Profit</td>
+                            <td class="py-2 text-right">{{ gross_profit|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Operating Expenses Section -->
+            <div class="mb-6">
+                <h4 class="text-md font-semibold text-gray-800 mb-3">Operating Expenses</h4>
+                <table class="min-w-full text-sm">
+                    {% for line in operating_expense_lines %}
+                    <tbody x-data="{open: false}">
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" @click="open = !open">
+                            <td class="py-2 text-gray-700">
+                                <i class="fas fa-chevron-right text-gray-400 text-xs mr-2 transition-transform" :class="{'rotate-90': open}"></i>{{ line.account.name }}
+                            </td>
+                            <td class="py-2 text-right font-medium">{{ line.amount|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% include 'reports/partials/account_drilldown.html' with row=line colspan=2 %}
+                    </tbody>
+                    {% empty %}
+                    <tbody><tr><td colspan="2" class="py-2 text-gray-400 italic">No operating expenses recorded for this period.</td></tr></tbody>
+                    {% endfor %}
+                    <tfoot>
+                        <tr class="border-t border-gray-200 font-semibold">
+                            <td class="py-2">Total Operating Expenses</td>
+                            <td class="py-2 text-right">{{ total_operating_expenses|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
 
             <!-- Net Income Section -->

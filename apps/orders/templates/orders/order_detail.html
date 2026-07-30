@@ -67,6 +67,9 @@
                 <div class="flex justify-between"><dt class="text-gray-500">Subtotal</dt><dd>{{ order.subtotal|floatformat:2|intcomma }}</dd></div>
                 <div class="flex justify-between"><dt class="text-gray-500">Discount</dt><dd class="text-red-600">-{{ order.discount_amount|floatformat:2|intcomma }}</dd></div>
                 <div class="flex justify-between"><dt class="text-gray-500">Tax</dt><dd>{{ order.tax_amount|floatformat:2|intcomma }}</dd></div>
+                {% if order.delivery_charge > 0 %}
+                <div class="flex justify-between"><dt class="text-gray-500">Delivery Charge</dt><dd>{{ order.delivery_charge|floatformat:2|intcomma }}</dd></div>
+                {% endif %}
                 <div class="flex justify-between border-t pt-2 font-bold"><dt>Total</dt><dd class="text-green-700">{{ order.total|floatformat:2|intcomma }}</dd></div>
             </dl>
         </div>

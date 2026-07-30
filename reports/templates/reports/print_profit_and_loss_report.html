@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profit and Loss Report - Print</title>
+    <style>
+        * { box-sizing: border-box; }
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        html { width: 210mm; }
+        body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 0; }
+        .report-header { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+        .report-header h1 { font-size: 14pt; margin: 0 0 2px; }
+        .report-header .company { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+        .report-header .subtitle { font-size: 9pt; color: #555; }
+        h2 { font-size: 11pt; margin: 16px 0 4px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+        th, td { border: 1px solid #aaa; padding: 4px 8px; text-align: left; font-size: 9pt; }
+        th { background-color: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+        tr { page-break-inside: avoid; }
+        thead { display: table-header-group; }
+        .text-right { text-align: right; }
+        .section-total { font-weight: bold; text-align: right; padding: 4px 8px; font-size: 10pt; margin-bottom: 10px; }
+        .net-profit { font-size: 12pt; font-weight: bold; text-align: right; padding: 8px; border-top: 2px solid #333; margin-top: 10px; }
+        .net-profit.positive { color: #1a7a1a; }
+        .net-profit.negative { color: #c00; }
+        @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        {% if company %}<div class="company">{{ company.name }}</div>{% endif %}
+        <h1>Profit and Loss Report</h1>
+        {% if start_date_bs or end_date_bs %}
+        <div class="subtitle">
+            Period: {% if start_date_bs %}{{ start_date_bs }}{% else %}Beginning{% endif %}
+            to {% if end_date_bs %}{{ end_date_bs }}{% else %}Present{% endif %}
+        </div>
+        {% endif %}
+        <div class="subtitle">Printed on: {{ today|date:"Y-m-d" }}</div>
+    </div>
+
+    <h2>Revenue</h2>
+    {% if revenue_accounts %}
+    <table>
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th class="text-right">Amount (NPR)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in revenue_accounts %}
+            <tr>
+                <td>{{ item.account.name }}</td>
+                <td class="text-right">{{ item.total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="font-size:9pt; color:#555; font-style:italic;">No revenue transactions found.</p>
+    {% endif %}
+    <div class="section-total">Total Revenue: NPR {{ total_revenue|floatformat:2 }}</div>
+
+    <h2>Expenses</h2>
+    {% if expense_accounts %}
+    <table>
+        <thead>
+            <tr>
+                <th>Account</th>
+                <th class="text-right">Amount (NPR)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in expense_accounts %}
+            <tr>
+                <td>{{ item.account.name }}</td>
+                <td class="text-right">{{ item.total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="font-size:9pt; color:#555; font-style:italic;">No expense transactions found.</p>
+    {% endif %}
+    <div class="section-total">Total Expenses: NPR {{ total_expenses|floatformat:2 }}</div>
+
+    <div class="net-profit {% if net_profit >= 0 %}positive{% else %}negative{% endif %}">
+        Net {% if net_profit >= 0 %}Profit{% else %}Loss{% endif %}: NPR {{ net_profit|floatformat:2 }}
+    </div>
+
+    <script>window.onload = function () { window.print(); };</script>
+</body>
+</html>

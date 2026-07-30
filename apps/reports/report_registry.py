@@ -74,6 +74,26 @@ REPORT_REGISTRY = {
         'module_flag': None,
     },
 
+    'notes_to_accounts_report': {
+        'label': 'Notes to Accounts',
+        'description': 'NFRS — significant accounting policies, PPE, provisions, related-party & contingent-liability disclosures',
+        'url_name': 'reports:notes_to_accounts_report',
+        'section': 'Financial Statements',
+        'icon': 'fas fa-file-contract',
+        'color': 'slate',
+        'module_flag': None,
+    },
+
+    'delivery_charges_report': {
+        'label': 'Delivery Charges',
+        'description': 'Delivery income by invoice — ecom and order-management origin, backs the P&L Delivery Income line',
+        'url_name': 'reports:delivery_charges_report',
+        'section': 'Sales Reports',
+        'icon': 'fas fa-truck',
+        'color': 'orange',
+        'module_flag': None,
+    },
+
     # ── Sales Reports (always visible) ────────────────────────────────────
     'detailed_sales_report': {
         'label': 'Detailed Sales',
@@ -311,6 +331,15 @@ REPORT_REGISTRY = {
         'section': 'Bookkeeping',
         'icon': 'fas fa-university',
         'color': 'blue',
+        'module_flag': None,
+    },
+    'bank_reconciliation_report': {
+        'label': 'Bank Reconciliation (BRS)',
+        'description': 'NFRS — reconcile book balance against the bank statement',
+        'url_name': 'reports:bank_reconciliation_report',
+        'section': 'Bookkeeping',
+        'icon': 'fas fa-check-double',
+        'color': 'orange',
         'module_flag': None,
     },
     'party_ledger_report': {

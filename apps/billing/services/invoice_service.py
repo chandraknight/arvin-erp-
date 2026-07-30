@@ -54,7 +54,8 @@ def calculate_total(invoice):
     invoice.discount_amount = item_discount_total + global_discount
     
     invoice.tax_amount = calculate_tax_amount(invoice.subtotal, global_discount, invoice.tax_percent)
-    invoice.total = (invoice.subtotal - global_discount + invoice.tax_amount).quantize(Decimal('0.01'))
+    delivery_charge = invoice.delivery_charge or Decimal('0')
+    invoice.total = (invoice.subtotal - global_discount + invoice.tax_amount + delivery_charge).quantize(Decimal('0.01'))
     return invoice.total
 
 

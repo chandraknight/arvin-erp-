@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Stock Movement Report{% endblock %}
+{% block content %}
+<div class="p-6">
+
+  {# Header #}
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Stock Movement Report</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Per NFRS 2 — inventory movement audit trail (IAS 2)</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'reports:export_stock_movement_report_excel' %}?{{ request.GET.urlencode }}"
+         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+        <i class="fas fa-file-excel"></i> Excel
+      </a>
+      <a href="{% url 'reports:export_stock_movement_report_pdf' %}?{{ request.GET.urlencode }}"
+         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition">
+        <i class="fas fa-file-pdf"></i> PDF
+      </a>
+      <a href="{% url 'reports:print_stock_movement_report' %}?{{ request.GET.urlencode }}" target="_blank"
+         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">
+        <i class="fas fa-print"></i> Print
+      </a>
+    </div>
+  </div>
+
+  {# Filters #}
+  <form method="get" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">From Date</label>
+        <input type="date" name="date_from" value="{{ date_from }}"
+               class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">To Date</label>
+        <input type="date" name="date_to" value="{{ date_to }}"
+               class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Product</label>
+        <input type="text" name="product" value="{{ product_q }}" placeholder="Search product…"
+               class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Movement Type</label>
+        <select name="txn_type" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="">All</option>
+          <option value="ADD" {% if txn_type == 'ADD' %}selected{% endif %}>Add Stock</option>
+          <option value="REMOVE" {% if txn_type == 'REMOVE' %}selected{% endif %}>Remove Stock</option>
+          <option value="ADJUST" {% if txn_type == 'ADJUST' %}selected{% endif %}>Adjust Stock</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Channel</label>
+        <select name="stock_type" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="">All</option>
+          <option value="POS" {% if stock_type == 'POS' %}selected{% endif %}>POS</option>
+          <option value="ECOM" {% if stock_type == 'ECOM' %}selected{% endif %}>E-Commerce</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button type="submit" class="px-4 py-1.5 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg">Apply Filters</button>
+      <a href="{% url 'reports:stock_movement_report' %}" class="px-4 py-1.5 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50">Clear</a>
+    </div>
+  </form>
+
+  {# Summary strip #}
+  <div class="flex items-center gap-4 mb-3 text-sm text-gray-500">
+    <span>Showing <strong class="text-gray-700">{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong> of <strong class="text-gray-700">{{ total_count }}</strong> transactions</span>
+  </div>
+
+  {# Table #}
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Date & Time</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Product</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Movement Type</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">Qty</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Channel</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Reason / Reference</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">By</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for txn in stock_movements %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 whitespace-nowrap text-gray-700 font-mono text-xs">{{ txn.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="px-4 py-3 text-gray-800">{{ txn.product.name|default:"—" }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium
+              {% if txn.transaction_type == 'ADD' %}bg-green-100 text-green-700
+              {% elif txn.transaction_type == 'REMOVE' %}bg-red-100 text-red-700
+              {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+              {{ txn.get_transaction_type_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-right font-semibold
+            {% if txn.transaction_type == 'REMOVE' %}text-red-600{% else %}text-gray-800{% endif %}">
+            {% if txn.transaction_type == 'REMOVE' %}-{% endif %}{{ txn.quantity }}
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium
+              {% if txn.stock_type == 'ECOM' %}bg-indigo-100 text-indigo-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+              {{ txn.stock_type }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">{{ txn.reason|default:"—" }}</td>
+          <td class="px-4 py-3 text-gray-400 text-xs">{{ txn.user.get_full_name|default:txn.user.username|default:"System" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-10 text-center text-gray-400">No stock movements found for the selected filters.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Pagination #}
+  {% if page_obj.has_other_pages %}
+  <div class="mt-4 flex items-center justify-between text-sm">
+    <span class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}
+      <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+         class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-xs">&laquo; Prev</a>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="px-3 py-1.5 bg-green-700 text-white rounded-lg text-xs">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ num }}"
+           class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-xs">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+         class="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-xs">Next &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

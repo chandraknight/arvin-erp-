@@ -41,18 +41,22 @@
                 <table class="min-w-full bg-white shadow-md rounded">
                     <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                         <tr>
+                            <th class="py-3 px-6 text-left" style="width:28px"></th>
                             <th class="py-3 px-6 text-left">Account Name</th>
                             <th class="py-3 px-6 text-left">Account Type</th>
                             <th class="py-3 px-6 text-right">Debit Balance</th>
                             <th class="py-3 px-6 text-right">Credit Balance</th>
                         </tr>
                     </thead>
-                    <tbody class="text-gray-600 text-sm font-light">
-                        {% for item in trial_balance_data %}
-                            <tr class="border-b border-gray-200 hover:bg-gray-100">
+                    {% for item in trial_balance_data %}
+                        <tbody class="text-gray-600 text-sm font-light" x-data="{open: false}">
+                            <tr class="border-b border-gray-200 hover:bg-gray-100 cursor-pointer" @click="open = !open">
+                                <td class="py-3 px-6 text-left text-gray-400">
+                                    <i class="fas fa-chevron-right transition-transform" :class="{'rotate-90': open}"></i>
+                                </td>
                                 <td class="py-3 px-6 text-left whitespace-nowrap">{{ item.account.name }}</td>
                                 <td class="py-3 px-6 text-left">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                         {% if item.account.account_type == 'ASSET' %}bg-blue-100 text-blue-800{% endif %}
                                         {% if item.account.account_type == 'LIABILITY' %}bg-red-100 text-red-800{% endif %}
                                         {% if item.account.account_type == 'EQUITY' %}bg-green-100 text-green-800{% endif %}
@@ -77,11 +81,12 @@
                                     {% endif %}
                                 </td>
                             </tr>
-                        {% endfor %}
-                    </tbody>
+                            {% include 'reports/partials/account_drilldown.html' with row=item colspan=5 %}
+                        </tbody>
+                    {% endfor %}
                     <tfoot class="bg-gray-100 text-gray-800 font-bold">
                         <tr>
-                            <td class="py-3 px-6 text-left" colspan="2">Total</td>
+                            <td class="py-3 px-6 text-left" colspan="3">Total</td>
                             <td class="py-3 px-6 text-right">{{ total_debits|floatformat:2|intcomma }}</td>
                             <td class="py-3 px-6 text-right">{{ total_credits|floatformat:2|intcomma }}</td>
                         </tr>

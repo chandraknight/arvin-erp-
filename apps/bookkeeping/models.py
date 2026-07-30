@@ -201,6 +201,16 @@ class JournalEntryLine(BaseModel):
     narration = models.CharField(max_length=250, blank=True, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
 
+    # Bank Reconciliation Statement (BRS) — only meaningful for lines posted to
+    # a Cash/Bank ledger account. Marks that this movement has been matched
+    # against the bank statement; unreconciled lines are the BRS's reconciling
+    # items (cheques issued not yet presented, deposits not yet credited, etc.)
+    is_reconciled = models.BooleanField(default=False)
+    reconciled_date = models.DateField(
+        null=True, blank=True,
+        help_text='The date this line cleared on the bank statement.',
+    )
+
     def __str__(self):
         return f"{self.entry_type} {self.amount} to {self.account.name} for {self.journal_entry.description[:50]}..."
 

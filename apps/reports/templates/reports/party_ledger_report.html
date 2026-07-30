@@ -31,14 +31,16 @@
             </select>
         </div>
         <div>
-            <label for="date_from" class="block text-xs font-medium text-gray-600 mb-1">From</label>
-            <input type="date" name="date_from" id="date_from" value="{{ date_from|date:'Y-m-d' }}"
-                   class="border border-gray-300 rounded-md text-sm px-3 py-2">
+            <label for="date_from" class="block text-xs font-medium text-gray-600 mb-1">From (BS)</label>
+            <input type="text" name="date_from" id="date_from" value="{{ date_from_bs|default:'' }}"
+                   placeholder="YYYY-MM-DD" autocomplete="off"
+                   class="nepali-datepicker border border-gray-300 rounded-md text-sm px-3 py-2">
         </div>
         <div>
-            <label for="date_to" class="block text-xs font-medium text-gray-600 mb-1">To</label>
-            <input type="date" name="date_to" id="date_to" value="{{ date_to|date:'Y-m-d' }}"
-                   class="border border-gray-300 rounded-md text-sm px-3 py-2">
+            <label for="date_to" class="block text-xs font-medium text-gray-600 mb-1">To (BS)</label>
+            <input type="text" name="date_to" id="date_to" value="{{ date_to_bs|default:'' }}"
+                   placeholder="YYYY-MM-DD" autocomplete="off"
+                   class="nepali-datepicker border border-gray-300 rounded-md text-sm px-3 py-2">
         </div>
         <button type="submit" class="bg-cyan-600 text-white px-4 py-2 rounded-md hover:bg-cyan-700 transition text-sm">Apply</button>
     </form>

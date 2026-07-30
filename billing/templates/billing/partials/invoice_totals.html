@@ -1,0 +1,85 @@
+{% load static %}
+{% load humanize %}
+
+<div class="card mt-4" id="invoice-totals-card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Invoice Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-2">
+            <div class="col-6 text-end fw-bold">Subtotal:</div>
+            <div id="subtotal-amount" class="col-6 text-end">
+                Rs. {{ invoice.subtotal|floatformat:2|intcomma }}
+            </div>
+        </div>
+        
+        <div class="row mb-2">
+            <div class="col-6 text-end fw-bold">
+                <span id="discount-percent-label">Discount ({{ invoice.discount_percent|floatformat:2 }}%):</span>
+            </div>
+            <div id="discount-amount" class="col-6 text-end text-danger">
+                - Rs. {{ invoice.discount_amount|floatformat:2|intcomma }}
+            </div>
+        </div>
+        
+        {% if vat_registered %}
+        <div class="row mb-2">
+            <div class="col-6 text-end fw-bold">
+                <span id="tax-percent-label">VAT ({{ invoice.tax_percent|floatformat:2 }}%):</span>
+            </div>
+            <div id="tax-amount" class="col-6 text-end">
+                + Rs. {{ invoice.tax_amount|floatformat:2|intcomma }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <hr>
+        <div class="row mb-2">
+            <div class="col-6 text-end fw-bold fs-5">Total:</div>
+            <div id="total-amount" class="col-6 text-end fw-bold fs-5">
+                Rs. {{ invoice.total|floatformat:2|intcomma }}
+            </div>
+        </div>
+        
+        <div class="d-grid gap-2 mt-3">
+            <button type="button" 
+                    id="complete-sale-btn" 
+                    class="btn btn-primary btn-lg"
+                    hx-post="{% url 'billing:complete_sales' %}"
+                    hx-target="body"
+                    hx-swap="beforeend"
+                    {% if not current_items %}disabled{% endif %}>
+                <i class="fas fa-check-circle me-2"></i>Complete Sale
+            </button>
+            
+            <button type="button" 
+                    class="btn btn-outline-secondary mt-2"
+                    hx-get="{% url 'billing:unified_sales_view' %}"
+                    hx-target="#invoice-totals-card"
+                    hx-swap="outerHTML">
+                <i class="fas fa-sync-alt me-2"></i>Refresh Totals
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Set the hasItems flag for JavaScript -->
+<script>
+    // Set hasItems based on current items (using a data attribute)
+    document.addEventListener('DOMContentLoaded', function() {
+        var hasItems = document.body.getAttribute('data-has-items') === 'true';
+        window.hasItems = hasItems;
+        
+        // Initialize the complete sale button state
+        var btn = document.getElementById('complete-sale-btn');
+        if (btn) btn.disabled = !hasItems;
+    });
+</script>
+
+<!-- Set the data attribute on body -->
+<script>
+    document.body.setAttribute('data-has-items', '{% if current_items|length > 0 %}true{% else %}false{% endif %}');
+</script>
+
+<!-- Include the external JavaScript file -->
+<script src="{% static 'billing/js/sales.js' %}" defer></script>

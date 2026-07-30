@@ -1,0 +1,204 @@
+{% load widget_tweaks %}
+{% load crispy_forms_tags %}
+
+    <div class="md:w-[70%] mx-auto mt-10 bg-white border border-gray-200 shadow-lg p-6 sm:p-10">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-center text-green-800 mb-8 tracking-tight">
+            {{ title }}
+        </h2>
+
+        <form method="post" novalidate class="space-y-6">
+            {% csrf_token %}
+            {{ formset.management_form }}
+
+            <!-- Main Form Fields -->
+            {% for field in form %}
+                <div class="sm:flex">
+                    <span class="block sm:inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                        {{ field.label }}
+                    </span>
+                    {{ field|add_class:"flex-1 min-w-0 border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                </div>
+                {% if field.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ field.errors|striptags }}</p>
+                {% endif %}
+            {% endfor %}
+
+            <!-- Formset Items Section -->
+            {% if formset %}
+            <div class="mt-8">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="text-xl font-bold text-green-800">Items</h3>
+                    <button type="button" id="add-item"
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm transition duration-150">
+                        + Add Item
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full border border-gray-200">
+                        <thead class="bg-gray-50 text-green-800">
+                            <tr>
+                                {% for field in formset.empty_form.visible_fields %}
+                                    <th class="py-3 px-4 text-left text-sm font-semibold border-b border-gray-200">
+                                        {{ field.label }}
+                                    </th>
+                                {% endfor %}
+                                <th class="py-3 px-4 text-center text-sm font-semibold border-b border-gray-200">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-container">
+                            {% for item_form in formset %}
+                                <tr class="border-b border-gray-200 item-form" data-index="{{ forloop.counter0 }}">
+                                    {% for hidden in item_form.hidden_fields %}
+                                        {{ hidden }}
+                                    {% endfor %}
+                                    {% for field in item_form.visible_fields %}
+                                        <td class="py-3 px-4">
+                                            {{ field|add_class:"w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                            {% if field.errors %}
+                                                <p class="text-red-600 text-sm mt-1">{{ field.errors|striptags }}</p>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                    <td class="py-3 px-4 text-center">
+                                        <button type="button" class="remove-item text-red-600 hover:text-red-800 transition duration-150">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if formset.non_form_errors %}
+                <div class="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
+                    {{ formset.non_form_errors }}
+                </div>
+            {% endif %}
+
+            <!-- Form Actions -->
+            <div class="mt-8">
+                <button type="submit"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 shadow-md transition duration-150">
+                    Save Document
+                </button>
+            </div>
+        </form>
+
+        <div class="flex justify-end mb-4 mt-10">
+            <a href="{% url 'products:inventory_management' %}"
+               class="text-green-600 hover:text-teal-700 text-sm font-medium">
+                ← Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('items-container');
+    const addButton = document.getElementById('add-item');
+    const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+    let formCount = parseInt(totalForms.value);
+
+    // Add new formset row
+    addButton.addEventListener('click', function () {
+        if (formCount >= 10) {  // Set your maximum items limit
+            alert('Maximum 10 items allowed');
+            return;
+        }
+
+        // Get template (first visible row)
+        const template = container.querySelector('.item-form');
+        const newForm = template.cloneNode(true);
+
+        // Update names and IDs
+        newForm.innerHTML = newForm.innerHTML.replace(/form-(\d+)-/g, `form-${formCount}-`);
+        newForm.dataset.index = formCount;
+
+        // Clear all visible fields
+        newForm.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(field => {
+            field.value = '';
+            if (field.type === 'checkbox' || field.type === 'radio') {
+                field.checked = false;
+            }
+        });
+
+        // Clear hidden DELETE field if exists
+        const deleteField = newForm.querySelector('[name$="-DELETE"]');
+        if (deleteField) deleteField.checked = false;
+
+        container.appendChild(newForm);
+        formCount++;
+        totalForms.value = formCount;
+    });
+
+    // Remove formset row
+    container.addEventListener('click', function (e) {
+        if (e.target.closest('.remove-item')) {
+            const formRow = e.target.closest('.item-form');
+            const idInput = formRow.querySelector('[name$="-id"]');
+            const deleteInput = formRow.querySelector('[name$="-DELETE"]');
+
+            // If editing existing item that has an ID
+            if (idInput && idInput.value) {
+                if (deleteInput) {
+                    deleteInput.checked = true;  // Mark for deletion
+                    formRow.style.display = 'none';  // Hide but keep in DOM
+                }
+            } else {
+                // New item - safe to remove completely
+                formRow.remove();
+                formCount--;
+                totalForms.value = formCount;
+
+                // Update indices of remaining forms
+                const rows = container.querySelectorAll('.item-form');
+                rows.forEach((row, index) => {
+                    row.dataset.index = index;
+                    row.innerHTML = row.innerHTML.replace(/form-(\d+)-/g, `form-${index}-`);
+                });
+            }
+        }
+    });
+});
+</script>
+
+<style>
+    /* Hide the actual DELETE checkbox (we're using the trash icon) */
+    input[type="checkbox"][name$="-DELETE"] {
+        display: none;
+    }
+
+    .item-form {
+        transition: all 0.3s ease;
+    }
+
+    .item-form input:disabled,
+    .item-form select:disabled {
+        background-color: #f9fafb;
+        cursor: not-allowed;
+    }
+
+    /* Make the table look more like Excel */
+    table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    th, td {
+        border-right: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    th:first-child, td:first-child {
+        border-left: 1px solid #e5e7eb;
+    }
+
+    tr:first-child th {
+        border-top: 1px solid #e5e7eb;
+    }
+</style>

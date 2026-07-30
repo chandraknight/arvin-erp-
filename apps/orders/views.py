@@ -348,6 +348,7 @@ def convert_to_invoice(request, pk):
         subtotal=order.subtotal,
         discount_amount=order.discount_amount,
         tax_amount=order.tax_amount,
+        delivery_charge=order.delivery_charge,
         total=order.total,
         outstanding_balance=order.total,
         tax_percent=request.user_company.tax_rate,

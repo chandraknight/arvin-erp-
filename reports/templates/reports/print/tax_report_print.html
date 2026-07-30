@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tax Report - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+h2 { font-size: 10pt; margin: 14px 0 4px; border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+.summary { display: flex; gap: 10px; margin: 10px 0; }
+.sbox { flex: 1; border: 1px solid #aaa; padding: 6px 10px; text-align: center; }
+.sbox .label { font-size: 8pt; color: #555; }
+.sbox .value { font-size: 12pt; font-weight: bold; }
+.sbox.net { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+th, td { border: 1px solid #aaa; padding: 3px 6px; font-size: 8.5pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Tax / VAT Report</h1>
+  <div class="sub">
+    Period: {{ start_date|date:"Y-m-d" }} to {{ end_date|date:"Y-m-d" }}
+    {% if tax_rate %}&nbsp;|&nbsp; Tax Rate: {{ tax_rate }}%{% endif %}
+    &nbsp;|&nbsp; Printed: {% now "Y-m-d" %}
+  </div>
+</div>
+
+<div class="summary">
+  <div class="sbox"><div class="label">Output Tax (Collected)</div><div class="value">NPR {{ output_tax|floatformat:2 }}</div></div>
+  <div class="sbox"><div class="label">Input Tax (Paid)</div><div class="value">NPR {{ input_tax|floatformat:2 }}</div></div>
+  <div class="sbox net"><div class="label">Net Tax Payable</div><div class="value">NPR {{ net_tax_payable|floatformat:2 }}</div></div>
+</div>
+
+<h2>Invoice Tax Breakdown</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Invoice #</th><th>Date</th>
+      <th class="tr">Subtotal</th><th class="tr">Discount</th>
+      <th class="tr">Tax %</th><th class="tr">Tax Amount</th><th class="tr">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for inv in invoices %}
+    <tr>
+      <td>{{ inv.invoice_number }}</td>
+      <td>{{ inv.transaction_date|date:"Y-m-d" }}</td>
+      <td class="tr">{{ inv.subtotal|floatformat:2 }}</td>
+      <td class="tr">{{ inv.discount_amount|floatformat:2 }}</td>
+      <td class="tr">{{ inv.tax_percent }}%</td>
+      <td class="tr">{{ inv.tax_amount|floatformat:2 }}</td>
+      <td class="tr">{{ inv.total|floatformat:2 }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="tc">No taxable invoices found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

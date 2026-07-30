@@ -82,8 +82,9 @@ def create_sales_order_from_ecom(ecom_order):
 
     delivery_charge = ecom_order.delivery_charge or Decimal('0.00')
     sales_order.subtotal = subtotal
+    sales_order.delivery_charge = delivery_charge
     sales_order.total = subtotal + delivery_charge - (ecom_order.discount_amount or Decimal('0.00'))
-    sales_order.save(update_fields=['subtotal', 'total'])
+    sales_order.save(update_fields=['subtotal', 'delivery_charge', 'total'])
 
     ecom_order.sales_order = sales_order
     ecom_order.save(update_fields=['sales_order', 'customer'])

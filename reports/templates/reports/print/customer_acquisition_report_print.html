@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Acquisition Report - Print</title>
+    <style>
+        * { box-sizing: border-box; }
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+        html { width: 210mm; }
+        body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 0; }
+        .report-header { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+        .report-header h1 { font-size: 14pt; margin: 0 0 2px; }
+        .report-header .company { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+        .report-header .subtitle { font-size: 9pt; color: #555; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #aaa; padding: 4px 8px; text-align: left; font-size: 9pt; }
+        th { background-color: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+        tr { page-break-inside: avoid; }
+        thead { display: table-header-group; }
+        .text-center { text-align: center; }
+        @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        {% if company %}<div class="company">{{ company.name }}</div>{% endif %}
+        <h1>Customer Acquisition Report</h1>
+        <div class="subtitle">Printed on: {{ today|date:"Y-m-d" }}</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Customer Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Joined</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.email|default:"-" }}</td>
+                <td>{{ customer.phone|default:"-" }}</td>
+                <td>{{ customer.created_at|date:"Y-m-d" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">No customers found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>window.onload = function () { window.print(); };</script>
+</body>
+</html>

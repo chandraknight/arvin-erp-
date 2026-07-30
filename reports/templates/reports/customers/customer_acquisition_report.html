@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Acquisition Report{% endblock %}
+
+{% block content %}
+
+    {% include 'includes/toast.html' %}
+    <c-card_title
+            title="Customer Acquisition Report">
+    </c-card_title>
+
+    {# Filtering Form #}
+    <form method="get" class="mb-6 p-4 bg-white rounded shadow-md">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date:</label>
+                <input type="text" name="start_date" id="start_date" value="{{ selected_start_date }}"
+                       placeholder="YYYY-MM-DD" autocomplete="off"
+                       class="nepali-datepicker mt-1 block w-full p-2 border border-gray-300">
+            </div>
+            <div>
+                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date:</label>
+                <input type="text" name="end_date" id="end_date" value="{{ selected_end_date }}"
+                       placeholder="YYYY-MM-DD" autocomplete="off"
+                       class="nepali-datepicker mt-1 block w-full p-2 border border-gray-300">
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Filter Report
+            </button>
+            <a href="{% url 'reports:customer_acquisition_report' %}"
+               class="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Clear Filter</a>
+        </div>
+    </form>
+
+    {# Add Export and Print Buttons #}
+    <div class="flex space-x-4 mb-6">
+        <a href="
+                {% url 'reports:export_customer_acquisition_report_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+           class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200 ease-in-out text-sm"
+           target="_blank">Export Excel</a>
+        <a href="
+                {% url 'reports:export_customer_acquisition_report_pdf' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+           class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200 ease-in-out text-sm"
+           target="_blank">Export PDF</a>
+        <a href="
+                {% url 'reports:print_customer_acquisition_report' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+           class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200 ease-in-out text-sm"
+           target="_blank">Print Report</a>
+    </div>
+
+    {# Customer Acquisition Over Time Chart #}
+    <div class="mb-6 p-4 bg-white rounded shadow-md">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Monthly Customer Acquisition</h2>
+        <canvas id="acquisitionChart" width="400" height="200"></canvas>
+    </div>
+
+    {# Monthly Acquisition Data Table #}
+    <div class="bg-white rounded shadow-md overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+            <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Month
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    New Customers Acquired
+                </th>
+            </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+            {% for data in monthly_acquisition_data %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ data.month|date:"Y-m" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ data.new_customers_count }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No customer
+                        acquisition data found for the selected criteria.
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const acquisitionChartCanvas = document.getElementById('acquisitionChart');
+            const acquisitionChartLabels = JSON.parse('{{ acquisition_chart_labels|escapejs }}');
+            const acquisitionChartData = JSON.parse('{{ acquisition_chart_data|escapejs }}');
+
+            if (acquisitionChartCanvas) {
+                new Chart(acquisitionChartCanvas, {
+                    type: 'bar', // Using a bar chart for acquisition count
+                    data: {
+                        labels: acquisitionChartLabels,
+                        datasets: [{
+                            label: 'New Customers',
+                            data: acquisitionChartData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Number of Customers'
+                                },
+                                // Ensure Y-axis shows whole numbers
+                                ticks: {
+                                    precision: 0
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Month'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %} 

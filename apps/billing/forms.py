@@ -71,7 +71,7 @@ class InvoiceForm(FiscalYearDateMixin, forms.ModelForm):
         fields = [
             'company', 'branch', 'customer', 'transaction_date',
             'subtotal', 'discount_percent', 'discount_amount',
-            'tax_percent', 'tax_amount', 'total', 'outstanding_balance', 'due_date_bs',
+            'tax_percent', 'tax_amount', 'delivery_charge', 'total', 'outstanding_balance', 'due_date_bs',
         ]
         widgets = {
             'invoice_number':      forms.TextInput(attrs={'readonly': 'readonly'}),
@@ -80,12 +80,14 @@ class InvoiceForm(FiscalYearDateMixin, forms.ModelForm):
             'discount_percent':    forms.NumberInput(attrs={'min': '0', 'max': '100', 'step': '0.01'}),
             'tax_amount':          forms.NumberInput(attrs={'readonly': 'readonly', 'min': '0'}),
             'tax_percent':         forms.NumberInput(attrs={'min': '0', 'step': '0.01'}),
+            'delivery_charge':     forms.NumberInput(attrs={'min': '0', 'step': '0.01'}),
             'total':               forms.NumberInput(attrs={'readonly': 'readonly', 'min': '0'}),
             'outstanding_balance': forms.NumberInput(attrs={'readonly': 'readonly', 'min': '0'}),
         }
         labels = {
             'discount_amount':     'Discount (₹)',
             'tax_amount':          'Tax (₹)',
+            'delivery_charge':     'Delivery Charge (₹)',
             'total':               'Total (₹)',
             'outstanding_balance': 'Outstanding (₹)',
         }
@@ -94,7 +96,7 @@ class InvoiceForm(FiscalYearDateMixin, forms.ModelForm):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-        for field in ['subtotal', 'discount_amount', 'tax_amount', 'total', 'outstanding_balance']:
+        for field in ['subtotal', 'discount_amount', 'tax_amount', 'delivery_charge', 'total', 'outstanding_balance']:
             self.fields[field].required = False
 
         self.fields['customer'].required = False

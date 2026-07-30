@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales by Product Category Report{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <h1 class="text-2xl font-semibold mb-4 text-gray-800">Sales by Product Category Report</h1>
+
+    {# Filtering Form #}
+    <form method="get" class="mb-6 p-4 bg-white rounded shadow-md">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date:</label>
+                <input type="text" name="start_date" id="start_date" value="{{ selected_start_date }}" placeholder="YYYY-MM-DD" autocomplete="off" class="nepali-datepicker mt-1 block w-full p-2 border border-gray-300">
+            </div>
+            <div>
+                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date:</label>
+                <input type="text" name="end_date" id="end_date" value="{{ selected_end_date }}" placeholder="YYYY-MM-DD" autocomplete="off" class="nepali-datepicker mt-1 block w-full p-2 border border-gray-300">
+            </div>
+             <div>
+                <label for="category" class="block text-sm font-medium text-gray-700">Category:</label>
+                <select name="category" id="category" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    <option value="">-- Select Category --</option>
+                    {% for category in all_categories %}
+                        <option value="{{ category.id }}" {% if selected_category|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Filter Report</button>
+             <a href="{% url 'reports:sales_by_category_report' %}" class="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Clear Filter</a>
+        </div>
+    </form>
+
+    {# Export and Print Buttons #}
+    <div class="mb-4 flex space-x-2">
+        <a href="{% url 'reports:export_sales_by_category_report_excel' %}{{ request.GET.urlencode|add:'&' }}" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200 ease-in-out text-sm">Export to Excel</a>
+        <a href="{% url 'reports:export_sales_by_category_report_pdf' %}{{ request.GET.urlencode|add:'&' }}" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200 ease-in-out text-sm">Export to PDF</a>
+        <a href="{% url 'reports:print_sales_by_category_report' %}{{ request.GET.urlencode|add:'&' }}" class="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition duration-200 ease-in-out text-sm">Print Report</a>
+    </div>
+
+    {# Sales by Category Chart #}
+    <div class="mb-6 p-4 bg-white rounded shadow-md">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Total Revenue by Category</h2>
+        <canvas id="salesByCategoryChart" width="400" height="200"></canvas>
+    </div>
+
+    {# Sales by Category Table #}
+    <div class="bg-white rounded shadow-md overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Revenue</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for data in sales_by_category_data %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ data.product__category__name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">NPR {{ data.total_revenue|floatformat:"2" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No sales data found for the selected criteria.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const salesByCategoryChartCanvas = document.getElementById('salesByCategoryChart');
+        const salesByCategoryLabels = [{% for data in sales_by_category_data %}'{{ data.product__category__name|escapejs }}',{% endfor %}];
+        const salesByCategoryData = [{% for data in sales_by_category_data %}{{ data.total_revenue|floatformat:"2" }},{% endfor %}];
+
+        if (salesByCategoryChartCanvas) {
+            new Chart(salesByCategoryChartCanvas, {
+                type: 'pie', // Pie chart is suitable for showing distribution
+                data: {
+                    labels: salesByCategoryLabels,
+                    datasets: [{
+                        label: 'Total Revenue by Category',
+                        data: salesByCategoryData,
+                         backgroundColor: [
+                            'rgba(255, 99, 132, 0.6)',
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(255, 206, 86, 0.6)',
+                            'rgba(75, 192, 192, 0.6)',
+                            'rgba(153, 102, 255, 0.6)',
+                            'rgba(255, 159, 64, 0.6)',
+                            'rgba(200, 200, 200, 0.6)',
+                         ],
+                         borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(200, 200, 200, 1)',
+                         ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                     plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                         title: {
+                            display: true,
+                            text: 'Revenue Distribution by Category'
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

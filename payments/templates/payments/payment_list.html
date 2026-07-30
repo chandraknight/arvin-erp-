@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Payment List{% endblock %}
+
+{% block extra_styles %}
+<style>
+@media print {
+    body * { visibility: hidden; }
+    .print-area, .print-area * { visibility: visible; }
+    .print-area { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; }
+    .print-header { display: block !important; }
+}
+.print-header { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% include 'includes/toast.html' %}
+
+<div class="w-full mt-3">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Payments</h2>
+      <p class="text-sm text-gray-500 mt-0.5">All customer and vendor payments</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="window.print()"
+              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 transition no-print">
+        <i class="fas fa-print text-xs"></i> Print
+      </button>
+      <a href="{% url 'payments:payment_add' %}"
+         class="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold transition no-print">
+        <i class="fas fa-plus text-xs"></i> Add Payment
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+    <div class="bg-white border border-gray-200 shadow-sm p-4">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Recorded</p>
+      <p class="text-2xl font-bold text-green-800 mt-1">₹ {{ total|floatformat:2|intcomma }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 shadow-sm p-4">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Showing</p>
+      <p class="text-2xl font-bold text-gray-800 mt-1">{{ total_count }}</p>
+    </div>
+    <div class="bg-white border border-gray-200 shadow-sm p-4 flex items-center justify-between no-print">
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quick Add</p>
+        <p class="text-sm text-gray-600 mt-1">Record a new payment entry</p>
+      </div>
+      <a href="{% url 'payments:payment_add' %}"
+         class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold transition">
+        + Add
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <form method="get" class="bg-white border border-gray-200 shadow-sm p-4 mb-4 no-print">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by reference, invoice…"
+             class="border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500">
+      <select name="payment_type"
+              class="border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500">
+        <option value="">All Types</option>
+        {% for type_key, type_name in payment_types %}
+          <option value="{{ type_key }}" {% if selected_payment_type == type_key %}selected{% endif %}>{{ type_name }}</option>
+        {% endfor %}
+      </select>
+      <div></div>
+      <div class="flex gap-2">
+        <button type="submit"
+                class="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 transition">
+          Filter
+        </button>
+        <a href="{% url 'payments:payment_list' %}"
+           class="flex-1 text-center border border-gray-300 text-gray-600 text-sm font-semibold px-4 py-2 hover:bg-gray-50 transition">
+          Clear
+        </a>
+      </div>
+    </div>
+  </form>
+
+  <!-- Table -->
+  <div class="bg-white border border-gray-200 shadow-sm print-area">
+    <div class="print-header mb-4 px-4 pt-4">
+      <h2 class="text-lg font-bold">{{ request.user.company.name|default:"" }} — Payment Report</h2>
+      <p class="text-sm text-gray-500">Printed: {% now "Y-m-d H:i" %}</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-green-700 text-white text-xs uppercase">
+          <tr>
+            <th class="px-4 py-3 text-left border-r border-green-800">Date</th>
+            <th class="px-4 py-3 text-left border-r border-green-800">Ref #</th>
+            <th class="px-4 py-3 text-left border-r border-green-800">Type</th>
+            <th class="px-4 py-3 text-right border-r border-green-800">Amount</th>
+            <th class="px-4 py-3 text-left border-r border-green-800">Method</th>
+            <th class="px-4 py-3 text-left border-r border-green-800">Invoice</th>
+            <th class="px-4 py-3 text-center border-r border-green-800">Status</th>
+            <th class="px-4 py-3 text-center no-print">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+          <tr class="border-b border-gray-100 {% cycle 'bg-white' 'bg-gray-50' %} hover:bg-green-50 transition">
+            <td class="px-4 py-2.5 text-gray-700 whitespace-nowrap">{{ payment.date }}</td>
+            <td class="px-4 py-2.5 font-semibold text-green-700">{{ payment.payment_number }}</td>
+            <td class="px-4 py-2.5">
+              <span class="px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800">
+                {{ payment.get_payment_type_display }}
+              </span>
+            </td>
+            <td class="px-4 py-2.5 text-right font-mono font-semibold text-gray-800">
+              ₹ {{ payment.amount|floatformat:2|intcomma }}
+            </td>
+            <td class="px-4 py-2.5 text-gray-600">{{ payment.get_method_display }}</td>
+            <td class="px-4 py-2.5 text-gray-600">
+              {% if payment.invoice %}
+                <a href="{% url 'billing:view_invoice_detail' payment.invoice.pk %}"
+                   class="text-green-700 hover:underline font-medium">
+                  {{ payment.invoice.invoice_number }}
+                </a>
+              {% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-2.5 text-center">
+              {% if payment.journal_entry %}
+                <span class="px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-800">Processed</span>
+              {% else %}
+                <span class="px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-800">Pending</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2.5 text-center no-print">
+              <div class="flex items-center justify-center gap-3">
+                <a href="{% url 'payments:payment_detail' payment.pk %}"
+                   class="text-blue-600 hover:text-blue-800 transition" title="View">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="{% url 'payments:payment_receipt' payment.pk %}"
+                   class="text-purple-600 hover:text-purple-800 transition" title="Receipt" target="_blank">
+                  <i class="fas fa-print"></i>
+                </a>
+                <a href="{% url 'payments:payment_update' payment.pk %}"
+                   class="text-amber-600 hover:text-amber-800 transition" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="px-4 py-10 text-center text-gray-400 italic text-sm">
+              No payments found.
+              <a href="{% url 'payments:payment_add' %}" class="ml-1 text-green-600 font-semibold">Add one →</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="px-4 py-3 border-t border-gray-100 flex justify-between items-center text-sm no-print">
+      <span class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      <div class="flex gap-2">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}&payment_type={{ selected_payment_type }}&q={{ q }}"
+             class="px-3 py-1 border border-gray-300 text-gray-600 hover:bg-gray-50">Prev</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&payment_type={{ selected_payment_type }}&q={{ q }}"
+             class="px-3 py-1 border border-gray-300 text-gray-600 hover:bg-gray-50">Next</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

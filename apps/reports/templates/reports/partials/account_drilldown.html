@@ -1,0 +1,64 @@
+{% comment %}
+Item-wise drill-down for one account row. Include with:
+  {% include 'reports/partials/account_drilldown.html' with row=<row dict with .transactions/.product_breakdown> colspan=<int> %}
+directly after the account's own <tr>, inside the same <table>.
+{% endcomment %}
+<tr x-show="open" x-cloak>
+    <td colspan="{{ colspan }}" class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+        {% if row.product_breakdown %}
+        <div class="mb-3">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">By Product</p>
+            <table class="min-w-full text-xs">
+                <thead>
+                    <tr class="text-gray-500">
+                        <th class="text-left py-1 pr-4">Product</th>
+                        <th class="text-right py-1 pr-4">Qty</th>
+                        <th class="text-right py-1">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in row.product_breakdown %}
+                    <tr class="border-t border-gray-200">
+                        <td class="py-1 pr-4 text-gray-800">{{ p.product_name }}</td>
+                        <td class="py-1 pr-4 text-right text-gray-600">{{ p.qty }}</td>
+                        <td class="py-1 text-right text-gray-800">{{ p.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="py-1 text-gray-400 italic">No product-level activity in this period.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <div>
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Transactions</p>
+            <table class="min-w-full text-xs">
+                <thead>
+                    <tr class="text-gray-500">
+                        <th class="text-left py-1 pr-4">Date</th>
+                        <th class="text-left py-1 pr-4">Description</th>
+                        <th class="text-right py-1 pr-4">Debit</th>
+                        <th class="text-right py-1">Credit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in row.transactions %}
+                    <tr class="border-t border-gray-200">
+                        <td class="py-1 pr-4 text-gray-600 whitespace-nowrap">{{ line.journal_entry.date|date:"Y-m-d" }}</td>
+                        <td class="py-1 pr-4 text-gray-800">
+                            <a href="{% url 'bookkeeping:journal_entry_detail' line.journal_entry.pk %}" class="text-blue-600 hover:text-blue-900">
+                                {{ line.journal_entry.description|default:"—"|truncatechars:60 }}
+                            </a>
+                        </td>
+                        <td class="py-1 pr-4 text-right text-gray-800">{% if line.entry_type == 'DEBIT' %}{{ line.amount|floatformat:2 }}{% endif %}</td>
+                        <td class="py-1 text-right text-gray-800">{% if line.entry_type == 'CREDIT' %}{{ line.amount|floatformat:2 }}{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="py-1 text-gray-400 italic">No transactions in this period.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </td>
+</tr>

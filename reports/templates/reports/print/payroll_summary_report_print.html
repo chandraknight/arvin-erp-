@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payroll Summary - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+h2 { font-size: 10pt; margin: 14px 0 4px; border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+.summary { display: flex; gap: 8px; margin: 10px 0; }
+.sbox { flex: 1; border: 1px solid #aaa; padding: 5px 8px; text-align: center; }
+.sbox .label { font-size: 8pt; color: #555; }
+.sbox .value { font-size: 11pt; font-weight: bold; }
+table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+th, td { border: 1px solid #aaa; padding: 3px 6px; font-size: 8.5pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+.tot td { font-weight: bold; border-top: 2px solid #555; background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Payroll Summary Report</h1>
+  <div class="sub">
+    {% if fiscal_year %}Fiscal Year: {{ fiscal_year.name }}{% endif %}
+    &nbsp;|&nbsp; Active Employees: {{ active_employees }}
+    &nbsp;|&nbsp; Printed: {% now "Y-m-d" %}
+  </div>
+</div>
+
+<div class="summary">
+  <div class="sbox"><div class="label">Payroll Runs</div><div class="value">{{ run_count }}</div></div>
+  <div class="sbox"><div class="label">Total Gross Pay</div><div class="value">NPR {{ totals.total_gross|floatformat:2 }}</div></div>
+  <div class="sbox"><div class="label">Total Deductions</div><div class="value">NPR {{ total_deductions|floatformat:2 }}</div></div>
+  <div class="sbox"><div class="label">Total Net Pay</div><div class="value">NPR {{ totals.total_net|floatformat:2 }}</div></div>
+</div>
+
+<h2>Payroll Runs</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Period Start</th><th>Period End</th><th>Payroll Date</th>
+      <th>Status</th><th class="tr">Gross Pay</th><th class="tr">Net Pay</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for run in runs %}
+    <tr>
+      <td>{{ run.period_start_date|date:"Y-m-d" }}</td>
+      <td>{{ run.period_end_date|date:"Y-m-d" }}</td>
+      <td>{{ run.payroll_date|date:"Y-m-d" }}</td>
+      <td>{{ run.status }}</td>
+      <td class="tr">{{ run.total_gross_pay|floatformat:2 }}</td>
+      <td class="tr">{{ run.total_net_pay|floatformat:2 }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="tc">No payroll runs found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Employee Summary</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Employee</th><th>Email</th>
+      <th class="tr">Gross Pay</th><th class="tr">Deductions</th><th class="tr">Net Pay</th><th class="tr">Payslips</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for emp in employee_summary %}
+    <tr>
+      <td>{{ emp.employee__first_name }} {{ emp.employee__last_name }}</td>
+      <td>{{ emp.employee__email|default:"-" }}</td>
+      <td class="tr">{{ emp.total_gross|floatformat:2 }}</td>
+      <td class="tr">{{ emp.total_deductions|floatformat:2 }}</td>
+      <td class="tr">{{ emp.total_net|floatformat:2 }}</td>
+      <td class="tr">{{ emp.payslip_count }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="tc">No employee data found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

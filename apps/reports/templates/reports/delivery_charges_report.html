@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Delivery Charges Report{% endblock %}
+{% block content %}
+<div class="w-full mt-2">
+    <h1 class="text-2xl font-semibold mb-1 text-gray-800">Delivery Charges</h1>
+    <p class="text-sm text-gray-500 mb-4">Invoice-level detail behind the Delivery Income ledger balance — covers charges from both ecom checkout and order management.</p>
+
+    <form method="get" class="mb-4 flex items-end gap-2 flex-wrap">
+        <div>
+            <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">From (BS)</label>
+            <input type="text" name="start_date" id="start_date" value="{{ start_date_bs }}"
+                   placeholder="YYYY-MM-DD" autocomplete="off"
+                   class="nepali-datepicker border border-gray-300 rounded-md text-sm px-3 py-2">
+        </div>
+        <div>
+            <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">To (BS)</label>
+            <input type="text" name="end_date" id="end_date" value="{{ end_date_bs }}"
+                   placeholder="YYYY-MM-DD" autocomplete="off"
+                   class="nepali-datepicker border border-gray-300 rounded-md text-sm px-3 py-2">
+        </div>
+        <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition text-sm">Filter</button>
+    </form>
+
+    <div class="grid grid-cols-1 sm:grid-cols-1 gap-4 mb-4 max-w-xs">
+        <div class="bg-white rounded shadow-md p-4 border-l-4 border-orange-600">
+            <p class="text-xs text-gray-500 uppercase tracking-wider">Total Delivery Income</p>
+            <p class="text-xl font-semibold text-orange-700">{{ total_delivery_income|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded shadow-md overflow-hidden overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Origin</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Delivery Charge</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for row in rows %}
+                <tr>
+                    <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{{ row.invoice.transaction_date|date:"Y-m-d" }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <a href="{% url 'billing:view_invoice_detail' row.invoice.pk %}" class="text-blue-600 hover:text-blue-900">{{ row.invoice.invoice_number }}</a>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-800">{{ row.invoice.customer.name|default:"Walk-in" }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if row.origin == 'Ecom Order' %}bg-purple-100 text-purple-800
+                            {% elif row.origin == 'Sales Order' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-700{% endif %}">
+                            {{ row.origin }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ row.order.order_number|default:"—" }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900 text-right font-medium">{{ row.invoice.delivery_charge|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-400 italic">No delivery charges recorded for this period.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

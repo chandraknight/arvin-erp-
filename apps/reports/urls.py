@@ -19,6 +19,8 @@ urlpatterns = [
          name='profit_and_loss_report'),
     path('profit-and-loss/post-tax-provision/', views.post_income_tax_provision,
          name='post_income_tax_provision'),
+    path('profit-and-loss/post-closing-stock/', views.post_closing_stock,
+         name='post_closing_stock'),
     path('cash-flow/', views.cash_flow_report, name='cash_flow_report'),
     path('sales/detailed/', views.detailed_sales_report,
          name='detailed_sales_report'),
@@ -190,6 +192,10 @@ urlpatterns = [
          name='cash_book_report'),
     path('bookkeeping/bank-book/', views.bank_book_report,
          name='bank_book_report'),
+    path('bookkeeping/bank-reconciliation/', views.bank_reconciliation_report,
+         name='bank_reconciliation_report'),
+    path('bookkeeping/bank-reconciliation/toggle/', views.bank_reconciliation_toggle_line,
+         name='bank_reconciliation_toggle_line'),
     path('bookkeeping/party-ledger/', views.party_ledger_report,
          name='party_ledger_report'),
     path('bookkeeping/general-ledger/', views.general_ledger_report,
@@ -234,6 +240,28 @@ urlpatterns = [
     # NFRS 13 — Fixed Asset Register
     path('financial/fixed-assets/', views.fixed_asset_register_report,
          name='fixed_asset_register_report'),
+
+    # Delivery Charges (ecom + order management)
+    path('sales/delivery-charges/', views.delivery_charges_report,
+         name='delivery_charges_report'),
+
+    # NFRS — Notes to the Financial Statements
+    path('financial/notes-to-accounts/', views.notes_to_accounts_report,
+         name='notes_to_accounts_report'),
+    path('financial/notes-to-accounts/policy/edit/', views.edit_accounting_policy_note,
+         name='edit_accounting_policy_note'),
+    path('financial/related-party-transactions/', views.related_party_transaction_list,
+         name='related_party_transaction_list'),
+    path('financial/related-party-transactions/add/', views.related_party_transaction_create,
+         name='related_party_transaction_create'),
+    path('financial/related-party-transactions/<uuid:pk>/delete/', views.related_party_transaction_delete,
+         name='related_party_transaction_delete'),
+    path('financial/contingent-liabilities/', views.contingent_liability_list,
+         name='contingent_liability_list'),
+    path('financial/contingent-liabilities/add/', views.contingent_liability_create,
+         name='contingent_liability_create'),
+    path('financial/contingent-liabilities/<uuid:pk>/delete/', views.contingent_liability_delete,
+         name='contingent_liability_delete'),
 
     # ── Vendor-wise Inventory Report ──────────────────────────────────────
     path('products/inventory/by-vendor/', views.vendor_wise_inventory_report,

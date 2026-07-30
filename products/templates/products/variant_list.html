@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Variants — {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="w-full py-4">
+
+  <div class="flex items-center justify-between mb-2">
+    <h1 class="text-2xl font-bold text-gray-800">{{ product.name }}</h1>
+    <span class="text-sm text-gray-500">Base price: Rs.{{ product.price }}</span>
+  </div>
+  {% if product.purchase_unit %}
+  <p class="text-sm text-gray-500 mb-4">
+    Buy unit: <strong>{{ product.purchase_unit.symbol }}</strong> &rarr;
+    Sell unit: <strong>{{ product.sale_unit.symbol }}</strong> &mdash;
+    Conversion: 1 {{ product.purchase_unit.symbol }} = {{ product.conversion_factor }} {{ product.sale_unit.symbol }}
+  </p>
+  {% endif %}
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="mb-4 px-4 py-3 rounded text-sm {% if msg.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Add variant form -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+    <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Add Variant</h2>
+    <form method="post" action="{% url 'products:variant_create' product.pk %}"
+          class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {% csrf_token %}
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Size</label>
+        <input type="text" name="size" placeholder="e.g. M, 42"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Color</label>
+        <input type="text" name="color" placeholder="e.g. Red"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">SKU</label>
+        <input type="text" name="sku" placeholder="Optional"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Barcode</label>
+        <input type="text" name="barcode" placeholder="Optional"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Price +/-</label>
+        <input type="number" step="0.01" name="price_adjustment" value="0"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div class="flex items-end">
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+          Add
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Variants table -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Size</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">Color</th>
+          <th class="text-left px-4 py-3 font-medium text-gray-600">SKU</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">Sale Price</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">POS Stock</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">Ecom Stock</th>
+          <th class="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for v in variants %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-medium text-gray-800">{{ v.size|default:"—" }}</td>
+          <td class="px-4 py-3 text-gray-600">{{ v.color|default:"—" }}</td>
+          <td class="px-4 py-3 text-gray-500 text-xs">{{ v.sku|default:"—" }}</td>
+          <td class="px-4 py-3 text-right text-gray-800">Rs.{{ v.sale_price }}</td>
+          <!-- Inline stock edit -->
+          <td class="px-4 py-3 text-right">
+            <form method="post" action="{% url 'products:variant_update_stock' v.pk %}" class="inline-flex items-center gap-1">
+              {% csrf_token %}
+              <input type="number" name="stock" value="{{ v.stock }}" min="0"
+                     class="w-20 border border-gray-300 rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-400">
+              <input type="hidden" name="ecom_stock" value="{{ v.ecom_stock }}">
+              <button type="submit" class="text-indigo-600 hover:text-indigo-800 text-xs">Save</button>
+            </form>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <form method="post" action="{% url 'products:variant_update_stock' v.pk %}" class="inline-flex items-center gap-1">
+              {% csrf_token %}
+              <input type="hidden" name="stock" value="{{ v.stock }}">
+              <input type="number" name="ecom_stock" value="{{ v.ecom_stock }}" min="0"
+                     class="w-20 border border-gray-300 rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-400">
+              <button type="submit" class="text-indigo-600 hover:text-indigo-800 text-xs">Save</button>
+            </form>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <form method="post" action="{% url 'products:variant_delete' v.pk %}" onsubmit="return confirm('Delete this variant?')">
+              {% csrf_token %}
+              <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-8 text-center text-gray-400 text-sm">
+            No variants yet. Add size/color combinations above.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-4 flex gap-4 text-sm">
+    <a href="{% url 'products:inventory_management' %}" class="text-indigo-600 hover:underline">&larr; Back to Inventory</a>
+    <a href="{% url 'products:uom_list' %}" class="text-indigo-600 hover:underline">Manage Units of Measure</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Debit Note Report</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 2cm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #777; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; }
+.rh { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; } .rh .co { font-size: 11pt; font-weight: bold; } .rh .sub { font-size: 8pt; color: #666; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #bbb; padding: 4px 7px; font-size: 9pt; }
+th { background: #ddd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; } thead { display: table-header-group; }
+.tr { text-align: right; } .tc { text-align: center; }
+</style></head>
+<body>
+<div class="rh">{% if company %}<div class="co">{{ company.name }}</div>{% endif %}<h1>Debit Note Report</h1><div class="sub">Generated: {% now "Y-m-d" %}</div></div>
+<table>
+  <thead><tr><th>Debit Note #</th><th>Invoice #</th><th>Customer</th><th class="tr">Amount (NPR)</th><th>Status</th><th>Issued At</th></tr></thead>
+  <tbody>
+    {% for dn in debit_notes %}
+    <tr>
+      <td>{{ dn.debit_note_number|default:dn.id }}</td>
+      <td>{{ dn.invoice.invoice_number|default:"-" }}</td>
+      <td>{{ dn.customer.name|default:"N/A" }}</td>
+      <td class="tr">{{ dn.amount|floatformat:2 }}</td>
+      <td>{{ dn.get_status_display|default:dn.status }}</td>
+      <td>{{ dn.created_at|date:"Y-m-d" }}</td>
+    </tr>
+    {% empty %}<tr><td colspan="6" class="tc">No debit notes found.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</body></html>

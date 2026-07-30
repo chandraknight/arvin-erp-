@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sales by User Report - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #aaa; padding: 4px 7px; font-size: 9pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Sales by User Report</h1>
+  <div class="sub">Printed: {% now "Y-m-d" %}</div>
+</div>
+
+<table>
+  <thead>
+    <tr><th>#</th><th>User</th><th class="tr">Total Sales (NPR)</th></tr>
+  </thead>
+  <tbody>
+    {% for u in sales_by_user %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td>{{ u.created_by__username|default:"Unknown" }}</td>
+      <td class="tr">{{ u.total_sales|floatformat:2 }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3" class="tc">No sales data found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

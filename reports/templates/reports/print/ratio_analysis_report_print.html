@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ratio Analysis - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+h2 { font-size: 10pt; margin: 14px 0 4px; text-transform: uppercase; border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+th, td { border: 1px solid #aaa; padding: 4px 8px; font-size: 9pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.kpi { border: 1px solid #aaa; padding: 5px 8px; }
+.kpi .label { font-size: 8pt; color: #555; }
+.kpi .value { font-size: 12pt; font-weight: bold; }
+.bs-summary { margin-top: 10px; display: flex; gap: 8px; }
+.bs-box { flex: 1; border: 1px solid #aaa; padding: 5px 8px; text-align: center; }
+.bs-box .label { font-size: 8pt; color: #555; }
+.bs-box .value { font-size: 11pt; font-weight: bold; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Financial Ratio Analysis</h1>
+  <div class="sub">
+    {% if fiscal_year %}Fiscal Year: {{ fiscal_year.name }}{% endif %}
+    &nbsp;|&nbsp; Printed: {% now "Y-m-d" %}
+  </div>
+</div>
+
+<div class="bs-summary">
+  <div class="bs-box"><div class="label">Total Assets</div><div class="value">NPR {{ total_assets|floatformat:2 }}</div></div>
+  <div class="bs-box"><div class="label">Total Liabilities</div><div class="value">NPR {{ total_liabilities|floatformat:2 }}</div></div>
+  <div class="bs-box"><div class="label">Total Equity</div><div class="value">NPR {{ total_equity|floatformat:2 }}</div></div>
+  <div class="bs-box"><div class="label">Net Income</div><div class="value">NPR {{ net_income|floatformat:2 }}</div></div>
+</div>
+
+<h2>Liquidity Ratios</h2>
+<table>
+  <thead><tr><th>Ratio</th><th class="tr">Value</th><th>Benchmark</th></tr></thead>
+  <tbody>
+    <tr><td>Current Ratio</td><td class="tr">{{ ratios.current_ratio|default:"N/A" }}</td><td>&gt; 2.0 is healthy</td></tr>
+    <tr><td>Quick Ratio</td><td class="tr">{{ ratios.quick_ratio|default:"N/A" }}</td><td>&gt; 1.0 is healthy</td></tr>
+    <tr><td>Cash Ratio</td><td class="tr">{{ ratios.cash_ratio|default:"N/A" }}</td><td>&gt; 0.5 is healthy</td></tr>
+  </tbody>
+</table>
+
+<h2>Profitability Ratios</h2>
+<table>
+  <thead><tr><th>Ratio</th><th class="tr">Value (%)</th></tr></thead>
+  <tbody>
+    <tr><td>Gross Margin</td><td class="tr">{% if ratios.gross_margin_pct %}{{ ratios.gross_margin_pct }}%{% else %}N/A{% endif %}</td></tr>
+    <tr><td>Net Margin</td><td class="tr">{% if ratios.net_margin_pct %}{{ ratios.net_margin_pct }}%{% else %}N/A{% endif %}</td></tr>
+    <tr><td>Return on Assets (ROA)</td><td class="tr">{% if ratios.roa_pct %}{{ ratios.roa_pct }}%{% else %}N/A{% endif %}</td></tr>
+    <tr><td>Return on Equity (ROE)</td><td class="tr">{% if ratios.roe_pct %}{{ ratios.roe_pct }}%{% else %}N/A{% endif %}</td></tr>
+  </tbody>
+</table>
+
+<h2>Efficiency Ratios</h2>
+<table>
+  <thead><tr><th>Ratio</th><th class="tr">Value</th></tr></thead>
+  <tbody>
+    <tr><td>AR Turnover</td><td class="tr">{{ ratios.ar_turnover|default:"N/A" }}</td></tr>
+    <tr><td>Days Sales Outstanding</td><td class="tr">{% if ratios.days_sales_outstanding %}{{ ratios.days_sales_outstanding }} days{% else %}N/A{% endif %}</td></tr>
+    <tr><td>AP Turnover</td><td class="tr">{{ ratios.ap_turnover|default:"N/A" }}</td></tr>
+    <tr><td>Days Payable Outstanding</td><td class="tr">{% if ratios.days_payable_outstanding %}{{ ratios.days_payable_outstanding }} days{% else %}N/A{% endif %}</td></tr>
+    <tr><td>Asset Turnover</td><td class="tr">{{ ratios.asset_turnover|default:"N/A" }}</td></tr>
+  </tbody>
+</table>
+
+<h2>Leverage Ratios</h2>
+<table>
+  <thead><tr><th>Ratio</th><th class="tr">Value</th></tr></thead>
+  <tbody>
+    <tr><td>Debt-to-Equity</td><td class="tr">{{ ratios.debt_to_equity|default:"N/A" }}</td></tr>
+    <tr><td>Debt Ratio</td><td class="tr">{{ ratios.debt_ratio|default:"N/A" }}</td></tr>
+  </tbody>
+</table>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

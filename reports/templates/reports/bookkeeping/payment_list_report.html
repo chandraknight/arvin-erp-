@@ -1,0 +1,61 @@
+<!-- bookkeeping/templates/bookkeeping/payment_list.html -->
+{% extends 'base.html' %}
+
+{% block title %}
+  Payments
+{% endblock %}
+
+{% block content %}
+  <div class="w-full mt-2">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">Payments List Report</h1>
+      <div class="flex space-x-2">
+        <a href="{% url 'payments:payment_add' %}" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200 ease-in-out text-sm">Add New Payment</a>
+        <a href="{% url 'reports:export_payment_list_excel' %}" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200 ease-in-out text-sm">Export to Excel</a>
+        <a href="{% url 'reports:export_payment_list_pdf' %}" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200 ease-in-out text-sm">Export to PDF</a>
+        <a href="{% url 'reports:print_payment_list_report' %}" class="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition duration-200 ease-in-out text-sm">Print Report</a>
+      </div>
+    </div>
+
+    {# Messages are handled in base.html #}
+
+    {% if payments %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white shadow-md rounded">
+          <thead>
+            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+              <th class="py-3 px-6 text-left">Date</th>
+              <th class="py-3 px-6 text-left">Amount</th>
+              <th class="py-3 px-6 text-left">Method</th>
+              <th class="py-3 px-6 text-left">Description</th>
+              <th class="py-3 px-6 text-left">Created By</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-600 text-sm font-light">
+            {% for payment in payments %}
+              <tr class="border-b border-gray-200 hover:bg-gray-100">
+                <td class="py-3 px-6 text-left whitespace-nowrap">{{ payment.date|date:'Y-m-d' }}</td>
+                <td class="py-3 px-6 text-left whitespace-nowrap">{{ payment.amount }}</td>
+                <td class="py-3 px-6 text-left whitespace-nowrap">{{ payment.get_method_display }}</td>
+                <td class="py-3 px-6 text-left">{{ payment.description|default:'-' }}</td>
+                <td class="py-3 px-6 text-left whitespace-nowrap">
+                  {% if payment.created_by %}
+                    {{ payment.created_by.email }}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-gray-600 italic">No payments found.</p>
+    {% endif %}
+
+    <div class="mt-6">
+      <a href="{% url 'reports:report_dashboard' %}" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200 ease-in-out text-sm">Back to Reports Dashboard</a>
+    </div>
+  </div>
+{% endblock %}

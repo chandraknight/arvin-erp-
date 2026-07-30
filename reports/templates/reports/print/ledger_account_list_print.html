@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ledger Account List - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #aaa; padding: 4px 7px; font-size: 9pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tc { text-align: center; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Chart of Accounts</h1>
+  <div class="sub">Printed: {% now "Y-m-d" %}</div>
+</div>
+
+<table>
+  <thead>
+    <tr><th>#</th><th>Account Name</th><th>Type</th><th>Classification</th></tr>
+  </thead>
+  <tbody>
+    {% for acc in ledger_accounts %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td>{{ acc.name }}</td>
+      <td>{{ acc.get_account_type_display }}</td>
+      <td>{% if acc.is_current %}Current{% else %}Non-Current{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4" class="tc">No ledger accounts found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

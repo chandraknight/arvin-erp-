@@ -34,6 +34,11 @@ class Invoice(BaseModel):
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text='Total discount amount')
     discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), help_text='Discount percentage')
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text='Tax amount')
+    delivery_charge = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text='Delivery/shipping fee charged to the customer. Posted to the '
+                   'Delivery Income ledger account, separate from Sales Revenue.',
+    )
     total = models.DecimalField(max_digits=10, decimal_places=2, help_text='Final total after discount and tax')
     outstanding_balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     due_date = models.DateField(null=True, blank=True)

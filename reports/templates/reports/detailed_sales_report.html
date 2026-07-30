@@ -1,0 +1,79 @@
+<!-- reports/templates/reports/detailed_sales_report.html -->
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Detailed Sales Report{% endblock %}
+
+{% block content %}
+    <div class="w-full mt-2">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Detailed Sales Report</h1>
+             <a href="{% url 'reports:report_dashboard' %}" class="inline-block bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200 ease-in-out text-sm">Back to Reports Dashboard</a>
+        </div>
+
+        {# Messages are handled in base.html #}
+
+        <form method="get" class="mb-6 space-y-4">
+            <div class="flex flex-wrap items-center space-y-4 md:space-y-0 md:space-x-4">
+                <div>
+                    <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date:</label>
+                    <input type="text" name="start_date" id="start_date" value="{{ start_date|default:'' }}" class="nepali-datepicker mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="end_date" class="block text-sm font-medium text-gray-700">End Date:</label>
+                    <input type="text" name="end_date" id="end_date" value="{{ end_date|default:'' }}" class="nepali-datepicker mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div class="flex items-end space-x-2">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200 ease-in-out text-sm">Filter Report</button>
+                    <button type="button" onclick="window.print()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200 ease-in-out text-sm">
+                        <i class="fas fa-print mr-1"></i> Print
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        {% if invoices %}
+            <div class="mb-4 p-4 bg-gray-50 rounded-lg shadow-sm inline-block">
+                <h3 class="text-xl font-semibold text-gray-700">Total Sales: {{ total_sales|floatformat:2|intcomma }}</h3>
+                <h3 class="text-xl font-semibold text-gray-700">Total Items Sold: {{ total_items_sold|intcomma }}</h3>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white shadow-md rounded mt-4">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                            <th class="py-3 px-6 text-left">Date</th>
+                            <th class="py-3 px-6 text-left">Invoice Number</th>
+                            <th class="py-3 px-6 text-left">Customer</th>
+                            <th class="py-3 px-6 text-right">Total Amount</th>
+                            <th class="py-3 px-6 text-right">Outstanding Balance</th>
+                            <th class="py-3 px-6 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        {% for invoice in invoices %}
+                            <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                <td class="py-3 px-6 text-left whitespace-nowrap">{{ invoice.date|date:"Y-m-d" }}</td>
+                                <td class="py-3 px-6 text-left">{{ invoice.invoice_number }}</td>
+                                <td class="py-3 px-6 text-left">{{ invoice.customer.name }}</td>
+                                <td class="py-3 px-6 text-right">{{ invoice.total|floatformat:2|intcomma }}</td>
+                                <td class="py-3 px-6 text-right">{{ invoice.outstanding_balance|floatformat:2|intcomma }}</td>
+                                <td class="py-3 px-6 text-center">
+                                    <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                        {% if invoice.status == 'PAID' %} bg-green-200 text-green-800
+                                        {% elif invoice.status == 'PARTIALLY_PAID' %} bg-yellow-200 text-yellow-800
+                                        {% else %} bg-red-200 text-red-800
+                                        {% endif %}">
+                                        {{ invoice.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-gray-600 italic">No sales found for the selected period.</p>
+        {% endif %}
+    </div>
+{% endblock %} 

@@ -193,6 +193,13 @@
 
                 <div class="sm:flex">
                     <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full">
+                        Delivery Charge (₹)
+                    </span>
+                    {{ form.delivery_charge|add_class:"delivery-charge w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                </div>
+
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-40 w-full">
                         Total (₹)
                     </span>
                     {{ form.total|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 bg-gray-50 font-bold" }}
@@ -1164,6 +1171,7 @@
                 discountAmountUserEditing = false;
             });
             document.querySelector('.tax-percent')?.addEventListener('input', updateCalculations);
+            document.querySelector('.delivery-charge')?.addEventListener('input', updateCalculations);
 
             // Fetch product price and hscode from server
             function fetchProductPrice(productId, priceInput, hscodeInput) {
@@ -1280,7 +1288,8 @@
                 // Calculate total — always compute and set this even if the tax_amount
                 // field above were ever missing again, since Total must never be left
                 // blank just because a less-critical field couldn't be updated.
-                const total = taxableAmount + taxAmount;
+                const deliveryCharge = parseFloat(document.querySelector('.delivery-charge')?.value) || 0;
+                const total = taxableAmount + taxAmount + deliveryCharge;
                 const totalInputEl = document.getElementById('id_total');
                 if (totalInputEl) totalInputEl.value = total.toFixed(2);
 

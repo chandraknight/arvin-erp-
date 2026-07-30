@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>COGS Report - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #aaa; padding: 3px 6px; font-size: 8.5pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+.tot td { font-weight: bold; border-top: 2px solid #555; background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Cost of Goods Sold (COGS) Report</h1>
+  <div class="sub">Printed: {% now "Y-m-d" %}</div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Invoice Date</th><th>Product</th><th>Category</th>
+      <th class="tr">Qty</th><th class="tr">Sale Price</th>
+      <th class="tr">Cost Price</th><th class="tr">COGS (NPR)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in cogs_data %}
+    <tr>
+      <td>{{ item.invoice.created_at|date:"Y-m-d" }}</td>
+      <td>{{ item.product.name|default:"N/A" }}</td>
+      <td>{{ item.product.category.name|default:"-" }}</td>
+      <td class="tr">{{ item.quantity }}</td>
+      <td class="tr">{{ item.price|floatformat:2 }}</td>
+      <td class="tr">{{ item.product.cost_price|floatformat:2 }}</td>
+      <td class="tr">{{ item.item_cogs|floatformat:2 }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="tc">No COGS data found.</td></tr>
+    {% endfor %}
+    {% if cogs_data %}
+    <tr class="tot">
+      <td colspan="6">Total COGS</td>
+      <td class="tr">{{ total_cogs|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

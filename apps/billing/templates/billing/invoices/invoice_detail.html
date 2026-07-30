@@ -169,6 +169,12 @@
             <td class="px-4 py-2 text-right text-sm font-semibold text-gray-900">NPR {{ invoice.tax_amount|floatformat:2|intcomma }}</td>
           </tr>
           {% endif %}
+          {% if invoice.delivery_charge > 0 %}
+          <tr>
+            <td colspan="5" class="px-4 py-2 text-right text-sm font-medium text-gray-500">Delivery Charge</td>
+            <td class="px-4 py-2 text-right text-sm font-semibold text-gray-900">NPR {{ invoice.delivery_charge|floatformat:2|intcomma }}</td>
+          </tr>
+          {% endif %}
           <tr class="bg-green-50">
             <td colspan="5" class="px-4 py-3 text-right text-base font-bold text-gray-800">Total</td>
             <td class="px-4 py-3 text-right text-base font-bold text-green-700 font-mono">NPR {{ invoice.total|floatformat:2|intcomma }}</td>

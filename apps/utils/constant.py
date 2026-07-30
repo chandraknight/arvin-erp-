@@ -126,6 +126,7 @@ JOURNAL_SOURCE_TYPES = [
     ('PREPAID_AMORTIZATION', 'Prepaid Expense Amortization'),
     ('FX_ADJUSTMENT', 'Foreign Exchange Gain/Loss'),
     ('TAX_PROVISION', 'Income Tax Provision'),
+    ('CLOSING_STOCK', 'Closing Stock Adjustment'),
     ('OTHER', 'Other'),
 ]
 
@@ -143,4 +144,7 @@ DEFAULT_ACCOUNTS = [
     # NFRS presentation: revenue and purchases reported net of returns
     {"name": "Sales Returns",        "account_type": "REVENUE",   "code": "4100"},
     {"name": "Purchase Returns",     "account_type": "EXPENSE",   "code": "5200"},
+    # Delivery/shipping fees charged to customers — kept separate from Sales
+    # Revenue so P&L shows product sales and delivery income as distinct lines.
+    {"name": "Delivery Income",      "account_type": "REVENUE",   "code": "4200"},
 ]

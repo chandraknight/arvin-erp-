@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Balance Sheet - Print</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
+  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
+.rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; margin-bottom: 2px; }
+.rh .sub { font-size: 8.5pt; color: #555; }
+h2 { font-size: 10pt; margin: 14px 0 3px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #aaa; padding-bottom: 2px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+th, td { border: 1px solid #bbb; padding: 3px 7px; font-size: 9pt; }
+th { background: #e0e0e0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tot td { font-weight: bold; border-top: 2px solid #555; background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.grand-total { margin-top: 12px; padding: 6px 10px; border: 2px solid #333; font-size: 10pt; font-weight: bold; display: flex; justify-content: space-between; }
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="rh">
+  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+  <h1>Statement of Financial Position (Balance Sheet)</h1>
+  <div class="sub">As of: {{ report_date|date:"Y-m-d" }} &nbsp;|&nbsp; Printed: {% now "Y-m-d" %}</div>
+</div>
+
+<h2>Assets</h2>
+<table>
+  <thead><tr><th>Account</th><th class="tr">Balance (NPR)</th></tr></thead>
+  <tbody>
+    {% for item in assets_data %}
+    <tr>
+      <td>{{ item.account.name }}</td>
+      <td class="tr">{{ item.balance|floatformat:2 }}</td>
+    </tr>
+    {% empty %}<tr><td colspan="2" style="text-align:center">No asset accounts.</td></tr>{% endfor %}
+    <tr class="tot"><td>Total Assets</td><td class="tr">{{ total_assets|floatformat:2 }}</td></tr>
+  </tbody>
+</table>
+
+<h2>Liabilities</h2>
+<table>
+  <thead><tr><th>Account</th><th class="tr">Balance (NPR)</th></tr></thead>
+  <tbody>
+    {% for item in liabilities_data %}
+    <tr>
+      <td>{{ item.account.name }}</td>
+      <td class="tr">{{ item.balance|floatformat:2 }}</td>
+    </tr>
+    {% empty %}<tr><td colspan="2" style="text-align:center">No liability accounts.</td></tr>{% endfor %}
+    <tr class="tot"><td>Total Liabilities</td><td class="tr">{{ total_liabilities|floatformat:2 }}</td></tr>
+  </tbody>
+</table>
+
+<h2>Equity</h2>
+<table>
+  <thead><tr><th>Account</th><th class="tr">Balance (NPR)</th></tr></thead>
+  <tbody>
+    {% for item in equity_data %}
+    <tr>
+      <td>{{ item.account.name }}</td>
+      <td class="tr">{{ item.balance|floatformat:2 }}</td>
+    </tr>
+    {% empty %}<tr><td colspan="2" style="text-align:center">No equity accounts.</td></tr>{% endfor %}
+    <tr class="tot"><td>Total Equity</td><td class="tr">{{ total_equity|floatformat:2 }}</td></tr>
+  </tbody>
+</table>
+
+<div class="grand-total">
+  <span>Total Liabilities &amp; Equity</span>
+  <span>NPR {{ total_liabilities_and_equity|default:total_liabilities|add:total_equity|floatformat:2 }}</span>
+</div>
+
+<script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>

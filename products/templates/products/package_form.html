@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Package Form{% endblock %}
+
+{% block content %}
+
+    {% include 'includes/toast.html' %}
+
+    <div class="md:w-[70%] mx-auto mt-10 bg-white border border-gray-200 shadow-lg p-6 sm:p-10">
+
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-center text-green-800 mb-8 tracking-tight">
+            {% if package %} Update Package {% else %} Create Package {% endif %}
+        </h2>
+        <form method="post" novalidate class="space-y-6">
+            {% csrf_token %}
+            {{ formset.management_form }}
+
+            <!-- Package Name -->
+            <div class="sm:flex">
+                <span class="block sm:inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                    Package Name
+                </span>
+                {{ form.name|add_class:"flex-1 min-w-0 border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+            </div>
+            {% if form.name.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ form.name.errors|striptags }}</p>
+            {% endif %}
+
+            <!-- Total Price -->
+            <div class="sm:flex">
+                <span class="block sm:inline-flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                    Total Price
+                </span>
+                {{ form.price|add_class:"flex-1 min-w-0 border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+            </div>
+            {% if form.price.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ form.price.errors|striptags }}</p>
+            {% endif %}
+
+            <!-- Package Items Header -->
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="text-xl font-bold text-green-800">Package Items</h3>
+                <button type="button" id="add-item"
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm transition duration-150">
+                    + Add Item
+                </button>
+            </div>
+
+            <!-- Package Items Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full border border-gray-200">
+                    <thead class="bg-gray-50 text-green-800">
+                    <tr>
+                        <th class="py-3 px-4 text-left text-sm font-semibold border-b border-gray-200">Type</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold border-b border-gray-200">Product</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold border-b border-gray-200">Quantity</th>
+                        <th class="py-3 px-4 text-center text-sm font-semibold border-b border-gray-200">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="items-container">
+                    {% for item_form in formset %}
+                        {% if not package and forloop.counter0 > 0 %}
+                            {% for hidden in item_form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+                        {% else %}
+                            <tr class="border-b border-gray-200 item-form" data-index="{{ forloop.counter0 }}">
+                                {% for hidden in item_form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                                <td class="py-3 px-4">
+                                    {{ item_form.category_type|add_class:"w-full border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                    {% if item_form.category_type.errors %}
+                                        <p class="text-red-600 text-sm mt-1">{{ item_form.category_type.errors|striptags }}</p>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4">
+                                    {{ item_form.product|add_class:"w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                    {% if item_form.product.errors %}
+                                        <p class="text-red-600 text-sm mt-1">{{ item_form.product.errors|striptags }}</p>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4">
+                                    {{ item_form.quantity|add_class:"w-full border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150" }}
+                                    {% if item_form.quantity.errors %}
+                                        <p class="text-red-600 text-sm mt-1">{{ item_form.quantity.errors|striptags }}</p>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <button type="button"
+                                            class="remove-item text-red-600 hover:text-red-800 transition duration-150">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if formset.non_form_errors %}
+                <div class="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
+                    {{ formset.non_form_errors }}
+                </div>
+            {% endif %}
+
+            <div class="mt-8">
+                <button type="submit"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 shadow-md transition duration-150">
+                    {% if package %} Update Package {% else %} Create Package {% endif %}
+                </button>
+            </div>
+        </form>
+
+        <c-back-link>
+            <c-slot name="url">
+                {% url 'products:inventory_management' %}
+            </c-slot>
+        </c-back-link>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('items-container');
+            const addButton = document.getElementById('add-item');
+            const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+            const hiddenContainer = document.getElementById('hidden-items-container');
+            let formCount = parseInt(totalForms.value);
+
+            function setupDynamicProductFilter(formElement) {
+                const categoryTypeSelect = formElement.querySelector('[name$="-category_type"]');
+                const productSelect = formElement.querySelector('[name$="-product"]');
+
+                if (categoryTypeSelect && productSelect) {
+                    categoryTypeSelect.addEventListener('change', function () {
+                        const categoryTypeId = this.value;
+                        fetch('/api/products/user-products/?category_type_id=' + categoryTypeId)
+                            .then(response => response.json())
+                            .then(data => {
+                                productSelect.innerHTML = '';
+                                const placeholder = document.createElement('option');
+                                placeholder.value = '';
+                                placeholder.text = '-- Select Product --';
+                                productSelect.appendChild(placeholder);
+
+                                data.products.forEach(product => {
+                                    const option = document.createElement('option');
+                                    option.value = product.id;
+                                    option.text = product.name;
+                                    productSelect.appendChild(option);
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error loading products:', error);
+                            });
+                    });
+                }
+            }
+
+            container.querySelectorAll('.item-form').forEach(formEl => setupDynamicProductFilter(formEl));
+
+            addButton.addEventListener('click', function () {
+                if (formCount >= 10) {
+                    alert('Maximum 10 items allowed');
+                    return;
+                }
+
+                const template = container.querySelector('.item-form');
+                const newForm = template.cloneNode(true);
+
+                newForm.innerHTML = newForm.innerHTML.replace(/items-\d+-/g, `items-${formCount}-`);
+                newForm.dataset.index = formCount;
+
+                newForm.querySelector('[name$="-product"]').selectedIndex = 0;
+                newForm.querySelector('[name$="-quantity"]').value = '';
+                newForm.querySelector('[name$="-category_type"]').selectedIndex = 0;
+
+                const idField = newForm.querySelector('[name$="-id"]');
+                const deleteField = newForm.querySelector('[name$="-DELETE"]');
+                if (idField) idField.value = '';
+                if (deleteField) deleteField.checked = false;
+
+                container.appendChild(newForm);
+                setupDynamicProductFilter(newForm);
+
+                formCount++;
+                totalForms.value = formCount;
+            });
+
+            container.addEventListener('click', function (e) {
+                if (e.target.closest('.remove-item')) {
+                    const formRow = e.target.closest('.item-form');
+                    const idInput = formRow.querySelector('[name$="-id"]');
+                    const deleteInput = formRow.querySelector('[name$="-DELETE"]');
+
+                    if (idInput && idInput.value) {
+                        if (deleteInput) deleteInput.checked = true;
+                        formRow.style.display = 'none';
+                    } else {
+                        formRow.remove();
+                        formCount--;
+                        totalForms.value = formCount;
+                    }
+                }
+            });
+        });
+    </script>
+
+    <style>
+
+        input[type="checkbox"][name$="-DELETE"] {
+            display: none;
+        }
+
+        .item-form {
+            transition: opacity 0.3s ease;
+        }
+
+        .item-form input:disabled,
+        .item-form select:disabled {
+            background-color: #f9fafb;
+            cursor: not-allowed;
+        }
+    </style>
+{% endblock %}

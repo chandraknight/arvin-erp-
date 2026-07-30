@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Journal Entry — {{ entry.description|truncatechars:40 }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: sans-serif; font-size: 10pt; color: #000; line-height: 1.5; margin: 0; }
+        h1 { font-size: 14pt; margin: 0 0 4px 0; }
+        .sub { font-size: 9pt; color: #555; }
+        .section-title { font-size: 9pt; font-weight: bold; text-transform: uppercase;
+                         letter-spacing: 0.05em; color: #166534; margin: 16px 0 6px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+        th { background: #166534; color: #fff; padding: 5px 8px; text-align: left; }
+        th.right { text-align: right; }
+        td { padding: 4px 8px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+        td.right { text-align: right; font-family: monospace; }
+        tr.total-row td { border-top: 2px solid #166534; font-weight: bold; background: #f0fdf4; }
+        .badge-dr { background: #dbeafe; color: #1e40af; padding: 1px 5px; font-size: 8pt; font-weight: bold; }
+        .badge-cr { background: #ffedd5; color: #c2410c; padding: 1px 5px; font-size: 8pt; font-weight: bold; }
+        .balanced { background: #dcfce7; color: #166534; padding: 2px 8px; font-size: 8pt; font-weight: bold; }
+        .unbalanced { background: #fee2e2; color: #b91c1c; padding: 2px 8px; font-size: 8pt; font-weight: bold; }
+        .footer { margin-top: 24px; font-size: 8pt; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 6px; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<table style="margin-bottom: 16px;">
+    <tr>
+        <td>
+            <h1>{{ company.name|default:"" }}</h1>
+            {% if company.address %}<div class="sub">{{ company.address }}</div>{% endif %}
+            {% if company.phone %}<div class="sub">Tel: {{ company.phone }}</div>{% endif %}
+        </td>
+        <td style="text-align: right;">
+            <div style="font-size: 12pt; font-weight: bold;">Journal Entry</div>
+            <div class="sub">Date: {{ entry.date|date:"Y-m-d" }}</div>
+            {% if entry.is_balanced %}
+                <span class="balanced">✓ Balanced</span>
+            {% else %}
+                <span class="unbalanced">✗ Unbalanced</span>
+            {% endif %}
+        </td>
+    </tr>
+</table>
+
+<!-- Description -->
+<div class="section-title">Description</div>
+<div style="font-size: 10.5pt; font-weight: bold; margin-bottom: 12px;">{{ entry.description }}</div>
+
+<!-- Journal Lines -->
+<div class="section-title">Journal Lines</div>
+<table>
+    <thead>
+        <tr>
+            <th style="width: 40%;">Account</th>
+            <th style="width: 8%;">Type</th>
+            <th class="right" style="width: 18%;">Debit</th>
+            <th class="right" style="width: 18%;">Credit</th>
+            <th style="width: 16%;">Narration</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for line in entry.lines.all %}
+        <tr>
+            <td>
+                {{ line.account.name }}
+                {% if line.account.code %}<span style="color:#9ca3af; font-size:8pt;">({{ line.account.code }})</span>{% endif %}
+            </td>
+            <td>
+                {% if line.entry_type == 'DEBIT' %}
+                    <span class="badge-dr">DR</span>
+                {% else %}
+                    <span class="badge-cr">CR</span>
+                {% endif %}
+            </td>
+            <td class="right">
+                {% if line.entry_type == 'DEBIT' %}{{ line.amount|floatformat:2 }}{% else %}—{% endif %}
+            </td>
+            <td class="right">
+                {% if line.entry_type == 'CREDIT' %}{{ line.amount|floatformat:2 }}{% else %}—{% endif %}
+            </td>
+            <td style="font-size:8.5pt; color:#555;">{{ line.narration|default:"" }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td colspan="2" style="text-align:right;">Totals</td>
+            <td class="right">{{ entry.debit_total|floatformat:2 }}</td>
+            <td class="right">{{ entry.credit_total|floatformat:2 }}</td>
+            <td></td>
+        </tr>
+    </tbody>
+</table>
+
+{% if entry.payment %}
+<div style="margin-top:16px; font-size:9pt; color:#555;">
+    Linked Payment: {{ entry.payment.reference_number|default:entry.payment.pk }}
+    &nbsp;|&nbsp; Method: {{ entry.payment.method }}
+    &nbsp;|&nbsp; Amount: {{ entry.payment.amount|floatformat:2 }}
+</div>
+{% endif %}
+
+<div class="footer">
+    Printed by {{ request.user.get_full_name|default:request.user.username }} &nbsp;|&nbsp; {{ company.name|default:"" }}
+</div>
+
+</body>
+</html>

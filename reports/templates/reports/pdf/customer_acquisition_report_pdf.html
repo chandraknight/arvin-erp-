@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer Acquisition Report - PDF</title>
+        <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: sans-serif; font-size: 10pt; color: #000; margin: 0; }
+        h1 { color: #333; text-align: center; font-size: 14pt; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #999; padding: 5px 7px; text-align: left; font-size: 9pt; }
+        th { background-color: #e8e8e8; font-weight: bold; }
+        tr { page-break-inside: avoid; }
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <h1>Customer Acquisition Report</h1>
+
+    {% if selected_start_date or selected_end_date %}
+    <p class="report-date-range">
+        Report Period:
+        {% if selected_start_date %}{{ selected_start_date }}{% else %}Beginning{% endif %}
+        to
+        {% if selected_end_date %}{{ selected_end_date }}{% else %}Present{% endif %}
+    </p>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th>New Customers Acquired</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in monthly_acquisition_data %}
+            <tr>
+                <td>{{ data.month|date:"Y-m" }}</td>
+                <td>{{ data.new_customers_count }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">No customer acquisition data found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html> 

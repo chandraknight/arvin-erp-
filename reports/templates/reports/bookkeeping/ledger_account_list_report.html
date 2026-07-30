@@ -1,0 +1,46 @@
+<!-- reports/templates/reports/bookkeeping/ledger_account_list_report.html -->
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Ledger Account List Report{% endblock %}
+
+{% block content %}
+    <div class="w-full mt-2">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Ledger Account List Report</h1>
+            <a href="{% url 'reports:report_dashboard' %}" class="inline-block bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200 ease-in-out text-sm">Back to Reports Dashboard</a>
+        </div>
+
+        {# Messages are handled in base.html #}
+
+        {% if accounts %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white shadow-md rounded">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                            <th class="py-3 px-6 text-left">Account Name</th>
+                            <th class="py-3 px-6 text-left">Account Type</th>
+                            <th class="py-3 px-6 text-right">Total Debit</th>
+                            <th class="py-3 px-6 text-right">Total Credit</th>
+                            <th class="py-3 px-6 text-right">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        {% for account in accounts %}
+                            <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                <td class="py-3 px-6 text-left whitespace-nowrap">{{ account.name }}</td>
+                                <td class="py-3 px-6 text-left whitespace-nowrap">{{ account.get_account_type_display }}</td>
+                                <td class="py-3 px-6 text-right whitespace-nowrap">{{ account.total_debit|floatformat:2|intcomma }}</td>
+                                <td class="py-3 px-6 text-right whitespace-nowrap">{{ account.total_credit|floatformat:2|intcomma }}</td>
+                                <td class="py-3 px-6 text-right whitespace-nowrap font-bold">{{ account.balance|floatformat:2|intcomma }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-gray-600 italic">No ledger accounts found.</p>
+        {% endif %}
+
+    </div>
+{% endblock %} 

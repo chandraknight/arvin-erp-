@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Reports Dashboard{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Reports &amp; Analytics</h1>
+      <p class="text-gray-500 text-sm mt-1">Access financial, operational, and analytical reports for your business.</p>
+    </div>
+    <div class="flex gap-2">
+      {% if is_admin %}
+      <a href="{% url 'reports:report_access_manage' %}"
+         class="inline-flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-lg text-sm font-medium transition">
+        <i class="fas fa-user-shield"></i> Manage Report Access
+      </a>
+      {% endif %}
+      <a href="{% url 'accounts:user_dashboard' %}"
+         class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+
+{% if not sections %}
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center text-yellow-800">
+  <i class="fas fa-lock text-2xl mb-2"></i>
+  <p class="font-medium">No reports available.</p>
+  <p class="text-sm mt-1">Contact your company administrator to request access.</p>
+</div>
+{% endif %}
+
+{% for section in sections %}
+<div class="mb-8">
+  <h2 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+    <i class="{{ section.icon }} text-{{ section.color }}-500"></i>
+    {{ section.name }}
+  </h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    {% for report in section.reports %}
+    <a href="{% url report.url_name %}"
+       class="bg-white rounded-lg p-5 shadow hover:shadow-md border-l-4 border-{{ report.color }}-500 transition group">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="p-2 bg-{{ report.color }}-100 rounded-lg group-hover:bg-{{ report.color }}-200 transition">
+          <i class="{{ report.icon }} text-{{ report.color }}-600"></i>
+        </div>
+        <h3 class="font-semibold text-gray-800">{{ report.label }}</h3>
+      </div>
+      <p class="text-xs text-gray-500">{{ report.description }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

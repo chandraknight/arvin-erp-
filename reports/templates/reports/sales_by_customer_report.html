@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}
+  Sales by Customer Report
+{% endblock %}
+
+{% block content %}
+  <div class="w-full mt-2">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">Sales by Customer Report</h1>
+      <a href="{% url 'reports:report_dashboard' %}" class="inline-block bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200 text-sm">Back to Reports</a>
+    </div>
+
+    {# Optional: Add date range filter form here later #}
+
+    {% if sales_by_customer %}
+      <table class="min-w-full bg-white shadow-md rounded mt-4">
+        <thead>
+          <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+            <th class="py-3 px-6 text-left">Customer</th>
+            <th class="py-3 px-6 text-left">Number of Sales</th>
+            <th class="py-3 px-6 text-left">Total Sales Amount</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-600 text-sm font-light">
+          {% for item in sales_by_customer %}
+            <tr class="border-b border-gray-200 hover:bg-gray-100">
+              <td class="py-3 px-6 text-left">{{ item.customer__name }}</td>
+              <td class="py-3 px-6 text-left">{{ item.number_of_sales|intcomma }}</td>
+              <td class="py-3 px-6 text-left">NPR {{ item.total_sales_amount|floatformat:2|intcomma }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="text-gray-600 italic">No sales by customer data found for the selected period.</p>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Sales by Category</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 portrait; margin: 2cm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #777; } }
+html { width: 210mm; }
+body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; }
+.rh { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; } .rh .co { font-size: 11pt; font-weight: bold; } .rh .sub { font-size: 8pt; color: #666; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #bbb; padding: 4px 7px; font-size: 9pt; }
+th { background: #ddd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; } thead { display: table-header-group; }
+.tr { text-align: right; } .tc { text-align: center; }
+</style></head>
+<body>
+<div class="rh">{% if company %}<div class="co">{{ company.name }}</div>{% endif %}<h1>Sales by Category Report</h1><div class="sub">Generated: {% now "Y-m-d" %}</div></div>
+<table>
+  <thead><tr><th>#</th><th>Category</th><th class="tr">Total Revenue (NPR)</th></tr></thead>
+  <tbody>
+    {% for cat in sales_by_category %}<tr><td>{{ forloop.counter }}</td><td>{{ cat.product__category__name|default:"Uncategorized" }}</td><td class="tr">{{ cat.total_revenue|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="3" class="tc">No data found.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</body></html>

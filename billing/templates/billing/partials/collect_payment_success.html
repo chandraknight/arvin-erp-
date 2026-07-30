@@ -1,0 +1,64 @@
+{# HTMX partial — rendered by CollectPaymentHtmxView on successful payment POST #}
+{# Target: #collect-payment-modal-body                                           #}
+{% load humanize %}
+
+<div class="p-6 text-center">
+
+  <div class="flex items-center justify-end mb-2">
+    <button type="button"
+            onclick="document.getElementById('collect-payment-modal').classList.add('hidden')"
+            class="text-gray-400 hover:text-gray-600 transition-colors">
+      <i class="fas fa-times text-xl"></i>
+    </button>
+  </div>
+
+  <div class="flex flex-col items-center gap-3 py-4">
+    <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+      <i class="fas fa-check-circle text-green-600 text-4xl"></i>
+    </div>
+    <h3 class="text-xl font-bold text-gray-800">Payment Recorded</h3>
+    <p class="text-gray-500 text-sm">The payment has been saved and the journal entry created.</p>
+  </div>
+
+  <div class="bg-gray-50 border border-gray-200 rounded-lg px-5 py-4 text-sm text-left space-y-2 mb-6">
+    <div class="flex justify-between">
+      <span class="text-gray-500">Reference</span>
+      <span class="font-semibold text-gray-800">{{ payment.reference_number|default:"—" }}</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-gray-500">Amount</span>
+      <span class="font-bold text-green-700">NPR {{ payment.amount|floatformat:2|intcomma }}</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-gray-500">Method</span>
+      <span class="font-semibold text-gray-800">{{ payment.get_method_display }}</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-gray-500">Date</span>
+      <span class="font-semibold text-gray-800">{{ payment.date|date:"M d, Y" }}</span>
+    </div>
+    <div class="flex justify-between border-t border-gray-200 pt-2 mt-2">
+      <span class="text-gray-500">Remaining Balance</span>
+      {% if invoice.outstanding_balance == 0 %}
+        <span class="font-bold text-green-700">Paid in Full</span>
+      {% else %}
+        <span class="font-bold text-orange-700">NPR {{ invoice.outstanding_balance|floatformat:2|intcomma }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="flex gap-3">
+    <a href="{% url 'payments:payment_receipt' payment.pk %}"
+       target="_blank"
+       class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 text-sm transition-colors flex items-center justify-center gap-2">
+      <i class="fas fa-receipt"></i>
+      View Receipt
+    </a>
+    <button type="button"
+            onclick="document.getElementById('collect-payment-modal').classList.add('hidden'); window.location.reload();"
+            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 text-sm transition-colors">
+      Close
+    </button>
+  </div>
+
+</div>

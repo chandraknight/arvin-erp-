@@ -14317,3 +14317,118 @@ WARNING 2026-07-27 17:13:11,348 log 16151 6157430784 Not Found: /favicon.ico
 WARNING 2026-07-27 17:13:11,349 log 16151 6157430784 "GET /favicon.ico HTTP/1.1" 404 7431
 WARNING 2026-07-27 17:13:11,349 log 16151 6140604416 Not Found: /apple-touch-icon.png
 WARNING 2026-07-27 17:13:11,349 log 16151 6140604416 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-29 16:16:05,073 log 72891 8306385280 Not Found: /reports/financial/trial-balance/
+WARNING 2026-07-29 16:16:05,084 log 72891 8306385280 Not Found: /reports/financial/balance-sheet/
+ERROR 2026-07-29 16:17:41,829 log 76265 8306385280 Internal Server Error: /reports/profit-and-loss/post-closing-stock/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 987, in get_or_create
+    return self.get(**kwargs), False
+           ~~~~~~~~^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 639, in get
+    raise self.model.DoesNotExist(
+        "%s matching query does not exist." % self.model._meta.object_name
+    )
+apps.bookkeeping.models.LedgerAccount.DoesNotExist: LedgerAccount matching query does not exist.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: duplicate key value violates unique constraint "unique_ledgeraccount_code_per_company"
+DETAIL:  Key (company_id, code)=(81595908-b139-4943-9d21-9f2db1ed6872, 5100) already exists.
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/reports/views.py", line 4698, in post_closing_stock
+    cogs_acc = get_or_create_system_account(user_company, 'Cost of Goods Sold', 'EXPENSE', code='5100')
+  File "/Users/chandraghimire/Django/arvin-erp/apps/bookkeeping/models.py", line 145, in get_or_create_system_account
+    acc, _ = LedgerAccount.objects.get_or_create(
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        company=company,
+        ^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        },
+        ^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 994, in get_or_create
+    return self.create(**params), True
+           ~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 669, in create
+    obj.save(force_insert=True, using=self.db)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/base.py", line 874, in save
+    self.save_base(
+    ~~~~~~~~~~~~~~^
+        using=using,
+        ^^^^^^^^^^^^
+    ...<2 lines>...
+        update_fields=update_fields,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/base.py", line 966, in save_base
+    updated = self._save_table(
+        raw,
+    ...<4 lines>...
+        update_fields,
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/base.py", line 1169, in _save_table
+    results = self._do_insert(
+        cls._base_manager, using, insert_fields, returning_fields, raw
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/base.py", line 1220, in _do_insert
+    return manager._insert(
+           ~~~~~~~~~~~~~~~^
+        [self],
+        ^^^^^^^
+    ...<3 lines>...
+        raw=raw,
+        ^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 1918, in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1925, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate key value violates unique constraint "unique_ledgeraccount_code_per_company"
+DETAIL:  Key (company_id, code)=(81595908-b139-4943-9d21-9f2db1ed6872, 5100) already exists.
+
