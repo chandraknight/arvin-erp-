@@ -14432,3 +14432,10 @@ Traceback (most recent call last):
 django.db.utils.IntegrityError: duplicate key value violates unique constraint "unique_ledgeraccount_code_per_company"
 DETAIL:  Key (company_id, code)=(81595908-b139-4943-9d21-9f2db1ed6872, 5100) already exists.
 
+WARNING 2026-07-31 06:47:04,368 log 86012 6167326720 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-07-31 06:47:04,368 log 86012 6167326720 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-07-31 06:47:04,380 log 86012 6200979456 Not Found: /favicon.ico
+WARNING 2026-07-31 06:47:04,381 log 86012 6200979456 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-07-31 06:47:04,382 log 86012 6184153088 Not Found: /apple-touch-icon.png
+WARNING 2026-07-31 06:47:04,383 log 86012 6184153088 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-07-31 08:31:13,891 log 99043 8420221312 Not Found: /orders/sales-orders/48cae601-98d4-46b0-9f76-e0847263adb3/print/

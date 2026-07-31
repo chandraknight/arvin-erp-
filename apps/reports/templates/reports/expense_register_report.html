@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Expense Register{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+    <div class="flex items-center justify-between mb-1">
+        <h1 class="text-2xl font-semibold text-gray-800">Expense Register</h1>
+        <span class="text-sm text-gray-500">
+            {% if date_from or date_to %}{{ date_from|default:"…" }} – {{ date_to|default:"…" }}{% else %}All time{% endif %}
+        </span>
+    </div>
+    <p class="text-sm text-gray-500 mb-4">
+        NFRS 1 — expenses disclosed by nature. Each voucher traces to its journal entry;
+        the Posted column reconciles the register to the ledger for the same period.
+    </p>
+
+    <form method="get" class="mb-4 flex flex-wrap items-end gap-2">
+        <div>
+            <label for="date_from" class="block text-xs font-medium text-gray-600 mb-1">From</label>
+            <input type="date" name="date_from" id="date_from" value="{{ date_from|date:'Y-m-d' }}"
+                   class="border border-gray-300 rounded-md text-sm px-3 py-2">
+        </div>
+        <div>
+            <label for="date_to" class="block text-xs font-medium text-gray-600 mb-1">To</label>
+            <input type="date" name="date_to" id="date_to" value="{{ date_to|date:'Y-m-d' }}"
+                   class="border border-gray-300 rounded-md text-sm px-3 py-2">
+        </div>
+        <div>
+            <label for="account" class="block text-xs font-medium text-gray-600 mb-1">Expense Account</label>
+            <select name="account" id="account" class="border border-gray-300 rounded-md text-sm px-3 py-2">
+                <option value="">All accounts</option>
+                {% for acc in expense_accounts %}
+                <option value="{{ acc.id }}" {% if account_id == acc.id|stringformat:"s" %}selected{% endif %}>{{ acc.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition text-sm">Apply</button>
+    </form>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded shadow-md p-4 border-l-4 border-rose-500">
+            <p class="text-xs text-gray-500 uppercase tracking-wider">Total Expenses (Register)</p>
+            <p class="text-xl font-semibold text-gray-800">NPR {{ grand_total|floatformat:"2" }}</p>
+        </div>
+        <div class="bg-white rounded shadow-md p-4 border-l-4 border-gray-400">
+            <p class="text-xs text-gray-500 uppercase tracking-wider">Expense Accounts</p>
+            <p class="text-xl font-semibold text-gray-800">{{ groups|length }}</p>
+        </div>
+        <div class="bg-white rounded shadow-md p-4 border-l-4 border-teal-600">
+            <p class="text-xs text-gray-500 uppercase tracking-wider">Reconciliation</p>
+            <p class="text-xl font-semibold text-teal-700">See per-account variance below</p>
+        </div>
+    </div>
+
+    {% for group in groups %}
+    <div class="bg-white rounded shadow-md overflow-hidden mb-4">
+        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
+            <div>
+                <h2 class="text-sm font-semibold text-gray-800">{{ group.account.name }}</h2>
+                <p class="text-xs text-gray-500">{{ group.account.code|default:"" }}</p>
+            </div>
+            <div class="flex items-center gap-4 text-sm">
+                <span class="text-gray-600">Register: <span class="font-semibold text-gray-900">NPR {{ group.total|floatformat:"2" }}</span></span>
+                <span class="text-gray-600">Posted (ledger): <span class="font-semibold text-gray-900">NPR {{ group.posted_total|floatformat:"2" }}</span></span>
+                {% if group.variance %}
+                <span class="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold">
+                    <i class="fas fa-triangle-exclamation mr-1"></i>Variance: NPR {{ group.variance|floatformat:"2" }}
+                </span>
+                {% else %}
+                <span class="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">
+                    <i class="fas fa-check mr-1"></i>Reconciled
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                    <th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Via</th>
+                    <th scope="col" class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th scope="col" class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Journal Entry</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for exp in group.rows %}
+                <tr>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{{ exp.date }}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <a href="{% url 'payments:expense_detail' exp.pk %}" class="hover:text-teal-700 hover:underline">{{ exp.title }}</a>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{{ exp.reference_number|default:"—" }}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{{ exp.payment_account.name }}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{{ exp.amount|floatformat:"2" }}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-center">
+                        {% if exp.journal_entry %}
+                        <a href="{% url 'bookkeeping:journal_entry_detail' exp.journal_entry.pk %}"
+                           class="text-indigo-600 hover:text-indigo-900 text-xs font-semibold">View</a>
+                        {% else %}
+                        <span class="text-red-500 text-xs">Unposted</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="bg-gray-50">
+                <tr>
+                    <td colspan="4" class="px-4 py-2 text-sm font-semibold text-gray-700">Subtotal</td>
+                    <td class="px-4 py-2 text-sm font-semibold text-gray-900 text-right">{{ group.total|floatformat:"2" }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% empty %}
+    <div class="bg-white rounded shadow-md p-6 text-center text-sm text-gray-500">No expenses recorded for this period.</div>
+    {% endfor %}
+</div>
+{% endblock %}

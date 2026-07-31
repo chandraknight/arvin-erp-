@@ -57,6 +57,16 @@
       </button>
     </form>
 
+    <!-- Barcode scan bar -->
+    <form id="barcode-form" class="mb-4 flex gap-2" onsubmit="return false;">
+      <div class="relative flex-1">
+        <i class="fas fa-barcode absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <input type="text" id="barcode-input" autocomplete="off" placeholder="Scan barcode and press Enter…"
+               class="w-full border border-gray-300 pl-9 pr-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+      </div>
+      <span id="barcode-status" class="hidden self-center text-xs px-2 py-1"></span>
+    </form>
+
     <!-- Product grid -->
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="product-grid">
       {% for product in page_obj.object_list %}
@@ -152,7 +162,7 @@
   <!-- Right panel: Cart (desktop) -->
   <div class="hidden md:block w-80 flex-shrink-0">
     <div id="cart-container">
-      {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods selected_referrer=selected_referrer %}
+      {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods bank_accounts=bank_accounts selected_referrer=selected_referrer %}
     </div>
   </div>
 
@@ -168,7 +178,7 @@
         <button @click="cartOpen = false" class="text-gray-400 hover:text-gray-600 p-1"><i class="fas fa-times"></i></button>
       </div>
       <div id="cart-container-mobile" class="p-4">
-        {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods selected_referrer=selected_referrer %}
+        {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods bank_accounts=bank_accounts selected_referrer=selected_referrer %}
       </div>
     </div>
   </div>
@@ -216,5 +226,50 @@
     e.preventDefault();
     refreshCart('{% url "pos:add_item" %}', { product_id: btn.dataset.productId, quantity: 1 });
   });
+
+  (function() {
+    const input = document.getElementById('barcode-input');
+    const status = document.getElementById('barcode-status');
+    if (!input) return;
+
+    function showStatus(text, ok) {
+      status.textContent = text;
+      status.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+      status.classList.add(ok ? 'bg-green-100' : 'bg-red-100', ok ? 'text-green-700' : 'text-red-700');
+      clearTimeout(showStatus._t);
+      showStatus._t = setTimeout(function() { status.classList.add('hidden'); }, 2000);
+    }
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const code = input.value.trim();
+      input.value = '';
+      if (!code) return;
+
+      fetch('{% url "pos:product_search" %}?q=' + encodeURIComponent(code))
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          const products = data.products || [];
+          const exact = products.find(function(p) { return p.barcode === code || p.sku === code; });
+          const match = exact || (products.length === 1 ? products[0] : null);
+          if (!match) {
+            showStatus(products.length > 1 ? 'Multiple matches — refine scan.' : 'No product found for "' + code + '".', false);
+            return;
+          }
+          refreshCart('{% url "pos:add_item" %}', { product_id: match.id, quantity: 1 });
+          showStatus('Added: ' + match.name, true);
+        })
+        .catch(function() { showStatus('Scan lookup failed.', false); });
+    });
+
+    // Keep the scanner input focused so scans are captured without clicking in,
+    // but don't steal focus while the user is typing elsewhere (e.g. search, qty).
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('input, textarea, select, button, a')) return;
+      input.focus();
+    });
+    input.focus();
+  })();
 </script>
 {% endblock %}

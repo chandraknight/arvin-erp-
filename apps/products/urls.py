@@ -31,6 +31,7 @@ urlpatterns = [
     path('inventory/export/excel/', views.export_inventory_excel, name='export_inventory_excel'),
     path('inventory/print-labels/', views.print_labels_selector, name='print_labels'),
     path('inventory/print-labels/generate/', views.print_labels, name='print_labels_generate'),
+    path('inventory/print-labels/setting/', views.label_print_setting_api, name='label_print_setting_api'),
 
     # Units of Measure
     path('inventory/units/', views.uom_list, name='uom_list'),

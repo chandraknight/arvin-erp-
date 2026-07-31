@@ -20,7 +20,7 @@ from apps.reports.services.analytics import (
     get_fiscal_year_trends, get_top_customers, get_top_products,
     get_vendor_stats, get_yoy_sales, get_cash_flow, get_ar_aging,
 )
-from apps.payments.models import Payment
+from apps.payments.models import Payment, Expense
 from apps.products.models import Product, StockTransaction, Category
 from apps.customers.models import Customer
 from apps.purchasing.models import PurchaseOrder
@@ -6206,6 +6206,100 @@ def delivery_charges_report(request):
         'end_date_bs': end_date_str or '',
     }
     return render(request, 'reports/delivery_charges_report.html', context)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXPENSE REGISTER (NFRS 1 — expenses disclosed by nature, with audit trail)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@login_required
+def expense_register_report(request):
+    """
+    NFRS 1 (para 99-105) requires expenses to be presented either by nature
+    or by function, with disclosure sufficient to support the figures in the
+    P&L. This report is that disclosure and the audit trail behind it:
+
+      - Expenses grouped "by nature" under each expense LedgerAccount
+        (rent, salaries, utilities, ...), matching how the P&L already
+        presents expense-by-nature lines from journal_entry postings.
+      - Each row traces forward from the source Expense record to the
+        JournalEntry it posted (DR expense account / CR cash-bank), so an
+        auditor can go from "what does this P&L line consist of" down to
+        the individual voucher, and from a voucher up to its ledger impact.
+      - A reconciliation column per account: sum of RECORDED expense rows
+        vs. the DEBIT total actually posted to that account's ledger for
+        the same period — these should always agree; a mismatch means an
+        expense was journaled outside this module (data-integrity flag).
+    """
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    date_from_str = request.GET.get('date_from')
+    date_to_str = request.GET.get('date_to')
+    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
+    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
+    account_id = request.GET.get('account', '').strip()
+
+    expenses = Expense.active_objects.filter(
+        company=user_company, status='RECORDED',
+    ).select_related('expense_account', 'payment_account', 'journal_entry').order_by(
+        'expense_account__name', '-date'
+    )
+    if date_from:
+        expenses = expenses.filter(date__gte=date_from)
+    if date_to:
+        expenses = expenses.filter(date__lte=date_to)
+    if account_id:
+        expenses = expenses.filter(expense_account_id=account_id)
+
+    # Group by expense account ("by nature") for NFRS disclosure.
+    groups = {}
+    grand_total = Decimal('0.00')
+    for exp in expenses:
+        acc = exp.expense_account
+        bucket = groups.setdefault(acc.id, {'account': acc, 'rows': [], 'total': Decimal('0.00')})
+        bucket['rows'].append(exp)
+        bucket['total'] += exp.amount
+        grand_total += exp.amount
+
+    # Reconcile each account's expense-register total against what's actually
+    # posted (DEBIT side) to that ledger account for the same period — the
+    # two should match; a gap means something posted outside this module.
+    for bucket in groups.values():
+        acc = bucket['account']
+        posted_qs = JournalEntryLine.objects.filter(
+            account=acc, entry_type='DEBIT', journal_entry__company=user_company,
+            journal_entry__is_deleted=False,
+        )
+        if date_from:
+            posted_qs = posted_qs.filter(journal_entry__date__gte=date_from)
+        if date_to:
+            posted_qs = posted_qs.filter(journal_entry__date__lte=date_to)
+        posted_total = posted_qs.aggregate(t=Coalesce(Sum('amount'), Decimal('0.00')))['t']
+        bucket['posted_total'] = posted_total
+        bucket['variance'] = posted_total - bucket['total']
+
+    groups_sorted = sorted(groups.values(), key=lambda b: b['account'].name)
+
+    expense_accounts = LedgerAccount.objects.filter(
+        company=user_company, account_type='EXPENSE', is_deleted=False,
+    ).order_by('name')
+
+    context = {
+        'company': user_company,
+        'groups': groups_sorted,
+        'grand_total': grand_total,
+        'expense_accounts': expense_accounts,
+        'account_id': account_id,
+        'date_from': date_from,
+        'date_to': date_to,
+        'date_from_bs': date_from_str or '',
+        'date_to_bs': date_to_str or '',
+    }
+    return render(request, 'reports/expense_register_report.html', context)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

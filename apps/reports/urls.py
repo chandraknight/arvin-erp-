@@ -183,6 +183,9 @@ urlpatterns = [
     path('financial/debtors-creditors/export/excel/', views.export_debtors_creditors_excel,
          name='export_debtors_creditors_excel'),
 
+    path('financial/expense-register/', views.expense_register_report,
+         name='expense_register_report'),
+
     path('sales/daily-by-payment-method/', views.daily_sales_by_payment_method_report,
          name='daily_sales_by_payment_method_report'),
     path('sales/daily-by-payment-method/export/excel/', views.export_daily_sales_by_payment_method_excel,

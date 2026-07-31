@@ -39,6 +39,7 @@ def invoice_pdf_view(request, pk):
 
     ebilling = company and company.enable_ebilling
     if ebilling:
+        # CBMS submission format is a fixed 3-copy legal layout — not offered in thermal.
         template = 'billing/invoices/invoice_pdf_ebilling.html'
         # Copy 1: Tax Invoice (seller's record), Copy 2: Invoice (customer), Copy 3: Invoice (office)
         context['copy_labels'] = [
@@ -47,7 +48,12 @@ def invoice_pdf_view(request, pk):
             'TRIPLICATE — INVOICE (Office Copy)',
         ]
     else:
-        template = 'billing/invoices/invoice_pdf.html'
+        default_mode = company.invoice_print_format if company else 'a4'
+        mode = request.GET.get('mode', default_mode)
+        template = (
+            'billing/invoices/invoice_pdf_thermal.html' if mode == 'thermal'
+            else 'billing/invoices/invoice_pdf.html'
+        )
 
     html_string = render_to_string(template, context)
 

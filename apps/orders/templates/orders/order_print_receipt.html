@@ -42,42 +42,59 @@
       background: white;
       width: 80mm;
       margin: 12px auto;
-      padding: 4mm 4mm 8mm;
+      padding: 3mm 3.5mm 5mm;
       font-size: 8pt;
       color: #000;
+      font-family: 'Courier New', ui-monospace, monospace;
     }
 
     /* ── Shared ── */
     .r-header { text-align: center; margin-bottom: 5mm; }
     .r-header .company { font-size: 14pt; font-weight: bold; }
-    body.mode-thermal .r-header .company { font-size: 11pt; }
+    body.mode-thermal .r-header { margin-bottom: 2mm; }
+    body.mode-thermal .r-header .company { font-size: 12pt; letter-spacing: 0.5px; }
     .r-header .sub { font-size: 8pt; color: #555; margin-top: 1mm; }
+    body.mode-thermal .r-header .sub { font-size: 7.5pt; margin-top: 0.5mm; }
 
     .r-divider { border: none; border-top: 1px dashed #888; margin: 3mm 0; }
+    body.mode-thermal .r-divider { margin: 2mm 0; border-top-color: #000; }
 
     .r-title { text-align: center; font-size: 11pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3mm; }
-    body.mode-thermal .r-title { font-size: 9pt; }
+    body.mode-thermal .r-title { font-size: 9pt; margin-bottom: 1.5mm; letter-spacing: 0.5px; }
 
     .r-meta { display: flex; justify-content: space-between; font-size: 8.5pt; margin-bottom: 1.5mm; }
-    body.mode-thermal .r-meta { font-size: 7.5pt; }
+    body.mode-thermal .r-meta { font-size: 7.5pt; margin-bottom: 0.8mm; }
+    body.mode-thermal .r-status-inline { font-weight: bold; text-transform: uppercase; }
+    body.mode-thermal .r-status-inline.delivered { color: #065f46; }
+    body.mode-thermal .r-status-inline.cancelled { color: #991b1b; }
+    body.mode-thermal .r-status-inline.other { color: #1e40af; }
 
     .r-section-label { font-size: 7pt; text-transform: uppercase; letter-spacing: 0.5px; color: #666; margin: 3mm 0 1mm; }
+    body.mode-thermal .r-section-label { margin: 1.5mm 0 0.5mm; color: #333; }
     .r-address { font-size: 8.5pt; line-height: 1.5; }
-    body.mode-thermal .r-address { font-size: 7.5pt; }
+    body.mode-thermal .r-address { font-size: 7.5pt; line-height: 1.35; word-break: break-word; }
+
+    /* Customer / Deliver To side by side in thermal mode to save vertical space */
+    body.mode-thermal .r-parties { display: flex; gap: 2mm; }
+    body.mode-thermal .r-party { flex: 1; min-width: 0; }
 
     .r-table { width: 100%; border-collapse: collapse; margin: 3mm 0; }
     .r-table th { font-size: 7pt; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #333; padding: 1.5mm 0; text-align: left; }
     .r-table th.r { text-align: right; }
     .r-table td { font-size: 8.5pt; padding: 1.5mm 0; border-bottom: 1px dashed #ddd; }
     .r-table td.r { text-align: right; }
-    body.mode-thermal .r-table th, body.mode-thermal .r-table td { font-size: 7.5pt; }
+    body.mode-thermal .r-table { margin: 1.8mm 0; }
+    body.mode-thermal .r-table th { font-size: 7pt; padding: 1mm 0; border-bottom: 1px solid #000; }
+    body.mode-thermal .r-table td { font-size: 7.5pt; padding: 1mm 0; border-bottom: none; }
+    body.mode-thermal .r-table tbody tr:not(:last-child) td { border-bottom: 1px dotted #bbb; }
 
     .r-totals { width: 100%; margin-top: 2mm; }
     .r-totals td { font-size: 8.5pt; padding: 1mm 0; }
     .r-totals td:last-child { text-align: right; }
-    body.mode-thermal .r-totals td { font-size: 7.5pt; }
+    body.mode-thermal .r-totals { margin-top: 1mm; }
+    body.mode-thermal .r-totals td { font-size: 7.5pt; padding: 0.6mm 0; }
     .r-totals .grand td { font-size: 10.5pt; font-weight: bold; border-top: 1.5px solid #111; padding-top: 2mm; }
-    body.mode-thermal .r-totals .grand td { font-size: 9pt; }
+    body.mode-thermal .r-totals .grand td { font-size: 9.5pt; border-top: 1px solid #000; padding-top: 1.2mm; }
 
     .r-status {
       display: inline-block;
@@ -88,11 +105,13 @@
     .r-status.cancelled { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
     .r-status.draft { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
     .r-status.other { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+    body.mode-thermal .r-status { display: none; } /* shown inline in header instead, see .r-status-inline */
 
     .r-footer { text-align: center; margin-top: 5mm; font-size: 7.5pt; color: #666; }
+    body.mode-thermal .r-footer { margin-top: 2.5mm; font-size: 7pt; line-height: 1.5; }
 
     .r-notes { margin-top: 3mm; font-size: 8pt; background: #f9fafb; padding: 2mm 3mm; border-left: 2px solid #ccc; }
-    body.mode-thermal .r-notes { font-size: 7pt; }
+    body.mode-thermal .r-notes { font-size: 7pt; margin-top: 1.5mm; padding: 1mm 1.5mm; background: none; border-left: none; border-top: 1px dotted #999; border-radius: 0; padding-top: 1.2mm; }
 
     @media print {
       .controls { display: none !important; }
@@ -131,7 +150,9 @@
     <span><strong>Date:</strong> {{ order.order_date|date:"d M Y" }}</span>
   </div>
   <div class="r-meta">
-    <span><strong>Status:</strong> {{ order.get_status_display }}</span>
+    <span><strong>Status:</strong>
+      <span class="r-status-inline {% if order.status == 'DELIVERED' %}delivered{% elif order.status == 'CANCELLED' %}cancelled{% else %}other{% endif %}">{{ order.get_status_display }}</span>
+    </span>
     {% if order.expected_delivery_date %}
     <span><strong>Exp. Delivery:</strong> {{ order.expected_delivery_date|date:"d M Y" }}</span>
     {% endif %}
@@ -140,21 +161,27 @@
   <hr class="r-divider">
 
   <!-- Customer + Delivery -->
-  <div class="r-section-label">Customer</div>
-  <div class="r-address">
-    <strong>{{ order.customer.name|default:"Walk-in" }}</strong>
-    {% if order.customer.phone %}<br>📞 {{ order.customer.phone }}{% endif %}
-    {% if order.customer.email %}<br>✉ {{ order.customer.email }}{% endif %}
-  </div>
+  <div class="r-parties">
+    <div class="r-party">
+      <div class="r-section-label">Customer</div>
+      <div class="r-address">
+        <strong>{{ order.customer.name|default:"Walk-in" }}</strong>
+        {% if order.customer.phone %}<br>📞 {{ order.customer.phone }}{% endif %}
+        {% if order.customer.email %}<br>✉ {{ order.customer.email }}{% endif %}
+      </div>
+    </div>
 
-  {% if order.delivery_address %}
-  <div class="r-section-label">Deliver To</div>
-  <div class="r-address">
-    {% if order.delivery_contact %}<strong>{{ order.delivery_contact }}</strong><br>{% endif %}
-    {% if order.delivery_phone %}📞 {{ order.delivery_phone }}<br>{% endif %}
-    📍 {{ order.delivery_address }}
+    {% if order.delivery_address %}
+    <div class="r-party">
+      <div class="r-section-label">Deliver To</div>
+      <div class="r-address">
+        {% if order.delivery_contact %}<strong>{{ order.delivery_contact }}</strong><br>{% endif %}
+        {% if order.delivery_phone %}📞 {{ order.delivery_phone }}<br>{% endif %}
+        📍 {{ order.delivery_address }}
+      </div>
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
 
   <hr class="r-divider">
 

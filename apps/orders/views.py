@@ -659,7 +659,8 @@ def order_print_receipt(request, pk):
     if guard:
         return guard
     order = get_object_or_404(SalesOrder, pk=pk, company=request.user_company)
-    mode = request.GET.get('mode', 'a4')  # 'a4' or 'thermal'
+    default_mode = request.user_company.sales_order_print_format if request.user_company else 'a4'
+    mode = request.GET.get('mode', default_mode)  # 'a4' or 'thermal'
     return render(request, 'orders/order_print_receipt.html', {
         'order': order,
         'company': request.user_company,

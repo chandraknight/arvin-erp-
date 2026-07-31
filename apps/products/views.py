@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.http import JsonResponse
 from decimal import Decimal
 import traceback
+import json
 
 from ..utils.global_models import *
 from .services.all_services import *
@@ -9,7 +10,7 @@ from .services.all_services import *
 # Set up logging
 logger = logging.getLogger(__name__)
 
-from .models import Product, Category, ProductStock, StockTransaction, Package, PackageItem, UnitOfMeasure, ProductVariant
+from .models import Product, Category, ProductStock, StockTransaction, Package, PackageItem, UnitOfMeasure, ProductVariant, LabelPrintSetting
 from .forms import ItemForm, StockTransactionForm, CategoryForm, PackageForm, PackageItemForm
 
 # Create your views here.
@@ -640,6 +641,69 @@ def print_labels(request):
     return render(request, 'products/print_labels.html', {'labels': label_items})
 
 
+@login_required
+def label_print_setting_api(request):
+    company = getattr(request.user, 'company', None)
+    if not company:
+        return JsonResponse({'error': 'No company on user'}, status=400)
+
+    if request.method == 'GET':
+        setting = LabelPrintSetting.objects.filter(company=company).first()
+        if not setting:
+            return JsonResponse({'setting': None})
+        return JsonResponse({'setting': {
+            'continuousRoll': setting.continuous_roll,
+            'pageW': float(setting.page_width_mm),
+            'pageH': float(setting.page_height_mm),
+            'labelW': float(setting.label_width_mm),
+            'labelH': float(setting.label_height_mm),
+            'cols': setting.columns_per_row,
+            'rows': setting.rows_per_page,
+            'topMargin': float(setting.top_margin_mm),
+            'leftMargin': float(setting.left_margin_mm),
+            'colGap': float(setting.horizontal_gap_mm),
+            'rowGap': float(setting.vertical_gap_mm),
+            'padT': float(setting.padding_top_mm),
+            'padR': float(setting.padding_right_mm),
+            'padB': float(setting.padding_bottom_mm),
+            'padL': float(setting.padding_left_mm),
+        }})
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        def to_decimal(key, default):
+            try:
+                return round(float(data.get(key, default)), 2)
+            except (TypeError, ValueError):
+                return default
+
+        setting, _ = LabelPrintSetting.objects.get_or_create(company=company)
+        setting.continuous_roll = bool(data.get('continuousRoll', True))
+        setting.page_width_mm = to_decimal('pageW', setting.page_width_mm)
+        setting.page_height_mm = to_decimal('pageH', setting.page_height_mm)
+        setting.label_width_mm = to_decimal('labelW', setting.label_width_mm)
+        setting.label_height_mm = to_decimal('labelH', setting.label_height_mm)
+        setting.columns_per_row = max(1, min(10, int(data.get('cols', setting.columns_per_row) or 1)))
+        setting.rows_per_page = max(1, min(20, int(data.get('rows', setting.rows_per_page) or 1)))
+        setting.top_margin_mm = to_decimal('topMargin', setting.top_margin_mm)
+        setting.left_margin_mm = to_decimal('leftMargin', setting.left_margin_mm)
+        setting.horizontal_gap_mm = to_decimal('colGap', setting.horizontal_gap_mm)
+        setting.vertical_gap_mm = to_decimal('rowGap', setting.vertical_gap_mm)
+        setting.padding_top_mm = to_decimal('padT', setting.padding_top_mm)
+        setting.padding_right_mm = to_decimal('padR', setting.padding_right_mm)
+        setting.padding_bottom_mm = to_decimal('padB', setting.padding_bottom_mm)
+        setting.padding_left_mm = to_decimal('padL', setting.padding_left_mm)
+        setting.updated_by = request.user
+        setting.save()
+        return JsonResponse({'ok': True})
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
 # ── Unit of Measure ───────────────────────────────────────────────────────────
 
 @login_required
@@ -656,10 +720,16 @@ def print_labels_selector(request):
     qs = qs.order_by('name').only('id', 'name', 'barcode', 'sku', 'price')
     paginator = Paginator(qs, 50)
     page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    label_setting = None
+    if company:
+        label_setting = LabelPrintSetting.objects.filter(company=company).first()
+
     return render(request, 'products/print_labels_selector.html', {
         'products': page_obj,
         'page_obj': page_obj,
         'q': q,
+        'label_setting': label_setting,
     })
 
 

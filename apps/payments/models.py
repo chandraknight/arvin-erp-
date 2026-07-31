@@ -56,6 +56,37 @@ class BankAccount(BaseModel):
         super().save(*args, **kwargs)
 
 
+class BankReconciliation(BaseModel):
+    """
+    Snapshot of a bank reconciliation session — book balance vs statement
+    balance as of statement_date, with the resulting difference. Individual
+    line-level clearing is tracked on JournalEntryLine.is_reconciled/reconciled_date;
+    this model records the reconciliation event itself for audit history.
+    """
+    bank_account = models.ForeignKey(
+        BankAccount, on_delete=models.CASCADE, related_name='reconciliations')
+    statement_date = models.DateField()
+    statement_balance = models.DecimalField(max_digits=14, decimal_places=2)
+    book_balance = models.DecimalField(max_digits=14, decimal_places=2)
+    reconciled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['-statement_date']
+
+    def __str__(self):
+        return f"Reconciliation — {self.bank_account} as of {self.statement_date}"
+
+    @property
+    def difference(self):
+        return self.statement_balance - self.book_balance
+
+    @property
+    def is_balanced(self):
+        return abs(self.difference) < Decimal('0.01')
+
+
 class VendorPayment(BaseModel):
     vendor_bill = models.ForeignKey(VendorBill, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)

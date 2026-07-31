@@ -22,4 +22,5 @@ urlpatterns = [
     path('bank-accounts/', views.bank_account_list, name='bank_account_list'),
     path('bank-accounts/add/', views.bank_account_create, name='bank_account_create'),
     path('bank-accounts/<uuid:pk>/edit/', views.bank_account_update, name='bank_account_update'),
+    path('bank-accounts/<uuid:pk>/reconcile/', views.bank_reconciliation, name='bank_reconciliation'),
 ]

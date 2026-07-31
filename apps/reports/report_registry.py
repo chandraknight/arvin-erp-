@@ -315,6 +315,15 @@ REPORT_REGISTRY = {
         'color': 'teal',
         'module_flag': None,
     },
+    'expense_register_report': {
+        'label': 'Expense Register',
+        'description': 'Expenses by nature (NFRS 1) with audit trail to journal entries and ledger reconciliation',
+        'url_name': 'reports:expense_register_report',
+        'section': 'Financial Statements',
+        'icon': 'fas fa-receipt',
+        'color': 'rose',
+        'module_flag': None,
+    },
     'cash_book_report': {
         'label': 'Cash Book',
         'description': 'Chronological Dr/Cr cash ledger with running balance',

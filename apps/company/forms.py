@@ -16,6 +16,7 @@ class CompanyForm(forms.ModelForm):
             'enable_hr_payroll', 'enable_purchasing', 'enable_inventory',
             'enable_restaurant', 'enable_pos', 'enable_tours', 'enable_ecom',
             'enable_ebilling', 'cbms_username', 'cbms_password',
+            'invoice_print_format', 'sales_order_print_format', 'pos_receipt_print_format',
         ]
         widgets = {
             'address': forms.Textarea(attrs={'rows': 2}),
@@ -38,6 +39,9 @@ class CompanyForm(forms.ModelForm):
             'enable_tours': 'Enables Tours & Ticketing module (Enquiries, Bookings, Invoicing).',
             'enable_ecom': 'Enables E-Commerce storefront (/store/). Customers can browse and place COD orders online.',
             'enable_ebilling': 'Enables real-time bill submission to Nepal IRD CBMS. Requires VAT number and CBMS credentials.',
+            'invoice_print_format': 'Default format when printing an invoice (no ?mode= override in the URL).',
+            'sales_order_print_format': 'Default format when printing a sales order receipt.',
+            'pos_receipt_print_format': 'Default format when printing a POS receipt.',
         }
 
     def __init__(self, *args, **kwargs):

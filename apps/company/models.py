@@ -112,6 +112,27 @@ class Company(BaseModel):
         help_text='IRD Taxpayer Login Password for CBMS API.'
     )
 
+    # Print format defaults — used when a print page isn't given an explicit
+    # ?mode= override. PRINT_FORMAT_CHOICES applies uniformly across document
+    # types; not every format need be sensible for every type, but keeping
+    # one shared choice list avoids drift between the three fields below.
+    PRINT_FORMAT_CHOICES = [
+        ('a4', 'A4'),
+        ('thermal', 'Thermal (80mm)'),
+    ]
+    invoice_print_format = models.CharField(
+        max_length=10, choices=PRINT_FORMAT_CHOICES, default='a4',
+        help_text='Default print format for invoices.'
+    )
+    sales_order_print_format = models.CharField(
+        max_length=10, choices=PRINT_FORMAT_CHOICES, default='a4',
+        help_text='Default print format for sales order receipts.'
+    )
+    pos_receipt_print_format = models.CharField(
+        max_length=10, choices=PRINT_FORMAT_CHOICES, default='thermal',
+        help_text='Default print format for POS receipts.'
+    )
+
     class Meta:
         verbose_name_plural = "Companies"
 

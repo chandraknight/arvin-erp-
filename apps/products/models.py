@@ -299,3 +299,25 @@ class ProductImage(BaseModel):
                     ProductImage.objects.filter(pk=self.pk).update(image=new_name)
             except Exception:
                 pass  # Never break upload if optimization fails
+
+
+class LabelPrintSetting(BaseModel):
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name='label_print_setting')
+    continuous_roll = models.BooleanField(default=True)
+    page_width_mm = models.DecimalField(max_digits=6, decimal_places=2, default=110)
+    page_height_mm = models.DecimalField(max_digits=6, decimal_places=2, default=20)
+    label_width_mm = models.DecimalField(max_digits=6, decimal_places=2, default=33)
+    label_height_mm = models.DecimalField(max_digits=6, decimal_places=2, default=20)
+    columns_per_row = models.PositiveSmallIntegerField(default=3)
+    rows_per_page = models.PositiveSmallIntegerField(default=1)
+    top_margin_mm = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    left_margin_mm = models.DecimalField(max_digits=6, decimal_places=2, default=10)
+    horizontal_gap_mm = models.DecimalField(max_digits=6, decimal_places=2, default=2)
+    vertical_gap_mm = models.DecimalField(max_digits=6, decimal_places=2, default=2)
+    padding_top_mm = models.DecimalField(max_digits=6, decimal_places=2, default=1)
+    padding_right_mm = models.DecimalField(max_digits=6, decimal_places=2, default=1.5)
+    padding_bottom_mm = models.DecimalField(max_digits=6, decimal_places=2, default=1)
+    padding_left_mm = models.DecimalField(max_digits=6, decimal_places=2, default=1.5)
+
+    def __str__(self):
+        return f"Label print setting for {self.company}"

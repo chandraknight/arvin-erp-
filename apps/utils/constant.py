@@ -73,6 +73,13 @@ PAYMENT_METHOD_CHOICES = [
     ('OTHER', 'Other')
 ]
 
+# POS checkout only — includes DUE (credit sale, no Payment record created).
+POS_PAYMENT_METHOD_CHOICES = [
+    ('CASH', 'Cash'),
+    ('BANK_TRANSFER', 'Bank'),
+    ('DUE', 'Due'),
+]
+
 PAYMENT_TYPE_CHOICES = [
     ('CUSTOMER', 'Customer Payment'),
     ('VENDOR', 'Vendor Payment'),

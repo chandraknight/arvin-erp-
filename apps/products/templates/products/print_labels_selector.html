@@ -3,6 +3,18 @@
 
 {% block title %}Print Labels{% endblock %}
 
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<style>
+  #ps-preview-box {
+    padding: var(--ps-pad-t, 1mm) var(--ps-pad-r, 1.5mm) var(--ps-pad-b, 1mm) var(--ps-pad-l, 1.5mm);
+    width: var(--ps-label-w, 33mm);
+    height: var(--ps-label-h, 20mm);
+  }
+  #ps-preview-box svg { width: calc(var(--ps-label-w, 33mm) - 3mm); height: 8mm; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="w-full py-4">
 
@@ -15,6 +27,129 @@
             class="hidden items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
       <i class="fas fa-print"></i> Print Selected (<span id="label-count">0</span> labels)
     </button>
+  </div>
+
+  <!-- Page Setting -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
+    <button type="button" id="page-setting-toggle"
+            class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50">
+      <h2 class="text-sm font-semibold text-gray-800">Page Setting</h2>
+      <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="page-setting-chevron"></i>
+    </button>
+    <div id="page-setting-panel" class="hidden px-4 pb-5 pt-1 border-t border-gray-100">
+      <label class="flex items-center gap-2 text-sm text-gray-700 mt-3 mb-4 cursor-pointer">
+        <input type="checkbox" id="continuous-roll-input" {% if not label_setting or label_setting.continuous_roll %}checked{% endif %}>
+        Continuous Roll Printer
+      </label>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Page Width (mm)</label>
+          <input type="number" id="page-w-input" step="0.5" min="10" max="500"
+                 value="{{ label_setting.page_width_mm|default:110 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Page Height (mm)</label>
+          <input type="number" id="page-h-input" step="0.5" min="5" max="500"
+                 value="{{ label_setting.page_height_mm|default:20 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Label Width (mm)</label>
+          <input type="number" id="label-w-input" step="0.5" min="5" max="200"
+                 value="{{ label_setting.label_width_mm|default:33 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Label Height (mm)</label>
+          <input type="number" id="label-h-input" step="0.5" min="5" max="200"
+                 value="{{ label_setting.label_height_mm|default:20 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Columns Per Row</label>
+          <input type="number" id="cols-input" step="1" min="1" max="10"
+                 value="{{ label_setting.columns_per_row|default:3 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Rows Per Page</label>
+          <input type="number" id="rows-input" step="1" min="1" max="20"
+                 value="{{ label_setting.rows_per_page|default:1 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Top Margin (mm)</label>
+          <input type="number" id="top-margin-input" step="0.5" min="0" max="50"
+                 value="{{ label_setting.top_margin_mm|default:0 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Left Margin (mm)</label>
+          <input type="number" id="left-margin-input" step="0.5" min="0" max="50"
+                 value="{{ label_setting.left_margin_mm|default:10 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Horizontal Gap (mm)</label>
+          <input type="number" id="col-gap-input" step="0.5" min="0" max="20"
+                 value="{{ label_setting.horizontal_gap_mm|default:2 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Vertical Gap (mm)</label>
+          <input type="number" id="row-gap-input" step="0.5" min="0" max="20"
+                 value="{{ label_setting.vertical_gap_mm|default:2 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+      </div>
+
+      <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mt-5 mb-2">Label Content Padding</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 max-w-xl">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Top (mm)</label>
+          <input type="number" id="pad-t-input" step="0.5" min="0" max="10"
+                 value="{{ label_setting.padding_top_mm|default:1 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Right (mm)</label>
+          <input type="number" id="pad-r-input" step="0.5" min="0" max="10"
+                 value="{{ label_setting.padding_right_mm|default:1.5 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Bottom (mm)</label>
+          <input type="number" id="pad-b-input" step="0.5" min="0" max="10"
+                 value="{{ label_setting.padding_bottom_mm|default:1 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Left (mm)</label>
+          <input type="number" id="pad-l-input" step="0.5" min="0" max="10"
+                 value="{{ label_setting.padding_left_mm|default:1.5 }}"
+                 class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm">
+        </div>
+      </div>
+
+      <div class="mt-5 bg-gray-50 rounded-lg p-4">
+        <div class="text-xs font-medium text-gray-600 mb-2">Preview</div>
+        <div id="ps-preview-box" class="bg-white border border-dashed border-gray-400 inline-flex flex-col items-center justify-center overflow-hidden">
+          <div style="font-size:7pt;font-weight:bold;text-align:center;">Sample Item</div>
+          <svg id="ps-preview-barcode"></svg>
+          <div style="font-size:8pt;font-weight:bold;margin-top:1mm;">Rs. 85.00</div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center gap-3">
+        <button type="button" id="save-setting-btn"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold rounded-lg">
+          <i class="fas fa-save"></i> Update
+        </button>
+        <span id="save-setting-status" class="text-xs text-gray-500"></span>
+      </div>
+    </div>
   </div>
 
   <!-- Search -->
@@ -136,7 +271,7 @@
     const sel = getSelections();
     if (!sel.length) return;
     const param = sel.map(s => s.id + ':' + s.qty).join(',');
-    window.open(PRINT_URL + '?ids=' + param, '_blank');
+    window.location.href = PRINT_URL + '?ids=' + param;
   }
 
   function setAllQty(n) {
@@ -162,6 +297,95 @@
       });
     }
     refresh();
+  });
+
+  // ── Page Setting panel ──
+  const SETTING_URL = "{% url 'products:label_print_setting_api' %}";
+
+  const pageSettingToggle = document.getElementById('page-setting-toggle');
+  const pageSettingPanel = document.getElementById('page-setting-panel');
+  const pageSettingChevron = document.getElementById('page-setting-chevron');
+
+  pageSettingToggle.addEventListener('click', function() {
+    pageSettingPanel.classList.toggle('hidden');
+    pageSettingChevron.classList.toggle('rotate-180');
+  });
+
+  const psInputs = {
+    continuousRoll: document.getElementById('continuous-roll-input'),
+    pageW: document.getElementById('page-w-input'),
+    pageH: document.getElementById('page-h-input'),
+    labelW: document.getElementById('label-w-input'),
+    labelH: document.getElementById('label-h-input'),
+    cols: document.getElementById('cols-input'),
+    rows: document.getElementById('rows-input'),
+    topMargin: document.getElementById('top-margin-input'),
+    leftMargin: document.getElementById('left-margin-input'),
+    colGap: document.getElementById('col-gap-input'),
+    rowGap: document.getElementById('row-gap-input'),
+    padT: document.getElementById('pad-t-input'),
+    padR: document.getElementById('pad-r-input'),
+    padB: document.getElementById('pad-b-input'),
+    padL: document.getElementById('pad-l-input'),
+  };
+
+  function updatePreview() {
+    const root = document.documentElement;
+    root.style.setProperty('--ps-label-w', (parseFloat(psInputs.labelW.value) || 33) + 'mm');
+    root.style.setProperty('--ps-label-h', (parseFloat(psInputs.labelH.value) || 20) + 'mm');
+    root.style.setProperty('--ps-pad-t', (parseFloat(psInputs.padT.value) || 0) + 'mm');
+    root.style.setProperty('--ps-pad-r', (parseFloat(psInputs.padR.value) || 0) + 'mm');
+    root.style.setProperty('--ps-pad-b', (parseFloat(psInputs.padB.value) || 0) + 'mm');
+    root.style.setProperty('--ps-pad-l', (parseFloat(psInputs.padL.value) || 0) + 'mm');
+    try {
+      JsBarcode('#ps-preview-barcode', '8901234567890', {
+        format: 'CODE128', width: 1, height: 18, displayValue: false, margin: 0,
+      });
+    } catch (e) {}
+  }
+
+  Object.values(psInputs).forEach(el => {
+    const evt = el.type === 'checkbox' ? 'change' : 'input';
+    el.addEventListener(evt, updatePreview);
+  });
+  updatePreview();
+
+  function getCsrfToken() {
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : '';
+  }
+
+  document.getElementById('save-setting-btn').addEventListener('click', function() {
+    const statusEl = document.getElementById('save-setting-status');
+    const payload = {
+      continuousRoll: psInputs.continuousRoll.checked,
+      pageW: parseFloat(psInputs.pageW.value) || 110,
+      pageH: parseFloat(psInputs.pageH.value) || 20,
+      labelW: parseFloat(psInputs.labelW.value) || 33,
+      labelH: parseFloat(psInputs.labelH.value) || 20,
+      cols: parseInt(psInputs.cols.value, 10) || 3,
+      rows: parseInt(psInputs.rows.value, 10) || 1,
+      topMargin: parseFloat(psInputs.topMargin.value) || 0,
+      leftMargin: parseFloat(psInputs.leftMargin.value) || 0,
+      colGap: parseFloat(psInputs.colGap.value) || 0,
+      rowGap: parseFloat(psInputs.rowGap.value) || 0,
+      padT: parseFloat(psInputs.padT.value) || 0,
+      padR: parseFloat(psInputs.padR.value) || 0,
+      padB: parseFloat(psInputs.padB.value) || 0,
+      padL: parseFloat(psInputs.padL.value) || 0,
+    };
+    statusEl.textContent = 'Saving…';
+    fetch(SETTING_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+      body: JSON.stringify(payload),
+    })
+      .then(r => r.json())
+      .then(data => {
+        statusEl.textContent = data.ok ? 'Saved ✓' : (data.error || 'Failed to save');
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      })
+      .catch(() => { statusEl.textContent = 'Failed to save'; });
   });
 </script>
 {% endblock %}

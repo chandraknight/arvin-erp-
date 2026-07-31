@@ -8,6 +8,14 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body { font-family: Arial, sans-serif; background: #e5e7eb; }
+    :root {
+      --page-w: 110mm; --page-h: 20mm;
+      --cols: 3; --rows: 1;
+      --label-w: 33mm; --label-h: 20mm;
+      --top-margin: 0mm; --left-margin: 10mm;
+      --col-gap: 2mm; --row-gap: 2mm;
+      --pad-t: 1mm; --pad-r: 1.5mm; --pad-b: 1mm; --pad-l: 1.5mm;
+    }
 
     /* ── Screen controls ── */
     .controls {
@@ -23,14 +31,108 @@
       padding: 7px 18px; font-size: 13px; cursor: pointer; border-radius: 4px;
     }
     .controls button:hover { background: #4338ca; }
-    .controls button.secondary {
-      background: #374151;
-    }
+    .controls button.secondary { background: #374151; }
     .controls button.secondary:hover { background: #1f2937; }
     .controls .sep { color: #475569; }
     .controls span { color: #94a3b8; font-size: 13px; }
     .mode-btn { font-size: 12px !important; padding: 5px 12px !important; }
     .mode-btn.active { background: #059669 !important; }
+
+    #printer-hint {
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 12px;
+      padding: 6px 16px;
+      border-bottom: 1px solid #fcd34d;
+    }
+
+    /* ── Page Setting panel ── */
+    #page-setting-toggle {
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    #page-setting-toggle h2 { font-size: 15px; color: #1e293b; }
+    #page-setting-toggle .chevron { transition: transform 0.15s; color: #64748b; }
+    #page-setting-toggle.open .chevron { transform: rotate(180deg); }
+
+    #page-setting-panel {
+      display: none;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 20px 16px 24px;
+    }
+    #page-setting-panel.open { display: block; }
+    .ps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px 24px;
+      max-width: 1000px;
+    }
+    .ps-field label {
+      display: block;
+      font-size: 12.5px;
+      color: #334155;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    .ps-field input[type=number] {
+      width: 100%;
+      padding: 7px 10px;
+      font-size: 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .ps-field input[type=number]:focus {
+      outline: none; border-color: #6366f1; background: white;
+    }
+    .ps-checkbox {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #334155; cursor: pointer;
+    }
+    .ps-section-title {
+      font-size: 13px; font-weight: 600; color: #1e293b;
+      margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .ps-section-title:first-child { margin-top: 0; }
+    #ps-fields-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px 20px;
+      max-width: 700px;
+    }
+    #ps-preview-wrap {
+      margin-top: 20px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 16px;
+      max-width: 700px;
+    }
+    #ps-preview-wrap .ps-preview-label {
+      font-size: 12.5px; color: #475569; font-weight: 500; margin-bottom: 10px;
+    }
+    #ps-preview-box {
+      background: white;
+      border: 1px dashed #94a3b8;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--pad-t) var(--pad-r) var(--pad-b) var(--pad-l);
+      width: var(--label-w);
+      height: var(--label-h);
+      overflow: hidden;
+    }
+    #ps-preview-box .label-name { font-size: 7pt; font-weight: bold; text-align: center; }
+    #ps-preview-box .label-price { font-size: 8pt; font-weight: bold; margin-top: 1mm; }
+    #ps-preview-box .label-barcode svg { width: calc(var(--label-w) - 3mm); height: 8mm; }
 
     /* ── A4 sheet mode ── */
     body.mode-a4 .sheet {
@@ -40,51 +142,56 @@
       margin: 12px auto;
       padding: 8mm;
       display: grid;
-      grid-template-columns: repeat(3, 34mm);
-      gap: 3mm;
+      grid-template-columns: repeat(var(--cols), var(--label-w));
+      column-gap: var(--col-gap);
+      row-gap: var(--row-gap);
       align-content: flex-start;
       justify-content: center;
     }
     body.mode-a4 .label {
-      width: 34mm;
-      height: 20mm;
+      width: var(--label-w);
+      height: var(--label-h);
       border: 0.5px solid #bbb;
       border-radius: 1px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 1mm 1.5mm;
+      padding: var(--pad-t) var(--pad-r) var(--pad-b) var(--pad-l);
       page-break-inside: avoid;
       background: white;
+      overflow: hidden;
     }
 
-    /* ── Label printer mode ── */
+    /* ── Label printer mode (continuous roll, N labels across) ── */
     body.mode-lp .sheet {
       background: transparent;
-      width: 34mm;
+      width: var(--page-w);
       margin: 12px auto;
-      display: flex;
-      flex-direction: column;
-      gap: 2mm;
-      padding: 3mm 0;
+      padding-top: var(--top-margin);
+      padding-left: var(--left-margin);
+      display: grid;
+      grid-template-columns: repeat(var(--cols), var(--label-w));
+      grid-auto-rows: minmax(var(--label-h), auto);
+      column-gap: var(--col-gap);
+      row-gap: var(--row-gap);
     }
     body.mode-lp .label {
-      width: 34mm;
-      height: 20mm;
+      width: var(--label-w);
+      height: var(--label-h);
       border: 0.5px dashed #aaa;
       background: white;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 1mm 1.5mm;
-      page-break-inside: avoid;
+      padding: var(--pad-t) var(--pad-r) var(--pad-b) var(--pad-l);
+      overflow: hidden;
     }
 
     /* ── Label contents (shared) ── */
     .label-name {
-      font-size: 5.5pt;
+      font-size: 7pt;
       font-weight: bold;
       text-align: center;
       line-height: 1.15;
@@ -92,21 +199,24 @@
       width: 100%;
       max-height: 2.3em;
     }
-    .label-barcode { margin: 0.5mm 0 0; max-width: 100%; }
-    .label-barcode svg { display: block; max-width: 31mm; height: auto; }
-    .label-barcode-val { font-size: 4.5pt; color: #555; letter-spacing: 0.3px; margin-bottom: 0.5mm; }
-    .label-price { font-size: 6.5pt; font-weight: bold; color: #111; }
+    .label-barcode { margin: 0.5mm 0 0; width: 100%; text-align: center; }
+    .label-barcode svg { display: block; margin: 0 auto; width: calc(var(--label-w) - 3mm); max-width: 100%; height: 9mm; }
+    .label-barcode-val { font-size: 6pt; color: #555; letter-spacing: 0.3px; margin-bottom: 0.5mm; }
+    .label-price { font-size: 8pt; font-weight: bold; color: #111; }
     .no-barcode {
-      font-size: 5pt; color: #aaa;
+      font-size: 6pt; color: #aaa;
       border: 1px dashed #ddd; padding: 0.5mm 2mm;
       margin: 1mm 0 0.5mm;
     }
 
     @media print {
       .controls { display: none !important; }
+      #printer-hint { display: none !important; }
+      #page-setting-toggle { display: none !important; }
+      #page-setting-panel { display: none !important; }
       body { background: white !important; }
       body.mode-a4 .sheet { margin: 0; padding: 6mm; box-shadow: none; }
-      body.mode-lp .sheet { margin: 0; padding: 1mm 0; width: 34mm; }
+      body.mode-lp .sheet { margin: 0; padding-top: var(--top-margin); padding-left: var(--left-margin); }
       .label { border-color: #999 !important; }
     }
   </style>
@@ -124,7 +234,95 @@
   <span>{{ labels|length }} label{{ labels|length|pluralize }}</span>
 </div>
 
-<div class="sheet">
+<div id="printer-hint">
+  ⚠ In the print dialog, select your label printer first, then choose its matching paper size — otherwise the browser falls back to A4 and content may print off-position.
+</div>
+
+<div id="page-setting-toggle" onclick="togglePageSetting()">
+  <h2>Page Setting</h2>
+  <span class="chevron">▾</span>
+</div>
+
+<div id="page-setting-panel">
+  <label class="ps-checkbox" style="margin-bottom: 16px;">
+    <input type="checkbox" id="continuous-roll-input" checked>
+    Continuous Roll Printer
+  </label>
+
+  <div class="ps-grid">
+    <div class="ps-field">
+      <label>Page Width (mm)</label>
+      <input type="number" id="page-w-input" min="10" max="500" step="0.5" value="110">
+    </div>
+    <div class="ps-field">
+      <label>Page Height (mm)</label>
+      <input type="number" id="page-h-input" min="5" max="500" step="0.5" value="20">
+    </div>
+    <div class="ps-field">
+      <label>Label Width (mm)</label>
+      <input type="number" id="label-w-input" min="5" max="200" step="0.5" value="33">
+    </div>
+    <div class="ps-field">
+      <label>Label Height (mm)</label>
+      <input type="number" id="label-h-input" min="5" max="200" step="0.5" value="20">
+    </div>
+    <div class="ps-field">
+      <label>Columns Per Row</label>
+      <input type="number" id="cols-input" min="1" max="10" step="1" value="3">
+    </div>
+    <div class="ps-field">
+      <label>Rows Per Page</label>
+      <input type="number" id="rows-input" min="1" max="20" step="1" value="1">
+    </div>
+    <div class="ps-field">
+      <label>Top Margin (mm)</label>
+      <input type="number" id="top-margin-input" min="0" max="50" step="0.5" value="0">
+    </div>
+    <div class="ps-field">
+      <label>Left Margin (mm)</label>
+      <input type="number" id="left-margin-input" min="0" max="50" step="0.5" value="10">
+    </div>
+    <div class="ps-field">
+      <label>Horizontal Gap (mm)</label>
+      <input type="number" id="col-gap-input" min="0" max="20" step="0.5" value="2">
+    </div>
+    <div class="ps-field">
+      <label>Vertical Gap (mm)</label>
+      <input type="number" id="row-gap-input" min="0" max="20" step="0.5" value="2">
+    </div>
+  </div>
+
+  <div class="ps-section-title">Label Content Padding</div>
+  <div id="ps-fields-grid">
+    <div class="ps-field">
+      <label>Top (mm)</label>
+      <input type="number" id="pad-t-input" min="0" max="10" step="0.5" value="1">
+    </div>
+    <div class="ps-field">
+      <label>Right (mm)</label>
+      <input type="number" id="pad-r-input" min="0" max="10" step="0.5" value="1.5">
+    </div>
+    <div class="ps-field">
+      <label>Bottom (mm)</label>
+      <input type="number" id="pad-b-input" min="0" max="10" step="0.5" value="1">
+    </div>
+    <div class="ps-field">
+      <label>Left (mm)</label>
+      <input type="number" id="pad-l-input" min="0" max="10" step="0.5" value="1.5">
+    </div>
+  </div>
+
+  <div id="ps-preview-wrap">
+    <div class="ps-preview-label">Preview</div>
+    <div id="ps-preview-box">
+      <div class="label-name">Sample Item</div>
+      <div class="label-barcode"><svg id="ps-preview-barcode"></svg></div>
+      <div class="label-price">Rs. 85.00</div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet">
   {% for label in labels %}
   <div class="label">
     <div class="label-name">{{ label.name }}</div>
@@ -143,12 +341,199 @@
   {% endfor %}
 </div>
 
+<style id="page-size-style"></style>
+<style id="row-break-style"></style>
+
 <script>
+  var pageSizeStyle = document.getElementById('page-size-style');
+  var rowBreakStyle = document.getElementById('row-break-style');
+  var root = document.documentElement;
+
+  function togglePageSetting() {
+    document.getElementById('page-setting-toggle').classList.toggle('open');
+    document.getElementById('page-setting-panel').classList.toggle('open');
+  }
+
+  function updateRowBreaks() {
+    var perPage = Math.max(1, colsInput.value * rowsInput.value || 3);
+    rowBreakStyle.textContent =
+      '@media print { body.mode-lp .label:nth-child(' + perPage + 'n) { break-after: page; } }';
+  }
+
+  function updatePageSize() {
+    var mode = document.body.classList.contains('mode-lp') ? 'lp' : 'a4';
+    var size;
+    if (mode === 'a4') {
+      size = '210mm 297mm';
+    } else {
+      var cs = getComputedStyle(root);
+      var pageW = cs.getPropertyValue('--page-w').trim() || '110mm';
+      var pageH = cs.getPropertyValue('--page-h').trim() || '20mm';
+      size = pageW + ' ' + pageH;
+    }
+    pageSizeStyle.textContent = '@media print { @page { size: ' + size + '; margin: 0; } }';
+  }
+
   function setMode(m) {
     document.body.className = 'mode-' + m;
     document.getElementById('btn-a4').classList.toggle('active', m === 'a4');
     document.getElementById('btn-lp').classList.toggle('active', m === 'lp');
+    updatePageSize();
+    updateRowBreaks();
   }
+
+  var pageWInput = document.getElementById('page-w-input');
+  var pageHInput = document.getElementById('page-h-input');
+  var labelWInput = document.getElementById('label-w-input');
+  var labelHInput = document.getElementById('label-h-input');
+  var colsInput = document.getElementById('cols-input');
+  var rowsInput = document.getElementById('rows-input');
+  var topMarginInput = document.getElementById('top-margin-input');
+  var leftMarginInput = document.getElementById('left-margin-input');
+  var colGapInput = document.getElementById('col-gap-input');
+  var rowGapInput = document.getElementById('row-gap-input');
+  var padTInput = document.getElementById('pad-t-input');
+  var padRInput = document.getElementById('pad-r-input');
+  var padBInput = document.getElementById('pad-b-input');
+  var padLInput = document.getElementById('pad-l-input');
+  var continuousRollInput = document.getElementById('continuous-roll-input');
+
+  var previewBarcodeRendered = false;
+
+  function applyLayout() {
+    var pageW = Math.max(10, parseFloat(pageWInput.value) || 110);
+    var pageH = Math.max(5, parseFloat(pageHInput.value) || 20);
+    var labelW = Math.max(5, parseFloat(labelWInput.value) || 33);
+    var labelH = Math.max(5, parseFloat(labelHInput.value) || 20);
+    var cols = Math.max(1, Math.min(10, parseInt(colsInput.value, 10) || 3));
+    var rows = Math.max(1, Math.min(20, parseInt(rowsInput.value, 10) || 1));
+    var topMargin = Math.max(0, parseFloat(topMarginInput.value) || 0);
+    var leftMargin = Math.max(0, parseFloat(leftMarginInput.value) || 0);
+    var colGap = Math.max(0, parseFloat(colGapInput.value) || 0);
+    var rowGap = Math.max(0, parseFloat(rowGapInput.value) || 0);
+    var padT = Math.max(0, parseFloat(padTInput.value) || 0);
+    var padR = Math.max(0, parseFloat(padRInput.value) || 0);
+    var padB = Math.max(0, parseFloat(padBInput.value) || 0);
+    var padL = Math.max(0, parseFloat(padLInput.value) || 0);
+
+    root.style.setProperty('--page-w', pageW + 'mm');
+    root.style.setProperty('--page-h', pageH + 'mm');
+    root.style.setProperty('--label-w', labelW + 'mm');
+    root.style.setProperty('--label-h', labelH + 'mm');
+    root.style.setProperty('--cols', cols);
+    root.style.setProperty('--rows', rows);
+    root.style.setProperty('--top-margin', topMargin + 'mm');
+    root.style.setProperty('--left-margin', leftMargin + 'mm');
+    root.style.setProperty('--col-gap', colGap + 'mm');
+    root.style.setProperty('--row-gap', rowGap + 'mm');
+    root.style.setProperty('--pad-t', padT + 'mm');
+    root.style.setProperty('--pad-r', padR + 'mm');
+    root.style.setProperty('--pad-b', padB + 'mm');
+    root.style.setProperty('--pad-l', padL + 'mm');
+
+    localStorage.setItem('labelLayout', JSON.stringify({
+      pageW: pageW, pageH: pageH, labelW: labelW, labelH: labelH,
+      cols: cols, rows: rows, topMargin: topMargin, leftMargin: leftMargin,
+      colGap: colGap, rowGap: rowGap,
+      padT: padT, padR: padR, padB: padB, padL: padL,
+      continuousRoll: continuousRollInput.checked
+    }));
+
+    updatePageSize();
+    updateRowBreaks();
+    renderPreviewBarcode();
+  }
+
+  function renderPreviewBarcode() {
+    var el = document.getElementById('ps-preview-barcode');
+    try {
+      JsBarcode(el, '8901234567890', {
+        format: 'CODE128', width: 1, height: 18, displayValue: false, margin: 0,
+      });
+    } catch (e) {}
+  }
+
+  var SETTING_URL = "{% url 'products:label_print_setting_api' %}";
+
+  function fillInputs(saved) {
+    if (!saved) return;
+    if (saved.pageW) pageWInput.value = saved.pageW;
+    if (saved.pageH) pageHInput.value = saved.pageH;
+    if (saved.labelW) labelWInput.value = saved.labelW;
+    if (saved.labelH) labelHInput.value = saved.labelH;
+    if (saved.cols) colsInput.value = saved.cols;
+    if (saved.rows) rowsInput.value = saved.rows;
+    if (saved.topMargin != null) topMarginInput.value = saved.topMargin;
+    if (saved.leftMargin != null) leftMarginInput.value = saved.leftMargin;
+    if (saved.colGap != null) colGapInput.value = saved.colGap;
+    if (saved.rowGap != null) rowGapInput.value = saved.rowGap;
+    if (saved.padT != null) padTInput.value = saved.padT;
+    if (saved.padR != null) padRInput.value = saved.padR;
+    if (saved.padB != null) padBInput.value = saved.padB;
+    if (saved.padL != null) padLInput.value = saved.padL;
+    if (saved.continuousRoll != null) continuousRollInput.checked = saved.continuousRoll;
+  }
+
+  (function restoreLayout() {
+    try {
+      fillInputs(JSON.parse(localStorage.getItem('labelLayout')));
+    } catch (e) {}
+    applyLayout();
+
+    fetch(SETTING_URL)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.setting) {
+          fillInputs(data.setting);
+          applyLayout();
+        }
+      })
+      .catch(function() {});
+  })();
+
+  function getCsrfToken() {
+    var match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : '';
+  }
+
+  function saveLayoutToServer() {
+    var payload = {
+      continuousRoll: continuousRollInput.checked,
+      pageW: parseFloat(pageWInput.value) || 110,
+      pageH: parseFloat(pageHInput.value) || 20,
+      labelW: parseFloat(labelWInput.value) || 33,
+      labelH: parseFloat(labelHInput.value) || 20,
+      cols: parseInt(colsInput.value, 10) || 3,
+      rows: parseInt(rowsInput.value, 10) || 1,
+      topMargin: parseFloat(topMarginInput.value) || 0,
+      leftMargin: parseFloat(leftMarginInput.value) || 0,
+      colGap: parseFloat(colGapInput.value) || 0,
+      rowGap: parseFloat(rowGapInput.value) || 0,
+      padT: parseFloat(padTInput.value) || 0,
+      padR: parseFloat(padRInput.value) || 0,
+      padB: parseFloat(padBInput.value) || 0,
+      padL: parseFloat(padLInput.value) || 0,
+    };
+    fetch(SETTING_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+      body: JSON.stringify(payload),
+    }).catch(function() {});
+  }
+
+  var saveDebounceTimer = null;
+  function applyAndPersist() {
+    applyLayout();
+    clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(saveLayoutToServer, 600);
+  }
+
+  [pageWInput, pageHInput, labelWInput, labelHInput, colsInput, rowsInput,
+   topMarginInput, leftMarginInput, colGapInput, rowGapInput,
+   padTInput, padRInput, padBInput, padLInput].forEach(function(el) {
+    el.addEventListener('input', applyAndPersist);
+  });
+  continuousRollInput.addEventListener('change', applyAndPersist);
 
   document.querySelectorAll('svg.barcode').forEach(function(el) {
     var val = el.getAttribute('data-val');

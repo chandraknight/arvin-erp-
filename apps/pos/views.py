@@ -41,7 +41,8 @@ from django.views.decorators.http import require_POST
 from apps.customers.models import Customer
 from apps.products.models import Category, CategoryType, Product
 from apps.utils.amount_words import amount_in_words
-from apps.utils.constant import PAYMENT_METHOD_CHOICES
+from apps.payments.models import BankAccount
+from apps.utils.constant import POS_PAYMENT_METHOD_CHOICES
 from apps.utils.decorator import auth_required
 
 from .cart import (
@@ -148,7 +149,8 @@ def pos_terminal(request):
         'cart':                cart,
         'totals':              totals,
         'customers':           customers,
-        'payment_methods':     PAYMENT_METHOD_CHOICES,
+        'payment_methods':     POS_PAYMENT_METHOD_CHOICES,
+        'bank_accounts':       BankAccount.objects.filter(company=company, is_active=True).order_by('bank_name'),
         'company':             company,
         'selected_referrer':   selected_referrer,
     }
@@ -401,9 +403,13 @@ def pos_checkout(request):
         return redirect('pos:terminal')
 
     payment_method = request.POST.get('payment_method', '').strip()
-    valid_methods = [m[0] for m in PAYMENT_METHOD_CHOICES]
+    valid_methods = [m[0] for m in POS_PAYMENT_METHOD_CHOICES]
     if payment_method not in valid_methods:
         messages.error(request, "Please select a valid payment method.")
+        return redirect('pos:terminal')
+
+    if payment_method == 'DUE' and not cart.get('customer_id'):
+        messages.error(request, "Select a customer before recording a due (credit) sale.")
         return redirect('pos:terminal')
 
     try:
@@ -412,6 +418,7 @@ def pos_checkout(request):
         amount_tendered = Decimal('0')
 
     notes = request.POST.get('notes', '').strip()
+    bank_account_id = request.POST.get('bank_account_id', '').strip() or None
 
     try:
         pos_sale = checkout(
@@ -420,6 +427,7 @@ def pos_checkout(request):
             payment_method=payment_method,
             amount_tendered=amount_tendered,
             notes=notes,
+            bank_account_id=bank_account_id,
         )
         clear_cart(request)
         messages.success(
@@ -502,7 +510,7 @@ def pos_sale_list(request):
         'page_obj':        page_obj,
         'filter_date':     filter_date,
         'method':          method,
-        'payment_methods': PAYMENT_METHOD_CHOICES,
+        'payment_methods': POS_PAYMENT_METHOD_CHOICES,
         'daily_total':     daily['total_sales'] or Decimal('0'),
         'daily_count':     daily['sale_count'] or 0,
     })
@@ -569,7 +577,8 @@ def _cart_partial(request, cart: dict, stock_warning: str = None) -> HttpRespons
         'cart':              cart,
         'totals':            totals,
         'customers':         customers,
-        'payment_methods':   PAYMENT_METHOD_CHOICES,
+        'payment_methods':   POS_PAYMENT_METHOD_CHOICES,
+        'bank_accounts':     BankAccount.objects.filter(company=request.user_company, is_active=True).order_by('bank_name'),
         'company':           request.user_company,
         'stock_warning':     stock_warning,
         'selected_referrer': selected_referrer,

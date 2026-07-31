@@ -291,6 +291,30 @@
                     </div>
                     {% if form.enable_ebilling.errors %}<p class="text-red-600 text-xs">{{ form.enable_ebilling.errors|striptags }}</p>{% endif %}
                 </div>
+
+                <!-- Print Format Defaults -->
+                <div class="mt-4 border border-gray-200 bg-gray-50 p-4 space-y-3">
+                    <p class="text-sm font-semibold text-gray-800">
+                        <i class="fas fa-print mr-1"></i>Print Format Defaults
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        Used when a print page is opened without an explicit A4/Thermal choice in the URL.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="sm:flex">
+                            <span class="flex items-center px-4 py-2 bg-white text-gray-700 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full text-sm">Invoice</span>
+                            {{ form.invoice_print_format|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                        </div>
+                        <div class="sm:flex">
+                            <span class="flex items-center px-4 py-2 bg-white text-gray-700 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full text-sm">Sales Order</span>
+                            {{ form.sales_order_print_format|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                        </div>
+                        <div class="sm:flex">
+                            <span class="flex items-center px-4 py-2 bg-white text-gray-700 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full text-sm">POS Receipt</span>
+                            {{ form.pos_receipt_print_format|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         {% else %}
