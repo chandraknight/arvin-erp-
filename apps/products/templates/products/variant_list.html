@@ -13,8 +13,8 @@
   {% if product.purchase_unit %}
   <p class="text-sm text-gray-500 mb-4">
     Buy unit: <strong>{{ product.purchase_unit.symbol }}</strong> &rarr;
-    Sell unit: <strong>{{ product.sale_unit.symbol }}</strong> &mdash;
-    Conversion: 1 {{ product.purchase_unit.symbol }} = {{ product.conversion_factor }} {{ product.sale_unit.symbol }}
+    Stock unit: <strong>{{ product.default_unit.symbol }}</strong> &mdash;
+    Conversion: 1 {{ product.purchase_unit.symbol }} = {{ product.conversion_factor }} {{ product.default_unit.symbol }}
   </p>
   {% endif %}
 

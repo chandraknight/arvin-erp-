@@ -2,14 +2,12 @@ from django import forms
 from django.forms import inlineformset_factory,BaseInlineFormSet
 from .models import Product, Category, ProductStock, Package, PackageItem, CategoryType, ProductImage, UnitOfMeasure
 from apps.products.models import StockTransaction
-from apps.vendors.models import Vendor
 
 ITEM_FORM_SECTIONS = [
     ('Basic Info', ['name', 'category_type', 'category', 'is_service']),
     ('Identifiers', ['barcode', 'sku', 'hscode']),
-    ('Pricing', ['price', 'compare_at_price', 'cost_price', 'cost_method', 'nrv']),
-    ('Vendor', ['vendor']),
-    ('Units & Stock', ['purchase_unit', 'sale_unit', 'conversion_factor', 'stock_quantity']),
+    ('Pricing', ['price', 'cost_price', 'cost_method']),
+    ('Units & Stock', ['purchase_unit', 'default_unit', 'conversion_factor', 'stock_quantity']),
 ]
 
 
@@ -47,8 +45,6 @@ class ItemForm(forms.ModelForm):
         help_text='Select a category type to filter categories.',
     )
 
-    vendor = forms.ModelChoiceField(queryset=Vendor.objects.none(), required=False, label='Preferred Vendor')
-
     stock_quantity = forms.IntegerField(
         required=False, min_value=0,
         label='Sale Unit Quantity',
@@ -59,15 +55,15 @@ class ItemForm(forms.ModelForm):
         model = Product
         fields = [
             'name', 'category_type', 'category', 'barcode', 'sku', 'hscode',
-            'price', 'compare_at_price', 'cost_price', 'cost_method', 'nrv',
-            'is_service', 'vendor',
-            'purchase_unit', 'sale_unit', 'conversion_factor',
+            'price', 'cost_price', 'cost_method',
+            'is_service',
+            'purchase_unit', 'default_unit', 'conversion_factor',
         ]
         help_texts = {
             'is_service': 'Check if this product is a service or non-stock item.',
             'purchase_unit': 'How you buy/receive this item. Example: kg.',
-            'sale_unit': 'How you sell/count stock. Example: g.',
-            'conversion_factor': 'How many sale units equal 1 purchase unit. Example: 1 kg = 1000 g, so enter 1000.',
+            'default_unit': 'Standard unit for inventory/stock tracking. Example: g.',
+            'conversion_factor': 'How many stock units equal 1 purchase unit. Example: 1 kg = 1000 g, so enter 1000.',
         }
 
     def __init__(self, *args, **kwargs):
@@ -79,21 +75,17 @@ class ItemForm(forms.ModelForm):
             if user.is_superuser:
                 categories = Category.active_objects.all()
                 category_types = CategoryType.objects.all()
-                vendors = Vendor.objects.all()
             else:
                 categories = Category.active_objects.filter(company=user.company)
                 category_types = CategoryType.objects.filter(company=user.company)
-                vendors = Vendor.objects.filter(company=user.company)
         else:
             categories = Category.active_objects.none()
             category_types = CategoryType.objects.none()
-            vendors = Vendor.objects.none()
 
         self.fields['category'].queryset = categories
         self.fields['category_type'].queryset = category_types
-        self.fields['vendor'].queryset = vendors
         self.fields['purchase_unit'].queryset = UnitOfMeasure.objects.all().order_by('uom_type', 'name')
-        self.fields['sale_unit'].queryset = UnitOfMeasure.objects.all().order_by('uom_type', 'name')
+        self.fields['default_unit'].queryset = UnitOfMeasure.objects.all().order_by('uom_type', 'name')
         self.fields['conversion_factor'].widget.attrs.update({'min': '0.0001', 'step': '0.0001'})
         self.fields['conversion_factor'].initial = self.fields['conversion_factor'].initial or 1
 
@@ -107,10 +99,10 @@ class ItemForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         purchase_unit = cleaned_data.get('purchase_unit')
-        sale_unit = cleaned_data.get('sale_unit')
+        default_unit = cleaned_data.get('default_unit')
         conversion_factor = cleaned_data.get('conversion_factor')
 
-        if (purchase_unit or sale_unit) and (not conversion_factor or conversion_factor <= 0):
+        if (purchase_unit or default_unit) and (not conversion_factor or conversion_factor <= 0):
             self.add_error('conversion_factor', 'Conversion factor must be greater than zero.')
 
         return cleaned_data

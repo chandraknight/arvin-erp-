@@ -65,6 +65,21 @@ class PurchaseOrderItem(BaseModel):
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
+    purchase_unit = models.ForeignKey(
+        'products.UnitOfMeasure', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='po_item_purchase_unit',
+        help_text="Unit this line was purchased in. Defaults to the product's purchase_unit if not set.",
+    )
+    conversion_unit = models.ForeignKey(
+        'products.UnitOfMeasure', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='po_item_conversion_unit',
+        help_text="Unit this line converts into for stock keeping. Defaults to the product's default_unit if not set.",
+    )
+    conversion_factor_override = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True,
+        help_text="Overrides the product's conversion_factor for this line only, if set.",
+    )
+
     def clean(self):
         from django.core.exceptions import ValidationError
         if self.item_type == 'STOCK' and not self.product:

@@ -101,9 +101,6 @@
       </div>
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-size:1rem;font-weight:700;color:#3730a3;">Rs.{{ product.price|floatformat:"2" }}</div>
-        {% if product.has_discount %}
-        <div><span style="font-size:0.75rem;color:#9ca3af;text-decoration:line-through;">Rs.{{ product.compare_at_price|floatformat:"2" }}</span> <span style="font-size:0.7rem;font-weight:700;color:#dc2626;">-{{ product.discount_percent }}%</span></div>
-        {% endif %}
         {% if product.productstock.ecom_stock > 0 %}
         <div style="font-size:0.73rem;color:#16a34a;margin-top:4px;">In Stock</div>
         {% else %}

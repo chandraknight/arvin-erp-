@@ -89,6 +89,83 @@ def report_branch_context(company, branch):
     }
 
 
+def get_closing_stock_valuation(company):
+    """
+    NFRS 2 (IAS 2): item-wise closing stock at lower of cost or net realisable value.
+    No ledger 'Inventory' account is posted on purchase/sale, so this is a computed
+    snapshot from Product.cost_price and current stock on hand — same basis as
+    the standalone stock_valuation_report. NRV is computed live from cost_price
+    (see valuation_service.compute_stock_valuation for the rationale).
+
+    This is independent of post_closing_stock (which posts the same NFRS 2
+    valuation to the ledger as a DR Closing Stock / CR COGS entry) — use one
+    approach or the other per company; this function does not read or affect
+    what post_closing_stock has posted.
+    """
+    products = Product.objects.filter(
+        company=company, is_service=False
+    ).select_related('productstock', 'category')
+
+    rows = []
+    total_carrying_value = Decimal('0.00')
+    for product in products:
+        stock = getattr(product, 'productstock', None)
+        qty = Decimal(stock.stock + stock.ecom_stock) if stock else Decimal('0')
+        if qty == 0:
+            continue
+
+        cost_price = product.cost_price or Decimal('0')
+        value_at_cost = qty * cost_price
+        nrv = cost_price
+        value_at_nrv = qty * nrv
+        carrying_value = min(value_at_cost, value_at_nrv)
+
+        rows.append({
+            'product': product,
+            'qty': qty,
+            'unit_cost': cost_price,
+            'carrying_value': carrying_value,
+        })
+        total_carrying_value += carrying_value
+
+    return rows, total_carrying_value
+
+
+def get_cogs_by_product(company, start_date=None, end_date=None):
+    """
+    NFRS-basis COGS: qty sold (paid invoices) x product.cost_price, item-wise.
+    Same basis as cogs_report — no ledger 'COGS' account is posted on sale.
+    """
+    items = InvoiceItem.objects.filter(
+        invoice__company=company,
+        invoice__outstanding_balance=0,
+        product__isnull=False,
+    )
+    if start_date:
+        items = items.filter(invoice__created_at__date__gte=start_date)
+    if end_date:
+        items = items.filter(invoice__created_at__date__lte=end_date)
+
+    items = items.annotate(
+        item_cogs=ExpressionWrapper(
+            F('quantity') * F('product__cost_price'), output_field=DecimalField()
+        )
+    ).select_related('product')
+
+    rows = {}
+    total_cogs = Decimal('0.00')
+    for item in items:
+        key = item.product_id
+        if key not in rows:
+            rows[key] = {'product': item.product, 'qty': Decimal('0'), 'cogs': Decimal('0.00')}
+        rows[key]['qty'] += Decimal(item.quantity)
+        rows[key]['cogs'] += item.item_cogs
+        total_cogs += item.item_cogs
+
+    cogs_rows = sorted(rows.values(), key=lambda r: r['product'].name)
+    return cogs_rows, total_cogs
+
+
 def build_ledger_statement(account, date_from=None, date_to=None):
     """
     Chronological Dr/Cr statement for a single ledger account with running balance —
@@ -1008,6 +1085,66 @@ def stock_valuation_report(request):
         'as_of_date': date.today(),
     }
     return render(request, 'reports/products/stock_valuation_report.html', context)
+
+
+@login_required
+def stock_disposal_report(request):
+    """NFRS 2 (IAS 2) — inventory write-offs. Item-wise disposal detail with journal linkage."""
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    qs = StockTransaction.objects.filter(
+        product__company=user_company, transaction_type='DISPOSAL',
+    ).select_related('product', 'product__category', 'user', 'journal_entry').order_by('-created_at')
+
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    product_q = request.GET.get('product', '').strip()
+    disposal_reason = request.GET.get('disposal_reason', '')
+
+    if date_from:
+        qs = qs.filter(created_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(created_at__date__lte=date_to)
+    if product_q:
+        qs = qs.filter(product__name__icontains=product_q)
+    if disposal_reason:
+        qs = qs.filter(disposal_reason=disposal_reason)
+
+    rows = []
+    total_qty = 0
+    total_write_off_value = Decimal('0.00')
+    for txn in qs:
+        cost_price = txn.product.cost_price or Decimal('0.00')
+        write_off_value = (Decimal(txn.quantity) * cost_price).quantize(Decimal('0.01'))
+        rows.append({
+            'txn': txn,
+            'cost_price': cost_price,
+            'write_off_value': write_off_value,
+        })
+        total_qty += txn.quantity
+        total_write_off_value += write_off_value
+
+    paginator = Paginator(rows, 25)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    context = {
+        'rows': page_obj,
+        'page_obj': page_obj,
+        'date_from': date_from,
+        'date_to': date_to,
+        'product_q': product_q,
+        'disposal_reason': disposal_reason,
+        'disposal_reason_choices': StockTransaction.DISPOSAL_REASON_CHOICES,
+        'total_qty': total_qty,
+        'total_write_off_value': total_write_off_value,
+        'total_count': len(rows),
+        'report_title': 'Stock Disposal Report',
+    }
+    return render(request, 'reports/products/stock_disposal_report.html', context)
 
 
 @login_required
@@ -6664,19 +6801,40 @@ def vendor_wise_inventory_report(request):
         messages.warning(request, "Your account is not associated with a company. Please contact an administrator.")
         return redirect('accounts:user_dashboard')
 
+    # Product no longer carries a single "preferred vendor" FK — vendor is now
+    # a Purchase Order concept. Derive each product's vendor from its most
+    # recent purchase order line (any status), on a per-company basis. Products
+    # with no purchase history fall into the "No Vendor" bucket below.
+    from apps.purchasing.models import PurchaseOrderItem
+
+    latest_vendor_by_product = {}
+    po_items = (
+        PurchaseOrderItem.objects
+        .filter(purchase_order__company=user_company, product__isnull=False)
+        .select_related('purchase_order__vendor', 'product')
+        .order_by('product_id', '-purchase_order__date', '-created_at')
+    )
+    for item in po_items:
+        if item.product_id not in latest_vendor_by_product:
+            latest_vendor_by_product[item.product_id] = item.purchase_order.vendor
+
     products_qs = (
         Product.active_objects
         .filter(company=user_company, is_service=False)
-        .select_related('vendor', 'category', 'productstock')
-        .order_by('vendor__name', 'name')
+        .select_related('category', 'productstock')
+        .order_by('name')
     )
 
     # Filter by vendor if requested
     selected_vendor_id = request.GET.get('vendor', '').strip()
     if selected_vendor_id:
-        products_qs = products_qs.filter(vendor_id=selected_vendor_id)
+        matching_ids = [
+            pid for pid, v in latest_vendor_by_product.items()
+            if v and str(v.id) == selected_vendor_id
+        ]
+        products_qs = products_qs.filter(id__in=matching_ids)
 
-    # Group products by vendor in Python (avoids complex ORM grouping)
+    # Group products by (derived) vendor in Python (avoids complex ORM grouping)
     vendor_groups = {}  # vendor_id (or None) -> {'vendor': obj|None, 'products': [], totals}
     for product in products_qs:
         try:
@@ -6690,7 +6848,7 @@ def vendor_wise_inventory_report(request):
         stock_value = (Decimal(str(current_stock)) * product.cost_price).quantize(Decimal('0.01'))
         low_stock = current_stock <= minimum_stock
 
-        vendor = product.vendor
+        vendor = latest_vendor_by_product.get(product.id)
         key = str(vendor.id) if vendor else '__none__'
         if key not in vendor_groups:
             vendor_groups[key] = {
@@ -6741,11 +6899,24 @@ def export_vendor_wise_inventory_excel(request):
     if not user_company:
         return redirect('accounts:user_dashboard')
 
+    from apps.purchasing.models import PurchaseOrderItem
+
+    latest_vendor_by_product = {}
+    po_items = (
+        PurchaseOrderItem.objects
+        .filter(purchase_order__company=user_company, product__isnull=False)
+        .select_related('purchase_order__vendor', 'product')
+        .order_by('product_id', '-purchase_order__date', '-created_at')
+    )
+    for item in po_items:
+        if item.product_id not in latest_vendor_by_product:
+            latest_vendor_by_product[item.product_id] = item.purchase_order.vendor
+
     products_qs = (
         Product.active_objects
         .filter(company=user_company, is_service=False)
-        .select_related('vendor', 'category', 'productstock')
-        .order_by('vendor__name', 'name')
+        .select_related('category', 'productstock')
+        .order_by('name')
     )
 
     wb = Workbook()
@@ -6766,8 +6937,9 @@ def export_vendor_wise_inventory_excel(request):
             stock = 0
             min_stock = 0
         stock_value = float(Decimal(str(stock)) * product.cost_price)
+        vendor = latest_vendor_by_product.get(product.id)
         ws.append([
-            product.vendor.name if product.vendor else 'No Vendor',
+            vendor.name if vendor else 'No Vendor',
             product.name,
             product.sku or '',
             product.category.name if product.category else '',

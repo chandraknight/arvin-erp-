@@ -6,9 +6,6 @@
 
   {# Image #}
   <a href="{% url 'ecom:product_detail' product.id %}" style="display:block;position:relative;">
-    {% if product.has_discount %}
-    <span style="position:absolute;top:8px;left:8px;z-index:2;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;">-{{ product.discount_percent }}%</span>
-    {% endif %}
     {% if img %}
       <img src="{{ img.image.url }}" alt="{{ product.name }}" loading="lazy"
            style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;transition:transform 0.3s;"
@@ -31,9 +28,6 @@
 
     <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px;">
       <strong style="font-size:0.95rem;font-weight:800;color:#800000;">Rs.{{ product.price|floatformat:"0" }}</strong>
-      {% if product.has_discount %}
-      <span style="font-size:0.75rem;color:#a8a29e;text-decoration:line-through;">Rs.{{ product.compare_at_price|floatformat:"0" }}</span>
-      {% endif %}
     </div>
 
     <div style="margin-top:auto;padding-top:8px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f5f5f4;">

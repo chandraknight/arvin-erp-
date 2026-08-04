@@ -66,7 +66,7 @@
                     <td class="py-3 px-6 text-right text-indigo-700 font-medium">
                         {% if item.product.conversion_factor and item.product.conversion_factor != 1 %}
                           {{ item.quantity|mul:item.product.conversion_factor }}
-                          {% if item.product.sale_unit %}<span class="text-xs text-gray-400 ml-1">{{ item.product.sale_unit.symbol }}</span>{% endif %}
+                          {% if item.product.default_unit %}<span class="text-xs text-gray-400 ml-1">{{ item.product.default_unit.symbol }}</span>{% endif %}
                         {% else %}
                           —
                         {% endif %}

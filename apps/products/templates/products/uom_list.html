@@ -91,11 +91,11 @@
                   {% for p in products %}
                   <li class="text-xs text-gray-700">
                     <span class="font-medium">{{ p.name }}</span>
-                    {% if p.sale_unit %}
-                      <span class="text-gray-400 ml-1">→ sells in {{ p.sale_unit.symbol }}</span>
+                    {% if p.default_unit %}
+                      <span class="text-gray-400 ml-1">→ tracked in {{ p.default_unit.symbol }}</span>
                       {% if p.conversion_factor and p.conversion_factor != 1 %}
                         <span class="ml-1 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs">
-                          1 {{ unit.symbol }} = {{ p.conversion_factor }} {{ p.sale_unit.symbol }}
+                          1 {{ unit.symbol }} = {{ p.conversion_factor }} {{ p.default_unit.symbol }}
                         </span>
                       {% endif %}
                     {% endif %}

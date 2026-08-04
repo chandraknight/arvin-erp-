@@ -7,16 +7,16 @@ from django.db import transaction
 
 CSV_COLUMNS = [
     'id', 'name', 'category', 'barcode', 'sku', 'hscode', 'price',
-    'compare_at_price', 'cost_price', 'is_service', 'vendor',
-    'purchase_unit', 'sale_unit', 'conversion_factor', 'stock',
+    'cost_price', 'is_service',
+    'purchase_unit', 'default_unit', 'conversion_factor', 'stock',
     'minimum_stock', 'ecom_stock', 'ecom_minimum_stock', 'description',
 ]
 REQUIRED_COLUMNS = {'name', 'category', 'price'}
 SAMPLE_ROWS = [
     CSV_COLUMNS,
-    ['', 'Momo (Veg)', 'Starters', '', 'SKU-MOMO-V', '', '150.00', '', '60.00', 'FALSE', '', '', '', '', '100', '10', '0', '0', 'Steamed vegetable dumplings'],
-    ['', 'Chicken Burger', 'Main Course', '', 'SKU-BURG-CH', '', '280.00', '350.00', '120.00', 'FALSE', '', '', '', '', '50', '5', '0', '0', 'Grilled chicken burger'],
-    ['', 'Rice (retail)', 'Groceries', '', 'SKU-RICE-1', '', '2.00', '', '1.50', 'FALSE', '', 'kg', 'g', '1000', '200', '20', '0', '0', 'Sold by the gram, bought by the kg'],
+    ['', 'Momo (Veg)', 'Starters', '', 'SKU-MOMO-V', '', '150.00', '60.00', 'FALSE', '', '', '', '100', '10', '0', '0', 'Steamed vegetable dumplings'],
+    ['', 'Chicken Burger', 'Main Course', '', 'SKU-BURG-CH', '', '280.00', '120.00', 'FALSE', '', '', '', '50', '5', '0', '0', 'Grilled chicken burger'],
+    ['', 'Rice (retail)', 'Groceries', '', 'SKU-RICE-1', '', '2.00', '1.50', 'FALSE', 'kg', 'g', '1000', '200', '20', '0', '0', 'Sold by the gram, bought by the kg'],
 ]
 
 
@@ -37,7 +37,7 @@ def export_products_csv(company) -> bytes:
 
     products = (
         Product.objects.filter(company=company)
-        .select_related('category', 'vendor', 'productstock', 'purchase_unit', 'sale_unit')
+        .select_related('category', 'productstock', 'purchase_unit', 'default_unit')
         .order_by('name')
     )
 
@@ -54,12 +54,10 @@ def export_products_csv(company) -> bytes:
             product.sku or '',
             product.hscode or '',
             product.price,
-            product.compare_at_price if product.compare_at_price is not None else '',
             product.cost_price,
             'TRUE' if product.is_service else 'FALSE',
-            product.vendor.name if product.vendor else '',
             product.purchase_unit.name if product.purchase_unit else '',
-            product.sale_unit.name if product.sale_unit else '',
+            product.default_unit.name if product.default_unit else '',
             product.conversion_factor,
             stock.stock if stock else 0,
             stock.minimum_stock if stock else 0,
@@ -76,7 +74,6 @@ def parse_and_import_products(file_obj, company, user) -> dict:
     Returns {'created': int, 'updated': int, 'errors': [(row_num, message)]}
     """
     from apps.products.models import Product, ProductStock, Category, UnitOfMeasure
-    from apps.vendors.models import Vendor
 
     try:
         text = file_obj.read().decode('utf-8-sig')
@@ -133,31 +130,12 @@ def parse_and_import_products(file_obj, company, user) -> dict:
             errors.append((row_num, f'Invalid price: "{price_raw}"'))
             continue
 
-        compare_raw = row.get('compare_at_price', '').strip()
-        if compare_raw == '':
-            compare_at_price = None
-        else:
-            try:
-                compare_at_price = Decimal(compare_raw)
-                if compare_at_price < 0:
-                    raise ValueError()
-            except (InvalidOperation, ValueError):
-                errors.append((row_num, f'Invalid compare_at_price: "{compare_raw}"'))
-                continue
-
         cost_price = to_decimal(row.get('cost_price'))
         is_service = row.get('is_service', '').strip().upper() in ('TRUE', '1', 'YES')
         description = row.get('description', '')
         barcode = row.get('barcode') or None
         sku = row.get('sku') or None
         hscode = row.get('hscode') or None
-
-        vendor_name = row.get('vendor', '').strip()
-        vendor = None
-        if vendor_name:
-            vendor = Vendor.objects.filter(company=company, name__iexact=vendor_name).first()
-            if vendor is None:
-                errors.append((row_num, f'Vendor "{vendor_name}" not found — skipped vendor assignment'))
 
         purchase_unit_name = row.get('purchase_unit', '').strip()
         purchase_unit = None
@@ -166,12 +144,12 @@ def parse_and_import_products(file_obj, company, user) -> dict:
             if purchase_unit is None:
                 errors.append((row_num, f'Purchase unit "{purchase_unit_name}" not found — skipped'))
 
-        sale_unit_name = row.get('sale_unit', '').strip()
-        sale_unit = None
-        if sale_unit_name:
-            sale_unit = UnitOfMeasure.objects.filter(name__iexact=sale_unit_name).first()
-            if sale_unit is None:
-                errors.append((row_num, f'Sale unit "{sale_unit_name}" not found — skipped'))
+        default_unit_name = row.get('default_unit', '').strip()
+        default_unit = None
+        if default_unit_name:
+            default_unit = UnitOfMeasure.objects.filter(name__iexact=default_unit_name).first()
+            if default_unit is None:
+                errors.append((row_num, f'Default unit "{default_unit_name}" not found — skipped'))
 
         conversion_raw = row.get('conversion_factor', '').strip()
         if conversion_raw == '':
@@ -201,13 +179,11 @@ def parse_and_import_products(file_obj, company, user) -> dict:
                     'sku': sku,
                     'hscode': hscode,
                     'price': price,
-                    'compare_at_price': compare_at_price,
                     'cost_price': cost_price,
                     'short_description': description[:500] if description else '',
                     'is_service': is_service,
-                    'vendor': vendor,
                     'purchase_unit': purchase_unit,
-                    'sale_unit': sale_unit,
+                    'default_unit': default_unit,
                     'conversion_factor': conversion_factor,
                     'updated_by': user,
                 }

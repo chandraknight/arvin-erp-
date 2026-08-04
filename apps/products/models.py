@@ -5,7 +5,6 @@ from django.core.files.base import ContentFile
 from apps.utils.baseModel import *
 from apps.company.models import Company
 from apps.accounts.models import User
-from apps.vendors.models import Vendor
 
 class UnitOfMeasure(BaseModel):
     UOM_TYPE_CHOICES = [
@@ -49,15 +48,7 @@ class Product(BaseModel):
     category = models.ForeignKey(Category, on_delete=models.PROTECT)
     barcode = models.CharField(max_length=50, unique=True, blank=True, null=True)
     sku = models.CharField(max_length=50, unique=True, blank=True, null=True, verbose_name="SKU")
-    vendor = models.ForeignKey(
-        Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name='products',
-        help_text="Preferred vendor to purchase this item from.",
-    )
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    compare_at_price = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True,
-        help_text="Original price shown struck-through on the store. Leave blank if no discount.",
-    )
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     # NFRS 2 (IAS 2): cost formula for inventory valuation
     COST_METHOD_CHOICES = [
@@ -67,11 +58,6 @@ class Product(BaseModel):
     cost_method = models.CharField(
         max_length=4, choices=COST_METHOD_CHOICES, default='WA',
         help_text='NFRS 2: inventory cost formula used for COGS and stock valuation.',
-    )
-    # NFRS 2: net realisable value — used for lower-of-cost-or-NRV test
-    nrv = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True,
-        help_text='NFRS 2: Net Realisable Value. If NRV < cost_price, inventory must be written down.',
     )
     hscode = models.CharField(max_length=50, blank=True, null=True, verbose_name="HS Code")
     is_service = models.BooleanField(default=False, help_text="Check if this product is a service or non-stock item.")
@@ -85,10 +71,10 @@ class Product(BaseModel):
         null=True, blank=True, related_name='purchased_products',
         help_text="Unit in which this product is received (e.g. KG, Dozen)."
     )
-    sale_unit = models.ForeignKey(
+    default_unit = models.ForeignKey(
         'products.UnitOfMeasure', on_delete=models.PROTECT,
         null=True, blank=True, related_name='sold_products',
-        help_text="Unit in which this product is sold (e.g. Gram, Piece)."
+        help_text="Standard unit of measurement for inventory/stock tracking (e.g. Piece, Gram)."
     )
     conversion_factor = models.DecimalField(
         max_digits=12, decimal_places=4, default=1,
@@ -109,16 +95,6 @@ class Product(BaseModel):
     @property
     def type_name(self):
         return self.category.type_name if self.category else ''
-
-    @property
-    def has_discount(self):
-        return bool(self.compare_at_price and self.compare_at_price > self.price)
-
-    @property
-    def discount_percent(self):
-        if not self.has_discount:
-            return 0
-        return round((self.compare_at_price - self.price) / self.compare_at_price * 100)
 
     @property
     def primary_image_url(self):

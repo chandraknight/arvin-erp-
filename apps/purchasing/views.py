@@ -104,7 +104,11 @@ def receive_purchase_order(request, pk):
                     from decimal import Decimal
                     for item in purchase_order.items.filter(item_type='STOCK'):
                         if item.product:
-                            factor = Decimal(str(item.product.conversion_factor or 1))
+                            factor = (
+                                Decimal(str(item.conversion_factor_override))
+                                if item.conversion_factor_override is not None
+                                else Decimal(str(item.product.conversion_factor or 1))
+                            )
                             # Convert purchase units → sale units (e.g. 5 KG → 5000 gram, 3 packs of 12 → 36 pcs)
                             sale_qty = int(Decimal(str(item.quantity)) * factor)
                             ProductStock.objects.get_or_create(product=item.product)

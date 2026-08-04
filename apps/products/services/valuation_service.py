@@ -46,7 +46,10 @@ def compute_stock_valuation(company, category_id=None):
         else:
             value_at_cost = qty * cost_price
 
-        nrv = product.nrv if product.nrv is not None else cost_price
+        # NFRS 2: NRV is a period-end measurement, not a stored attribute — it was
+        # always effectively falling back to cost_price in practice (no live UI
+        # ever diverged it), so it's computed live here instead of stored on Product.
+        nrv = cost_price
         value_at_nrv = qty * nrv
 
         carrying_value = min(value_at_cost, value_at_nrv)

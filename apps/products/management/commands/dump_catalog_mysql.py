@@ -88,7 +88,7 @@ class Command(BaseCommand):
         # ── Product ───────────────────────────────────────────────────────────
         prod_qs = (
             Product.active_objects
-            .select_related('category', 'purchase_unit', 'sale_unit', 'vendor')
+            .select_related('category', 'purchase_unit', 'default_unit')
             .all()
             .order_by('created_at')
         )
@@ -99,18 +99,18 @@ class Command(BaseCommand):
         for p in prod_qs:
             lines.append(
                 f"INSERT INTO products_product "
-                f"(id, company_id, name, category_id, barcode, sku, vendor_id, "
-                f"price, compare_at_price, cost_price, cost_method, nrv, hscode, "
+                f"(id, company_id, name, category_id, barcode, sku, "
+                f"price, cost_price, cost_method, hscode, "
                 f"is_service, show_on_ecom, short_description, ecom_description, color, "
-                f"purchase_unit_id, sale_unit_id, conversion_factor, has_variants, "
+                f"purchase_unit_id, default_unit_id, conversion_factor, has_variants, "
                 f"created_at, updated_at, is_deleted) VALUES ("
                 f"{_esc(p.id)}, {_esc(p.company_id)}, {_esc(p.name)}, {_esc(p.category_id)}, "
-                f"{_esc(p.barcode)}, {_esc(p.sku)}, {_esc(p.vendor_id)}, "
-                f"{_dec(p.price)}, {_dec(p.compare_at_price)}, {_dec(p.cost_price)}, "
-                f"{_esc(p.cost_method)}, {_dec(p.nrv)}, {_esc(p.hscode)}, "
+                f"{_esc(p.barcode)}, {_esc(p.sku)}, "
+                f"{_dec(p.price)}, {_dec(p.cost_price)}, "
+                f"{_esc(p.cost_method)}, {_esc(p.hscode)}, "
                 f"{_bool(p.is_service)}, {_bool(p.show_on_ecom)}, "
                 f"{_esc(p.short_description)}, {_esc(p.ecom_description)}, {_esc(p.color)}, "
-                f"{_esc(p.purchase_unit_id)}, {_esc(p.sale_unit_id)}, {_dec(p.conversion_factor)}, "
+                f"{_esc(p.purchase_unit_id)}, {_esc(p.default_unit_id)}, {_dec(p.conversion_factor)}, "
                 f"{_bool(p.has_variants)}, "
                 f"{_esc(p.created_at)}, {_esc(p.updated_at)}, {_bool(p.is_deleted)}"
                 f");"

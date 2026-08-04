@@ -343,12 +343,9 @@ def ecom_inventory(request):
                 if qty >= 0:
                     quantities[key[4:]] = qty
             elif key.startswith('price_') and value.strip() != '':
-                # Compare-at is paired with price: a row is repriced only when
-                # a selling price is entered, so a blank compare clears the discount.
                 pid = key[6:]
                 prices[pid] = {
                     'price': value.strip(),
-                    'compare_at_price': request.POST.get(f'compare_{pid}', '').strip(),
                 }
         updated, skipped = bulk_set_ecom_stock(company, request.user, quantities)
         p_updated, p_skipped = bulk_set_ecom_prices(company, prices)

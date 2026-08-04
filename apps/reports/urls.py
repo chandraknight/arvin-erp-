@@ -102,6 +102,8 @@ urlpatterns = [
          views.print_stock_movement_report, name='print_stock_movement_report'),
     path('products/stock-valuation/', views.stock_valuation_report,
          name='stock_valuation_report'),
+    path('products/stock-disposal/', views.stock_disposal_report,
+         name='stock_disposal_report'),
     path('customers/acquisition/', views.customer_acquisition_report,
          name='customer_acquisition_report'),
     path('purchasing/purchase-order-list/',

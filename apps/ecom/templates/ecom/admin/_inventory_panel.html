@@ -43,7 +43,6 @@
                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Ecom Stock</th>
                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-36">New Ecom Stock</th>
                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Price</th>
-                <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Compare-at</th>
               </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-100">
@@ -70,12 +69,6 @@
                   <input type="number" name="price_{{ product.id }}" min="0" step="0.01" inputmode="decimal"
                          placeholder="{{ product.price|floatformat:2 }}"
                          title="Selling price — leave blank to keep"
-                         class="w-24 border border-gray-200 px-2 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-green-400">
-                </td>
-                <td class="px-4 py-2 text-right">
-                  <input type="number" name="compare_{{ product.id }}" min="0" step="0.01" inputmode="decimal"
-                         value="{{ product.compare_at_price|floatformat:2|default_if_none:'' }}"
-                         title="Original price (struck-through). Blank clears the discount. Only applied when a price is entered."
                          class="w-24 border border-gray-200 px-2 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-green-400">
                 </td>
               </tr>

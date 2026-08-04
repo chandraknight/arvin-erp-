@@ -503,7 +503,7 @@ def product_content_edit(request, product_id):
     class EcomContentForm(django_forms.ModelForm):
         class Meta:
             model = Product
-            fields = ['show_on_ecom', 'price', 'compare_at_price', 'short_description', 'ecom_description', 'color']
+            fields = ['show_on_ecom', 'price', 'short_description', 'ecom_description', 'color']
             widgets = {
                 'ecom_description': django_forms.HiddenInput(),
             }

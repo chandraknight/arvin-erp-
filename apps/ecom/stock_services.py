@@ -45,8 +45,7 @@ def bulk_set_ecom_stock(company, user, quantities):
 
 @transaction.atomic
 def bulk_set_ecom_prices(company, prices):
-    """prices: {product_id: {'price': str|None, 'compare_at_price': str|None}}.
-    A blank compare-at clears the discount. Returns (updated, skipped)."""
+    """prices: {product_id: {'price': str|None}}. Returns (updated, skipped)."""
     updated, skipped = 0, []
     products = Product.objects.filter(id__in=prices.keys(), company=company).select_for_update()
     for product in products:
@@ -67,24 +66,7 @@ def bulk_set_ecom_prices(company, prices):
                 product.price = new_price
                 changed = True
 
-        if 'compare_at_price' in entry:
-            raw_cmp = entry.get('compare_at_price')
-            if raw_cmp in (None, ''):
-                new_cmp = None
-            else:
-                try:
-                    new_cmp = Decimal(raw_cmp)
-                except (InvalidOperation, TypeError):
-                    skipped.append((product.name, f'invalid compare-at “{raw_cmp}”'))
-                    continue
-                if new_cmp < 0:
-                    skipped.append((product.name, 'compare-at cannot be negative'))
-                    continue
-            if new_cmp != product.compare_at_price:
-                product.compare_at_price = new_cmp
-                changed = True
-
         if changed:
-            product.save(update_fields=['price', 'compare_at_price', 'updated_at'])
+            product.save(update_fields=['price', 'updated_at'])
             updated += 1
     return updated, skipped

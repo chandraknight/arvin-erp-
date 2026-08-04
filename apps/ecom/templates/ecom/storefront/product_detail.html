@@ -67,11 +67,7 @@
 
       {# Price #}
       <div class="pd-price-row">
-        <span class="pd-price">Rs.{{ product.price|floatformat:"2" }}{% if product.sale_unit %} <span class="pd-price-unit">/ {{ product.sale_unit.symbol|default:product.sale_unit.name }}</span>{% endif %}</span>
-        {% if product.has_discount %}
-        <span class="pd-price-strike">Rs.{{ product.compare_at_price|floatformat:"2" }}</span>
-        <span class="pd-discount-badge">-{{ product.discount_percent }}%</span>
-        {% endif %}
+        <span class="pd-price">Rs.{{ product.price|floatformat:"2" }}{% if product.default_unit %} <span class="pd-price-unit">/ {{ product.default_unit.symbol|default:product.default_unit.name }}</span>{% endif %}</span>
       </div>
 
       {# Stock status #}
@@ -120,8 +116,8 @@
         {% csrf_token %}
         <div class="pd-qty-row">
           <div class="pd-qty-wrap">
-            {% if product.sale_unit %}
-            <span class="pd-qty-unit-label" title="Quantity is in {{ product.sale_unit.name }}">{{ product.sale_unit.symbol|default:product.sale_unit.name }}</span>
+            {% if product.default_unit %}
+            <span class="pd-qty-unit-label" title="Quantity is in {{ product.default_unit.name }}">{{ product.default_unit.symbol|default:product.default_unit.name }}</span>
             {% endif %}
             <button type="button" class="pd-qty-btn" id="qty-minus">−</button>
             <input class="pd-qty-input" type="number" name="quantity" id="qty-input" value="1" min="1"
