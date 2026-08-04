@@ -1,8 +1,7 @@
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import JsonResponse
-from decimal import Decimal
-import traceback
 import json
+import traceback
 
 from ..utils.global_models import *
 from .services.all_services import *
@@ -50,10 +49,6 @@ def inventory_management(request):
             Q(productstock__ecom_stock__lte=F('productstock__ecom_minimum_stock'))
         ).prefetch_related('productstock')
         low_stock_products_count = low_stock_products.count()
-        low_stock_total_value = sum(
-            (p.productstock.stock * p.cost_price for p in low_stock_products if getattr(p, 'productstock', None)),
-            Decimal('0'),
-        )
         transactions = StockTransaction.objects.filter(
             product__company=request.user.company
         ).order_by('-created_at')[:10]
@@ -85,10 +80,6 @@ def inventory_management(request):
             Q(productstock__ecom_stock__lte=F('productstock__ecom_minimum_stock'))
         ).prefetch_related('productstock')
         low_stock_products_count = low_stock_products.count()
-        low_stock_total_value = sum(
-            (p.productstock.stock * p.cost_price for p in low_stock_products if getattr(p, 'productstock', None)),
-            Decimal('0'),
-        )
         transactions = StockTransaction.active_objects.all().order_by('-created_at')[:10]
 
         categories_queryset = Category.active_objects.all().select_related('type').order_by('type__name', 'name')
@@ -139,7 +130,6 @@ def inventory_management(request):
     return render(request, 'products/inventory_management.html', {
         'products_count': products_count,
         'low_stock_products_count': low_stock_products_count,
-        'low_stock_total_value': low_stock_total_value,
         'categories_count': categories_count,
         'packages_count': packages_count,
         'products': products,
@@ -619,7 +609,7 @@ def print_labels(request):
             continue
         if ':' in token:
             pid, _, q = token.partition(':')
-            qty_map[pid.strip()] = max(1, int(q) if q.strip().isdigit() else 1)
+            qty_map[pid.strip()] = min(500, max(1, int(q) if q.strip().isdigit() else 1))
         else:
             qty_map[token] = 1
 
@@ -628,17 +618,53 @@ def print_labels(request):
     if company:
         qs = qs.filter(company=company)
 
+    label_setting = LabelPrintSetting.objects.filter(company=company).first() if company else None
+
     label_items = []
-    for product in qs.only('id', 'name', 'price', 'barcode'):
+    for product in qs.only('id', 'name', 'price', 'barcode', 'sku', 'hscode'):
         qty = qty_map.get(str(product.id), 1)
         for _ in range(qty):
             label_items.append({
                 'name': product.name,
                 'price': product.price,
                 'barcode': product.barcode or '',
+                'sku': product.sku or '',
+                'hscode': product.hscode or '',
             })
 
-    return render(request, 'products/print_labels.html', {'labels': label_items})
+    return render(request, 'products/print_labels.html', {
+        'labels': label_items,
+        'label_setting': label_setting,
+    })
+
+
+# ── Unit of Measure ───────────────────────────────────────────────────────────
+
+@login_required
+def print_labels_selector(request):
+    company = getattr(request.user, 'company', None)
+    qs = Product.active_objects.filter(is_service=False)
+    if company:
+        qs = qs.filter(company=company)
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) | Q(barcode__icontains=q) | Q(sku__icontains=q)
+        )
+    qs = qs.order_by('name').only('id', 'name', 'barcode', 'sku', 'price')
+    paginator = Paginator(qs, 50)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    label_setting = None
+    if company:
+        label_setting = LabelPrintSetting.objects.filter(company=company).first()
+
+    return render(request, 'products/print_labels_selector.html', {
+        'products': page_obj,
+        'page_obj': page_obj,
+        'q': q,
+        'label_setting': label_setting,
+    })
 
 
 @login_required
@@ -667,6 +693,10 @@ def label_print_setting_api(request):
             'padR': float(setting.padding_right_mm),
             'padB': float(setting.padding_bottom_mm),
             'padL': float(setting.padding_left_mm),
+            'showPrice': setting.show_price,
+            'showBarcode': setting.show_barcode,
+            'showSku': setting.show_sku,
+            'showHscode': setting.show_hscode,
         }})
 
     if request.method == 'POST':
@@ -697,40 +727,15 @@ def label_print_setting_api(request):
         setting.padding_right_mm = to_decimal('padR', setting.padding_right_mm)
         setting.padding_bottom_mm = to_decimal('padB', setting.padding_bottom_mm)
         setting.padding_left_mm = to_decimal('padL', setting.padding_left_mm)
+        setting.show_price = bool(data.get('showPrice', setting.show_price))
+        setting.show_barcode = bool(data.get('showBarcode', setting.show_barcode))
+        setting.show_sku = bool(data.get('showSku', setting.show_sku))
+        setting.show_hscode = bool(data.get('showHscode', setting.show_hscode))
         setting.updated_by = request.user
         setting.save()
         return JsonResponse({'ok': True})
 
     return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-
-# ── Unit of Measure ───────────────────────────────────────────────────────────
-
-@login_required
-def print_labels_selector(request):
-    company = getattr(request.user, 'company', None)
-    qs = Product.active_objects.filter(is_service=False)
-    if company:
-        qs = qs.filter(company=company)
-    q = request.GET.get('q', '').strip()
-    if q:
-        qs = qs.filter(
-            Q(name__icontains=q) | Q(barcode__icontains=q) | Q(sku__icontains=q)
-        )
-    qs = qs.order_by('name').only('id', 'name', 'barcode', 'sku', 'price')
-    paginator = Paginator(qs, 50)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
-
-    label_setting = None
-    if company:
-        label_setting = LabelPrintSetting.objects.filter(company=company).first()
-
-    return render(request, 'products/print_labels_selector.html', {
-        'products': page_obj,
-        'page_obj': page_obj,
-        'q': q,
-        'label_setting': label_setting,
-    })
 
 
 @login_required

@@ -41,22 +41,18 @@
                 <table class="min-w-full bg-white shadow-md rounded">
                     <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                         <tr>
-                            <th class="py-3 px-6 text-left" style="width:28px"></th>
                             <th class="py-3 px-6 text-left">Account Name</th>
                             <th class="py-3 px-6 text-left">Account Type</th>
                             <th class="py-3 px-6 text-right">Debit Balance</th>
                             <th class="py-3 px-6 text-right">Credit Balance</th>
                         </tr>
                     </thead>
-                    {% for item in trial_balance_data %}
-                        <tbody class="text-gray-600 text-sm font-light" x-data="{open: false}">
-                            <tr class="border-b border-gray-200 hover:bg-gray-100 cursor-pointer" @click="open = !open">
-                                <td class="py-3 px-6 text-left text-gray-400">
-                                    <i class="fas fa-chevron-right transition-transform" :class="{'rotate-90': open}"></i>
-                                </td>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        {% for item in trial_balance_data %}
+                            <tr class="border-b border-gray-200 hover:bg-gray-100">
                                 <td class="py-3 px-6 text-left whitespace-nowrap">{{ item.account.name }}</td>
                                 <td class="py-3 px-6 text-left">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                         {% if item.account.account_type == 'ASSET' %}bg-blue-100 text-blue-800{% endif %}
                                         {% if item.account.account_type == 'LIABILITY' %}bg-red-100 text-red-800{% endif %}
                                         {% if item.account.account_type == 'EQUITY' %}bg-green-100 text-green-800{% endif %}
@@ -81,12 +77,11 @@
                                     {% endif %}
                                 </td>
                             </tr>
-                            {% include 'reports/partials/account_drilldown.html' with row=item colspan=5 %}
-                        </tbody>
-                    {% endfor %}
+                        {% endfor %}
+                    </tbody>
                     <tfoot class="bg-gray-100 text-gray-800 font-bold">
                         <tr>
-                            <td class="py-3 px-6 text-left" colspan="3">Total</td>
+                            <td class="py-3 px-6 text-left" colspan="2">Total</td>
                             <td class="py-3 px-6 text-right">{{ total_debits|floatformat:2|intcomma }}</td>
                             <td class="py-3 px-6 text-right">{{ total_credits|floatformat:2|intcomma }}</td>
                         </tr>
@@ -95,6 +90,41 @@
             </div>
         {% else %}
             <p class="text-gray-600 italic">No accounts found with balances for the selected date.</p>
+        {% endif %}
+
+        {% if closing_stock_rows %}
+        <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 class="text-lg font-semibold text-yellow-800 mb-1">Closing Stock (NFRS 2 — memo, not part of trial balance totals)</h3>
+            <p class="text-xs text-gray-600 mb-3">Computed at lower of cost or net realisable value from current stock on hand. Not posted to a ledger 'Inventory' account, so excluded from Total Debits/Credits above.</p>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white text-sm">
+                    <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                        <tr>
+                            <th class="py-2 px-4 text-left">Product</th>
+                            <th class="py-2 px-4 text-right">Qty</th>
+                            <th class="py-2 px-4 text-right">Unit Cost</th>
+                            <th class="py-2 px-4 text-right">Carrying Value</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600">
+                        {% for row in closing_stock_rows %}
+                        <tr class="border-b border-gray-100">
+                            <td class="py-2 px-4 text-left">{{ row.product.name }}</td>
+                            <td class="py-2 px-4 text-right">{{ row.qty }}</td>
+                            <td class="py-2 px-4 text-right">{{ row.unit_cost|floatformat:2|intcomma }}</td>
+                            <td class="py-2 px-4 text-right">{{ row.carrying_value|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-50 font-semibold">
+                        <tr>
+                            <td colspan="3" class="py-2 px-4 text-right">Total Closing Stock</td>
+                            <td class="py-2 px-4 text-right">{{ closing_stock_total|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
         {% endif %}
 
         <div class="mt-8 text-center">

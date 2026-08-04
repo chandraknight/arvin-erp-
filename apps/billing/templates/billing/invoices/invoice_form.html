@@ -117,15 +117,10 @@
             <div class="mt-8">
                 <div class="flex justify-between items-center mb-4 border-b pb-2">
                     <h3 class="text-xl font-bold text-green-800">Invoice Items</h3>
-                    {% comment %}
-                    No hx-get/hx-trigger here on purpose — htmx auto-binds a click handler to any
-                    element with hx-get, which would fire this literal, unresolved "__prefix__" URL
-                    on every click alongside the correct JS-driven request below (500 on the server,
-                    since __prefix__ isn't a valid row index). The base URL is JS-only via data-*,
-                    and requestNewItemRow() fires the real request with the resolved index.
-                    {% endcomment %}
                     <button type="button" id="add-item"
-                            data-item-form-url="{% url 'billing:htmx_invoice_item_form' %}"
+                            hx-get="{% url 'billing:htmx_invoice_item_form' %}?index=__prefix__"
+                            hx-target="#items-container"
+                            hx-swap="beforeend"
                             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm transition duration-150">
                         + Add Item
                     </button>
@@ -187,8 +182,8 @@
                     {{ form.tax_amount|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 bg-gray-50" }}
                 </div>
                 {% else %}
-                    <input type="hidden" name="tax_percent" value="0" class="tax-percent" id="id_tax_percent">
-                    <input type="hidden" name="tax_amount" value="0" id="id_tax_amount">
+                    <input type="hidden" id="id_tax_percent" name="tax_percent" value="0" class="tax-percent">
+                    <input type="hidden" id="id_tax_amount" name="tax_amount" value="0">
                 {% endif %}
 
                 <div class="sm:flex">
@@ -450,16 +445,6 @@
             if (paymentMethodSelect) paymentMethodSelect.addEventListener('change', syncIssueButton);
             if (paymentAmountInput) paymentAmountInput.addEventListener('input', syncIssueButton);
 
-            // Select2 (auto-applied globally to every <select> — see base.html) doesn't
-            // always deliver a plain 'change' event listeners can rely on, the same
-            // gap that affected the customer dropdown. Re-check the issue button on
-            // Select2's own selection events too, and once right after Select2 has
-            // had a chance to initialize this field (handles pre-filled values).
-            if (typeof $ !== 'undefined' && paymentMethodSelect) {
-                $(document).on('select2:select select2:unselect', '#id_payment_method', syncIssueButton);
-                setTimeout(syncIssueButton, 0);
-            }
-
             if (totalInput) {
                 totalInput.addEventListener('change', function () {
                     if (collectPaymentCheckbox.checked && paymentAmountInput) {
@@ -600,24 +585,13 @@
             const data = evt.detail;
             if (!data || !data.id || !data.name) return;
 
-            if (typeof $ !== 'undefined') {
-                const $select = $('select[name="customer"]');
-                if ($select.length) {
-                    // Remove duplicate if already present, then append and select via Select2 API
-                    if ($select.find('option[value="' + data.id + '"]').length === 0) {
-                        $select.append(new Option(data.name, data.id, false, false));
-                    }
-                    $select.val(data.id).trigger('change');
+            const $select = $('select[name="customer"]');
+            if ($select.length) {
+                // Remove duplicate if already present, then append and select via Select2 API
+                if ($select.find('option[value="' + data.id + '"]').length === 0) {
+                    $select.append(new Option(data.name, data.id, false, false));
                 }
-            } else {
-                const plainSelect = document.querySelector('select[name="customer"]');
-                if (plainSelect && !plainSelect.querySelector(`option[value="${data.id}"]`)) {
-                    const opt = document.createElement('option');
-                    opt.value = data.id;
-                    opt.textContent = data.name;
-                    plainSelect.appendChild(opt);
-                }
-                if (plainSelect) plainSelect.value = data.id;
+                $select.val(data.id).trigger('change');
             }
             closeQuickCreateModal();
             loadCustomerInfo(data.id);
@@ -648,9 +622,7 @@
 
         // Load on native change and Select2 change
         document.getElementById('id_customer')?.addEventListener('change', function () { loadCustomerInfo(this.value); });
-        if (typeof $ !== 'undefined') {
-            $(document).on('select2:select select2:unselect', '[name="customer"]', function () { loadCustomerInfo(this.value); });
-        }
+        $(document).on('select2:select select2:unselect', '[name="customer"]', function () { loadCustomerInfo(this.value); });
 
         // Load on page load if customer already selected (edit mode)
         const preselectedCustomer = document.getElementById('id_customer')?.value;
@@ -723,30 +695,15 @@
             const container = document.getElementById('items-container');
             const addButton = document.getElementById('add-item');
             const totalForms = document.getElementById('id_items-TOTAL_FORMS');
-            let formCount = parseInt(totalForms?.value) || 0;
+            let formCount = parseInt(totalForms.value);
+            const emptyForm = container.querySelector('.item-form').cloneNode(true);
             const submitButtons = document.querySelectorAll('button[type="submit"]');
             let focusScannerAfterAdd = false;
 
             submitButtons.forEach(b => b.disabled = true);
 
-            // If jQuery/Select2/htmx failed to load (CDN blocked, offline, etc.) don't let
-            // the whole form lock up — surface it and fall back to plain, unenhanced controls
-            // instead of leaving the submit buttons disabled forever with no way to recover.
-            const hasJQuery = typeof $ !== 'undefined' && typeof $.fn !== 'undefined';
-            const hasSelect2 = hasJQuery && typeof $.fn.select2 !== 'undefined';
-            if (!hasJQuery || !hasSelect2 || typeof window.htmx === 'undefined') {
-                console.error(
-                    'Invoice form: a required script failed to load ' +
-                    '(jQuery=' + hasJQuery + ', Select2=' + hasSelect2 + ', htmx=' + (typeof window.htmx !== 'undefined') + '). ' +
-                    'Falling back to basic controls — check your network/ad-blocker if search fields feel unresponsive.'
-                );
-            }
-
-            try {
-
             // Initialize Select2 on product and package selects
             function initSelect2OnProductSelects() {
-                if (!hasSelect2) return;
                 document.querySelectorAll('.product-select, .package-select').forEach(select => {
                     if (select.classList.contains('select2-hidden-accessible')) {
                         $(select).select2('destroy');
@@ -760,53 +717,23 @@
                 });
             }
 
-            // Initialize calculations — wrapped so a failure here (e.g. a
-            // hidden total field missing on an unusual invoice state) can't
-            // abort the rest of setup below, especially the item-type
-            // toggle buttons (Product/Service/Package/Other), which must
-            // get wired up regardless of what happens here.
-            try {
-                updateCalculations();
-            } catch (err) {
-                console.error('Invoice form: initial updateCalculations() failed:', err);
-            }
+            // Initialize calculations
+            updateCalculations();
 
             // Initialize Select2 on the customer dropdown
-            if (hasSelect2) {
-                try {
-                    const $customerSelect = $('select[name="customer"]');
-                    if ($customerSelect.length && !$customerSelect.hasClass('select2-hidden-accessible')) {
-                        $customerSelect.select2({
-                            width: '100%',
-                            placeholder: 'Walk-in (Cash)',
-                            allowClear: true,
-                            dropdownParent: $customerSelect.parent(),
-                        });
-                    }
-                } catch (err) {
-                    console.error('Invoice form: customer Select2 init failed:', err);
-                }
+            const $customerSelect = $('select[name="customer"]');
+            if ($customerSelect.length && !$customerSelect.hasClass('select2-hidden-accessible')) {
+                $customerSelect.select2({
+                    width: '100%',
+                    placeholder: 'Walk-in (Cash)',
+                    allowClear: true,
+                    dropdownParent: $customerSelect.parent(),
+                });
             }
 
             // Function to check if any item has a selected value
             function checkAddButtonState() {
-                let hasSelectedItem = false;
-                document.querySelectorAll('.item-form').forEach(form => {
-                    if (form.style.display !== 'none') {
-                        const productSelect = form.querySelector('.product-select');
-                        const packageSelect = form.querySelector('.package-select');
-                        const serviceInput = form.querySelector('.service-name-input');
-                        const otherInput = form.querySelector('.other-name-input');
-                        if (
-                            (productSelect && productSelect.value) ||
-                            (packageSelect && packageSelect.value) ||
-                            (serviceInput && serviceInput.value) ||
-                            (otherInput && otherInput.value)
-                        ) {
-                            hasSelectedItem = true;
-                        }
-                    }
-                });
+                const hasSelectedItem = hasItemSelected();
                 addButton.disabled = false;
                 // The issue button is further gated by syncIssueButton (payment validation)
                 // so only set non-issue submit buttons directly
@@ -901,24 +828,17 @@
             document.querySelectorAll('.item-form').forEach(row => initRowToggle(row));
             initSelect2OnProductSelects();
 
-            // Add new item row via HTMX. The button intentionally has no hx-get of its
-            // own (see the comment in the template) — this is the only code path that
-            // fires the request, using the real row index instead of a placeholder.
+            // Add new item row via HTMX
             function requestNewItemRow(focusScanner) {
                 const newIndex = formCount;
-                const baseUrl = addButton?.dataset.itemFormUrl;
-                if (!baseUrl) {
-                    console.error('Invoice form: add-item button is missing data-item-form-url.');
-                    return;
-                }
+                const baseUrl = addButton.getAttribute('hx-get').split('?')[0];
+                addButton.setAttribute('hx-get', `${baseUrl}?index=${newIndex}`);
                 focusScannerAfterAdd = !!focusScanner;
                 if (window.htmx && typeof htmx.ajax === 'function') {
                     htmx.ajax('GET', `${baseUrl}?index=${newIndex}`, {
                         target: '#items-container',
                         swap: 'beforeend',
                     });
-                } else {
-                    console.error('Invoice form: htmx is not available — cannot add a new item row.');
                 }
             }
 
@@ -1018,7 +938,6 @@
                     if (descriptionInput && product.name && !descriptionInput.value) {
                         descriptionInput.value = product.name;
                     }
-                    if (barcodeInput) barcodeInput.value = '';
                     return true;
                 }
 
@@ -1282,16 +1201,12 @@
                 const vatRegistered = {{ vat_registered|yesno:"true,false" }};
                 const taxPercent = vatRegistered ? (parseFloat(document.querySelector('.tax-percent')?.value) || 0) : 0;
                 const taxAmount = taxableAmount * taxPercent / 100;
-                const taxAmountInput = document.getElementById('id_tax_amount');
-                if (taxAmountInput) taxAmountInput.value = taxAmount.toFixed(2);
+                document.getElementById('id_tax_amount').value = taxAmount.toFixed(2);
 
-                // Calculate total — always compute and set this even if the tax_amount
-                // field above were ever missing again, since Total must never be left
-                // blank just because a less-critical field couldn't be updated.
+                // Calculate total
                 const deliveryCharge = parseFloat(document.querySelector('.delivery-charge')?.value) || 0;
                 const total = taxableAmount + taxAmount + deliveryCharge;
-                const totalInputEl = document.getElementById('id_total');
-                if (totalInputEl) totalInputEl.value = total.toFixed(2);
+                document.getElementById('id_total').value = total.toFixed(2);
 
                 // ── Sidebar summary ──────────────────────────────────────
                 const itemCount = document.querySelectorAll('.item-form:not([style*="display: none"])').length;
@@ -1313,14 +1228,6 @@
                     cpAmount.value = total.toFixed(2);
                     syncIssueButton();
                 }
-            }
-
-            } catch (err) {
-                // Never leave the form stuck with disabled submit buttons and no
-                // explanation — surface the error and hand control back to the user.
-                console.error('Invoice form initialization failed:', err);
-                submitButtons.forEach(b => { b.disabled = false; });
-                if (addButton) addButton.disabled = false;
             }
         });
     </script>

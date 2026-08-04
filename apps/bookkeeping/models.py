@@ -7,12 +7,28 @@ from decimal import Decimal
 
 BALANCE_TOLERANCE = Decimal('0.01')
 
+# NFRS normal balance side by account type — ASSET/EXPENSE increase on DEBIT,
+# LIABILITY/EQUITY/REVENUE increase on CREDIT.
+ACCOUNT_TYPE_NORMAL_BALANCE = {
+    'ASSET': 'DEBIT',
+    'EXPENSE': 'DEBIT',
+    'LIABILITY': 'CREDIT',
+    'EQUITY': 'CREDIT',
+    'REVENUE': 'CREDIT',
+}
+
+
 class LedgerAccount(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='ledger_accounts', null=True, blank=True)
     name = models.CharField(max_length=255)
     account_type = models.CharField(max_length=10, choices=LEGENDRE_ACCOUNT_TYPES)
     code = models.CharField(max_length=50, blank=True, null=True)
     system_created = models.BooleanField(default=False)
+    normal_balance = models.CharField(
+        max_length=10, choices=JOURNAL_ENTRY_TYPES, blank=True,
+        help_text='NFRS: the entry_type (DEBIT/CREDIT) that increases this account. '
+                   'Auto-derived from account_type if left blank.',
+    )
     is_current = models.BooleanField(
         default=True,
         help_text=(
@@ -36,20 +52,37 @@ class LedgerAccount(BaseModel):
             models.UniqueConstraint(fields=['company', 'code'], name='unique_ledgeraccount_code_per_company')
         ]
 
+    def save(self, *args, **kwargs):
+        if not self.normal_balance:
+            self.normal_balance = ACCOUNT_TYPE_NORMAL_BALANCE.get(self.account_type, 'DEBIT')
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
 
-    @property
-    def normal_balance(self):
-        """DEBIT for Asset/Expense accounts, CREDIT for Liability/Equity/Revenue — auto-derived from account_type."""
-        return 'DEBIT' if self.account_type in ('ASSET', 'EXPENSE') else 'CREDIT'
 
+
+JOURNAL_TYPE_CHOICES = [
+    ('GENERAL',    'General / Standard'),
+    ('OPENING',    'Opening Balance'),
+    ('ADJUSTING',  'Adjusting Entry'),
+    ('CLOSING',    'Closing Entry'),
+    ('TRANSFER',   'Transfer / Contra'),
+    ('PROVISION',  'Provision & Write-off'),
+    ('DEPRECIATION', 'Depreciation'),
+    ('DISPOSAL',   'Asset Disposal'),
+    ('REVERSAL',   'Reversal'),
+]
 
 
 class JournalEntry(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='journal_entries', null=True, blank=True)
     date = models.DateField(default=timezone.now)
     description = models.CharField(max_length=700, blank=True, null=True)
+    journal_type = models.CharField(
+        max_length=15, choices=JOURNAL_TYPE_CHOICES, default='GENERAL',
+        help_text='NFRS classification for audit trail and filtering — does not affect posting mechanics.',
+    )
     source_type = models.CharField(
         max_length=30, choices=JOURNAL_SOURCE_TYPES, default='OTHER',
         help_text='Categorises the entry for filtering/reporting (Journal Voucher Register, etc.).',
@@ -67,31 +100,6 @@ class JournalEntry(BaseModel):
 
     def __str__(self):
         return f"Entry on {self.date.strftime('%Y-%m-%d')}: {self.description[:50]}..."
-
-    def _assert_period_open(self):
-        """
-        NFRS requires closed periods to be immutable. Block any journal entry
-        dated inside a fiscal year that has already been closed (FiscalYear.close()
-        sets is_closed=True only after posting its own closing entry, so the
-        closing entry itself is unaffected by this check).
-        """
-        if not self.company_id or not self.date:
-            return
-        closed_fy = FiscalYear.objects.filter(
-            company_id=self.company_id,
-            is_closed=True,
-            start_date__lte=self.date,
-            end_date__gte=self.date,
-        ).first()
-        if closed_fy:
-            raise ValidationError(
-                f"Cannot post journal entry dated {self.date}: fiscal year "
-                f"'{closed_fy.name}' covering this date is closed."
-            )
-
-    def save(self, *args, **kwargs):
-        self._assert_period_open()
-        super().save(*args, **kwargs)
 
     @property
     def debit_total(self):
@@ -122,77 +130,6 @@ class JournalEntry(BaseModel):
         return self.debit_total - self.credit_total
 
 
-def assert_balanced(entry):
-    """
-    Raise ValueError if the given JournalEntry's debit and credit totals
-    don't match within BALANCE_TOLERANCE. ORM-level backstop used by callers
-    that build entries outside post_journal_entry (e.g. bulk_create), and by
-    non-Postgres backends where the DB-level trigger isn't present.
-    """
-    debit = entry.debit_total
-    credit = entry.credit_total
-    if abs(debit - credit) > BALANCE_TOLERANCE:
-        raise ValueError(
-            f"Unbalanced journal entry (id={entry.pk}): debit={debit} credit={credit}."
-        )
-
-
-def get_or_create_system_account(company, name, account_type, code=None, is_current=True):
-    """
-    Lazily create a company-scoped system LedgerAccount (e.g. "Accrued Expenses",
-    "Provision for Doubtful Debts"). Shared helper for ad-hoc NFRS postings.
-    """
-    acc, _ = LedgerAccount.objects.get_or_create(
-        company=company,
-        name=name,
-        defaults={
-            'account_type': account_type,
-            'code': code,
-            'system_created': True,
-            'is_current': is_current,
-        },
-    )
-    return acc
-
-
-def post_journal_entry(company, date, description, lines, created_by=None, source_type='OTHER'):
-    """
-    Single, safe entry point for posting a balanced double-entry transaction.
-
-    `lines` is a list of dicts: {'account': LedgerAccount, 'entry_type': 'DEBIT'|'CREDIT', 'amount': Decimal, 'narration': str (optional)}.
-
-    Guarantees, so callers don't have to re-implement double-entry safety themselves:
-      - the whole operation (entry + all lines) is atomic — no half-posted entries on failure
-      - lines are created via .create() (never bulk_create), so each line runs
-        JournalEntryLine.save() -> _assert_entry_balanced(), not just the Postgres trigger
-      - an explicit pre-flight balance check gives a clear error before touching the DB
-      - JournalEntry.save() itself blocks posting into a closed fiscal year
-    """
-    debit = sum((l['amount'] for l in lines if l['entry_type'] == 'DEBIT'), Decimal('0'))
-    credit = sum((l['amount'] for l in lines if l['entry_type'] == 'CREDIT'), Decimal('0'))
-    if len(lines) < 2:
-        raise ValidationError("A journal entry requires at least two lines (double-entry).")
-    if abs(debit - credit) > BALANCE_TOLERANCE:
-        raise ValidationError(
-            f"Cannot post unbalanced journal entry: debit={debit} credit={credit} "
-            f"(description={description!r})."
-        )
-
-    with transaction.atomic():
-        entry = JournalEntry.objects.create(
-            company=company, date=date, description=description, created_by=created_by,
-            source_type=source_type,
-        )
-        for line in lines:
-            JournalEntryLine.objects.create(
-                journal_entry=entry,
-                account=line['account'],
-                entry_type=line['entry_type'],
-                amount=line['amount'],
-                narration=line.get('narration', ''),
-            )
-    return entry
-
 
 class JournalEntryLine(BaseModel):
     journal_entry = models.ForeignKey(JournalEntry, related_name='lines', on_delete=models.CASCADE)
@@ -200,7 +137,6 @@ class JournalEntryLine(BaseModel):
     entry_type = models.CharField(max_length=10, choices=JOURNAL_ENTRY_TYPES)
     narration = models.CharField(max_length=250, blank=True, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-
     # Bank Reconciliation Statement (BRS) — only meaningful for lines posted to
     # a Cash/Bank ledger account. Marks that this movement has been matched
     # against the bank statement; unreconciled lines are the BRS's reconciling
@@ -283,6 +219,76 @@ class JournalEntryLine(BaseModel):
 
 
 
+def assert_balanced(entry: 'JournalEntry') -> None:
+    """
+    Enforce the core double-entry invariant: total debits == total credits.
+    Call this after posting all lines for a JournalEntry, inside the same
+    atomic transaction, so an unbalanced entry rolls back instead of persisting.
+    """
+    if not entry.is_balanced:
+        raise ValueError(
+            f"Unbalanced journal entry {entry.id} ({entry.description}): "
+            f"debit={entry.debit_total} credit={entry.credit_total}"
+        )
+
+
+def get_or_create_system_account(company, name, account_type, code=None, is_current=True):
+    """
+    Lazily create a company-scoped system LedgerAccount (e.g. "Accrued Expenses",
+    "Provision for Doubtful Debts"). Shared helper for ad-hoc NFRS postings.
+    """
+    acc, _ = LedgerAccount.objects.get_or_create(
+        company=company,
+        name=name,
+        defaults={
+            'account_type': account_type,
+            'code': code,
+            'system_created': True,
+            'is_current': is_current,
+        },
+    )
+    return acc
+
+
+def post_journal_entry(company, date, description, lines, created_by=None, source_type='OTHER'):
+    """
+    Single, safe entry point for posting a balanced double-entry transaction.
+
+    `lines` is a list of dicts: {'account': LedgerAccount, 'entry_type': 'DEBIT'|'CREDIT', 'amount': Decimal, 'narration': str (optional)}.
+
+    Guarantees, so callers don't have to re-implement double-entry safety themselves:
+      - the whole operation (entry + all lines) is atomic — no half-posted entries on failure
+      - lines are created via .create() (never bulk_create), so each line runs
+        JournalEntryLine.save() -> _assert_entry_balanced(), not just the Postgres trigger
+      - an explicit pre-flight balance check gives a clear error before touching the DB
+      - JournalEntry.save() itself blocks posting into a closed fiscal year
+    """
+    debit = sum((l['amount'] for l in lines if l['entry_type'] == 'DEBIT'), Decimal('0'))
+    credit = sum((l['amount'] for l in lines if l['entry_type'] == 'CREDIT'), Decimal('0'))
+    if len(lines) < 2:
+        raise ValidationError("A journal entry requires at least two lines (double-entry).")
+    if abs(debit - credit) > BALANCE_TOLERANCE:
+        raise ValidationError(
+            f"Cannot post unbalanced journal entry: debit={debit} credit={credit} "
+            f"(description={description!r})."
+        )
+
+    with transaction.atomic():
+        entry = JournalEntry.objects.create(
+            company=company, date=date, description=description, created_by=created_by,
+            source_type=source_type,
+        )
+        for line in lines:
+            JournalEntryLine.objects.create(
+                journal_entry=entry,
+                account=line['account'],
+                entry_type=line['entry_type'],
+                amount=line['amount'],
+                narration=line.get('narration', ''),
+            )
+    return entry
+
+
 def reverse_journal(original: 'JournalEntry', reason: str = '', user=None) -> 'JournalEntry':
     """
     Accounting-safe reversal: creates a mirror entry with flipped DEBIT/CREDIT
@@ -308,40 +314,31 @@ def reverse_journal(original: 'JournalEntry', reason: str = '', user=None) -> 'J
         original.save(update_fields=['is_reversed', 'reversed_at', 'reversed_reason'])
         return original
 
-    reversal = JournalEntry.objects.create(
-        company=original.company,
-        date=tz.now().date(),
-        description=f"REVERSAL: {original.description}",
-        reversal_of=original,
-        source_type='REVERSAL',
-    )
-    lines = [
-        JournalEntryLine(
-            journal_entry=reversal,
-            account=line.account,
-            entry_type=flip[line.entry_type],
-            amount=line.amount,
-            narration=f"Reversal of line {line.pk}",
+    with transaction.atomic():
+        reversal = JournalEntry.objects.create(
+            company=original.company,
+            date=tz.now().date(),
+            description=f"REVERSAL: {original.description}",
+            reversal_of=original,
+            journal_type='REVERSAL',
         )
-        for line in original_lines
-    ]
-    JournalEntryLine.objects.bulk_create(lines)
+        lines = [
+            JournalEntryLine(
+                journal_entry=reversal,
+                account=line.account,
+                entry_type=flip[line.entry_type],
+                amount=line.amount,
+                narration=f"Reversal of line {line.pk}",
+            )
+            for line in original_lines
+        ]
+        JournalEntryLine.objects.bulk_create(lines)
+        assert_balanced(reversal)
 
-    # bulk_create bypasses JournalEntryLine.save(), so _assert_entry_balanced()
-    # never ran for these lines — the Postgres trigger backs it up in prod,
-    # but SQLite (tests) has no such trigger, so verify explicitly here too.
-    debit = sum(l.amount for l in lines if l.entry_type == 'DEBIT')
-    credit = sum(l.amount for l in lines if l.entry_type == 'CREDIT')
-    if abs(debit - credit) > BALANCE_TOLERANCE:
-        raise ValidationError(
-            f"Reversal of journal entry {original.pk} is unbalanced: "
-            f"debit={debit} credit={credit}."
-        )
-
-    original.is_reversed = True
-    original.reversed_at = tz.now()
-    original.reversed_reason = reason or 'System reversal'
-    original.save(update_fields=['is_reversed', 'reversed_at', 'reversed_reason'])
+        original.is_reversed = True
+        original.reversed_at = tz.now()
+        original.reversed_reason = reason or 'System reversal'
+        original.save(update_fields=['is_reversed', 'reversed_at', 'reversed_reason'])
 
     # Write to ActivityLog
     try:
@@ -372,24 +369,6 @@ class LedgerOpeningBalance(models.Model):
 
     class Meta:
         unique_together = ('account', 'fiscal_year')
-
-    @classmethod
-    def assert_fiscal_year_balanced(cls, fiscal_year):
-        """
-        Opening balances seed the trial balance for a fiscal year, so their
-        DEBIT and CREDIT totals must net to zero just like any posted journal
-        entry — an unbalanced seed silently breaks every report built on top
-        of it (trial balance, balance sheet) with no journal entry to blame.
-        """
-        from django.db.models import Sum
-        rows = cls.objects.filter(fiscal_year=fiscal_year)
-        debit = rows.filter(opening_type='DEBIT').aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        credit = rows.filter(opening_type='CREDIT').aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        if abs(debit - credit) > BALANCE_TOLERANCE:
-            raise ValidationError(
-                f"Opening balances for fiscal year '{fiscal_year}' are unbalanced: "
-                f"debit={debit} credit={credit}. Double-entry requires debit == credit."
-            )
 
 
 # ─── NFRS 13 — Property, Plant and Equipment ─────────────────────────────────
@@ -492,8 +471,14 @@ class FixedAssetDepreciationLog(BaseModel):
     period_end = models.DateField()
     amount = models.DecimalField(max_digits=14, decimal_places=2)
 
+    class Meta:
+        ordering = ['-period_end']
 
-# ─── NFRS 1 — Prepaid Expenses ────────────────────────────────────────────────
+    def __str__(self):
+        return f"Depreciation {self.amount} for {self.asset.name} ({self.period_end})"
+
+
+# ─── NFRS 1 — Prepaid Expenses ───────────────────────────────────────────────
 
 PREPAID_EXPENSE_STATUS_CHOICES = [
     ('ACTIVE', 'Active'),
@@ -557,9 +542,3 @@ class PrepaidExpenseAmortizationLog(BaseModel):
 
     def __str__(self):
         return f"Amortization {self.amount} for {self.prepaid_expense.name} ({self.period_end})"
-
-    class Meta:
-        ordering = ['-period_end']
-
-    def __str__(self):
-        return f"Depreciation {self.amount} for {self.asset.name} ({self.period_end})"

@@ -34,7 +34,7 @@ class PurchaseOrderForm(FiscalYearDateMixin, forms.ModelForm):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-        if not self.instance.pk:
+        if self.instance._state.adding:  # instance.pk is always set (UUID default) — check adding instead
             self.fields['status'].initial = 'SENT'
 
         if self.request and hasattr(self.request.user, 'company'):

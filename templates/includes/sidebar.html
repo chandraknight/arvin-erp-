@@ -418,12 +418,8 @@
                     ><i class="fas fa-shopping-bag nav-icon"></i>Online Orders</a>
                 <a href="{% url 'ecom:admin_ecom_inventory' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-warehouse nav-icon"></i>Ecom Inventory</a>
-                <a href="{% url 'ecom:admin_package_list' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-box-open nav-icon"></i>Packages &amp; Bundles</a>
                 <a href="{% url 'ecom:admin_category_images' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-images nav-icon"></i>Category Images</a>
-                <a href="{% url 'ecom:admin_package_images' %}" class="nav-link" @click="sidebarOpen = false"
-                    ><i class="fas fa-image nav-icon"></i>Package Images</a>
                 <a href="{% url 'ecom:media_library' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-photo-video nav-icon"></i>Media Manager</a>
                 <a href="{% url 'ecom:cms_dashboard' %}" class="nav-link" @click="sidebarOpen = false"
@@ -620,6 +616,11 @@
                     ><i class="fas fa-calendar-alt nav-icon"></i>Fiscal Years</a>
                 {% endif %}
                 {% endif %}
+
+                {% if user.is_company_admin or user|group_has_perm:'restaurant.view_printerstation' %}
+                <a href="{% url 'restaurant:printer_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-print nav-icon"></i>Printer Settings</a>
+                {% endif %}
             </div>
         </div>
         {% endif %}
@@ -629,7 +630,7 @@
             <a href="{% url 'accounts:password_change' %}" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition" @click="sidebarOpen = false">
                 <i class="fas fa-key nav-icon"></i>Change Password
             </a>
-            {% if user.is_superuser or user.is_company_admin %}
+            {% if user.is_superuser %}
             <a href="{% url 'backup:backup_list' %}" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition" @click="sidebarOpen = false">
                 <i class="fas fa-archive nav-icon"></i>Backup & Restore
             </a>

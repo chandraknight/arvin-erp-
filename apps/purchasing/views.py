@@ -108,10 +108,12 @@ def receive_purchase_order(request, pk):
                             # Convert purchase units → sale units (e.g. 5 KG → 5000 gram, 3 packs of 12 → 36 pcs)
                             sale_qty = int(Decimal(str(item.quantity)) * factor)
                             ProductStock.objects.get_or_create(product=item.product)
-                            # select_for_update + F() prevents duplicate stock from concurrent receives
-                            ProductStock.objects.select_for_update().filter(
-                                product=item.product
-                            ).update(stock=F('stock') + sale_qty)
+                            # select_for_update locks the row so the pre-receipt stock read below
+                            # (for weighted-average costing) can't race with a concurrent receive.
+                            existing_stock = ProductStock.objects.select_for_update().get(product=item.product)
+                            stock_before = Decimal(existing_stock.stock)
+                            existing_stock.stock = F('stock') + sale_qty
+                            existing_stock.save(update_fields=['stock'])
 
                             StockTransaction.objects.create(
                                 product=item.product,
@@ -122,14 +124,23 @@ def receive_purchase_order(request, pk):
                             )
 
                             if item.price and item.price > 0:
-                                # item.price is per purchase unit (e.g. Rs/kg); cost_price is
-                                # consumed everywhere (valuation, COGS, BOM costing) as a
-                                # per-sale-unit figure, so it must be converted the same way
-                                # stock quantity is above — otherwise it's overstated by
-                                # exactly conversion_factor for any item using unit conversion.
-                                cost_per_sale_unit = (Decimal(str(item.price)) / factor).quantize(Decimal('0.0001'))
-                                item.product.cost_price = cost_per_sale_unit
-                                item.product.save(update_fields=['cost_price'])
+                                # item.price is cost per PURCHASE unit — convert to cost per SALE
+                                # unit (the unit ProductStock.stock and cost_price are expressed in).
+                                new_unit_cost = Decimal(str(item.price)) / factor
+                                if item.product.cost_method == 'FIFO':
+                                    from apps.products.services.fifo_service import create_lot
+                                    create_lot(
+                                        item.product, sale_qty, new_unit_cost,
+                                        source_reference=purchase_order.purchase_order_number,
+                                    )
+                                elif item.product.cost_method == 'WA' and stock_before > 0:
+                                    old_value = stock_before * Decimal(str(item.product.cost_price))
+                                    received_value = Decimal(sale_qty) * new_unit_cost
+                                    item.product.cost_price = (old_value + received_value) / (stock_before + Decimal(sale_qty))
+                                    item.product.save(update_fields=['cost_price'])
+                                else:
+                                    item.product.cost_price = new_unit_cost
+                                    item.product.save(update_fields=['cost_price'])
 
                 messages.success(request, f"Purchase Order {purchase_order.purchase_order_number} marked as received and inventory updated.")
                 return redirect('purchasing:purchase_order_detail', pk=pk)

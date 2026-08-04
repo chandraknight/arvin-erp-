@@ -326,7 +326,7 @@ def blog_list(request):
 def blog_create(request):
     company = _get_company(request)
     if request.method == 'POST':
-        slug = request.POST.get('slug', '').strip() or slugify(request.POST.get('title', ''))
+        slug = (request.POST.get('slug', '').strip() or slugify(request.POST.get('title', '')))[:255]
         post = BlogPost(
             company=company,
             title=request.POST.get('title', '').strip(),
@@ -354,7 +354,7 @@ def blog_edit(request, post_id):
     post = get_object_or_404(BlogPost, id=post_id, company=company)
     if request.method == 'POST':
         post.title = request.POST.get('title', '').strip()
-        post.slug = request.POST.get('slug', '').strip() or slugify(post.title)
+        post.slug = (request.POST.get('slug', '').strip() or slugify(post.title))[:255]
         post.excerpt = request.POST.get('excerpt', '').strip()
         post.content = request.POST.get('content', '').strip()
         post.author_name = request.POST.get('author_name', '').strip()

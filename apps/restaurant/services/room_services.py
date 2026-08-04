@@ -72,7 +72,7 @@ def check_in_room(booking: RoomBooking, user=None) -> RoomBooking:
 @transaction.atomic
 def check_out_room(booking: RoomBooking, user=None) -> 'billing.Invoice':
     from apps.billing.models import Invoice, InvoiceItem
-    from apps.billing.services.invoice_service import generate_invoice_number
+    from apps.billing.services.invoice_service import generate_invoice_number, vat_invoice_fields
     from apps.company.services.company_services import setup_default_ledger_accounts
 
     if booking.status != 'CHECKED_IN':
@@ -81,13 +81,14 @@ def check_out_room(booking: RoomBooking, user=None) -> 'billing.Invoice':
     company = booking.company
     setup_default_ledger_accounts(company)
 
-    invoice_number, seq, fy = generate_invoice_number(company.id)
+    vat_fields = vat_invoice_fields(company)
+    invoice_number, seq, fy = generate_invoice_number(company.id, doc_type=vat_fields['doc_type'])
 
     # Room accommodation line
     subtotal = booking.room_charge_total
     extra = booking.extra_charge_total
     grand = booking.grand_total
-    tax_rate = company.tax_rate
+    tax_rate = vat_fields['tax_percent']
     tax_amount = (grand * tax_rate / Decimal('100')).quantize(Decimal('0.01'))
     total = grand + tax_amount
 
@@ -104,7 +105,7 @@ def check_out_room(booking: RoomBooking, user=None) -> 'billing.Invoice':
         total=total,
         outstanding_balance=total,
         tax_percent=tax_rate,
-        status='ISSUED',
+        status=vat_fields['status'],
         created_by=user,
     )
 

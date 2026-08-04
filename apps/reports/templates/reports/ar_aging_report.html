@@ -39,6 +39,7 @@
                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">31-60 Days</th>
                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">61-90 Days</th>
                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Over 90 Days</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ECL Provision</th>
                      <th scope="col" class="relative px-6 py-3"><span class="sr-only">View Invoice</span></th>
                 </tr>
             </thead>
@@ -55,10 +56,10 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">NPR {{ aging_data.days_31_60|floatformat:"2"|default:"0.00" }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">NPR {{ aging_data.days_61_90|floatformat:"2"|default:"0.00" }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">NPR {{ aging_data.days_over_90|floatformat:"2"|default:"0.00" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 text-right">NPR {{ aging_data.ecl_provision|floatformat:"2"|default:"0.00" }}</td>
                          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             {% if aging_data.invoice_id %}
                                 <a href="{% url 'billing:view_invoice_detail' pk=aging_data.invoice_id %}" class="text-blue-600 hover:text-blue-900">View</a>
-                                <a href="{% url 'billing:write_off_bad_debt' pk=aging_data.invoice_id %}" class="text-red-600 hover:text-red-900 ml-3">Write Off</a>
                              {% else %}
                                  N/A
                              {% endif %}
@@ -66,21 +67,26 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="11" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No outstanding invoices found for aging analysis.</td>
+                        <td colspan="12" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No outstanding invoices found for aging analysis.</td>
                     </tr>
                 {% endfor %}
-                {# Optional: Add a row for totals #}
-                {# <tr> #}
-                {#     <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">Total Outstanding:</td> #}
-                {#     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">NPR {{ total_outstanding|floatformat:"2"|default:"0.00" }}</td> #}
-                {#     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">NPR {{ total_current|floatformat:"2"|default:"0.00" }}</td> #}
-                {#     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">NPR {{ total_1_30|floatformat:"2"|default:"0.00" }}</td> #}
-                {#     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">NPR {{ total_31_60|floatformat:"2"|default:"0.00" }}</td> #}
-                {#     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">NPR {{ total_61_90|floatformat:"2"|default:"0.00" }}</td> #}
-                {#     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">NPR {{ total_over_90|floatformat:"2"|default:"0.00" }}</td> #}
-                {#     <td></td> #}
-                {# </tr> #}
             </tbody>
+            {% if ar_aging_data %}
+            <tfoot class="bg-gray-50 font-semibold">
+                <tr>
+                    <td colspan="4" class="px-6 py-3 text-sm text-gray-700 text-right">Total</td>
+                    <td class="px-6 py-3 text-sm text-gray-900 text-right">NPR {{ total_outstanding|floatformat:"2" }}</td>
+                    <td colspan="5"></td>
+                    <td class="px-6 py-3 text-sm text-red-600 text-right">NPR {{ total_ecl_provision|floatformat:"2" }}</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="px-6 py-3 text-sm text-gray-700 text-right">Net Receivables (NFRS 9)</td>
+                    <td colspan="6" class="px-6 py-3 text-sm text-indigo-700 text-right">NPR {{ net_receivables|floatformat:"2" }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+            {% endif %}
         </table>
     </div>
 

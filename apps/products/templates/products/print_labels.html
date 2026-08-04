@@ -203,6 +203,7 @@
     .label-barcode svg { display: block; margin: 0 auto; width: calc(var(--label-w) - 3mm); max-width: 100%; height: 9mm; }
     .label-barcode-val { font-size: 6pt; color: #555; letter-spacing: 0.3px; margin-bottom: 0.5mm; }
     .label-price { font-size: 8pt; font-weight: bold; color: #111; }
+    .label-sku, .label-hscode { font-size: 6pt; color: #555; text-align: center; }
     .no-barcode {
       font-size: 6pt; color: #aaa;
       border: 1px dashed #ddd; padding: 0.5mm 2mm;
@@ -312,6 +313,26 @@
     </div>
   </div>
 
+  <div class="ps-section-title">Label Content</div>
+  <div id="ps-fields-grid">
+    <label class="ps-checkbox">
+      <input type="checkbox" id="show-price-input" checked>
+      Price
+    </label>
+    <label class="ps-checkbox">
+      <input type="checkbox" id="show-barcode-input" checked>
+      Barcode
+    </label>
+    <label class="ps-checkbox">
+      <input type="checkbox" id="show-sku-input">
+      SKU
+    </label>
+    <label class="ps-checkbox">
+      <input type="checkbox" id="show-hscode-input">
+      HS Code
+    </label>
+  </div>
+
   <div id="ps-preview-wrap">
     <div class="ps-preview-label">Preview</div>
     <div id="ps-preview-box">
@@ -326,15 +347,25 @@
   {% for label in labels %}
   <div class="label">
     <div class="label-name">{{ label.name }}</div>
-    {% if label.barcode %}
-    <div class="label-barcode">
-      <svg class="barcode" data-val="{{ label.barcode }}"></svg>
-    </div>
-    <div class="label-barcode-val">{{ label.barcode }}</div>
-    {% else %}
-    <div class="no-barcode">NO BARCODE</div>
+    {% if not label_setting or label_setting.show_sku %}
+    {% if label.sku %}<div class="label-sku">SKU: {{ label.sku }}</div>{% endif %}
     {% endif %}
+    {% if not label_setting or label_setting.show_hscode %}
+    {% if label.hscode %}<div class="label-hscode">HS: {{ label.hscode }}</div>{% endif %}
+    {% endif %}
+    {% if not label_setting or label_setting.show_barcode %}
+      {% if label.barcode %}
+      <div class="label-barcode">
+        <svg class="barcode" data-val="{{ label.barcode }}"></svg>
+      </div>
+      <div class="label-barcode-val">{{ label.barcode }}</div>
+      {% else %}
+      <div class="no-barcode">NO BARCODE</div>
+      {% endif %}
+    {% endif %}
+    {% if not label_setting or label_setting.show_price %}
     <div class="label-price">Rs {{ label.price }}</div>
+    {% endif %}
   </div>
   {% empty %}
   <p style="padding:20mm;color:#666;">No labels to print.</p>
@@ -397,6 +428,10 @@
   var padBInput = document.getElementById('pad-b-input');
   var padLInput = document.getElementById('pad-l-input');
   var continuousRollInput = document.getElementById('continuous-roll-input');
+  var showPriceInput = document.getElementById('show-price-input');
+  var showBarcodeInput = document.getElementById('show-barcode-input');
+  var showSkuInput = document.getElementById('show-sku-input');
+  var showHscodeInput = document.getElementById('show-hscode-input');
 
   var previewBarcodeRendered = false;
 
@@ -436,7 +471,9 @@
       cols: cols, rows: rows, topMargin: topMargin, leftMargin: leftMargin,
       colGap: colGap, rowGap: rowGap,
       padT: padT, padR: padR, padB: padB, padL: padL,
-      continuousRoll: continuousRollInput.checked
+      continuousRoll: continuousRollInput.checked,
+      showPrice: showPriceInput.checked, showBarcode: showBarcodeInput.checked,
+      showSku: showSkuInput.checked, showHscode: showHscodeInput.checked
     }));
 
     updatePageSize();
@@ -472,6 +509,10 @@
     if (saved.padB != null) padBInput.value = saved.padB;
     if (saved.padL != null) padLInput.value = saved.padL;
     if (saved.continuousRoll != null) continuousRollInput.checked = saved.continuousRoll;
+    if (saved.showPrice != null) showPriceInput.checked = saved.showPrice;
+    if (saved.showBarcode != null) showBarcodeInput.checked = saved.showBarcode;
+    if (saved.showSku != null) showSkuInput.checked = saved.showSku;
+    if (saved.showHscode != null) showHscodeInput.checked = saved.showHscode;
   }
 
   (function restoreLayout() {
@@ -513,6 +554,10 @@
       padR: parseFloat(padRInput.value) || 0,
       padB: parseFloat(padBInput.value) || 0,
       padL: parseFloat(padLInput.value) || 0,
+      showPrice: showPriceInput.checked,
+      showBarcode: showBarcodeInput.checked,
+      showSku: showSkuInput.checked,
+      showHscode: showHscodeInput.checked,
     };
     fetch(SETTING_URL, {
       method: 'POST',
@@ -533,7 +578,9 @@
    padTInput, padRInput, padBInput, padLInput].forEach(function(el) {
     el.addEventListener('input', applyAndPersist);
   });
-  continuousRollInput.addEventListener('change', applyAndPersist);
+  [continuousRollInput, showPriceInput, showBarcodeInput, showSkuInput, showHscodeInput].forEach(function(el) {
+    el.addEventListener('change', applyAndPersist);
+  });
 
   document.querySelectorAll('svg.barcode').forEach(function(el) {
     var val = el.getAttribute('data-val');

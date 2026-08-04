@@ -115,6 +115,10 @@
                 {% if user.is_superuser %}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:flex">
+                        <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full">PAN Number</span>
+                        {{ form.pan_number|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                    </div>
+                    <div class="sm:flex">
                         <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full">Tax Rate %</span>
                         {{ form.tax_rate|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
                     </div>
@@ -131,7 +135,7 @@
                     <label class="flex items-center gap-2 cursor-pointer">
                         {{ form.vat_registered }}
                         <span class="text-sm font-medium text-gray-700">VAT Registered</span>
-                        <span class="text-xs text-gray-400">(PAN/VAT registered)</span>
+                        <span class="text-xs text-gray-400">(charges VAT — leave unchecked for PAN-only firms)</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer">
                         {{ form.vat_inclusive }}
@@ -143,6 +147,10 @@
                 <div class="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
                     <p class="text-xs text-gray-500 mb-2">These settings are controlled by your system administrator and cannot be changed here.</p>
                     <div class="flex flex-wrap gap-6">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-gray-600">PAN Number:</span>
+                            <span class="text-sm text-gray-800 font-mono">{{ company.pan_number|default:"—" }}</span>
+                        </div>
                         <div class="flex items-center gap-2">
                             <span class="text-sm font-medium text-gray-600">VAT Number:</span>
                             <span class="text-sm text-gray-800 font-mono">{{ company.vat_number|default:"—" }}</span>
@@ -314,6 +322,11 @@
                             {{ form.pos_receipt_print_format|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
                         </div>
                     </div>
+                    <div class="sm:flex">
+                        <span class="flex items-center px-4 py-2 bg-white text-gray-700 font-semibold border border-gray-300 sm:border-r-0 sm:w-32 w-full text-sm">Footer Text</span>
+                        {{ form.receipt_footer_text|add_class:"w-full border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-600" }}
+                    </div>
+                    <p class="text-xs text-gray-500">{{ form.receipt_footer_text.help_text }}</p>
                 </div>
             </div>
         </div>

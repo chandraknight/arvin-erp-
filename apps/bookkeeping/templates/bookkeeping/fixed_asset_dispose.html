@@ -8,7 +8,9 @@
     </div>
     <div class="p-6 space-y-4">
       <div class="bg-orange-50 border border-orange-200 rounded p-3 text-sm text-orange-700">
-        This will mark the asset as <strong>DISPOSED</strong>. Depreciation will no longer be posted for this asset.
+        This will mark the asset as <strong>DISPOSED</strong>, derecognize its cost and accumulated
+        depreciation from the ledger, and post the resulting gain/loss on disposal (NFRS 13 / IAS 16).
+        Depreciation will no longer be posted for this asset.
       </div>
       <div class="text-sm text-gray-700 space-y-1">
         <p><strong>Asset:</strong> {{ asset.name }}</p>
@@ -23,6 +25,12 @@
           <input type="text" name="disposal_date" required
                  class="nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm"
                  placeholder="YYYY-MM-DD" autocomplete="off" readonly>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Sale Proceeds</label>
+          <input type="number" name="sale_proceeds" step="0.01" min="0" value="0"
+                 class="w-full border border-gray-300 px-3 py-2 text-sm">
+          <p class="text-xs text-gray-500 mt-1">Leave 0 if scrapped with no proceeds — the full NBV is recognized as a loss.</p>
         </div>
         <div class="flex gap-3">
           <button type="submit" class="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold">

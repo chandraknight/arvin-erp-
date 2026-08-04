@@ -114,11 +114,10 @@ class InvoiceForm(FiscalYearDateMixin, forms.ModelForm):
 
             # Tax: only pre-fill if company is VAT registered
             company = self.request.user.company
-            if not self.instance.pk:  # create only
-                if company and company.vat_registered:
-                    self.fields['tax_percent'].initial = company.tax_rate
-                else:
-                    self.fields['tax_percent'].initial = 0
+            if self.instance._state.adding:  # create only — instance.pk is always set (UUID default)
+                tax_default = company.tax_rate if company and company.vat_registered else 0
+                self.fields['tax_percent'].initial = tax_default
+                self.initial['tax_percent'] = tax_default
 
         # Inject fiscal year — validates all NepaliDateFields against FY range
         self.inject_fiscal_year(self.request)

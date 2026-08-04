@@ -5,11 +5,28 @@ import random
 import string
 
 import nepali_datetime
+from django.db import transaction
 from django.db.models import Max
 
 
 from apps.company.models import Company, FiscalYear
 from apps.utils.constant import *
+
+def vat_invoice_fields(company):
+    """
+    Single source of truth for how a company's VAT-registration status maps
+    onto an invoice's doc_type/status/tax_percent — every place that creates
+    an invoice from an order/booking (POS, restaurant, orders, tours) should
+    call this instead of re-deriving `is_vat` locally.
+    """
+    is_vat = bool(company and getattr(company, 'vat_registered', False))
+    return {
+        'is_vat': is_vat,
+        'doc_type': 'INV' if is_vat else 'ORD',
+        'status': 'ISSUED' if is_vat else 'ESTIMATE',
+        'tax_percent': company.tax_rate if is_vat else Decimal('0.00'),
+    }
+
 
 def calculate_subtotal(invoice):
     """Calculate subtotal as sum of item totals after item-level discounts."""
@@ -81,21 +98,25 @@ def generate_invoice_number(company_id, doc_type: str = "INV") -> tuple:
     prefix = f"{company_prefix}-{doc_type}-{fiscal_year_name}-"
 
     from apps.billing.models import Invoice
-    # Scope sequence to current fiscal year so numbering resets each year
+    # Scope sequence to current fiscal year so numbering resets each year.
+    # select_for_update() serializes concurrent callers on the same
+    # company/fiscal-year row set — without it, two simultaneous invoice
+    # creations can both read the same max_seq and generate the same number.
     fy_filter = {'fiscal_year': fiscal_year} if fiscal_year else {'fiscal_year__isnull': True}
-    last_seq = Invoice.objects.filter(
-        company_id=company_id,
-        **fy_filter,
-    ).aggregate(max_seq=Max('sequence_number'))
+    with transaction.atomic():
+        last_seq = Invoice.objects.select_for_update().filter(
+            company_id=company_id,
+            **fy_filter,
+        ).aggregate(max_seq=Max('sequence_number'))
 
-    sequence = (last_seq['max_seq'] or 0) + 1
+        sequence = (last_seq['max_seq'] or 0) + 1
 
-    invoice_number = f"{prefix}{sequence:04d}"
-    while Invoice.objects.filter(
-        company_id=company_id, fiscal_year=fiscal_year, sequence_number=sequence
-    ).exists() or Invoice.objects.filter(invoice_number=invoice_number).exists():
-        sequence += 1
         invoice_number = f"{prefix}{sequence:04d}"
+        while Invoice.objects.filter(
+            company_id=company_id, fiscal_year=fiscal_year, sequence_number=sequence
+        ).exists() or Invoice.objects.filter(invoice_number=invoice_number).exists():
+            sequence += 1
+            invoice_number = f"{prefix}{sequence:04d}"
 
     return invoice_number, sequence, fiscal_year
 

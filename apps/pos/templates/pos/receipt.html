@@ -102,6 +102,9 @@
       <div class="text-center mt-4 text-muted small">
         <p>Thank you for your business!</p>
         <p>{{ sale.created_at|date:"F j, Y" }}</p>
+        {% if sale.company.receipt_footer_text %}
+        <p>{{ sale.company.receipt_footer_text }}</p>
+        {% endif %}
       </div>
     </div>
 

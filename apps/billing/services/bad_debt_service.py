@@ -12,10 +12,25 @@ from django.db import transaction
 from django.db.models import F
 
 
+def _get_or_create_account(company, name, account_type, code=None):
+    from apps.bookkeeping.models import LedgerAccount
+    acc, _ = LedgerAccount.objects.get_or_create(
+        company=company,
+        name=name,
+        defaults={
+            'account_type': account_type,
+            'code': code,
+            'system_created': True,
+            'is_current': account_type not in ('ASSET',),
+        },
+    )
+    return acc
+
+
 @transaction.atomic
 def write_off_bad_debt(invoice, amount, reason, user):
     from apps.billing.models import Invoice, BadDebtWriteOff
-    from apps.bookkeeping.models import post_journal_entry, get_or_create_system_account
+    from apps.bookkeeping.models import JournalEntry, JournalEntryLine, assert_balanced
 
     if invoice.is_written_off:
         raise ValidationError("This invoice has already been written off.")
@@ -31,23 +46,26 @@ def write_off_bad_debt(invoice, amount, reason, user):
         raise ValidationError("Invoice has no linked customer receivable account to credit.")
 
     company = invoice.company
-    bad_debt_expense_acc = get_or_create_system_account(
+    bad_debt_expense_acc = _get_or_create_account(
         company, 'Bad Debt Expense', 'EXPENSE', code='5930'
     )
 
-    journal_entry = post_journal_entry(
+    journal_entry = JournalEntry.objects.create(
         company=company,
         date=invoice.transaction_date,
         description=f"Bad debt write-off — Invoice {invoice.invoice_number} ({reason[:100]})",
-        lines=[
-            {'account': bad_debt_expense_acc, 'entry_type': 'DEBIT', 'amount': amount,
-             'narration': f'Write-off of Invoice {invoice.invoice_number}'},
-            {'account': invoice.customer.related_ledger_account, 'entry_type': 'CREDIT', 'amount': amount,
-             'narration': f'Write-off of Invoice {invoice.invoice_number}'},
-        ],
         created_by=user,
-        source_type='BAD_DEBT_WRITEOFF',
+        journal_type='PROVISION',
     )
+    JournalEntryLine.objects.create(
+        journal_entry=journal_entry, account=bad_debt_expense_acc, entry_type='DEBIT',
+        amount=amount, narration=f'Write-off of Invoice {invoice.invoice_number}',
+    )
+    JournalEntryLine.objects.create(
+        journal_entry=journal_entry, account=invoice.customer.related_ledger_account, entry_type='CREDIT',
+        amount=amount, narration=f'Write-off of Invoice {invoice.invoice_number}',
+    )
+    assert_balanced(journal_entry)
 
     Invoice.objects.filter(pk=invoice.pk).update(
         outstanding_balance=F('outstanding_balance') - amount,

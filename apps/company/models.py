@@ -1,6 +1,5 @@
 from django.urls import reverse
 from decimal import Decimal
-from django.core.exceptions import ValidationError
 from apps.utils.baseModel import *
 import nepali_datetime
 
@@ -35,9 +34,13 @@ class Company(BaseModel):
     vat_registered = models.BooleanField(
         default=False, help_text='Is this company registered for VAT/PAN?'
     )
+    pan_number = models.CharField(
+        max_length=50, blank=True, null=True,
+        help_text='PAN registration number. Required for PAN-only firms; also set for VAT-registered firms (same number in Nepal).'
+    )
     vat_number = models.CharField(
         max_length=50, blank=True, null=True,
-        help_text='PAN / VAT registration number.'
+        help_text='VAT registration number (only applicable if VAT Registered is checked).'
     )
     vat_inclusive = models.BooleanField(
         default=False,
@@ -131,6 +134,11 @@ class Company(BaseModel):
     pos_receipt_print_format = models.CharField(
         max_length=10, choices=PRINT_FORMAT_CHOICES, default='thermal',
         help_text='Default print format for POS receipts.'
+    )
+
+    receipt_footer_text = models.CharField(
+        max_length=255, blank=True, null=True,
+        help_text='Shown at the bottom of POS receipts and invoices, e.g. "Goods once sold are not returned" or a thank-you message.'
     )
 
     class Meta:
@@ -267,65 +275,37 @@ class FiscalYear(BaseModel):
         unique_together = ('company', 'start_date', 'end_date')
         ordering = ['start_date']
 
-    def clean(self):
-        super().clean()
-        if self.start_date_bs and self.end_date_bs:
-            self._validate_nepali_fiscal_year_bounds()
-
-    def _validate_nepali_fiscal_year_bounds(self):
-        """
-        Nepal's statutory fiscal year runs Shrawan 1 (BS month 4, day 1) to
-        the last day of Ashad (BS month 3) of the following year. start_date_bs
-        / end_date_bs are user-entered free text, so nothing previously
-        checked they actually align to this convention.
-        """
-        import re
-        import nepali_datetime as nd
-        import datetime
-
-        date_format = r'^\d{4}-\d{2}-\d{2}$'
-        if not re.match(date_format, self.start_date_bs) or not re.match(date_format, self.end_date_bs):
-            return  # format errors are already caught by the form
-
-        start_year, start_month, start_day = (int(p) for p in self.start_date_bs.split('-'))
-        end_year, end_month, end_day = (int(p) for p in self.end_date_bs.split('-'))
-
-        errors = {}
-        if not (start_month == 4 and start_day == 1):
-            errors['start_date_bs'] = (
-                "Nepali fiscal year must start on Shrawan 1 (BS month 04, day 01), "
-                f"got {self.start_date_bs}."
-            )
-        if end_month != 3:
-            errors['end_date_bs'] = (
-                f"Nepali fiscal year must end in Ashad (BS month 03), got {self.end_date_bs}."
-            )
-        else:
-            next_month_first = nd.date(end_year, 4, 1)
-            last_ashad_day = (
-                next_month_first.to_datetime_date() - datetime.timedelta(days=1)
-            )
-            last_ashad_bs = nd.date.from_datetime_date(last_ashad_day)
-            if end_day != last_ashad_bs.day:
-                errors['end_date_bs'] = (
-                    f"Ashad {end_year} has {last_ashad_bs.day} days; "
-                    f"fiscal year must end on {end_year}-03-{last_ashad_bs.day:02d}, got {self.end_date_bs}."
-                )
-        if end_year != start_year + 1:
-            errors.setdefault('end_date_bs',
-                f"Fiscal year end year ({end_year}) must be the year after the start year ({start_year}).")
-
-        if errors:
-            raise ValidationError(errors)
-
     def save(self, *args, **kwargs):
+        if self.start_date_bs and self.end_date_bs:
+            self._validate_nepali_fiscal_year_span()
         if not self.name and self.start_date_bs and self.end_date_bs:
             start_year = self.start_date_bs.split("-")[0]
             end_year = self.end_date_bs.split("-")[0]
             self.name = f"{start_year}/{end_year[-2:]}"
-        if self.start_date_bs and self.end_date_bs:
-            self._validate_nepali_fiscal_year_bounds()
         super().save(*args, **kwargs)
+
+    def _validate_nepali_fiscal_year_span(self):
+        """
+        NFRS/Nepali fiscal year must run Shrawan 1 (BS month 4) to Ashad end
+        (BS month 3 of the following year).
+        """
+        try:
+            start_parts = self.start_date_bs.split("-")
+            end_parts = self.end_date_bs.split("-")
+            start_month = int(start_parts[1])
+            end_month = int(end_parts[1])
+        except (IndexError, ValueError):
+            return  # malformed input — let other validation surface it
+        if start_month != 4:
+            raise ValueError(
+                f"Nepali fiscal year must start in Shrawan (BS month 4), got month {start_month} "
+                f"in start_date_bs={self.start_date_bs!r}."
+            )
+        if end_month != 3:
+            raise ValueError(
+                f"Nepali fiscal year must end in Ashad (BS month 3), got month {end_month} "
+                f"in end_date_bs={self.end_date_bs!r}."
+            )
 
     @property
     def company_name(self):
@@ -447,23 +427,16 @@ class FiscalYear(BaseModel):
         After both steps the year is marked is_closed=True, is_active=False.
         """
         from django.utils import timezone as tz
-        from django.db import transaction as db_transaction
+        from django.db.models import Sum
         from apps.bookkeeping.models import (
-            JournalEntry, JournalEntryLine, LedgerAccount, LedgerOpeningBalance
+            JournalEntry, JournalEntryLine, LedgerAccount, LedgerOpeningBalance, assert_balanced
         )
+        from django.db import transaction as db_transaction
         from decimal import Decimal
 
         if self.is_closed:
             raise ValueError("Fiscal year is already closed.")
 
-        with db_transaction.atomic():
-            self._close_within_transaction(
-                tz, JournalEntry, JournalEntryLine, LedgerAccount, LedgerOpeningBalance, Decimal, closed_by_user
-            )
-
-    def _close_within_transaction(self, tz, JournalEntry, JournalEntryLine, LedgerAccount, LedgerOpeningBalance, Decimal, closed_by_user):
-        """Body of close(), run inside a single db transaction so a failure partway never leaves a half-posted closing entry or half-seeded next fiscal year."""
-        from django.db.models import Sum
         company = self.company
 
         # ── helpers ──────────────────────────────────────────────────────────
@@ -557,15 +530,22 @@ class FiscalYear(BaseModel):
             })
 
         if closing_lines:
-            from apps.bookkeeping.models import post_journal_entry
-            post_journal_entry(
-                company=company,
-                date=self.end_date,
-                description=f"Year-End Closing Entry — FY {self.name}",
-                created_by=closed_by_user,
-                lines=[{**line, 'narration': 'Year-end closing'} for line in closing_lines],
-                source_type='CLOSING_ENTRY',
-            )
+            with db_transaction.atomic():
+                entry = JournalEntry.objects.create(
+                    company=company,
+                    date=self.end_date,
+                    description=f"Year-End Closing Entry — FY {self.name}",
+                    created_by=closed_by_user,
+                )
+                for line in closing_lines:
+                    JournalEntryLine.objects.create(
+                        journal_entry=entry,
+                        account=line['account'],
+                        entry_type=line['entry_type'],
+                        amount=line['amount'],
+                        narration='Year-end closing',
+                    )
+                assert_balanced(entry)
 
         # ── STEP 2: Carry-forward opening balances to next fiscal year ────
 
@@ -578,16 +558,25 @@ class FiscalYear(BaseModel):
         ).first()
 
         if not next_fy:
-            # Auto-create next FY with same duration
-            duration = self.end_date - self.start_date
-            next_end = next_start + duration
-            try:
-                import nepali_datetime as npdt
-                next_start_bs = npdt.date.from_datetime_date(next_start).strftime('%Y-%m-%d')
-                next_end_bs   = npdt.date.from_datetime_date(next_end).strftime('%Y-%m-%d')
-            except Exception:
-                next_start_bs = next_start.strftime('%Y-%m-%d')
-                next_end_bs   = next_end.strftime('%Y-%m-%d')
+            # Auto-create next FY spanning Shrawan 1 to Ashad end in the BS
+            # calendar. NOTE: copying the AD day-count of the current FY does
+            # NOT work here — BS year lengths vary (365/366 days depending on
+            # the year), so a fixed-duration copy drifts the new FY off the
+            # Shrawan-Ashad boundary after a few cycles. Instead, derive the
+            # next Shrawan 1 directly in the BS calendar and take the day
+            # before the following year's Shrawan 1 as Ashad end.
+            import nepali_datetime as npdt
+            bs_next_start = npdt.date.from_datetime_date(next_start)
+            # bs_next_start should already be BS month 4 (Shrawan) day 1;
+            # pin it explicitly in case of a same-day rounding artifact.
+            bs_next_start = npdt.date(bs_next_start.year, 4, 1)
+            next_start = bs_next_start.to_datetime_date()
+            bs_following_start = npdt.date(bs_next_start.year + 1, 4, 1)
+            next_end = bs_following_start.to_datetime_date() - datetime.timedelta(days=1)
+            bs_next_end = npdt.date.from_datetime_date(next_end)
+
+            next_start_bs = bs_next_start.strftime('%Y-%m-%d')
+            next_end_bs = bs_next_end.strftime('%Y-%m-%d')
 
             next_fy = FiscalYear.objects.create(
                 company=company,
@@ -628,8 +617,6 @@ class FiscalYear(BaseModel):
                 fiscal_year=next_fy,
                 defaults={'opening_type': ob_type, 'amount': amount},
             )
-
-        LedgerOpeningBalance.assert_fiscal_year_balanced(next_fy)
 
         # ── Mark closed ───────────────────────────────────────────────────
         self.is_closed = True

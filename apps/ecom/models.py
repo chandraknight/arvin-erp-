@@ -274,7 +274,9 @@ class BlogPost(BaseModel):
         'company.Company', on_delete=models.CASCADE, related_name='ecom_blog_posts'
     )
     title = models.CharField(max_length=300)
-    slug = models.SlugField(max_length=300, unique=True)
+    # 255, not 300 — MySQL/MariaDB cannot index a unique CharField beyond 255
+    # chars under the default utf8mb4 charset (max key length constraint).
+    slug = models.SlugField(max_length=255, unique=True)
     excerpt = models.TextField(blank=True, help_text="Short summary shown in blog list.")
     content = models.TextField()
     cover_image = models.ImageField(upload_to='ecom/blog/', blank=True, null=True)

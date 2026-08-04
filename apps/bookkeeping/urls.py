@@ -3,6 +3,8 @@ from . import views
 from .view_collections.create_view import (
     FixedAssetCreateView, FixedAssetListView, FixedAssetDetailView,
     FixedAssetUpdateView, fixed_asset_dispose,
+    prepaid_expense_list, prepaid_expense_create, prepaid_expense_detail,
+    prepaid_expense_post_amortization,
 )
 
 app_name = 'bookkeeping'
@@ -32,14 +34,9 @@ urlpatterns = [
     path('fixed-assets/<uuid:pk>/edit/', FixedAssetUpdateView.as_view(), name='fixed_asset_update'),
     path('fixed-assets/<uuid:pk>/dispose/', fixed_asset_dispose, name='fixed_asset_dispose'),
 
-    # NFRS — Ad-hoc provisioning & adjustment postings
-    path('provisions/doubtful-debts/create/', views.provision_doubtful_debts_create, name='provision_doubtful_debts_create'),
-    path('accruals/create/', views.accrued_expense_create, name='accrued_expense_create'),
-    path('fx-adjustment/create/', views.fx_adjustment_create, name='fx_adjustment_create'),
-
-    # NFRS — Prepaid expenses
-    path('prepaid-expenses/', views.prepaid_expense_list, name='prepaid_expense_list'),
-    path('prepaid-expenses/create/', views.prepaid_expense_create, name='prepaid_expense_create'),
-    path('prepaid-expenses/<uuid:pk>/', views.prepaid_expense_detail, name='prepaid_expense_detail'),
-    path('prepaid-expenses/<uuid:pk>/post-amortization/', views.prepaid_expense_post_amortization, name='prepaid_expense_post_amortization'),
+    # NFRS 1 Prepaid Expenses
+    path('prepaid-expenses/', prepaid_expense_list, name='prepaid_expense_list'),
+    path('prepaid-expenses/create/', prepaid_expense_create, name='prepaid_expense_create'),
+    path('prepaid-expenses/<uuid:pk>/', prepaid_expense_detail, name='prepaid_expense_detail'),
+    path('prepaid-expenses/<uuid:pk>/post-amortization/', prepaid_expense_post_amortization, name='prepaid_expense_post_amortization'),
 ]

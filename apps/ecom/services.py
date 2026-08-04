@@ -171,3 +171,39 @@ def notify_admin_new_order(ecom_order):
         )
     except Exception:
         logger.exception('notify_admin_new_order failed for order %s', ecom_order.order_number)
+
+
+def send_newsletter(campaign):
+    """
+    Send a NewsletterCampaign to all active subscribers of its company via
+    individual emails (send_mass_mail-style loop so one bad address doesn't
+    abort the batch). Updates campaign.sent_at / recipient_count on success.
+    Returns the number of subscribers the campaign was sent to (0 on failure).
+    """
+    from apps.ecom.models import NewsletterSubscriber
+
+    subscribers = list(
+        NewsletterSubscriber.objects.filter(company=campaign.company, is_active=True)
+        .values_list('email', flat=True)
+    )
+    if not subscribers:
+        return 0
+
+    sent = 0
+    for email in subscribers:
+        try:
+            send_mail(
+                subject=campaign.subject,
+                message=campaign.body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            sent += 1
+        except Exception:
+            logger.exception('send_newsletter: failed to send to %s (campaign %s)', email, campaign.pk)
+
+    campaign.sent_at = timezone.now()
+    campaign.recipient_count = sent
+    campaign.save(update_fields=['sent_at', 'recipient_count'])
+    return sent

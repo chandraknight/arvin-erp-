@@ -10,9 +10,9 @@ from decimal import Decimal
 
 
 INVOICE_STATUS_CHOICES = [
-    ('ISSUED',     'Issued'),
-    ('ESTIMATE',   'Estimate'),
-    ('CANCELLED',  'Cancelled'),
+    ('ISSUED',    'Issued'),
+    ('ESTIMATE',  'Estimate'),
+    ('CANCELLED', 'Cancelled'),
     ('WRITTEN_OFF', 'Written Off'),
 ]
 
@@ -179,6 +179,7 @@ class InvoiceItem(models.Model):
     def __str__(self):
         item_name = self.product.name if self.product else (self.package.name if self.package else self.description or "Unknown Item")
         return f"{self.quantity}x {item_name} @ ${self.price:.2f} on Invoice #{self.invoice.id}"
+
 
 class BadDebtWriteOff(BaseModel):
     """NFRS 9 — write-off of an invoice balance deemed uncollectible."""

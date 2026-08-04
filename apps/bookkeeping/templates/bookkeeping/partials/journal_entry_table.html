@@ -7,6 +7,7 @@
             <tr>
                 <th class="px-4 py-3 text-left border border-green-700">#</th>
                 <th class="px-4 py-3 text-left border border-green-700">Date</th>
+                <th class="px-4 py-3 text-left border border-green-700">Type</th>
                 <th class="px-4 py-3 text-left border border-green-700">Description</th>
                 <th class="px-4 py-3 text-right border border-green-700">Debits</th>
                 <th class="px-4 py-3 text-right border border-green-700">Credits</th>
@@ -23,6 +24,20 @@
                 </td>
                 <td class="px-4 py-2 border border-gray-200 whitespace-nowrap font-medium">
                     {{ entry.date|bs_date }}
+                </td>
+                <td class="px-4 py-2 border border-gray-200 whitespace-nowrap">
+                    <span class="px-2 py-0.5 text-xs font-semibold rounded
+                        {% if entry.journal_type == 'OPENING' %}bg-indigo-100 text-indigo-800
+                        {% elif entry.journal_type == 'ADJUSTING' %}bg-amber-100 text-amber-800
+                        {% elif entry.journal_type == 'CLOSING' %}bg-purple-100 text-purple-800
+                        {% elif entry.journal_type == 'TRANSFER' %}bg-cyan-100 text-cyan-800
+                        {% elif entry.journal_type == 'PROVISION' %}bg-red-100 text-red-800
+                        {% elif entry.journal_type == 'DEPRECIATION' %}bg-orange-100 text-orange-800
+                        {% elif entry.journal_type == 'DISPOSAL' %}bg-rose-100 text-rose-800
+                        {% elif entry.journal_type == 'REVERSAL' %}bg-gray-200 text-gray-800
+                        {% else %}bg-green-100 text-green-800{% endif %}">
+                        {{ entry.get_journal_type_display }}
+                    </span>
                 </td>
                 <td class="px-4 py-2 border border-gray-200 max-w-xs truncate" title="{{ entry.description }}">
                     {{ entry.description|truncatechars:60 }}
@@ -57,7 +72,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="px-4 py-12 text-center text-gray-400">
+                <td colspan="8" class="px-4 py-12 text-center text-gray-400">
                     <i class="fas fa-book-open text-3xl mb-2 block"></i>
                     No journal entries found.
                 </td>

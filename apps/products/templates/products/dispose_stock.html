@@ -1,82 +1,73 @@
 {% extends 'base.html' %}
-
 {% block title %}Dispose Stock — {{ product.name }}{% endblock %}
 
 {% block content %}
-<div class="w-full mt-2 p-4 sm:p-6 space-y-6 max-w-xl">
-
-  <div class="flex items-center justify-between">
-    <div>
-      <h2 class="text-2xl font-extrabold text-red-800 tracking-tight">Dispose Stock</h2>
-      <p class="text-sm text-gray-500 mt-0.5">{{ product.name }}</p>
+<div class="w-full mt-2 p-4 sm:p-6 max-w-xl mx-auto">
+  <div class="bg-white border border-red-200 shadow-sm">
+    <div class="px-6 py-4 bg-red-700 text-white">
+      <h1 class="text-lg font-bold">Dispose / Write-off Stock</h1>
+      <p class="text-sm text-red-100 mt-0.5">{{ product.name }}</p>
     </div>
-    <a href="{% url 'products:update_stock' product.id %}"
-       class="text-sm border border-gray-300 px-3 py-1.5 text-gray-600 hover:bg-gray-50 transition">
-      <i class="fas fa-arrow-left mr-1"></i> Back
-    </a>
-  </div>
-
-  <div class="grid grid-cols-2 gap-4">
-    <div class="bg-gray-50 border border-gray-200 p-4">
-      <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Inventory Stock</p>
-      <p class="text-2xl font-bold text-gray-800 mt-1">{{ stock.stock|default:"0" }}</p>
-    </div>
-    <div class="bg-gray-50 border border-gray-200 p-4">
-      <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Ecom Stock</p>
-      <p class="text-2xl font-bold text-gray-800 mt-1">{{ stock.ecom_stock|default:"0" }}</p>
-    </div>
-  </div>
-
-  <div class="bg-white border border-gray-200 shadow-sm p-6">
-    <p class="text-xs text-gray-400 mb-5">
-      Records damaged/unusable stock as a write-off. This posts a journal entry
-      (Debit: Inventory Write-off Expense, Credit: Inventory) using the product's cost price.
-    </p>
-
-    {% if form.errors %}
-      <div class="bg-red-50 border border-red-300 text-red-700 text-sm px-4 py-3 mb-4">
-        {% for field, errors in form.errors.items %}
-          {% for error in errors %}<p>{{ error }}</p>{% endfor %}
-        {% endfor %}
+    <div class="p-6 space-y-4">
+      <div class="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+        This will reduce stock on hand and post an NFRS 2 write-off journal entry
+        (DR Inventory Write-off Expense, CR Inventory) at the product's cost price.
       </div>
-    {% endif %}
 
-    <form method="post">
-      {% csrf_token %}
-      <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4 text-sm text-gray-700">
+        <div>
+          <p class="text-xs text-gray-500 uppercase">Inventory Stock</p>
+          <p class="font-bold text-lg">{{ stock.stock }}</p>
+        </div>
+        {% if enable_ecom %}
+        <div>
+          <p class="text-xs text-gray-500 uppercase">Ecom Stock</p>
+          <p class="font-bold text-lg">{{ stock.ecom_stock }}</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="text-sm text-red-700">{{ form.non_field_errors }}</div>
+        {% endif %}
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">Stock Pool</label>
-          <select name="stock_type" required class="w-full border border-gray-300 px-4 py-2 text-gray-900">
-            {% for val, label in form.stock_type.field.choices %}
-              <option value="{{ val }}">{{ label }}</option>
+          <select name="stock_type" class="w-full border border-gray-300 px-3 py-2 text-sm">
+            <option value="POS" {% if form.stock_type.value == 'POS' %}selected{% endif %}>Inventory Stock</option>
+            {% if enable_ecom %}
+            <option value="ECOM" {% if form.stock_type.value == 'ECOM' %}selected{% endif %}>Ecom Stock</option>
+            {% endif %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Quantity</label>
+          <input type="number" name="quantity" min="1" required value="{{ form.quantity.value|default:'' }}"
+                 class="w-full border border-gray-300 px-3 py-2 text-sm">
+          {% if form.quantity.errors %}<p class="text-xs text-red-600 mt-1">{{ form.quantity.errors|join:", " }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Disposal Reason</label>
+          <select name="disposal_reason" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+            {% for value, label in disposal_reasons %}
+              <option value="{{ value }}" {% if form.disposal_reason.value == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
-
         <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">Quantity</label>
-          <input type="number" name="quantity" min="1" required
-                 class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Notes <span class="text-gray-400 font-normal">(optional)</span></label>
+          <textarea name="reason" rows="2" class="w-full border border-gray-300 px-3 py-2 text-sm resize-none">{{ form.reason.value|default:'' }}</textarea>
         </div>
-
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">Reason</label>
-          <textarea name="reason" rows="3" required
-                    class="w-full border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                    placeholder="e.g. Damaged in transit, expired, broken packaging"></textarea>
+        <div class="flex gap-3">
+          <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">
+            Confirm Write-off
+          </button>
+          <a href="{% url 'products:update_stock' item_id=product.id %}"
+             class="px-5 py-2 border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">Cancel</a>
         </div>
-
-        <button type="submit"
-                class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 transition">
-          Confirm Disposal
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
-
-  <a href="{% url 'products:disposal_history' %}" class="text-sm text-gray-500 hover:text-gray-700">
-    <i class="fas fa-history mr-1"></i> View disposal history
-  </a>
-
 </div>
 {% endblock %}

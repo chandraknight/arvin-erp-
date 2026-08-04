@@ -229,6 +229,14 @@
                     <td class="px-6 py-3 text-gray-500">≥ 1.0x</td>
                     <td class="px-6 py-3 text-gray-600 text-xs">Revenue ÷ Total Assets. Revenue generated per unit of assets.</td>
                 </tr>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-800">Inventory Turnover</td>
+                    <td class="px-6 py-3 text-right font-mono font-bold text-gray-800">
+                        {{ ratios.inventory_turnover|default:"N/A" }}x
+                    </td>
+                    <td class="px-6 py-3 text-gray-500">Higher = better</td>
+                    <td class="px-6 py-3 text-gray-600 text-xs">COGS ÷ Closing Stock (NFRS 2). How quickly stock is sold.</td>
+                </tr>
             </tbody>
         </table>
     </div>

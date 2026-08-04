@@ -8,7 +8,7 @@
 
 <div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
   <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-print text-green-600 mr-2"></i>Printer Stations</h1>
-  {% if user|group_has_perm:'restaurant.add_printerstation' %}
+  {% if user.is_company_admin or user|group_has_perm:'restaurant.add_printerstation' %}
   <a href="{% url 'restaurant:printer_create' %}"
      class="px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold shadow transition">
     <i class="fas fa-plus mr-1"></i>Add Printer
@@ -23,8 +23,7 @@
       <tr>
         <th class="px-4 py-3 text-left">Name</th>
         <th class="px-4 py-3 text-left">Type</th>
-        <th class="px-4 py-3 text-left">IP Address</th>
-        <th class="px-4 py-3 text-center">Port</th>
+        <th class="px-4 py-3 text-left">Connection</th>
         <th class="px-4 py-3 text-center">Default</th>
         <th class="px-4 py-3 text-center">Active</th>
         <th class="px-4 py-3"></th>
@@ -38,12 +37,19 @@
           <span class="px-2 py-0.5 text-xs rounded font-semibold
             {% if printer.printer_type == 'KOT' %}bg-orange-100 text-orange-800
             {% elif printer.printer_type == 'BOT' %}bg-purple-100 text-purple-800
+            {% elif printer.printer_type == 'LABEL' %}bg-blue-100 text-blue-800
+            {% elif printer.printer_type == 'INVOICE' %}bg-indigo-100 text-indigo-800
             {% else %}bg-green-100 text-green-800{% endif %}">
             {{ printer.get_printer_type_display }}
           </span>
         </td>
-        <td class="px-4 py-3 text-gray-600 font-mono text-xs">{{ printer.ip_address|default:"—" }}</td>
-        <td class="px-4 py-3 text-center text-gray-600">{{ printer.port }}</td>
+        <td class="px-4 py-3 text-gray-600 font-mono text-xs">
+          {% if printer.connection_type == 'LOCAL' %}
+            <i class="fas fa-desktop mr-1 text-gray-400"></i>{{ printer.local_printer_name|default:"—" }}
+          {% else %}
+            <i class="fas fa-network-wired mr-1 text-gray-400"></i>{{ printer.ip_address|default:"—" }}:{{ printer.port }}
+          {% endif %}
+        </td>
         <td class="px-4 py-3 text-center">
           {% if printer.is_default %}<i class="fas fa-star text-yellow-500"></i>{% else %}<span class="text-gray-300">—</span>{% endif %}
         </td>
@@ -51,7 +57,7 @@
           {% if printer.is_active %}<i class="fas fa-check-circle text-green-600"></i>{% else %}<i class="fas fa-times-circle text-red-400"></i>{% endif %}
         </td>
         <td class="px-4 py-3 text-center">
-          {% if user|group_has_perm:'restaurant.change_printerstation' %}
+          {% if user.is_company_admin or user|group_has_perm:'restaurant.change_printerstation' %}
           <a href="{% url 'restaurant:printer_update' pk=printer.pk %}"
              class="text-green-700 hover:text-green-900 text-xs font-medium">Edit</a>
           {% endif %}
@@ -64,15 +70,23 @@
   <div class="text-center py-12 text-gray-400">
     <i class="fas fa-print text-4xl mb-3"></i>
     <p class="text-sm">No printers configured yet.</p>
+    {% if enable_restaurant %}
     <p class="text-xs mt-1">Add a KOT printer for the kitchen, a BOT printer for the bar, and a Bill printer for receipts.</p>
+    {% else %}
+    <p class="text-xs mt-1">Add a printer for receipts, invoices, or product labels.</p>
+    {% endif %}
   </div>
   {% endif %}
 </div>
 
 <div class="mt-6 bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
   <p class="font-semibold mb-1"><i class="fas fa-info-circle mr-1"></i>How printing works</p>
-  <p>When you send a KOT, BOT, or Bill, a print job is queued in the database.
+  <p>{% if enable_restaurant %}When you send a KOT, BOT, or Bill, a print job is queued in the database.
      A local print agent running on your network polls <code class="bg-blue-100 px-1 rounded text-xs">{% url 'restaurant:print_jobs_api' %}</code>
-     and sends the job to the configured printer's IP address over TCP port 9100 (ESC/POS).</p>
+     and sends the job to the configured printer's IP address over TCP port 9100 (ESC/POS).
+     {% else %}KOT/Bill print jobs are queued automatically for restaurant orders and sent to the matching printer here.
+     Receipt, Invoice, and Label printers registered here document which network printer to use —
+     printing from POS, Billing, and Inventory still opens your browser's print dialog for now.
+     {% endif %}</p>
 </div>
 {% endblock %}

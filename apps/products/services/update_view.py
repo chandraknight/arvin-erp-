@@ -5,6 +5,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models.functions import Coalesce
 from ...utils.decorator import auth_required
 from django.db import transaction
+from .stock_disposal_service import post_stock_disposal
 
 
 
@@ -121,10 +122,8 @@ def update_stock(request, item_id):
 
 
 @auth_required('products.change_product')
-def dispose_stock_view(request, item_id):
-    from django.core.exceptions import ValidationError
-    from ..services.disposal_service import dispose_stock
-
+def dispose_stock(request, item_id):
+    """NFRS 2 (IAS 2) inventory write-off — posts a loss journal via post_stock_disposal()."""
     product = get_object_or_404(Product, id=item_id)
     stock_instance, _ = ProductStock.objects.get_or_create(product=product)
 
@@ -132,17 +131,19 @@ def dispose_stock_view(request, item_id):
         form = StockDisposalForm(request.POST)
         if form.is_valid():
             try:
-                dispose_stock(
+                post_stock_disposal(
                     product=product,
                     quantity=form.cleaned_data['quantity'],
+                    disposal_reason=form.cleaned_data['disposal_reason'],
                     stock_type=form.cleaned_data['stock_type'],
                     reason=form.cleaned_data['reason'],
-                    user=request.user,
+                    posted_by=request.user,
                 )
-                messages.success(request, f"Disposed stock for {product.name}.")
+                messages.success(request, f"{form.cleaned_data['quantity']} unit(s) of {product.name} written off.")
                 return redirect('products:update_stock', item_id=product.id)
-            except ValidationError as e:
-                messages.error(request, '; '.join(e.messages) if hasattr(e, 'messages') else str(e))
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect('products:dispose_stock', item_id=product.id)
     else:
         form = StockDisposalForm()
 
@@ -150,16 +151,18 @@ def dispose_stock_view(request, item_id):
         'form': form,
         'product': product,
         'stock': stock_instance,
+        'disposal_reasons': StockTransaction.DISPOSAL_REASON_CHOICES,
+        'enable_ecom': getattr(product.company, 'enable_ecom', False) if product.company else False,
     })
 
 
 @auth_required('products.view_product')
 def disposal_history(request):
-    from ..models import StockDisposal
-
     company = request.user.company if hasattr(request.user, 'company') else None
-    disposals = StockDisposal.objects.select_related('product', 'disposed_by', 'journal_entry').order_by('-created_at')
-    if company:
+    disposals = StockTransaction.objects.filter(transaction_type='DISPOSAL').select_related(
+        'product', 'user', 'journal_entry'
+    ).order_by('-created_at')
+    if not request.user.is_superuser and company:
         disposals = disposals.filter(product__company=company)
 
     return render(request, 'products/disposal_history.html', {
@@ -210,7 +213,7 @@ def edit_item(request, id):
     product = get_object_or_404(Product, id=id)
     category_type = product.category.type if product.category else None
 
-    form = ItemForm(request.POST or None, instance=product, user=request.user, category_type=category_type)
+    form = ItemForm(request.POST or None, instance=product, user=request.user)
 
     if request.method == 'POST':
         if form.is_valid():
@@ -238,6 +241,7 @@ def edit_item(request, id):
 
     context = {
         'form': form,
+        'item_form_sections': item_form_sections(form, exclude={'category_type'}),
         'product': product,
         'category_type': category_type,
         'enable_ecom': getattr(product.company, 'enable_ecom', False) if product.company else False,

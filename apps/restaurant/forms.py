@@ -32,12 +32,47 @@ class RestaurantTableForm(forms.ModelForm):
 class PrinterStationForm(forms.ModelForm):
     class Meta:
         model = PrinterStation
-        fields = ['name', 'printer_type', 'ip_address', 'port', 'is_active', 'is_default', 'notes']
+        fields = [
+            'name', 'printer_type', 'connection_type',
+            'ip_address', 'port', 'local_printer_name',
+            'is_active', 'is_default', 'notes',
+        ]
         widgets = {'notes': forms.TextInput()}
         help_texts = {
             'ip_address': 'IP address or hostname of the network printer (e.g. 192.168.1.100).',
             'port': 'TCP port — default 9100 for most ESC/POS thermal printers.',
+            'local_printer_name': 'Exact printer name as it appears in this computer\'s printer list (e.g. "EPSON TM-T88").',
         }
+
+    def __init__(self, *args, **kwargs):
+        company = kwargs.pop('company', None)
+        super().__init__(*args, **kwargs)
+        self.fields['ip_address'].required = False
+        self.fields['local_printer_name'].required = False
+
+        if company is not None:
+            allowed = {'INVOICE'}  # every company can print invoices
+            if company.enable_restaurant:
+                allowed |= {'KOT', 'BOT', 'BILL'}
+            if company.enable_pos:
+                allowed.add('RECEIPT')
+            if company.enable_inventory:
+                allowed.add('LABEL')
+
+            self.fields['printer_type'].choices = [
+                (value, label) for value, label in self.fields['printer_type'].choices if value in allowed
+            ]
+            if self.fields['printer_type'].choices:
+                self.fields['printer_type'].initial = self.fields['printer_type'].choices[0][0]
+
+    def clean(self):
+        cleaned = super().clean()
+        connection_type = cleaned.get('connection_type')
+        if connection_type == 'NETWORK' and not cleaned.get('ip_address'):
+            self.add_error('ip_address', 'IP address is required for a network printer.')
+        elif connection_type == 'LOCAL' and not cleaned.get('local_printer_name'):
+            self.add_error('local_printer_name', 'Printer name is required for a local printer.')
+        return cleaned
 
 
 class DiningOrderForm(forms.ModelForm):

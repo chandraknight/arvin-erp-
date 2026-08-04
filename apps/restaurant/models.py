@@ -53,9 +53,12 @@ ITEM_STATUS_CHOICES = [
 ]
 
 PRINTER_TYPE_CHOICES = [
-    ('KOT',  'Kitchen Order Ticket (KOT)'),
-    ('BOT',  'Bar Order Ticket (BOT)'),
-    ('BILL', 'Bill / Receipt Printer'),
+    ('KOT',     'Kitchen Order Ticket (KOT)'),
+    ('BOT',     'Bar Order Ticket (BOT)'),
+    ('BILL',    'Bill / Receipt Printer'),
+    ('RECEIPT', 'POS Receipt Printer'),
+    ('INVOICE', 'Invoice Printer'),
+    ('LABEL',   'Barcode / Label Printer'),
 ]
 
 PRINT_JOB_STATUS_CHOICES = [
@@ -130,17 +133,28 @@ class RestaurantTable(BaseModel):
         ).first()
 
 
+CONNECTION_TYPE_CHOICES = [
+    ('NETWORK', 'Network (IP address)'),
+    ('LOCAL',   'Local / USB (this computer)'),
+]
+
+
 class PrinterStation(BaseModel):
     """
-    A network-connected printer used for KOT, BOT, or Bill printing.
-    The ERP sends a print job record; the actual printing is handled by
-    a local print agent that polls for QUEUED jobs.
+    A printer used for KOT, BOT, Bill, Receipt, Invoice, or Label printing.
+    The ERP queues a print job record; the actual printing is handled by
+    a local print agent that polls for QUEUED jobs — either sending ESC/POS
+    bytes to a network printer's IP:port, or handing the job to the OS print
+    spooler on the machine running the agent for a local/USB printer.
     """
     company = models.ForeignKey(
         'company.Company', on_delete=models.CASCADE, related_name='printer_stations'
     )
-    name = models.CharField(max_length=100, help_text='e.g. "Kitchen Printer", "Bar Printer"')
-    printer_type = models.CharField(max_length=5, choices=PRINTER_TYPE_CHOICES)
+    name = models.CharField(max_length=100, help_text='e.g. "Kitchen Printer", "Counter Receipt Printer"')
+    printer_type = models.CharField(max_length=10, choices=PRINTER_TYPE_CHOICES)
+    connection_type = models.CharField(
+        max_length=10, choices=CONNECTION_TYPE_CHOICES, default='NETWORK',
+    )
     ip_address = models.CharField(
         max_length=100, blank=True, null=True,
         help_text='IP address or hostname of the network printer.'
@@ -148,6 +162,10 @@ class PrinterStation(BaseModel):
     port = models.PositiveIntegerField(
         default=9100,
         help_text='TCP port (default 9100 for most thermal printers).'
+    )
+    local_printer_name = models.CharField(
+        max_length=150, blank=True, null=True,
+        help_text='Exact name of the printer as registered on this computer\'s OS print system (e.g. "EPSON TM-T88").',
     )
     is_active = models.BooleanField(default=True)
     is_default = models.BooleanField(
@@ -161,6 +179,30 @@ class PrinterStation(BaseModel):
 
     def __str__(self):
         return f"{self.name} ({self.get_printer_type_display()})"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        errors = {}
+
+        if self.connection_type == 'NETWORK' and not self.ip_address:
+            errors['ip_address'] = 'IP address is required for a network printer.'
+        elif self.connection_type == 'LOCAL' and not self.local_printer_name:
+            errors['local_printer_name'] = 'Printer name is required for a local printer.'
+
+        if self.company_id and self.printer_type in ('KOT', 'BOT', 'BILL') and not self.company.enable_restaurant:
+            errors['printer_type'] = 'This printer type requires the Restaurant module to be enabled.'
+        elif self.company_id and self.printer_type == 'RECEIPT' and not self.company.enable_pos:
+            errors['printer_type'] = 'This printer type requires the Point of Sale module to be enabled.'
+        elif self.company_id and self.printer_type == 'LABEL' and not self.company.enable_inventory:
+            errors['printer_type'] = 'This printer type requires the Inventory module to be enabled.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
 
 class DiningOrder(BaseModel):
@@ -323,7 +365,7 @@ class PrintJob(BaseModel):
     dining_order = models.ForeignKey(
         DiningOrder, on_delete=models.CASCADE, related_name='print_jobs'
     )
-    job_type = models.CharField(max_length=5, choices=PRINTER_TYPE_CHOICES)
+    job_type = models.CharField(max_length=10, choices=PRINTER_TYPE_CHOICES)
     status = models.CharField(
         max_length=8, choices=PRINT_JOB_STATUS_CHOICES, default='QUEUED'
     )

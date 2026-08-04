@@ -391,9 +391,15 @@ def complete_work_order(request, pk):
         wo.save(update_fields=['status', 'actual_end_date', 'produced_quantity', 'rejected_quantity', 'updated_by'])
 
         # Deduct actual material usage from inventory (select_for_update to prevent race)
+        total_material_cost = Decimal('0')
         for mat in wo.material_consumption.filter(is_deleted=False):
             used = mat.quantity_used or mat.quantity_planned
             ProductStock.objects.get_or_create(product=mat.raw_material)
+            if mat.raw_material.cost_method == 'FIFO':
+                from apps.products.services.fifo_service import consume_fifo_lots
+                total_material_cost += consume_fifo_lots(mat.raw_material, used)
+            else:
+                total_material_cost += Decimal(used) * (mat.raw_material.cost_price or Decimal('0'))
             ProductStock.objects.select_for_update().filter(
                 product=mat.raw_material
             ).update(stock=F('stock') - used)
@@ -402,10 +408,19 @@ def complete_work_order(request, pk):
 
         # Add finished goods to inventory
         if total_produced > 0:
-            ProductStock.objects.get_or_create(product=wo.bom.finished_product)
+            finished_product = wo.bom.finished_product
+            ProductStock.objects.get_or_create(product=finished_product)
             ProductStock.objects.select_for_update().filter(
-                product=wo.bom.finished_product
+                product=finished_product
             ).update(stock=F('stock') + total_produced)
+
+            unit_cost = (total_material_cost / total_produced) if total_material_cost > 0 else Decimal('0')
+            if finished_product.cost_method == 'FIFO':
+                from apps.products.services.fifo_service import create_lot
+                create_lot(finished_product, int(total_produced), unit_cost, source_reference=wo.work_order_number)
+            elif unit_cost > 0:
+                finished_product.cost_price = unit_cost
+                finished_product.save(update_fields=['cost_price'])
 
     messages.success(request, f"Work order {wo.work_order_number} completed. Produced: {total_produced}.")
     return redirect('manufacturing:workorder_detail', pk=pk)

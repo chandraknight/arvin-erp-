@@ -61,6 +61,22 @@
                     </div>
                 </div>
 
+                <div class="sm:flex">
+                    <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">
+                        Journal Type
+                    </span>
+                    <div class="flex-1">
+                        {{ form.journal_type|add_class:"w-full border border-gray-300 px-4 py-3 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
+                        {% if form.journal_type.errors %}
+                            <div class="text-red-500 text-xs mt-1">
+                                {% for error in form.journal_type.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
                 <div class="col-span-2">
                     <div class="sm:flex">
                         <span class="flex items-center px-4 py-3 bg-gray-50 text-green-800 font-semibold border border-gray-300 border-r-0 min-w-40 sm:w-40 whitespace-nowrap">

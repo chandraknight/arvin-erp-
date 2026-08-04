@@ -11,8 +11,8 @@ urlpatterns = [
 
     path('inventory/add-category-type/', views.create_categorytype, name='add_category_type'),
     path('inventory/update-stock/<uuid:item_id>/', views.update_stock, name='update_stock'),
-    path('inventory/<uuid:item_id>/dispose/', views.dispose_stock_view, name='dispose_stock'),
-    path('inventory/disposals/', views.disposal_history, name='disposal_history'),
+    path('inventory/dispose-stock/<uuid:item_id>/', views.dispose_stock, name='dispose_stock'),
+    path('inventory/disposal-history/', views.disposal_history, name='disposal_history'),
     path('inventory/add-category/', views.add_category, name='add_category'),
     path('inventory/edit-category/<uuid:category_id>/', views.edit_category, name='edit_category'),
 

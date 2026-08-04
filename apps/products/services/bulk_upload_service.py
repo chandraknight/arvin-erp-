@@ -7,15 +7,16 @@ from django.db import transaction
 
 CSV_COLUMNS = [
     'id', 'name', 'category', 'barcode', 'sku', 'hscode', 'price',
-    'compare_at_price', 'cost_price', 'is_service', 'vendor', 'stock',
+    'compare_at_price', 'cost_price', 'is_service', 'vendor',
+    'purchase_unit', 'sale_unit', 'conversion_factor', 'stock',
     'minimum_stock', 'ecom_stock', 'ecom_minimum_stock', 'description',
 ]
 REQUIRED_COLUMNS = {'name', 'category', 'price'}
 SAMPLE_ROWS = [
     CSV_COLUMNS,
-    ['', 'Momo (Veg)', 'Starters', '', 'SKU-MOMO-V', '', '150.00', '', '60.00', 'FALSE', '', '100', '10', '0', '0', 'Steamed vegetable dumplings'],
-    ['', 'Chicken Burger', 'Main Course', '', 'SKU-BURG-CH', '', '280.00', '350.00', '120.00', 'FALSE', '', '50', '5', '0', '0', 'Grilled chicken burger'],
-    ['', 'Fresh Lime Soda', 'Beverages', '', 'SKU-SODA-LM', '', '80.00', '', '20.00', 'FALSE', '', '200', '20', '0', '0', 'Fresh lime with soda water'],
+    ['', 'Momo (Veg)', 'Starters', '', 'SKU-MOMO-V', '', '150.00', '', '60.00', 'FALSE', '', '', '', '', '100', '10', '0', '0', 'Steamed vegetable dumplings'],
+    ['', 'Chicken Burger', 'Main Course', '', 'SKU-BURG-CH', '', '280.00', '350.00', '120.00', 'FALSE', '', '', '', '', '50', '5', '0', '0', 'Grilled chicken burger'],
+    ['', 'Rice (retail)', 'Groceries', '', 'SKU-RICE-1', '', '2.00', '', '1.50', 'FALSE', '', 'kg', 'g', '1000', '200', '20', '0', '0', 'Sold by the gram, bought by the kg'],
 ]
 
 
@@ -36,7 +37,7 @@ def export_products_csv(company) -> bytes:
 
     products = (
         Product.objects.filter(company=company)
-        .select_related('category', 'vendor', 'productstock')
+        .select_related('category', 'vendor', 'productstock', 'purchase_unit', 'sale_unit')
         .order_by('name')
     )
 
@@ -57,6 +58,9 @@ def export_products_csv(company) -> bytes:
             product.cost_price,
             'TRUE' if product.is_service else 'FALSE',
             product.vendor.name if product.vendor else '',
+            product.purchase_unit.name if product.purchase_unit else '',
+            product.sale_unit.name if product.sale_unit else '',
+            product.conversion_factor,
             stock.stock if stock else 0,
             stock.minimum_stock if stock else 0,
             stock.ecom_stock if stock else 0,
@@ -71,7 +75,7 @@ def parse_and_import_products(file_obj, company, user) -> dict:
     Parse uploaded CSV and bulk-create/update Product + ProductStock records.
     Returns {'created': int, 'updated': int, 'errors': [(row_num, message)]}
     """
-    from apps.products.models import Product, ProductStock, Category
+    from apps.products.models import Product, ProductStock, Category, UnitOfMeasure
     from apps.vendors.models import Vendor
 
     try:
@@ -155,6 +159,32 @@ def parse_and_import_products(file_obj, company, user) -> dict:
             if vendor is None:
                 errors.append((row_num, f'Vendor "{vendor_name}" not found — skipped vendor assignment'))
 
+        purchase_unit_name = row.get('purchase_unit', '').strip()
+        purchase_unit = None
+        if purchase_unit_name:
+            purchase_unit = UnitOfMeasure.objects.filter(name__iexact=purchase_unit_name).first()
+            if purchase_unit is None:
+                errors.append((row_num, f'Purchase unit "{purchase_unit_name}" not found — skipped'))
+
+        sale_unit_name = row.get('sale_unit', '').strip()
+        sale_unit = None
+        if sale_unit_name:
+            sale_unit = UnitOfMeasure.objects.filter(name__iexact=sale_unit_name).first()
+            if sale_unit is None:
+                errors.append((row_num, f'Sale unit "{sale_unit_name}" not found — skipped'))
+
+        conversion_raw = row.get('conversion_factor', '').strip()
+        if conversion_raw == '':
+            conversion_factor = Decimal('1')
+        else:
+            try:
+                conversion_factor = Decimal(conversion_raw)
+                if conversion_factor <= 0:
+                    raise ValueError()
+            except (InvalidOperation, ValueError):
+                errors.append((row_num, f'Invalid conversion_factor: "{conversion_raw}" — using 1'))
+                conversion_factor = Decimal('1')
+
         product_id = row.get('id', '').strip()
 
         try:
@@ -176,6 +206,9 @@ def parse_and_import_products(file_obj, company, user) -> dict:
                     'short_description': description[:500] if description else '',
                     'is_service': is_service,
                     'vendor': vendor,
+                    'purchase_unit': purchase_unit,
+                    'sale_unit': sale_unit,
+                    'conversion_factor': conversion_factor,
                     'updated_by': user,
                 }
 

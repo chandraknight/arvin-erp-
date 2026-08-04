@@ -197,6 +197,12 @@ class PrinterListView(AuthMixin, ListView):
     def get_queryset(self):
         return PrinterStation.active_objects.filter(company=self.request.user_company)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        company = self.request.user_company
+        context['enable_restaurant'] = bool(company and company.enable_restaurant)
+        return context
+
 
 class PrinterCreateView(AuthMixin, CreateView):
     model = PrinterStation
@@ -204,6 +210,11 @@ class PrinterCreateView(AuthMixin, CreateView):
     template_name = 'restaurant/printer_form.html'
     permission_required = ['restaurant.add_printerstation']
     success_url = reverse_lazy('restaurant:printer_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['company'] = self.request.user_company
+        return kwargs
 
     def form_valid(self, form):
         form.instance.company = self.request.user_company
@@ -221,6 +232,11 @@ class PrinterUpdateView(AuthMixin, UpdateView):
 
     def get_queryset(self):
         return PrinterStation.active_objects.filter(company=self.request.user_company)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['company'] = self.request.user_company
+        return kwargs
 
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
@@ -542,11 +558,14 @@ def print_jobs_api(request):
 
     data = []
     for job in jobs:
+        printer = job.printer
         data.append({
             'id': str(job.pk),
             'type': job.job_type,
-            'printer_ip': job.printer.ip_address if job.printer else None,
-            'printer_port': job.printer.port if job.printer else 9100,
+            'connection_type': printer.connection_type if printer else 'NETWORK',
+            'printer_ip': printer.ip_address if printer and printer.connection_type == 'NETWORK' else None,
+            'printer_port': printer.port if printer and printer.connection_type == 'NETWORK' else None,
+            'local_printer_name': printer.local_printer_name if printer and printer.connection_type == 'LOCAL' else None,
             'payload': job.payload,
         })
 

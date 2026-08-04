@@ -10,13 +10,14 @@ class CompanyForm(forms.ModelForm):
         fields = [
             'name', 'address', 'phone', 'email', 'logo', 'tax_rate', 'cit_rate',
             'organisation_type',
-            'vat_registered', 'vat_number', 'vat_inclusive',
+            'pan_number', 'vat_registered', 'vat_number', 'vat_inclusive',
             'enable_branch_accounting', 'enable_project_tracking', 'enable_forecasting',
             'enable_order_management', 'enable_manufacturing',
             'enable_hr_payroll', 'enable_purchasing', 'enable_inventory',
             'enable_restaurant', 'enable_pos', 'enable_tours', 'enable_ecom',
             'enable_ebilling', 'cbms_username', 'cbms_password',
             'invoice_print_format', 'sales_order_print_format', 'pos_receipt_print_format',
+            'receipt_footer_text',
         ]
         widgets = {
             'address': forms.Textarea(attrs={'rows': 2}),
@@ -24,7 +25,8 @@ class CompanyForm(forms.ModelForm):
             'cbms_password': forms.PasswordInput(render_value=True),
         }
         help_texts = {
-            'vat_registered': 'Check if this company is registered for VAT/PAN.',
+            'pan_number': 'PAN registration number. Enter this even if the company is not VAT-registered.',
+            'vat_registered': 'Check only if this company is registered for VAT (charges VAT on sales).',
             'vat_inclusive': 'Check if prices already include VAT.',
             'enable_branch_accounting': 'Enables branch selection on invoices and branch-wise reports.',
             'enable_project_tracking': 'Enables the Projects & Cost Centres module.',
@@ -42,6 +44,7 @@ class CompanyForm(forms.ModelForm):
             'invoice_print_format': 'Default format when printing an invoice (no ?mode= override in the URL).',
             'sales_order_print_format': 'Default format when printing a sales order receipt.',
             'pos_receipt_print_format': 'Default format when printing a POS receipt.',
+            'receipt_footer_text': 'Shown at the bottom of invoices and POS receipts, e.g. "Goods once sold are not returned" or a thank-you message.',
         }
 
     def __init__(self, *args, **kwargs):

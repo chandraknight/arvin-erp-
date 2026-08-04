@@ -335,10 +335,9 @@ def convert_to_invoice(request, pk):
 
     setup_default_ledger_accounts(request.user_company)
 
-    from apps.billing.services.invoice_service import generate_invoice_number
-    is_vat = getattr(request.user_company, 'vat_registered', False)
-    doc_type = 'INV' if is_vat else 'ORD'
-    invoice_number, seq, fy = generate_invoice_number(request.user_company.id, doc_type=doc_type)
+    from apps.billing.services.invoice_service import generate_invoice_number, vat_invoice_fields
+    vat_fields = vat_invoice_fields(request.user_company)
+    invoice_number, seq, fy = generate_invoice_number(request.user_company.id, doc_type=vat_fields['doc_type'])
 
     invoice = Invoice.objects.create(
         company=request.user_company,
@@ -348,14 +347,13 @@ def convert_to_invoice(request, pk):
         subtotal=order.subtotal,
         discount_amount=order.discount_amount,
         tax_amount=order.tax_amount,
-        delivery_charge=order.delivery_charge,
         total=order.total,
         outstanding_balance=order.total,
-        tax_percent=request.user_company.tax_rate,
+        tax_percent=vat_fields['tax_percent'],
         invoice_number=invoice_number,
         fiscal_year=fy,
         sequence_number=seq,
-        status='ISSUED' if is_vat else 'ESTIMATE',
+        status=vat_fields['status'],
         created_by=request.user,
     )
 

@@ -11,10 +11,10 @@
       <h2 class="text-2xl font-extrabold text-green-800 tracking-tight">{{ product.name }}</h2>
       <p class="text-sm text-gray-500 mt-0.5">{{ product.category_name }} &middot; {{ product.barcode|default:"No barcode" }}</p>
     </div>
-    <div class="flex items-center gap-2">
-      <a href="{% url 'products:dispose_stock' product.id %}"
+    <div class="flex gap-2">
+      <a href="{% url 'products:dispose_stock' item_id=product.id %}"
          class="text-sm border border-red-300 text-red-700 px-3 py-1.5 hover:bg-red-50 transition">
-        <i class="fas fa-trash-alt mr-1"></i> Dispose Stock
+        <i class="fas fa-trash-alt mr-1"></i> Dispose / Write-off
       </a>
       <a href="{% url 'products:inventory_management' %}"
          class="text-sm border border-gray-300 px-3 py-1.5 text-gray-600 hover:bg-gray-50 transition">

@@ -4,6 +4,27 @@ from .models import Product, Category, ProductStock, Package, PackageItem, Categ
 from apps.products.models import StockTransaction
 from apps.vendors.models import Vendor
 
+ITEM_FORM_SECTIONS = [
+    ('Basic Info', ['name', 'category_type', 'category', 'is_service']),
+    ('Identifiers', ['barcode', 'sku', 'hscode']),
+    ('Pricing', ['price', 'compare_at_price', 'cost_price', 'cost_method', 'nrv']),
+    ('Vendor', ['vendor']),
+    ('Units & Stock', ['purchase_unit', 'sale_unit', 'conversion_factor', 'stock_quantity']),
+]
+
+
+def item_form_sections(form, exclude=()):
+    """Group an ItemForm's bound fields for section-based rendering."""
+    sections = [
+        {
+            'title': title,
+            'fields': [form[name] for name in field_names if name in form.fields and name not in exclude],
+        }
+        for title, field_names in ITEM_FORM_SECTIONS
+    ]
+    return [section for section in sections if section['fields']]
+
+
 class ProductImageForm(forms.ModelForm):
     class Meta:
         model = ProductImage
@@ -42,23 +63,11 @@ class ItemForm(forms.ModelForm):
             'is_service', 'vendor',
             'purchase_unit', 'sale_unit', 'conversion_factor',
         ]
-        labels = {
-            'nrv': 'Net Realisable Value (NRV)',
-            'cost_method': 'Cost Method',
-        }
         help_texts = {
             'is_service': 'Check if this product is a service or non-stock item.',
             'purchase_unit': 'How you buy/receive this item. Example: kg.',
             'sale_unit': 'How you sell/count stock. Example: g.',
             'conversion_factor': 'How many sale units equal 1 purchase unit. Example: 1 kg = 1000 g, so enter 1000.',
-            'cost_method': (
-                'How the cost of goods sold is calculated for this item (NFRS 2). '
-                'Weighted Average is simplest and fine for most items — use FIFO only if your accountant asks for it.'
-            ),
-            'nrv': (
-                'Only fill this in if this item is now worth less than its cost — e.g. damaged, expired, or '
-                'no longer sells at full price (NFRS 2 lower-of-cost-or-NRV rule). Leave blank otherwise.'
-            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -97,18 +106,12 @@ class ItemForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        is_service = cleaned_data.get('is_service')
         purchase_unit = cleaned_data.get('purchase_unit')
         sale_unit = cleaned_data.get('sale_unit')
         conversion_factor = cleaned_data.get('conversion_factor')
 
-        if not is_service:
-            if not purchase_unit:
-                self.add_error('purchase_unit', 'Select the unit used when purchasing this product.')
-            if not sale_unit:
-                self.add_error('sale_unit', 'Select the unit used when selling this product.')
-            if not conversion_factor or conversion_factor <= 0:
-                self.add_error('conversion_factor', 'Conversion factor must be greater than zero.')
+        if (purchase_unit or sale_unit) and (not conversion_factor or conversion_factor <= 0):
+            self.add_error('conversion_factor', 'Conversion factor must be greater than zero.')
 
         return cleaned_data
 
@@ -139,11 +142,11 @@ class StockTransactionForm(forms.ModelForm):
             self.fields['product'].queryset = Product.objects.filter(pk=initial_product.pk)
             self.initial['product'] = initial_product
 
-
 class StockDisposalForm(forms.Form):
-    stock_type = forms.ChoiceField(choices=StockTransaction.STOCK_TYPES)
     quantity = forms.IntegerField(min_value=1)
-    reason = forms.CharField(widget=forms.Textarea(attrs={'rows': 4}))
+    stock_type = forms.ChoiceField(choices=StockTransaction.STOCK_TYPES, initial='POS')
+    disposal_reason = forms.ChoiceField(choices=StockTransaction.DISPOSAL_REASON_CHOICES)
+    reason = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
 
 
 class CategoryForm(forms.ModelForm):

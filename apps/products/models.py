@@ -137,6 +137,22 @@ class ProductStock(BaseModel):
     def __str__(self):
         return f"{self.product.name} - POS: {self.stock}, Ecom: {self.ecom_stock}"
 
+class StockLot(BaseModel):
+    """NFRS 2 FIFO costing — one row per receipt for cost_method == 'FIFO' products."""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_lots')
+    qty_received = models.PositiveIntegerField()
+    qty_remaining = models.PositiveIntegerField()
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=4)
+    received_at = models.DateTimeField(auto_now_add=True)
+    source_reference = models.CharField(max_length=100, blank=True, default='')
+
+    class Meta:
+        ordering = ['received_at']
+
+    def __str__(self):
+        return f"{self.product.name} lot {self.received_at:%Y-%m-%d} ({self.qty_remaining}/{self.qty_received} @ {self.unit_cost})"
+
+
 class ProductVariant(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
     size = models.CharField(max_length=20, blank=True, default='', help_text="e.g. S, M, L, XL or 6, 7, 8, 9, 10")
@@ -173,11 +189,20 @@ class StockTransaction(BaseModel):
         ('ADD', 'Add Stock'),
         ('REMOVE', 'Remove Stock'),
         ('ADJUST', 'Adjust Stock'),
-        ('DISPOSE', 'Dispose Stock'),
+        ('DISPOSAL', 'Disposal / Write-off'),
     )
     STOCK_TYPES = (
         ('POS', 'POS Stock'),
         ('ECOM', 'E-commerce Stock'),
+    )
+    # NFRS 2 (IAS 2) — reason inventory was written off, for audit disclosure
+    DISPOSAL_REASON_CHOICES = (
+        ('DAMAGED', 'Damaged'),
+        ('EXPIRED', 'Expired'),
+        ('LOST', 'Lost'),
+        ('THEFT', 'Theft'),
+        ('OBSOLETE', 'Obsolete'),
+        ('OTHER', 'Other'),
     )
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -185,31 +210,17 @@ class StockTransaction(BaseModel):
     stock_type = models.CharField(max_length=10, choices=STOCK_TYPES, default='POS')
     quantity = models.IntegerField()
     reason = models.TextField(blank=True)
+    disposal_reason = models.CharField(
+        max_length=10, choices=DISPOSAL_REASON_CHOICES, blank=True, null=True,
+        help_text='NFRS 2: category of write-off. Only set when transaction_type=DISPOSAL.',
+    )
+    journal_entry = models.ForeignKey(
+        'bookkeeping.JournalEntry', on_delete=models.SET_NULL, null=True, blank=True,
+        help_text='The write-off journal entry posted for a DISPOSAL transaction.',
+    )
 
     def __str__(self):
         return f"{self.transaction_type} {self.quantity} x {self.product.name}"
-
-
-class StockDisposal(BaseModel):
-    """Write-off of damaged/unusable stock. Posts an NFRS journal entry: DR Inventory Write-off / CR Inventory."""
-    STOCK_TYPES = StockTransaction.STOCK_TYPES
-
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='disposals')
-    stock_type = models.CharField(max_length=10, choices=STOCK_TYPES, default='POS')
-    quantity = models.PositiveIntegerField()
-    reason = models.TextField()
-    unit_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    total_value = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    disposed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_disposals')
-    journal_entry = models.ForeignKey(
-        'bookkeeping.JournalEntry', on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_disposals'
-    )
-
-    class Meta:
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f"Disposed {self.quantity} x {self.product.name}"
 
 
 class Package(BaseModel):
@@ -318,6 +329,11 @@ class LabelPrintSetting(BaseModel):
     padding_right_mm = models.DecimalField(max_digits=6, decimal_places=2, default=1.5)
     padding_bottom_mm = models.DecimalField(max_digits=6, decimal_places=2, default=1)
     padding_left_mm = models.DecimalField(max_digits=6, decimal_places=2, default=1.5)
+
+    show_price = models.BooleanField(default=True)
+    show_barcode = models.BooleanField(default=True)
+    show_sku = models.BooleanField(default=False)
+    show_hscode = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Label print setting for {self.company}"

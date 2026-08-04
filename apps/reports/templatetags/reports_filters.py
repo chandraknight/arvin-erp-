@@ -16,4 +16,4 @@ def dictkey(d, key):
     """Looks up `key` in dict `d` — for use where the key is a template variable."""
     if not d:
         return None
-    return d.get(key)
+    return d.get(key) 

@@ -103,7 +103,7 @@ def post_depreciation(asset, period_start: date, period_end: date, posted_by=Non
         date=period_end,
         description=f'Depreciation — {asset.name} ({period_start} to {period_end})',
         created_by=posted_by,
-        source_type='DEPRECIATION',
+        journal_type='DEPRECIATION',
     )
     JournalEntryLine.objects.create(
         journal_entry=entry,
@@ -139,6 +139,85 @@ def post_depreciation(asset, period_start: date, period_end: date, posted_by=Non
         asset.id, period_start, period_end, amount, entry.id,
     )
     return log
+
+
+@transaction.atomic
+def post_disposal(asset, disposal_date: date, sale_proceeds: Decimal = Decimal('0.00'), posted_by=None):
+    """
+    Derecognize *asset* on disposal (NFRS 13 / IAS 16 para 67-72).
+
+    Journal entry:
+      DR  Accumulated Depreciation     accumulated_depreciation
+      DR  Cash/Bank (or Disposal AR)   sale_proceeds        [only if proceeds > 0]
+      DR  Loss on Disposal             loss                 [only if NBV > proceeds]
+      CR  Fixed Asset (cost)           asset.cost
+      CR  Gain on Disposal             gain                 [only if proceeds > NBV]
+
+    Sets asset.status = 'DISPOSED' and asset.disposal_date.
+    Raises ValueError if asset is already disposed.
+    """
+    from .models import JournalEntry, JournalEntryLine, assert_balanced
+
+    if asset.status == 'DISPOSED':
+        raise ValueError(f"Asset '{asset.name}' is already disposed.")
+
+    company = asset.company
+    asset_acc = asset.asset_account or _get_or_create_account(
+        company, 'Fixed Assets', 'ASSET', code='1500'
+    )
+    accum_dep_acc = asset.accumulated_dep_account or _get_or_create_account(
+        company, _ACCUM_DEP_DEFAULT_NAME, 'ASSET', code='1510'
+    )
+    cash_acc = _get_or_create_account(company, 'Cash', 'ASSET', code='1000')
+
+    net_book_value = asset.net_book_value
+    gain = max(sale_proceeds - net_book_value, Decimal('0.00'))
+    loss = max(net_book_value - sale_proceeds, Decimal('0.00'))
+
+    entry = JournalEntry.objects.create(
+        company=company,
+        date=disposal_date,
+        description=f'Disposal — {asset.name}',
+        created_by=posted_by,
+        journal_type='DISPOSAL',
+    )
+    lines = [JournalEntryLine(
+        journal_entry=entry, account=accum_dep_acc, entry_type='DEBIT',
+        amount=asset.accumulated_depreciation, narration='Derecognize accumulated depreciation',
+    )]
+    if sale_proceeds > Decimal('0.00'):
+        lines.append(JournalEntryLine(
+            journal_entry=entry, account=cash_acc, entry_type='DEBIT',
+            amount=sale_proceeds, narration='Sale proceeds on disposal',
+        ))
+    if loss > Decimal('0.00'):
+        loss_acc = _get_or_create_account(company, 'Loss on Disposal of Asset', 'EXPENSE', code='5900')
+        lines.append(JournalEntryLine(
+            journal_entry=entry, account=loss_acc, entry_type='DEBIT',
+            amount=loss, narration=f'Loss on disposal of {asset.name}',
+        ))
+    lines.append(JournalEntryLine(
+        journal_entry=entry, account=asset_acc, entry_type='CREDIT',
+        amount=asset.cost, narration='Derecognize asset cost',
+    ))
+    if gain > Decimal('0.00'):
+        gain_acc = _get_or_create_account(company, 'Gain on Disposal of Asset', 'REVENUE', code='4900')
+        lines.append(JournalEntryLine(
+            journal_entry=entry, account=gain_acc, entry_type='CREDIT',
+            amount=gain, narration=f'Gain on disposal of {asset.name}',
+        ))
+    JournalEntryLine.objects.bulk_create(lines)
+    assert_balanced(entry)
+
+    asset.status = 'DISPOSED'
+    asset.disposal_date = disposal_date
+    asset.save(update_fields=['status', 'disposal_date', 'updated_at'])
+
+    logger.info(
+        'disposal_posted asset=%s date=%s proceeds=%s gain=%s loss=%s journal=%s',
+        asset.id, disposal_date, sale_proceeds, gain, loss, entry.id,
+    )
+    return entry
 
 
 def depreciation_schedule(asset) -> list[dict]:

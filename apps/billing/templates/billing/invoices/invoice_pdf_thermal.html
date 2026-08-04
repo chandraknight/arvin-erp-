@@ -102,6 +102,11 @@
 <div class="center" style="font-size: 7pt; margin-top: 3mm;">
     {{ company_name }}{% if tel %} · {{ tel }}{% endif %}
 </div>
+{% if company.receipt_footer_text %}
+<div class="center" style="font-size: 7pt; margin-top: 1mm;">
+    {{ company.receipt_footer_text }}
+</div>
+{% endif %}
 
 </body>
 </html>

@@ -251,10 +251,11 @@ def issue_bill(order: DiningOrder, request):
 
     setup_default_ledger_accounts(order.company)
 
-    from apps.billing.services.invoice_service import generate_invoice_number
+    from apps.billing.services.invoice_service import generate_invoice_number, vat_invoice_fields
 
     with transaction.atomic():
-        invoice_number, seq, fy = generate_invoice_number(order.company.id)
+        vat_fields = vat_invoice_fields(order.company)
+        invoice_number, seq, fy = generate_invoice_number(order.company.id, doc_type=vat_fields['doc_type'])
         invoice = Invoice.objects.create(
             company=order.company,
             branch=order.branch,
@@ -267,7 +268,8 @@ def issue_bill(order: DiningOrder, request):
             tax_amount=order.tax_amount,
             total=order.total,
             outstanding_balance=order.total,
-            tax_percent=order.company.tax_rate,
+            tax_percent=vat_fields['tax_percent'],
+            status=vat_fields['status'],
             sequence_number=seq,
             created_by=request.user,
         )

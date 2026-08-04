@@ -16,7 +16,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from apps.billing.models import Invoice, InvoiceItem
-from apps.billing.services.invoice_service import generate_invoice_number
+from apps.billing.services.invoice_service import generate_invoice_number, vat_invoice_fields
 from apps.customers.models import Customer
 from apps.payments.models import Payment
 from apps.payments.services.payment_number_service import generate_payment_number
@@ -35,7 +35,6 @@ def checkout(
     payment_method: str,
     amount_tendered: Decimal,
     notes: str = '',
-    bank_account_id: str = None,
 ) -> POSSale:
     """
     Convert the session cart into a completed POS sale.
@@ -79,17 +78,6 @@ def checkout(
         except Customer.DoesNotExist:
             pass  # treat as walk-in if customer was deleted
 
-    if payment_method == 'DUE' and customer is None:
-        raise ValueError("Select a customer before recording a due (credit) sale.")
-
-    bank_account = None
-    if payment_method == 'BANK_TRANSFER' and bank_account_id:
-        from apps.payments.models import BankAccount
-        try:
-            bank_account = BankAccount.objects.get(pk=bank_account_id, company=company)
-        except BankAccount.DoesNotExist:
-            pass
-
     # ── 1b. Resolve referrer (loyalty tracking — never shown on the receipt) ──
     referrer = None
     referrer_id = cart.get('referrer_id')
@@ -100,9 +88,9 @@ def checkout(
             pass
 
     # ── 2. Generate invoice number ────────────────────────────────────────────
-    is_vat = getattr(company, 'vat_registered', False)
-    doc_type = 'INV' if is_vat else 'ORD'
-    invoice_number, sequence_number, fy = generate_invoice_number(company.id, doc_type=doc_type)
+    vat_fields = vat_invoice_fields(company)
+    is_vat = vat_fields['is_vat']
+    invoice_number, sequence_number, fy = generate_invoice_number(company.id, doc_type=vat_fields['doc_type'])
 
     # ── 3. Create Invoice ─────────────────────────────────────────────────────
     today = timezone.now().date()
@@ -170,37 +158,31 @@ def checkout(
     # ── 5. Refresh invoice totals (InvoiceItem.save() already called calculate_total) ──
     invoice.refresh_from_db()
 
-    # ── 6. Create Payment (skipped for DUE — credit sale, nothing collected) ───
-    if payment_method == 'DUE':
-        invoice.outstanding_balance = invoice.total
-        invoice.save(update_fields=['outstanding_balance'])
-        amount_tendered = Decimal('0.00')
-    else:
-        try:
-            reference_number, _, pay_fy = generate_payment_number(company.id, 'CUSTOMER')
-        except Exception:
-            reference_number = None
+    # ── 6. Create Payment ─────────────────────────────────────────────────────
+    try:
+        reference_number, _, pay_fy = generate_payment_number(company.id, 'CUSTOMER')
+    except Exception:
+        reference_number = None
 
-        Payment.objects.create(
-            company=company,
-            branch=getattr(request, 'user_branch', None),
-            invoice=invoice,
-            date=today,
-            amount=invoice.total,
-            amount_applied=invoice.total,
-            discount_amount=invoice.discount_amount,
-            method=payment_method,
-            bank_account=bank_account,
-            payment_type='CUSTOMER',
-            reference_number=reference_number,
-            fiscal_year=pay_fy,
-            description=f'POS sale — {invoice.invoice_number}',
-            created_by=user,
-        )
+    payment = Payment.objects.create(
+        company=company,
+        branch=getattr(request, 'user_branch', None),
+        invoice=invoice,
+        date=today,
+        amount=invoice.total,
+        amount_applied=invoice.total,
+        discount_amount=invoice.discount_amount,
+        method=payment_method,
+        payment_type='CUSTOMER',
+        reference_number=reference_number,
+        fiscal_year=pay_fy,
+        description=f'POS sale — {invoice.invoice_number}',
+        created_by=user,
+    )
 
-        # Update outstanding balance to zero (fully paid at counter)
-        invoice.outstanding_balance = Decimal('0.00')
-        invoice.save(update_fields=['outstanding_balance'])
+    # Update outstanding balance to zero (fully paid at counter)
+    invoice.outstanding_balance = Decimal('0.00')
+    invoice.save(update_fields=['outstanding_balance'])
 
     # ── 7. Create POSSale ─────────────────────────────────────────────────────
     change_given = max(Decimal('0'), amount_tendered - invoice.total)
@@ -214,7 +196,6 @@ def checkout(
         payment_method=payment_method,
         amount_tendered=amount_tendered,
         change_given=change_given,
-        bank_account=bank_account,
         subtotal=invoice.subtotal,
         discount_amount=invoice.discount_amount,
         tax_amount=invoice.tax_amount,
@@ -226,6 +207,9 @@ def checkout(
 
     # ── 8. Decrement stock ────────────────────────────────────────────────────
     for product, qty in products_to_destock:
+        if product.cost_method == 'FIFO':
+            from apps.products.services.fifo_service import consume_fifo_lots
+            consume_fifo_lots(product, qty)
         ProductStock.objects.filter(product=product).update(
             stock=F('stock') - qty
         )

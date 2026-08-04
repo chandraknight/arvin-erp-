@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from .models import (
     TourDestination, TourPackage, TourEnquiry, TourBooking, TourBookingItem,
@@ -114,6 +116,11 @@ class TourBookingForm(forms.ModelForm):
         if company:
             self.fields['customer'].queryset = self.fields['customer'].queryset.filter(company=company)
         self.fields['customer'].required = False
+
+        if company and self.instance._state.adding:  # instance.pk is always set (UUID default)
+            tax_default = company.tax_rate if company.vat_registered else Decimal('0.00')
+            self.fields['tax_percent'].initial = tax_default
+            self.initial['tax_percent'] = tax_default
 
 
 class TourBookingItemForm(forms.ModelForm):

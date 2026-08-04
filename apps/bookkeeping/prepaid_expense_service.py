@@ -6,47 +6,70 @@ post_prepaid_amortization(prepaid, period_start, period_end, posted_by) → post
 
 Mirrors apps/bookkeeping/fixed_asset_service.py's asset + periodic-log + idempotency-per-period pattern.
 """
+from __future__ import annotations
+
+import logging
 from decimal import Decimal
 
 from django.db import transaction
 
-from .models import (
-    PrepaidExpense, PrepaidExpenseAmortizationLog, post_journal_entry, get_or_create_system_account,
-)
+logger = logging.getLogger(__name__)
 
 _PREPAID_ASSET_DEFAULT_NAME = 'Prepaid Expenses'
 _AMORTIZATION_EXPENSE_DEFAULT_NAME = 'Prepaid Expense Amortization'
+
+
+def _get_or_create_account(company, name, account_type, code=None):
+    from .models import LedgerAccount
+    acc, _ = LedgerAccount.objects.get_or_create(
+        company=company,
+        name=name,
+        defaults={
+            'account_type': account_type,
+            'code': code,
+            'system_created': True,
+            'is_current': account_type not in ('ASSET',),
+        },
+    )
+    return acc
 
 
 @transaction.atomic
 def create_prepaid_expense(company, name, total_amount, start_date, end_date, paid_from_account,
                             description='', created_by=None):
     """Posts DR Prepaid Expenses (asset) / CR paid_from_account, then creates the PrepaidExpense row."""
+    from .models import PrepaidExpense, JournalEntry, JournalEntryLine, assert_balanced
+
     if total_amount <= Decimal('0.00'):
         raise ValueError("Prepaid expense total amount must be greater than zero.")
     if end_date <= start_date:
         raise ValueError("End date must be after the start date.")
 
-    prepaid_asset_acc = get_or_create_system_account(
-        company, _PREPAID_ASSET_DEFAULT_NAME, 'ASSET', code='1220', is_current=True
+    prepaid_asset_acc = _get_or_create_account(
+        company, _PREPAID_ASSET_DEFAULT_NAME, 'ASSET', code='1220'
     )
-    amortization_expense_acc = get_or_create_system_account(
+    amortization_expense_acc = _get_or_create_account(
         company, _AMORTIZATION_EXPENSE_DEFAULT_NAME, 'EXPENSE', code='5940'
     )
 
-    post_journal_entry(
+    entry = JournalEntry.objects.create(
         company=company,
         date=start_date,
         description=f"Prepaid expense recognized — {name}",
-        lines=[
-            {'account': prepaid_asset_acc, 'entry_type': 'DEBIT', 'amount': total_amount, 'narration': name},
-            {'account': paid_from_account, 'entry_type': 'CREDIT', 'amount': total_amount, 'narration': name},
-        ],
         created_by=created_by,
-        source_type='PREPAID_AMORTIZATION',
+        journal_type='ADJUSTING',
     )
+    JournalEntryLine.objects.create(
+        journal_entry=entry, account=prepaid_asset_acc, entry_type='DEBIT',
+        amount=total_amount, narration=name,
+    )
+    JournalEntryLine.objects.create(
+        journal_entry=entry, account=paid_from_account, entry_type='CREDIT',
+        amount=total_amount, narration=name,
+    )
+    assert_balanced(entry)
 
-    return PrepaidExpense.objects.create(
+    prepaid = PrepaidExpense.objects.create(
         company=company,
         name=name,
         description=description,
@@ -59,6 +82,12 @@ def create_prepaid_expense(company, name, total_amount, start_date, end_date, pa
         created_by=created_by,
     )
 
+    logger.info(
+        'prepaid_expense_created prepaid=%s company=%s amount=%s journal=%s',
+        prepaid.id, company.id, total_amount, entry.id,
+    )
+    return prepaid
+
 
 @transaction.atomic
 def post_prepaid_amortization(prepaid, period_start, period_end, posted_by=None):
@@ -68,6 +97,8 @@ def post_prepaid_amortization(prepaid, period_start, period_end, posted_by=None)
     Idempotent per period (mirrors fixed_asset_service.post_depreciation) and capped
     at the remaining unamortized balance.
     """
+    from .models import PrepaidExpenseAmortizationLog, JournalEntry, JournalEntryLine, assert_balanced
+
     if prepaid.status != 'ACTIVE':
         raise ValueError(f"Prepaid expense '{prepaid.name}' is {prepaid.status} — cannot post amortization.")
 
@@ -93,29 +124,38 @@ def post_prepaid_amortization(prepaid, period_start, period_end, posted_by=None)
     if amount <= Decimal('0.00'):
         raise ValueError(f"Amortization amount is zero for '{prepaid.name}'.")
 
-    entry = post_journal_entry(
+    entry = JournalEntry.objects.create(
         company=prepaid.company,
         date=period_end,
         description=f"Prepaid expense amortization — {prepaid.name} ({period_start} to {period_end})",
-        lines=[
-            {'account': prepaid.amortization_expense_account, 'entry_type': 'DEBIT', 'amount': amount,
-             'narration': f'Amortization of {prepaid.name}'},
-            {'account': prepaid.prepaid_asset_account, 'entry_type': 'CREDIT', 'amount': amount,
-             'narration': f'Prepaid expense reduction — {prepaid.name}'},
-        ],
         created_by=posted_by,
-        source_type='PREPAID_AMORTIZATION',
+        journal_type='ADJUSTING',
     )
+    JournalEntryLine.objects.create(
+        journal_entry=entry, account=prepaid.amortization_expense_account, entry_type='DEBIT',
+        amount=amount, narration=f'Amortization of {prepaid.name}',
+    )
+    JournalEntryLine.objects.create(
+        journal_entry=entry, account=prepaid.prepaid_asset_account, entry_type='CREDIT',
+        amount=amount, narration=f'Prepaid expense reduction — {prepaid.name}',
+    )
+    assert_balanced(entry)
 
     prepaid.accumulated_amortization += amount
     if prepaid.remaining_amount <= Decimal('0.00'):
         prepaid.status = 'FULLY_AMORTIZED'
     prepaid.save(update_fields=['accumulated_amortization', 'status', 'updated_at'])
 
-    return PrepaidExpenseAmortizationLog.objects.create(
+    log = PrepaidExpenseAmortizationLog.objects.create(
         prepaid_expense=prepaid,
         journal_entry=entry,
         period_start=period_start,
         period_end=period_end,
         amount=amount,
     )
+
+    logger.info(
+        'prepaid_amortization_posted prepaid=%s period=%s-%s amount=%s journal=%s',
+        prepaid.id, period_start, period_end, amount, entry.id,
+    )
+    return log

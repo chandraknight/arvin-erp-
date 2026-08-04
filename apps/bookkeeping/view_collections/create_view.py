@@ -49,7 +49,6 @@ class JournalEntryCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
             journal_entry = form.save(commit=False)
             journal_entry.company = request.user.company
             journal_entry.created_by = request.user
-            journal_entry.source_type = 'MANUAL_JOURNAL'
             journal_entry.save()
             formset.instance = journal_entry
             formset.save()
@@ -78,7 +77,7 @@ class LedgerAccountCreateView(AuthMixin,CreateView):
 
 from django import forms as dj_forms
 from ..models import FixedAsset, FixedAssetDepreciationLog
-from ..fixed_asset_service import post_depreciation, depreciation_schedule
+from ..fixed_asset_service import post_depreciation, post_disposal, depreciation_schedule
 from django.contrib import messages
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.decorators import login_required
@@ -207,8 +206,12 @@ class FixedAssetUpdateView(AuthMixin, UpdateView):
 
 @login_required
 def fixed_asset_dispose(request, pk):
-    """Mark a fixed asset as DISPOSED and record disposal date."""
-    from django.contrib.auth.decorators import login_required
+    """
+    NFRS 13 (IAS 16) disposal: derecognize the asset and post gain/loss on
+    disposal via post_disposal() — previously this only flipped a status flag
+    with no journal entry, leaving cost and accumulated depreciation on the
+    books forever and any gain/loss unrecognized.
+    """
     from ..models import FixedAsset
     asset = get_object_or_404(FixedAsset, pk=pk, company=request.user_company, is_deleted=False)
 
@@ -221,11 +224,143 @@ def fixed_asset_dispose(request, pk):
         from apps.utils.nepali_date import bs_str_to_ad
         disposal_date_str = request.POST.get('disposal_date', '')
         disposal_date = bs_str_to_ad(disposal_date_str) if disposal_date_str else _date.today()
-        asset.status = 'DISPOSED'
-        asset.disposal_date = disposal_date
-        asset.updated_by = request.user
-        asset.save(update_fields=['status', 'disposal_date', 'updated_by'])
-        messages.success(request, f"Asset '{asset.name}' marked as disposed on {disposal_date}.")
+        sale_proceeds = Decimal(request.POST.get('sale_proceeds') or '0')
+        try:
+            post_disposal(asset, disposal_date, sale_proceeds, posted_by=request.user)
+            messages.success(request, f"Asset '{asset.name}' disposed on {disposal_date}.")
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('bookkeeping:fixed_asset_dispose', pk=pk)
         return redirect('bookkeeping:fixed_asset_detail', pk=pk)
 
     return render(request, 'bookkeeping/fixed_asset_dispose.html', {'asset': asset})
+
+
+# ─── NFRS 1 Prepaid Expense views ─────────────────────────────────────────
+
+from datetime import datetime
+from django.contrib.auth.decorators import login_required as _login_required
+from ...utils.constant import RUPEE
+
+
+def _parse_ad_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, '%Y-%m-%d').date()
+    except ValueError:
+        return None
+
+
+@_login_required
+def prepaid_expense_list(request):
+    from ..models import PrepaidExpense
+    company = request.user_company
+    if not company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    prepaid_expenses = PrepaidExpense.objects.filter(
+        company=company, is_deleted=False
+    ).order_by('-start_date')
+
+    return render(request, 'bookkeeping/prepaid_expense_list.html', {
+        'prepaid_expenses': prepaid_expenses,
+        'currency_symbol': RUPEE,
+    })
+
+
+@_login_required
+def prepaid_expense_create(request):
+    from ..prepaid_expense_service import create_prepaid_expense
+
+    company = request.user_company
+    if not company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    bank_cash_accounts = LedgerAccount.objects.filter(
+        company=company, account_type='ASSET', is_deleted=False
+    ).order_by('name')
+
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        amount_str = request.POST.get('total_amount', '').strip()
+        start_date_str = request.POST.get('start_date', '').strip()
+        end_date_str = request.POST.get('end_date', '').strip()
+        paid_from_id = request.POST.get('paid_from_account')
+
+        paid_from_account = bank_cash_accounts.filter(pk=paid_from_id).first()
+        try:
+            total_amount = Decimal(amount_str)
+            start_date = _parse_ad_date(start_date_str)
+            end_date = _parse_ad_date(end_date_str)
+            if not name or total_amount <= 0 or not start_date or not end_date or not paid_from_account:
+                raise ValueError
+        except (Exception,):
+            messages.error(request, "Fill in all fields with valid values.")
+            return render(request, 'bookkeeping/prepaid_expense_form.html', {'bank_cash_accounts': bank_cash_accounts})
+
+        try:
+            prepaid = create_prepaid_expense(
+                company=company, name=name, total_amount=total_amount,
+                start_date=start_date, end_date=end_date,
+                paid_from_account=paid_from_account, description=description,
+                created_by=request.user,
+            )
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return render(request, 'bookkeeping/prepaid_expense_form.html', {'bank_cash_accounts': bank_cash_accounts})
+
+        messages.success(request, f"Prepaid expense '{prepaid.name}' recorded.")
+        return redirect('bookkeeping:prepaid_expense_detail', pk=prepaid.pk)
+
+    return render(request, 'bookkeeping/prepaid_expense_form.html', {'bank_cash_accounts': bank_cash_accounts})
+
+
+@_login_required
+def prepaid_expense_detail(request, pk):
+    from ..models import PrepaidExpense
+    company = request.user_company
+    qs = PrepaidExpense.objects.filter(is_deleted=False)
+    if not request.user.is_superuser and company:
+        qs = qs.filter(company=company)
+    prepaid = get_object_or_404(qs, pk=pk)
+
+    return render(request, 'bookkeeping/prepaid_expense_detail.html', {
+        'prepaid': prepaid,
+        'amortization_logs': prepaid.amortization_logs.order_by('-period_end'),
+        'currency_symbol': RUPEE,
+    })
+
+
+@_login_required
+def prepaid_expense_post_amortization(request, pk):
+    from ..models import PrepaidExpense
+    from ..prepaid_expense_service import post_prepaid_amortization
+
+    company = request.user_company
+    qs = PrepaidExpense.objects.filter(is_deleted=False)
+    if not request.user.is_superuser and company:
+        qs = qs.filter(company=company)
+    prepaid = get_object_or_404(qs, pk=pk)
+
+    if request.method == 'POST':
+        period_start_str = request.POST.get('period_start', '').strip()
+        period_end_str = request.POST.get('period_end', '').strip()
+        period_start = _parse_ad_date(period_start_str)
+        period_end = _parse_ad_date(period_end_str)
+        if not period_start or not period_end:
+            messages.error(request, "Enter a valid period start and end date.")
+            return redirect('bookkeeping:prepaid_expense_detail', pk=pk)
+
+        try:
+            post_prepaid_amortization(prepaid, period_start, period_end, posted_by=request.user)
+            messages.success(request, f"Amortization posted for {prepaid.name} ({period_start} to {period_end}).")
+        except ValueError as exc:
+            messages.error(request, str(exc))
+
+        return redirect('bookkeeping:prepaid_expense_detail', pk=pk)
+
+    return redirect('bookkeeping:prepaid_expense_detail', pk=pk)

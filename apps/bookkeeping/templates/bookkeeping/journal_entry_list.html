@@ -27,11 +27,11 @@
     </div>
 
     <!-- Search bar -->
-    <div class="bg-white border border-gray-200 shadow-sm p-4 mb-4"
+    <div class="bg-white border border-gray-200 shadow-sm p-4 mb-4 flex flex-wrap gap-3 items-end"
          x-data="{ loading: false }"
          @htmx:before-request.window="loading = true"
          @htmx:after-request.window="loading = false">
-        <div class="relative max-w-md">
+        <div class="relative max-w-md flex-1 min-w-48">
             <input type="text"
                    name="q"
                    value="{{ q|default:'' }}"
@@ -47,6 +47,21 @@
                 <i class="fas fa-search text-gray-400 text-xs" x-show="!loading"></i>
                 <i class="fas fa-spinner fa-spin text-green-600 text-xs" x-show="loading" style="display:none"></i>
             </div>
+        </div>
+        <div>
+            <select name="journal_type"
+                    class="border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
+                    hx-get="{% url 'bookkeeping:journal_entry_list' %}"
+                    hx-target="#journal-list-container"
+                    hx-swap="innerHTML"
+                    hx-include="[name='q']"
+                    hx-trigger="change"
+                    hx-push-url="true">
+                <option value="">All Types</option>
+                {% for value, label in journal_type_choices %}
+                    <option value="{{ value }}" {% if selected_journal_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
         </div>
     </div>
 

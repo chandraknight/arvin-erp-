@@ -51,7 +51,7 @@
             <tbody class="divide-y divide-gray-100">
                 {% for row in provision_rows %}
                 <tr>
-                    <td class="py-2 pr-4 text-gray-700">{{ row.journal_entry__source_type }}</td>
+                    <td class="py-2 pr-4 text-gray-700">{{ row.journal_entry__journal_type }}</td>
                     <td class="py-2 pr-4 text-gray-700">{{ row.account__name }}</td>
                     <td class="py-2 pr-4 text-right">{{ row.debit|floatformat:2 }}</td>
                     <td class="py-2 text-right">{{ row.credit|floatformat:2 }}</td>

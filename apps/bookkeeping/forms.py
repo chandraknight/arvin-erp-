@@ -26,7 +26,10 @@ class JournalEntryForm(FiscalYearDateMixin, forms.ModelForm):
 
     class Meta:
         model = JournalEntry
-        fields = ['company', 'date', 'description']
+        fields = ['company', 'date', 'journal_type', 'description']
+        widgets = {
+            'journal_type': forms.Select(attrs={'class': 'form-select'}),
+        }
 
     def __init__(self, *args, request=None, **kwargs):
         self.request = request

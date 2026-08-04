@@ -40,7 +40,11 @@ def compute_stock_valuation(company, category_id=None):
             continue
 
         cost_price = product.cost_price or Decimal('0')
-        value_at_cost = qty * cost_price
+        if product.cost_method == 'FIFO':
+            from .fifo_service import fifo_stock_value
+            value_at_cost = fifo_stock_value(product)
+        else:
+            value_at_cost = qty * cost_price
 
         nrv = product.nrv if product.nrv is not None else cost_price
         value_at_nrv = qty * nrv

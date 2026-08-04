@@ -165,6 +165,7 @@ def add_item(request):
     company = getattr(request.user, 'company', None)
     context = {
         'form': form,
+        'item_form_sections': item_form_sections(form),
         'object_list': page_obj.object_list,
         'page_obj': page_obj,
         'paginate_by': paginate_by,
