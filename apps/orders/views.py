@@ -107,7 +107,7 @@ class SalesOrderDetailView(AuthMixin, DetailView):
         user_branch = getattr(self.request, 'user_branch', None)
         if user_branch is not None:
             qs = qs.filter(branch=user_branch)
-        return qs
+        return qs.prefetch_related('items__product__images')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

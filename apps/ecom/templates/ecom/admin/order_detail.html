@@ -87,6 +87,7 @@
     <table class="w-full text-sm">
       <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
         <tr>
+          <th class="px-5 py-3 text-left w-12"></th>
           <th class="px-5 py-3 text-left">Product</th>
           <th class="px-5 py-3 text-right">Qty</th>
           <th class="px-5 py-3 text-right">Unit Price</th>
@@ -96,7 +97,23 @@
       <tbody class="divide-y divide-gray-100">
         {% for item in order.items.all %}
         <tr>
-          <td class="px-5 py-3 font-medium">{{ item.product.name }}</td>
+          <td class="px-5 py-3">
+            {% if item.product.primary_image_url %}
+              <img src="{{ item.product.primary_image_url }}" alt="{{ item.product.name }}" class="w-10 h-10 object-cover rounded border border-gray-200">
+            {% else %}
+              <div class="w-10 h-10 rounded border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-300 text-xs">—</div>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 font-medium">
+            {{ item.product.name }}
+            {% if item.product.sku or item.product.barcode %}
+              <div class="text-xs text-gray-500 font-normal mt-0.5">
+                {% if item.product.sku %}SKU: {{ item.product.sku }}{% endif %}
+                {% if item.product.sku and item.product.barcode %} · {% endif %}
+                {% if item.product.barcode %}Barcode: {{ item.product.barcode }}{% endif %}
+              </div>
+            {% endif %}
+          </td>
           <td class="px-5 py-3 text-right">{{ item.quantity }}</td>
           <td class="px-5 py-3 text-right">Rs {{ item.unit_price|floatformat:2 }}</td>
           <td class="px-5 py-3 text-right font-semibold">Rs {{ item.total_price|floatformat:2 }}</td>
@@ -106,24 +123,24 @@
       <tfoot class="bg-gray-50">
         {% if order.subtotal != order.total %}
         <tr>
-          <td colspan="3" class="px-5 py-2 text-right text-gray-500 text-xs">Subtotal</td>
+          <td colspan="4" class="px-5 py-2 text-right text-gray-500 text-xs">Subtotal</td>
           <td class="px-5 py-2 text-right text-gray-500 text-xs">Rs {{ order.subtotal|floatformat:2 }}</td>
         </tr>
         {% if order.discount_amount %}
         <tr>
-          <td colspan="3" class="px-5 py-1 text-right text-red-500 text-xs">Discount</td>
+          <td colspan="4" class="px-5 py-1 text-right text-red-500 text-xs">Discount</td>
           <td class="px-5 py-1 text-right text-red-500 text-xs">- Rs {{ order.discount_amount|floatformat:2 }}</td>
         </tr>
         {% endif %}
         {% if order.delivery_charge %}
         <tr>
-          <td colspan="3" class="px-5 py-1 text-right text-gray-500 text-xs">Delivery Charge</td>
+          <td colspan="4" class="px-5 py-1 text-right text-gray-500 text-xs">Delivery Charge</td>
           <td class="px-5 py-1 text-right text-gray-500 text-xs">Rs {{ order.delivery_charge|floatformat:2 }}</td>
         </tr>
         {% endif %}
         {% endif %}
         <tr>
-          <td colspan="3" class="px-5 py-3 text-right font-bold text-gray-700">Total</td>
+          <td colspan="4" class="px-5 py-3 text-right font-bold text-gray-700">Total</td>
           <td class="px-5 py-3 text-right font-bold text-indigo-700 text-base">Rs {{ order.total|floatformat:2 }}</td>
         </tr>
       </tfoot>

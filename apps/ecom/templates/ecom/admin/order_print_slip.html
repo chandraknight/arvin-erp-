@@ -87,6 +87,7 @@
     .items-table th.right, .items-table td.right { text-align: right; }
     .items-table td { font-size: 8.5pt; padding: 1.5mm 0; border-bottom: 1px dashed #ddd; }
     body.mode-thermal .items-table th, body.mode-thermal .items-table td { font-size: 7.5pt; }
+    .item-code { font-size: 6.5pt; font-weight: normal; }
 
     .totals { width: 100%; margin-top: 2mm; }
     .totals tr td { font-size: 8.5pt; padding: 1mm 0; }
@@ -194,7 +195,16 @@
     <tbody>
       {% for item in order.items.all %}
       <tr>
-        <td>{{ item.product.name }}</td>
+        <td>
+          {% if mode == 'thermal' %}
+            {{ item.product.name|truncatechars:25 }}
+            {% if item.product.sku or item.product.barcode %}
+            <div class="item-code">{{ item.product.sku|default:item.product.barcode }}</div>
+            {% endif %}
+          {% else %}
+            {{ item.product.name }}
+          {% endif %}
+        </td>
         <td class="right">{{ item.quantity }}</td>
         <td class="right">Rs {{ item.unit_price|floatformat:0 }}</td>
         <td class="right">Rs {{ item.total_price|floatformat:0 }}</td>

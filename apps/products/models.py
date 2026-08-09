@@ -113,6 +113,10 @@ class ProductStock(BaseModel):
     def __str__(self):
         return f"{self.product.name} - POS: {self.stock}, Ecom: {self.ecom_stock}"
 
+    @property
+    def total_stock(self):
+        return self.stock + self.ecom_stock
+
 class StockLot(BaseModel):
     """NFRS 2 FIFO costing — one row per receipt for cost_method == 'FIFO' products."""
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_lots')

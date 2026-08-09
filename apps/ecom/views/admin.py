@@ -123,7 +123,10 @@ def order_list(request):
 @login_required
 def order_detail(request, order_id):
     company = _get_company(request)
-    order = get_object_or_404(EcomOrder, id=order_id, company=company)
+    order = get_object_or_404(
+        EcomOrder.objects.prefetch_related('items__product__images'),
+        id=order_id, company=company,
+    )
     return render(request, 'ecom/admin/order_detail.html', {'order': order})
 
 

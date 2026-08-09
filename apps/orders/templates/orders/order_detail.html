@@ -82,6 +82,7 @@
             <table class="min-w-full text-sm">
                 <thead class="bg-green-600 text-white text-xs uppercase">
                     <tr>
+                        <th class="px-4 py-2 text-left border border-green-700 w-12"></th>
                         <th class="px-4 py-2 text-left border border-green-700">Product / Description</th>
                         <th class="px-4 py-2 text-right border border-green-700">Qty</th>
                         <th class="px-4 py-2 text-right border border-green-700">Unit Price</th>
@@ -95,7 +96,23 @@
                 <tbody>
                     {% for item in order.items.all %}
                     <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
-                        <td class="px-4 py-2 border border-gray-200 font-medium">{{ item.product.name|default:item.description|default:"—" }}</td>
+                        <td class="px-4 py-2 border border-gray-200">
+                            {% if item.product.primary_image_url %}
+                                <img src="{{ item.product.primary_image_url }}" alt="{{ item.product.name }}" class="w-10 h-10 object-cover rounded border border-gray-200">
+                            {% else %}
+                                <div class="w-10 h-10 rounded border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-300 text-xs">—</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-2 border border-gray-200 font-medium">
+                            {{ item.product.name|default:item.description|default:"—" }}
+                            {% if item.product.sku or item.product.barcode %}
+                                <div class="text-xs text-gray-500 font-normal mt-0.5">
+                                    {% if item.product.sku %}SKU: {{ item.product.sku }}{% endif %}
+                                    {% if item.product.sku and item.product.barcode %} · {% endif %}
+                                    {% if item.product.barcode %}Barcode: {{ item.product.barcode }}{% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
                         <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ item.quantity }}</td>
                         <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ item.unit_price|floatformat:2|intcomma }}</td>
                         <td class="px-4 py-2 border border-gray-200 text-right">{{ item.discount_percent }}%</td>

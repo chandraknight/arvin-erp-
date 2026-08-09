@@ -126,6 +126,9 @@
                                     <span class="{% if product.productstock.ecom_stock <= product.productstock.ecom_minimum_stock %}text-indigo-600 font-semibold{% else %}text-gray-600{% endif %}">
                                         <i class="fas fa-globe mr-1"></i>Ecom: {{ product.productstock.ecom_stock|default:"0" }}
                                     </span>
+                                    <span class="text-gray-700 font-semibold">
+                                        <i class="fas fa-boxes mr-1"></i>Total: {{ product.productstock.total_stock|default:"0" }}
+                                    </span>
                                 </div>
                                 <div class="mt-2 flex gap-4 text-sm font-medium flex-wrap">
                                     <a href="{% url 'products:update_stock' product.id %}" class="text-indigo-600 hover:text-indigo-900">Update Stock</a>
@@ -158,6 +161,7 @@
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">POS Stock</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ecom Stock</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Stock</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                     </thead>
@@ -209,12 +213,18 @@
                                         {{ product.productstock.ecom_stock|default:"0" }}{% if product.default_unit %} {{ product.default_unit.symbol }}{% endif %}
                                     </span>
                                 </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right">
+                                    <span class="text-sm font-semibold text-gray-900">
+                                        {{ product.productstock.total_stock|default:"0" }}{% if product.default_unit %} {{ product.default_unit.symbol }}{% endif %}
+                                    </span>
+                                </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-center text-sm font-medium space-x-3">
                                     <a href="{% url 'products:update_stock' product.id %}" class="text-indigo-600 hover:text-indigo-900">Update Stock</a>
                                     <a href="{% url 'products:edit_item' product.id %}" class="text-green-600 hover:text-green-900">Edit</a>
                                     <a href="{% url 'products:variant_list' product.id %}" class="text-purple-600 hover:text-purple-900">Variants</a>
                                 </td>
                             {% else %}
+                                <td class="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-400 italic">Service</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-400 italic">Service</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-400 italic">Service</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
@@ -224,7 +234,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="8" class="px-6 py-10 text-center text-gray-500">
+                            <td colspan="7" class="px-6 py-10 text-center text-gray-500">
                                 <i class="fas fa-box-open text-3xl text-gray-300 mb-2 block"></i>
                                 No products found.
                             </td>

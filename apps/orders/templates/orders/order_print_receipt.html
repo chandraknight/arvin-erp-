@@ -45,8 +45,10 @@
       padding: 3mm 3.5mm 5mm;
       font-size: 8pt;
       color: #000;
+      font-weight: bold;
       font-family: 'Courier New', ui-monospace, monospace;
     }
+    body.mode-thermal .receipt * { color: #000 !important; }
 
     /* ── Shared ── */
     .r-header { text-align: center; margin-bottom: 5mm; }
@@ -86,7 +88,8 @@
     body.mode-thermal .r-table { margin: 1.8mm 0; }
     body.mode-thermal .r-table th { font-size: 7pt; padding: 1mm 0; border-bottom: 1px solid #000; }
     body.mode-thermal .r-table td { font-size: 7.5pt; padding: 1mm 0; border-bottom: none; }
-    body.mode-thermal .r-table tbody tr:not(:last-child) td { border-bottom: 1px dotted #bbb; }
+    .item-code { font-size: 6.5pt; font-weight: normal; }
+    body.mode-thermal .r-table tbody tr:not(:last-child) td { border-bottom: 1px dotted #000; }
 
     .r-totals { width: 100%; margin-top: 2mm; }
     .r-totals td { font-size: 8.5pt; padding: 1mm 0; }
@@ -111,7 +114,7 @@
     body.mode-thermal .r-footer { margin-top: 2.5mm; font-size: 7pt; line-height: 1.5; }
 
     .r-notes { margin-top: 3mm; font-size: 8pt; background: #f9fafb; padding: 2mm 3mm; border-left: 2px solid #ccc; }
-    body.mode-thermal .r-notes { font-size: 7pt; margin-top: 1.5mm; padding: 1mm 1.5mm; background: none; border-left: none; border-top: 1px dotted #999; border-radius: 0; padding-top: 1.2mm; }
+    body.mode-thermal .r-notes { font-size: 7pt; margin-top: 1.5mm; padding: 1mm 1.5mm; background: none; border-left: none; border-top: 1px dotted #000; border-radius: 0; padding-top: 1.2mm; }
 
     @media print {
       .controls { display: none !important; }
@@ -202,7 +205,16 @@
     <tbody>
       {% for item in order.items.all %}
       <tr>
-        <td>{{ item.product.name|default:item.description|default:"—" }}</td>
+        <td>
+          {% if mode == 'thermal' %}
+            {{ item.product.name|default:item.description|default:"—"|truncatechars:25 }}
+            {% if item.product.sku or item.product.barcode %}
+            <div class="item-code">{{ item.product.sku|default:item.product.barcode }}</div>
+            {% endif %}
+          {% else %}
+            {{ item.product.name|default:item.description|default:"—" }}
+          {% endif %}
+        </td>
         <td class="r">{{ item.quantity|floatformat:0 }}</td>
         <td class="r">{{ item.unit_price|floatformat:2|intcomma }}</td>
         {% if mode == 'a4' %}
