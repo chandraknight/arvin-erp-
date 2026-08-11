@@ -31,6 +31,8 @@ urlpatterns = [
 
     # ── Contact ───────────────────────────────────────────
     path('contact/', storefront.contact_us, name='contact'),
+
+    # ── Newsletter ─────────────────────────────────────────
     path('newsletter/subscribe/', storefront.newsletter_subscribe, name='newsletter_subscribe'),
 
     # ── Customer auth ─────────────────────────────────────
@@ -48,6 +50,7 @@ urlpatterns = [
     path('manage/orders/<uuid:order_id>/', ecom_admin.order_detail, name='admin_order_detail'),
     path('manage/orders/<uuid:order_id>/status/', ecom_admin.update_order_status, name='admin_update_order_status'),
     path('manage/orders/<uuid:order_id>/cod/', ecom_admin.update_cod_status, name='admin_update_cod_status'),
+    path('manage/orders/<uuid:order_id>/payment/', ecom_admin.update_payment_status, name='admin_update_payment_status'),
     path('manage/orders/<uuid:order_id>/slip/', ecom_admin.order_print_slip, name='admin_order_print_slip'),
     path('manage/orders/<uuid:order_id>/create-so/', ecom_admin.order_create_sales_order, name='admin_order_create_so'),
     path('manage/inventory/', ecom_admin.ecom_inventory, name='admin_ecom_inventory'),
@@ -101,7 +104,7 @@ urlpatterns = [
     path('manage/cms/blog/<uuid:post_id>/edit/', cms_admin.blog_edit, name='cms_blog_edit'),
     path('manage/cms/blog/<uuid:post_id>/delete/', cms_admin.blog_delete, name='cms_blog_delete'),
 
-    # ── CMS: Newsletter ───────────────────────────────────
+    # ── CMS: Newsletter ────────────────────────────────────
     path('manage/cms/newsletter/', cms_admin.newsletter_list, name='cms_newsletter_list'),
     path('manage/cms/newsletter/<uuid:sub_id>/delete/', cms_admin.newsletter_delete, name='cms_newsletter_delete'),
     path('manage/cms/newsletter/send/', cms_admin.newsletter_send, name='cms_newsletter_send'),

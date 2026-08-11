@@ -151,7 +151,7 @@ def payment_create(request):
     )
     customers = Customer.objects.filter(company=company).order_by('name') if company else Customer.objects.none()
     outstanding_invoices = (
-        Invoice.objects.filter(company=company, status='ISSUED', outstanding_balance__gt=0)
+        Invoice.objects.filter(company=company, status__in=['ISSUED', 'ESTIMATE'], outstanding_balance__gt=0)
         .select_related('customer')
         .order_by('-transaction_date')
         if company else Invoice.objects.none()

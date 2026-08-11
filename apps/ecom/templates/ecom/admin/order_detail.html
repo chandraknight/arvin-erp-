@@ -56,6 +56,7 @@
         <button type="submit" class="bg-gray-800 text-white px-4 py-2 text-sm">Update</button>
       </form>
 
+      {% if order.payment_method == 'COD' %}
       <form method="post" action="{% url 'ecom:admin_update_cod_status' order.id %}" class="flex items-center gap-2">
         {% csrf_token %}
         <select name="cod_status" class="flex-1 border border-gray-300 px-3 py-2 text-sm focus:outline-none">
@@ -65,18 +66,48 @@
         </select>
         <button type="submit" class="bg-green-600 text-white px-4 py-2 text-sm">COD</button>
       </form>
+      {% else %}
+      <form method="post" action="{% url 'ecom:admin_update_payment_status' order.id %}" class="flex items-center gap-2">
+        {% csrf_token %}
+        <select name="payment_status" class="flex-1 border border-gray-300 px-3 py-2 text-sm focus:outline-none">
+          <option value="PENDING" {% if order.payment_status == 'PENDING' %}selected{% endif %}>Payment Pending</option>
+          <option value="PAID" {% if order.payment_status == 'PAID' %}selected{% endif %}>Paid</option>
+          <option value="FAILED" {% if order.payment_status == 'FAILED' %}selected{% endif %}>Payment Failed</option>
+        </select>
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 text-sm">Payment</button>
+      </form>
+      {% endif %}
+
+      {% if order.status == 'DELIVERED' and order.payment_method == 'COD' and order.cod_status == 'PENDING' %}
+      <div class="bg-red-50 border border-red-300 text-red-700 text-sm px-3 py-2">
+        <i class="fas fa-exclamation-triangle mr-1"></i>Delivered — cash not yet collected. Mark COD status once received.
+      </div>
+      {% elif order.status == 'DELIVERED' and order.payment_method == 'ONLINE' and order.payment_status != 'PAID' %}
+      <div class="bg-red-50 border border-red-300 text-red-700 text-sm px-3 py-2">
+        <i class="fas fa-exclamation-triangle mr-1"></i>Delivered — online payment not confirmed as paid.
+      </div>
+      {% endif %}
 
       <div class="pt-2 border-t text-sm space-y-1">
         <div class="flex justify-between">
-          <span class="text-gray-500">Payment</span>
+          <span class="text-gray-500">Payment Method</span>
           <span class="font-medium text-green-700">{{ order.get_payment_method_display }}</span>
         </div>
+        {% if order.payment_method == 'COD' %}
         <div class="flex justify-between">
           <span class="text-gray-500">COD Status</span>
           <span class="font-medium {% if order.cod_status == 'COLLECTED' %}text-green-600{% elif order.cod_status == 'FAILED' %}text-red-600{% else %}text-yellow-600{% endif %}">
             {{ order.get_cod_status_display }}
           </span>
         </div>
+        {% else %}
+        <div class="flex justify-between">
+          <span class="text-gray-500">Payment Status</span>
+          <span class="font-medium {% if order.payment_status == 'PAID' %}text-green-600{% elif order.payment_status == 'FAILED' %}text-red-600{% else %}text-yellow-600{% endif %}">
+            {{ order.get_payment_status_display }}
+          </span>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>

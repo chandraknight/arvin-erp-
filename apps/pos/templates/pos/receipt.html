@@ -164,7 +164,13 @@
     border: none !important;
     box-shadow: none !important;
     font-family: 'Courier New', Courier, monospace !important;
+    font-weight: bold !important;
     color: black !important;
+  }
+
+  /* Thermal printers render thin text faintly — bold everything for a clean print */
+  .card * {
+    font-weight: bold !important;
   }
 
   .card-header {

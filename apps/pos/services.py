@@ -159,32 +159,43 @@ def checkout(
     invoice.refresh_from_db()
 
     # ── 6. Create Payment ─────────────────────────────────────────────────────
-    try:
-        reference_number, _, pay_fy = generate_payment_number(company.id, 'CUSTOMER')
-    except Exception:
-        reference_number = None
+    # CREDIT sales collect no payment at the counter — the invoice is left
+    # with its full outstanding_balance so it surfaces through the existing
+    # accounts-receivable flow (same field used for unpaid/partial invoices
+    # elsewhere in billing) until the customer pays later.
+    if payment_method == 'CREDIT':
+        if customer is None:
+            raise ValueError("A customer is required for a credit sale.")
+        invoice.outstanding_balance = invoice.total
+        invoice.save(update_fields=['outstanding_balance'])
+    else:
+        try:
+            reference_number, _, pay_fy = generate_payment_number(company.id, 'CUSTOMER')
+        except Exception:
+            reference_number = None
 
-    payment = Payment.objects.create(
-        company=company,
-        branch=getattr(request, 'user_branch', None),
-        invoice=invoice,
-        date=today,
-        amount=invoice.total,
-        amount_applied=invoice.total,
-        discount_amount=invoice.discount_amount,
-        method=payment_method,
-        payment_type='CUSTOMER',
-        reference_number=reference_number,
-        fiscal_year=pay_fy,
-        description=f'POS sale — {invoice.invoice_number}',
-        created_by=user,
-    )
+        Payment.objects.create(
+            company=company,
+            branch=getattr(request, 'user_branch', None),
+            invoice=invoice,
+            date=today,
+            amount=invoice.total,
+            amount_applied=invoice.total,
+            discount_amount=invoice.discount_amount,
+            method=payment_method,
+            payment_type='CUSTOMER',
+            reference_number=reference_number,
+            fiscal_year=pay_fy,
+            description=f'POS sale — {invoice.invoice_number}',
+            created_by=user,
+        )
 
-    # Update outstanding balance to zero (fully paid at counter)
-    invoice.outstanding_balance = Decimal('0.00')
-    invoice.save(update_fields=['outstanding_balance'])
+        # Update outstanding balance to zero (fully paid at counter)
+        invoice.outstanding_balance = Decimal('0.00')
+        invoice.save(update_fields=['outstanding_balance'])
 
     # ── 7. Create POSSale ─────────────────────────────────────────────────────
+    amount_tendered = Decimal('0.00') if payment_method == 'CREDIT' else amount_tendered
     change_given = max(Decimal('0'), amount_tendered - invoice.total)
 
     pos_sale = POSSale.objects.create(

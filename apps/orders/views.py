@@ -147,13 +147,11 @@ class SalesOrderCreateView(AuthMixin, CreateView):
             user_branch = getattr(self.request, 'user_branch', None)
             if user_branch is not None:
                 form.instance.branch = user_branch
-            from django.utils import timezone
-            count = SalesOrder.objects.filter(company=self.request.user_company).count() + 1
-            so_number = f"SO-{timezone.now().year}-{count:04d}"
-            while SalesOrder.objects.filter(order_number=so_number).exists():
-                count += 1
-                so_number = f"SO-{timezone.now().year}-{count:04d}"
-            form.instance.order_number = so_number
+            from apps.orders.services import generate_sales_order_number
+            order_number, seq, fy = generate_sales_order_number(self.request.user_company.id)
+            form.instance.order_number = order_number
+            form.instance.sequence_number = seq
+            form.instance.fiscal_year = fy
             self.object = form.save()
             item_formset.instance = self.object
             # Skip rows where product is blank (empty auto-added rows)
@@ -174,8 +172,13 @@ class SalesOrderCreateView(AuthMixin, CreateView):
         subtotal = sum(i.quantity * i.unit_price for i in items)
         discount = sum(i.quantity * i.unit_price * i.discount_percent / 100 for i in items)
         taxable = subtotal - discount
-        tax = sum((i.quantity * i.unit_price - i.quantity * i.unit_price * i.discount_percent / 100)
-                  * i.tax_percent / 100 for i in items)
+        # Non-VAT companies never charge tax, regardless of any tax_percent
+        # left over on individual line items.
+        if order.company and order.company.vat_registered:
+            tax = sum((i.quantity * i.unit_price - i.quantity * i.unit_price * i.discount_percent / 100)
+                      * i.tax_percent / 100 for i in items)
+        else:
+            tax = Decimal('0.00')
         order.subtotal = subtotal
         order.discount_amount = discount
         order.tax_amount = tax
@@ -314,9 +317,7 @@ def cancel_order(request, pk):
 @login_required
 def convert_to_invoice(request, pk):
     """Convert a confirmed/delivered sales order to an Invoice."""
-    from apps.billing.models import Invoice, InvoiceItem
-    from apps.company.services.company_services import setup_default_ledger_accounts
-    from django.utils import timezone
+    from apps.orders.services import create_invoice_from_sales_order
 
     order = get_object_or_404(
         SalesOrder, pk=pk, company=request.user_company,
@@ -333,43 +334,9 @@ def convert_to_invoice(request, pk):
         messages.info(request, "This order already has an invoice.")
         return redirect('billing:view_invoice_detail', pk=order.invoice.pk)
 
-    setup_default_ledger_accounts(request.user_company)
-
-    from apps.billing.services.invoice_service import generate_invoice_number, vat_invoice_fields
-    vat_fields = vat_invoice_fields(request.user_company)
-    invoice_number, seq, fy = generate_invoice_number(request.user_company.id, doc_type=vat_fields['doc_type'])
-
-    invoice = Invoice.objects.create(
-        company=request.user_company,
-        customer=order.customer,
-        branch=order.branch,
-        transaction_date=timezone.now().date(),
-        subtotal=order.subtotal,
-        discount_amount=order.discount_amount,
-        tax_amount=order.tax_amount,
-        total=order.total,
-        outstanding_balance=order.total,
-        tax_percent=vat_fields['tax_percent'],
-        invoice_number=invoice_number,
-        fiscal_year=fy,
-        sequence_number=seq,
-        status=vat_fields['status'],
-        created_by=request.user,
-    )
-
-    for item in order.items.filter(is_deleted=False):
-        InvoiceItem.objects.create(
-            invoice=invoice,
-            product=item.product,
-            description=item.description or (item.product.name if item.product else ''),
-            quantity=int(item.quantity),
-            price=item.unit_price,
-            discount_percent=item.discount_percent,
-        )
-
-    order.invoice = invoice
+    invoice = create_invoice_from_sales_order(order, request.user)
     order.status = 'DELIVERED'
-    order.save(update_fields=['invoice', 'status'])
+    order.save(update_fields=['status'])
 
     messages.success(request, f"Invoice created from order {order.order_number}.")
     return redirect('billing:view_invoice_detail', pk=invoice.pk)
@@ -456,10 +423,11 @@ class DeliveryNoteCreateView(AuthMixin, CreateView):
         form.instance.delivery_contact = form.instance.delivery_contact or order.delivery_contact
         form.instance.delivery_phone = form.instance.delivery_phone or order.delivery_phone
 
-        # Auto-generate delivery number
-        count = DeliveryNote.objects.filter(company=self.request.user_company).count() + 1
-        from django.utils import timezone
-        form.instance.delivery_number = f"DN-{timezone.now().year}-{count:04d}"
+        from apps.orders.services import generate_delivery_note_number
+        delivery_number, seq, fy = generate_delivery_note_number(self.request.user_company.id)
+        form.instance.delivery_number = delivery_number
+        form.instance.sequence_number = seq
+        form.instance.fiscal_year = fy
 
         self.object = form.save()
 

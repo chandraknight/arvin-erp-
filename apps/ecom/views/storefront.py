@@ -92,6 +92,14 @@ def _save_cart_bundles(request, bundles):
     request.session.modified = True
 
 
+def _pid_bundle_key(request, pid):
+    """Return the cart-bundle key that owns this product id, if any."""
+    for key, b in _get_cart_bundles(request).items():
+        if pid in b.get('product_ids', []):
+            return key
+    return None
+
+
 def _cart_totals(cart, products_map):
     subtotal = 0
     items = []
@@ -140,9 +148,6 @@ def store_home(request):
         .order_by('name')
     )
 
-    from apps.products.models import Package
-    popular_bundles = Package.objects.filter(company=company, show_on_ecom=True).prefetch_related('items__product')[:6]
-
     cart = _get_cart(request)
     ctx = _cms_context(company)
     ctx.update({
@@ -150,7 +155,6 @@ def store_home(request):
         'flash_products': flash_products,
         'new_arrivals': new_arrivals,
         'parent_categories': parent_categories,
-        'popular_bundles': popular_bundles,
         'total_product_count': total_product_count,
         'cart_count': sum(cart.values()),
     })
@@ -212,14 +216,6 @@ def add_to_cart(request, product_id):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'cart_count': sum(cart.values()), 'ok': True})
     return redirect('ecom:cart')
-
-
-def _pid_bundle_key(request, pid):
-    """Return the cart-bundle key that owns this product id, if any."""
-    for key, b in _get_cart_bundles(request).items():
-        if pid in b.get('product_ids', []):
-            return key
-    return None
 
 
 @require_POST
@@ -523,7 +519,6 @@ def track_order(request):
     company = _get_company(request)
     _require_ecom_enabled(company)
     order = None
-    delivery_note = None
     order_number = request.GET.get('order_number', '').strip()
     phone = request.GET.get('phone', '').strip()
 
@@ -552,49 +547,10 @@ def track_order(request):
             if stored_norm != norm_phone:
                 order = None
 
-    if order and order.sales_order:
-        delivery_note = (
-            order.sales_order.delivery_notes
-            .order_by('-created_at')
-            .first()
-        )
-
-    status_rank = {
-        'PENDING': 1,
-        'CONFIRMED': 1,
-        'PROCESSING': 2,
-        'DISPATCHED': 3,
-        'DELIVERED': 4,
-        'CANCELLED': 0,
-    }
-    if delivery_note:
-        delivery_rank = {
-            'PENDING': 1,
-            'PACKED': 2,
-            'DISPATCHED': 3,
-            'IN_TRANSIT': 3,
-            'OUT_FOR_DELIVERY': 3,
-            'DELIVERED': 4,
-            'FAILED': 3,
-            'RETURNED': 3,
-            'CANCELLED': 0,
-        }
-        current_step = delivery_rank.get(delivery_note.status, status_rank.get(order.status, 1))
-        tracking_status_label = delivery_note.get_status_display()
-    elif order:
-        current_step = status_rank.get(order.status, 1)
-        tracking_status_label = 'Out with Rider' if order.status == 'DISPATCHED' else order.get_status_display()
-    else:
-        current_step = 1
-        tracking_status_label = ''
-
     ctx = _cms_context(company)
     ctx.update({
         'company': company,
         'order': order,
-        'delivery_note': delivery_note,
-        'current_step': current_step,
-        'tracking_status_label': tracking_status_label,
         'cart_count': sum(_get_cart(request).values()),
     })
     return render(request, 'ecom/storefront/track_order.html', ctx)
@@ -801,7 +757,7 @@ def blog_detail(request, slug):
 
 
 # ──────────────────────────────────────────────────────────
-# Contact
+# Newsletter
 # ──────────────────────────────────────────────────────────
 
 @require_POST
@@ -829,6 +785,10 @@ def newsletter_subscribe(request):
 
     return redirect(request.META.get('HTTP_REFERER') or 'ecom:home')
 
+
+# ──────────────────────────────────────────────────────────
+# Contact
+# ──────────────────────────────────────────────────────────
 
 def contact_us(request):
     company = _get_company(request)
@@ -871,10 +831,7 @@ def customer_login(request):
     company = _get_company(request)
     _require_ecom_enabled(company)
 
-    if request.user.is_authenticated:
-        from apps.accounts.services.helper_views import is_erp_user
-        if is_erp_user(request.user):
-            return redirect('accounts:user_dashboard')
+    if request.user.is_authenticated and not request.user.is_staff:
         return redirect('ecom:account')
 
     from django.conf import settings as dj_settings
@@ -902,11 +859,8 @@ def customer_login(request):
             username = request.POST.get('username', '').strip()
             password = request.POST.get('password', '').strip()
             user = authenticate(request, username=username, password=password)
-            if user:
+            if user and not user.is_staff:
                 login(request, user)
-                from apps.accounts.services.helper_views import is_erp_user
-                if is_erp_user(user):
-                    return redirect('accounts:user_dashboard')
                 return redirect(request.GET.get('next', 'ecom:account'))
             else:
                 form_errors = 'Invalid email/username or password.'
@@ -987,17 +941,13 @@ def customer_account(request):
 
     orders = EcomOrder.objects.filter(
         company=company, customer_email=request.user.email
-    ).prefetch_related('items__product').order_by('-created_at')
+    ).prefetch_related('items')
 
     cart = _get_cart(request)
-    order_count = orders.count()
     ctx = _cms_context(company)
     ctx.update({
         'company': company,
         'orders': orders,
-        'order_count': order_count,
-        'reminder_count': 3,
-        'saved_address_count': 2,
         'cart_count': sum(cart.values()),
     })
     return render(request, 'ecom/storefront/account.html', ctx)
@@ -1030,34 +980,8 @@ def bundle_detail(request, bundle_id):
     _require_ecom_enabled(company)
     bundle = get_object_or_404(Package, id=bundle_id, company=company, show_on_ecom=True)
     cart = _get_cart(request)
-
-    # Categorise items by type for the customisation UI
-    all_items = bundle.items.select_related('product').prefetch_related(
-        'product__images', 'product__productstock'
-    ).all()
-    core_items     = [i for i in all_items if i.item_type == 'core']
-    optional_items = [i for i in all_items if i.item_type == 'optional']
-    addon_items    = [i for i in all_items if i.item_type == 'addon']
-
-    # Base price = sum of core items only (optional/addon are extras)
-    core_total = sum(
-        float(i.product.price) * (i.quantity or 1)
-        for i in core_items if i.product
-    )
-
     ctx = _cms_context(company)
-    ctx.update({
-        'company': company,
-        'bundle': bundle,
-        'cart_count': sum(cart.values()),
-        'core_items': core_items,
-        'optional_items': optional_items,
-        'addon_items': addon_items,
-        'core_total': core_total,
-        'core_count': len(core_items),
-        'optional_count': len(optional_items),
-        'addon_count': len(addon_items),
-    })
+    ctx.update({'company': company, 'bundle': bundle, 'cart_count': sum(cart.values())})
     return render(request, 'ecom/storefront/bundle_detail.html', ctx)
 
 
@@ -1069,53 +993,21 @@ def add_bundle_to_cart(request, bundle_id):
     cart = _get_cart(request)
     skipped = []
     added_pids = []
-
-    # Customer's optional/addon selections from the customisation form.
-    # `customized` marks that this submission came from the customize-kit form
-    # (always present there, even if every optional item was unchecked) — so an
-    # empty optional_items list means "deliberately deselected all", not
-    # "legacy form, include everything".
-    is_customized     = request.POST.get('customized') == '1'
-    selected_optional = set(request.POST.getlist('optional_items'))
-    selected_addon    = set(request.POST.getlist('addon_items'))
-
     for item in bundle.items.select_related('product__productstock').all():
         if not item.product or not item.product.show_on_ecom:
             continue
-
-        # Determine whether this item should be included
-        pid_str = str(item.product.id)
-        if item.item_type == 'core':
-            include = True
-        elif item.item_type == 'optional':
-            # included if the customer left it checked (pid in selected_optional).
-            # Only fall back to "include everything" for legacy callers that
-            # don't send the customized marker at all.
-            if is_customized:
-                include = pid_str in selected_optional
-            else:
-                include = True  # legacy: no customize form = add all
-        elif item.item_type == 'addon':
-            include = pid_str in selected_addon
-        else:
-            include = True
-
-        if not include:
-            continue
-
+        pid = str(item.product.id)
         qty = item.quantity or 1
         try:
             avail = item.product.productstock.ecom_stock
         except Exception:
             avail = 0
-
-        current = cart.get(pid_str, 0)
+        current = cart.get(pid, 0)
         if avail > 0 and current + qty <= avail:
-            cart[pid_str] = current + qty
-            added_pids.append(pid_str)
+            cart[pid] = current + qty
+            added_pids.append(pid)
         else:
             skipped.append(item.product.name)
-
     _save_cart(request, cart)
 
     if added_pids:
@@ -1130,7 +1022,7 @@ def add_bundle_to_cart(request, bundle_id):
         _save_cart_bundles(request, bundles)
 
     if skipped:
-        messages.warning(request, f'Some items were not added (out of stock): {", ".join(skipped)}')
+        messages.warning(request, f"Some items were not added (out of stock): {', '.join(skipped)}")
     else:
         messages.success(request, f'"{bundle.name}" added to cart.')
     return redirect('ecom:cart')

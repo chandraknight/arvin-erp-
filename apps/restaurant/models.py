@@ -222,6 +222,14 @@ class DiningOrder(BaseModel):
         RestaurantTable, on_delete=models.PROTECT, related_name='dining_orders'
     )
     order_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='dining_orders',
+        db_constraint=False,
+    )
     status = models.CharField(
         max_length=10, choices=ORDER_STATUS_CHOICES, default='OPEN'
     )

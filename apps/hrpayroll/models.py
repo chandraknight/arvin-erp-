@@ -191,7 +191,15 @@ class PayrollRun(BaseModel):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, related_name='payroll_runs')
     run_number = models.CharField(
         max_length=30, blank=True,
-        help_text='Auto-generated sequential run number, e.g. PR-2081-001',
+        help_text='Auto-generated sequential run number, e.g. DPS-PR-2082/83-001',
+    )
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='payroll_runs',
+        db_constraint=False,
     )
     payroll_date = models.DateField(help_text="The date this payroll run is conducted.")
     period_start_date = models.DateField()
@@ -220,23 +228,41 @@ class PayrollRun(BaseModel):
         if not self.run_number and self.company_id:
             import nepali_datetime
             from django.db import transaction
-            np_year = nepali_datetime.date.today().year
-            prefix = f"PR-{np_year}-"
+            from django.db.models import Max
+            from apps.company.models import Company, FiscalYear
+
+            today_np = nepali_datetime.date.today()
+            fiscal_year = None
+            try:
+                company = Company.active_objects.get(id=self.company_id)
+                company_prefix = company.name[:3].upper().strip().ljust(3, 'X')
+                fiscal_year = FiscalYear.active_objects.filter(is_active=True, company=company).first()
+                fiscal_year_name = fiscal_year.name if fiscal_year else today_np.strftime("%y/%m/%d")
+            except (Company.DoesNotExist, AttributeError):
+                company_prefix = "PR"
+                fiscal_year_name = today_np.strftime("%y/%m/%d")
+
+            prefix = f"{company_prefix}-PR-{fiscal_year_name}-"
+
+            fy_filter = {'fiscal_year': fiscal_year} if fiscal_year else {'fiscal_year__isnull': True}
             with transaction.atomic():
                 # select_for_update serializes concurrent run-number assignment
-                last = (
-                    PayrollRun.objects.select_for_update()
-                    .filter(company_id=self.company_id, run_number__startswith=prefix)
-                    .order_by('-run_number')
-                    .first()
-                )
-                seq = 1
-                if last and last.run_number:
-                    try:
-                        seq = int(last.run_number.rsplit('-', 1)[-1]) + 1
-                    except (ValueError, IndexError):
-                        pass
-                self.run_number = f"{prefix}{seq:03d}"
+                last_seq = PayrollRun.objects.select_for_update().filter(
+                    company_id=self.company_id,
+                    **fy_filter,
+                ).aggregate(max_seq=Max('sequence_number'))
+
+                seq = (last_seq['max_seq'] or 0) + 1
+                run_number = f"{prefix}{seq:03d}"
+                while PayrollRun.objects.filter(
+                    company_id=self.company_id, fiscal_year=fiscal_year, sequence_number=seq
+                ).exists() or PayrollRun.objects.filter(run_number=run_number).exists():
+                    seq += 1
+                    run_number = f"{prefix}{seq:03d}"
+
+                self.run_number = run_number
+                self.sequence_number = seq
+                self.fiscal_year = fiscal_year
                 super().save(*args, **kwargs)
             return
         super().save(*args, **kwargs)

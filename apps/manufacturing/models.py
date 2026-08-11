@@ -143,6 +143,14 @@ class WorkOrder(BaseModel):
         help_text='BOM to use for this production run.'
     )
     work_order_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='work_orders',
+        db_constraint=False,
+    )
     status = models.CharField(max_length=15, choices=WORK_ORDER_STATUS, default='PLANNED')
 
     # Quantities

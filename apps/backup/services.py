@@ -222,6 +222,57 @@ def _mysql_restore(db, fpath):
             os.remove(cnf)
 
 
+# Scratch MariaDB instance used only to stage a prod (MariaDB) dump so
+# pgloader has a live server to read from — pgloader cannot parse raw .sql
+# dump files directly. Kept on its own socket/port to avoid clashing with
+# any other locally installed MySQL-family server.
+_SCRATCH_MARIADB_SOCKET = '/tmp/mariadb.sock'
+_SCRATCH_MARIADB_PORT = '3307'
+
+
+def _mysql_load_dump_to_scratch_db(fpath, scratch_db_name):
+    """Load a raw MySQL/MariaDB .sql dump into a fresh scratch MariaDB database."""
+    base_args = ['mysql', '--socket', _SCRATCH_MARIADB_SOCKET, '-u', 'root']
+    create_cmd = base_args + ['-e', f"DROP DATABASE IF EXISTS `{scratch_db_name}`; CREATE DATABASE `{scratch_db_name}`;"]
+    result = subprocess.run(create_cmd, capture_output=True, text=True, timeout=60)
+    if result.returncode != 0:
+        raise RuntimeError(f"Could not create scratch MariaDB database: {result.stderr.strip()}")
+
+    with open(fpath, 'rb') as sql_file:
+        load_cmd = base_args + [scratch_db_name]
+        result = subprocess.run(load_cmd, stdin=sql_file, capture_output=True, text=True, timeout=600)
+    if result.returncode != 0:
+        raise RuntimeError(f"Loading dump into scratch MariaDB database failed: {result.stderr.strip()}")
+
+
+def _mysql_drop_scratch_db(scratch_db_name):
+    subprocess.run(
+        ['mysql', '--socket', _SCRATCH_MARIADB_SOCKET, '-u', 'root', '-e', f"DROP DATABASE IF EXISTS `{scratch_db_name}`;"],
+        capture_output=True, text=True, timeout=60,
+    )
+
+
+def _pgloader_migrate(db, scratch_db_name):
+    """Migrate the scratch MariaDB database into the target Postgres database via pgloader."""
+    pg_uri = f"postgresql://{db.get('USER', 'postgres')}:{db.get('PASSWORD', '')}@{db.get('HOST', 'localhost')}:{db.get('PORT', 5432)}/{db.get('NAME', 'erp')}"
+    mysql_uri = f"mysql://root@localhost:{_SCRATCH_MARIADB_PORT}/{scratch_db_name}"
+    result = subprocess.run(
+        ['pgloader', mysql_uri, pg_uri],
+        capture_output=True, text=True, timeout=1800,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"pgloader migration failed: {result.stderr.strip() or result.stdout.strip()}")
+
+
+def _mysql_to_postgresql_restore(db, fpath):
+    scratch_db_name = f"erp_restore_scratch_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    try:
+        _mysql_load_dump_to_scratch_db(fpath, scratch_db_name)
+        _pgloader_migrate(db, scratch_db_name)
+    finally:
+        _mysql_drop_scratch_db(scratch_db_name)
+
+
 def create_full_backup(user):
     record = BackupRecord.objects.create(
         backup_type='FULL',
@@ -265,6 +316,19 @@ def create_full_backup(user):
     return record
 
 
+def _sniff_dump_engine(fpath):
+    """Detect a dump file's origin engine from its content, not its extension."""
+    with open(fpath, 'rb') as f:
+        head = f.read(4096)
+    if head.startswith(b'PGDMP'):
+        return 'postgresql'
+    if b'MySQL dump' in head or b'-- MySQL' in head or b'MariaDB dump' in head:
+        return 'mysql'
+    if b'PostgreSQL database dump' in head:
+        return 'postgresql'
+    return None
+
+
 def restore_full_backup(record, user):
     if record.status != 'COMPLETED' or not os.path.exists(record.file_path):
         raise ValueError("Backup file not available.")
@@ -272,13 +336,26 @@ def restore_full_backup(record, user):
         raise ValueError("Not a full backup.")
 
     db = _db_settings()
-    engine = _db_engine()
+    configured_engine = _db_engine()
 
-    # Detect engine from file extension if notes field doesn't have it
-    if record.file_path.endswith('.sql'):
-        engine = 'mysql'
-    elif record.file_path.endswith('.dump'):
-        engine = 'postgresql'
+    dump_engine = _sniff_dump_engine(record.file_path)
+    if dump_engine is None:
+        # Fall back to extension only when content sniffing is inconclusive.
+        if record.file_path.endswith('.sql'):
+            dump_engine = 'mysql'
+        elif record.file_path.endswith('.dump'):
+            dump_engine = 'postgresql'
+
+    if dump_engine != configured_engine:
+        if dump_engine == 'mysql' and configured_engine == 'postgresql':
+            _mysql_to_postgresql_restore(db, record.file_path)
+            return
+        raise RuntimeError(
+            f"Backup file appears to be a {dump_engine or 'unknown'} dump, "
+            f"but this server is configured for {configured_engine}, and no "
+            f"automatic conversion path exists for that direction. Restore aborted."
+        )
+    engine = dump_engine
 
     if engine == 'mysql':
         _mysql_restore(db, record.file_path)

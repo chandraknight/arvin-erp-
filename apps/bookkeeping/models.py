@@ -137,15 +137,10 @@ class JournalEntryLine(BaseModel):
     entry_type = models.CharField(max_length=10, choices=JOURNAL_ENTRY_TYPES)
     narration = models.CharField(max_length=250, blank=True, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    # Bank Reconciliation Statement (BRS) — only meaningful for lines posted to
-    # a Cash/Bank ledger account. Marks that this movement has been matched
-    # against the bank statement; unreconciled lines are the BRS's reconciling
-    # items (cheques issued not yet presented, deposits not yet credited, etc.)
-    is_reconciled = models.BooleanField(default=False)
-    reconciled_date = models.DateField(
-        null=True, blank=True,
-        help_text='The date this line cleared on the bank statement.',
-    )
+    # Bank reconciliation: whether this line has been matched against a bank
+    # statement. Meaningful only for lines posted to a Bank/Cash ledger account.
+    is_cleared = models.BooleanField(default=False)
+    cleared_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.entry_type} {self.amount} to {self.account.name} for {self.journal_entry.description[:50]}..."
@@ -155,55 +150,13 @@ class JournalEntryLine(BaseModel):
         cache.delete(f'journal_entry_{jeid}_debit_total')
         cache.delete(f'journal_entry_{jeid}_credit_total')
 
-    def _assert_entry_balanced(self):
-        """
-        Python-level mirror of the Postgres trg_journal_entry_balance_check
-        trigger (apps/bookkeeping/migrations/0009_...). The trigger is the
-        primary guard on Postgres, but this backs it up on any backend
-        (e.g. SQLite in tests) and also covers hard-deletes, which the
-        trigger (INSERT/UPDATE only) does not.
-        """
-        from django.db.models import Sum
-        lines = JournalEntryLine.objects.filter(journal_entry_id=self.journal_entry_id)
-        if lines.count() < 2:
-            return
-        debit = lines.filter(entry_type='DEBIT').aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        credit = lines.filter(entry_type='CREDIT').aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        if abs(debit - credit) > BALANCE_TOLERANCE:
-            raise ValidationError(
-                f"Journal entry {self.journal_entry_id} is unbalanced: "
-                f"debit={debit} credit={credit}. Double-entry requires debit == credit."
-            )
-
     def save(self, *args, **kwargs):
-        with transaction.atomic():
-            super().save(*args, **kwargs)
-            self._invalidate_entry_cache()
-            self._assert_entry_balanced()
+        super().save(*args, **kwargs)
+        self._invalidate_entry_cache()
 
     def delete(self, *args, **kwargs):
-        with transaction.atomic():
-            jeid = self.journal_entry_id
-            super().delete(*args, **kwargs)
-            self._invalidate_entry_cache()
-            remaining = JournalEntryLine.objects.filter(journal_entry_id=jeid)
-            remaining_count = remaining.count()
-            if remaining_count == 1:
-                # A single leftover line can never balance (amount > 0 by
-                # constraint), so this is always an invalid double-entry state.
-                raise ValidationError(
-                    f"Cannot delete this line: journal entry {jeid} would be left "
-                    f"with a single unmatched line, which is never balanced."
-                )
-            if remaining_count >= 2:
-                from django.db.models import Sum
-                debit = remaining.filter(entry_type='DEBIT').aggregate(t=Sum('amount'))['t'] or Decimal('0')
-                credit = remaining.filter(entry_type='CREDIT').aggregate(t=Sum('amount'))['t'] or Decimal('0')
-                if abs(debit - credit) > BALANCE_TOLERANCE:
-                    raise ValidationError(
-                        f"Cannot delete this line: journal entry {jeid} would become "
-                        f"unbalanced (debit={debit} credit={credit})."
-                    )
+        self._invalidate_entry_cache()
+        super().delete(*args, **kwargs)
 
     class Meta:
         constraints = [
@@ -258,10 +211,8 @@ def post_journal_entry(company, date, description, lines, created_by=None, sourc
 
     Guarantees, so callers don't have to re-implement double-entry safety themselves:
       - the whole operation (entry + all lines) is atomic — no half-posted entries on failure
-      - lines are created via .create() (never bulk_create), so each line runs
-        JournalEntryLine.save() -> _assert_entry_balanced(), not just the Postgres trigger
       - an explicit pre-flight balance check gives a clear error before touching the DB
-      - JournalEntry.save() itself blocks posting into a closed fiscal year
+      - assert_balanced() double-checks after all lines are created
     """
     debit = sum((l['amount'] for l in lines if l['entry_type'] == 'DEBIT'), Decimal('0'))
     credit = sum((l['amount'] for l in lines if l['entry_type'] == 'CREDIT'), Decimal('0'))
@@ -286,6 +237,7 @@ def post_journal_entry(company, date, description, lines, created_by=None, sourc
                 amount=line['amount'],
                 narration=line.get('narration', ''),
             )
+        assert_balanced(entry)
     return entry
 
 

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.conf import settings
 from apps.billing.models import VendorBill, Invoice
 from apps.bookkeeping.models import JournalEntry, LedgerAccount
 from apps.company.models import Company, Branch
@@ -60,7 +61,7 @@ class BankReconciliation(BaseModel):
     """
     Snapshot of a bank reconciliation session — book balance vs statement
     balance as of statement_date, with the resulting difference. Individual
-    line-level clearing is tracked on JournalEntryLine.is_reconciled/reconciled_date;
+    line-level clearing is tracked on JournalEntryLine.is_cleared/cleared_date;
     this model records the reconciliation event itself for audit history.
     """
     bank_account = models.ForeignKey(

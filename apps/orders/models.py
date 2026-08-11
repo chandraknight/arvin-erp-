@@ -68,6 +68,14 @@ class SalesOrder(BaseModel):
         related_name='sales_orders'
     )
     order_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='sales_orders',
+        db_constraint=False,
+    )
     order_date = models.DateField(default=timezone.now)
     expected_delivery_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=15, choices=ORDER_STATUS_CHOICES, default='CONFIRMED')
@@ -168,6 +176,14 @@ class DeliveryNote(BaseModel):
         SalesOrder, on_delete=models.CASCADE, related_name='delivery_notes'
     )
     delivery_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='delivery_notes',
+        db_constraint=False,
+    )
     dispatch_date = models.DateField(default=timezone.now)
     expected_delivery_date = models.DateField(null=True, blank=True)
     actual_delivery_date = models.DateField(null=True, blank=True)

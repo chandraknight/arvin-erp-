@@ -75,6 +75,8 @@ def add_item(request, product, quantity: int = 1, discount_pct: Decimal = Decima
         item = {
             'product_id':   pid,
             'name':         product.name,
+            'sku':          product.sku or '',
+            'barcode':      product.barcode or '',
             'price':        str(_q(product.price)),
             'quantity':     qty,
             'discount_pct': str(disc),

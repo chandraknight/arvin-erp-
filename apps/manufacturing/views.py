@@ -269,30 +269,16 @@ class WorkOrderCreateView(AuthMixin, CreateView):
         return kw
 
     def form_valid(self, form):
-        from django.utils import timezone
+        from apps.manufacturing.services import generate_work_order_number
         company = self.request.user_company
 
         with transaction.atomic():
-            # Lock company's latest WO to prevent concurrent duplicate numbers.
-            # Use count-of-existing (scoped to company+year) so numbers never
-            # collide across companies even though field is globally unique.
-            year = timezone.now().year
-            last = (
-                WorkOrder.objects.select_for_update()
-                .filter(company=company, work_order_number__startswith=f"WO-{year}-")
-                .order_by('-work_order_number')
-                .first()
-            )
-            if last and last.work_order_number:
-                try:
-                    seq = int(last.work_order_number.rsplit('-', 1)[-1]) + 1
-                except (ValueError, IndexError):
-                    seq = WorkOrder.objects.filter(company=company).count() + 1
-            else:
-                seq = 1
+            work_order_number, seq, fy = generate_work_order_number(company.id)
             form.instance.company = company
             form.instance.created_by = self.request.user
-            form.instance.work_order_number = f"WO-{year}-{company.pk.hex[:6].upper()}-{seq:04d}"
+            form.instance.work_order_number = work_order_number
+            form.instance.sequence_number = seq
+            form.instance.fiscal_year = fy
             self.object = form.save()
 
             bom = self.object.bom
@@ -444,6 +430,11 @@ class ProductionRunCreateView(AuthMixin, CreateView):
             WorkOrder, pk=self.kwargs['wo_pk'], company=self.request.user_company
         )
         with transaction.atomic():
+            # ProductionRun.run_number is a per-WorkOrder sub-sequence
+            # ("WO-xxx-R01"), not a standalone fiscal-year document — it
+            # intentionally doesn't get the company-prefix+FY pattern.
+            # select_for_update() on the parent WorkOrder still serializes
+            # concurrent requests so the R-suffix can't collide.
             wo = WorkOrder.objects.select_for_update().get(pk=wo.pk)
             count = wo.production_runs.count() + 1
             form.instance.work_order = wo

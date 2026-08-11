@@ -56,7 +56,7 @@ class Invoice(BaseModel):
         max_length=11,
         choices=INVOICE_STATUS_CHOICES,
         default='ISSUED',
-        help_text='ISSUED = locked; ESTIMATE = no journal; CANCELLED = voided.',
+        help_text='ISSUED = locked; ESTIMATE = non-VAT sale (still journalised); CANCELLED = voided.',
     )
     reference_number = models.CharField(
         max_length=100, blank=True, null=True,
@@ -164,7 +164,7 @@ class InvoiceItem(models.Model):
             discount_amount=invoice.discount_amount,
             tax_amount=invoice.tax_amount,
             total=invoice.total,
-            outstanding_balance=Decimal('0.00') if invoice.status == 'ESTIMATE' else invoice.total,
+            outstanding_balance=invoice.total,
         )
 
     def save(self, *args, **kwargs):

@@ -59,6 +59,12 @@ class SalesOrderItemForm(forms.ModelForm):
         # Allow empty rows added by JS to pass formset validation; view skips rows with no product
         self.fields['unit_price'].required = False
         self.fields['quantity'].initial = Decimal('1.000')
+        # Non-VAT companies hide the Tax% column entirely — the field must
+        # not block submission when no input is rendered for it.
+        self.fields['tax_percent'].required = False
+
+    def clean_tax_percent(self):
+        return self.cleaned_data.get('tax_percent') or Decimal('0.00')
 
 
 SalesOrderItemFormSet = inlineformset_factory(

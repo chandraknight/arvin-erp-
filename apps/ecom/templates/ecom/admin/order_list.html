@@ -67,14 +67,26 @@
             </span>
           </td>
           <td class="px-4 py-3 text-xs">
-            {% if order.cod_status == 'COLLECTED' %}
-              <span class="text-green-600 font-semibold">✓ Collected</span>
-            {% elif order.cod_status == 'FAILED' %}
-              <span class="text-red-500">✗ Failed</span>
-            {% elif order.payment_method != 'COD' %}
-              <span class="text-gray-400">—</span>
+            {% if order.payment_method == 'COD' %}
+              {% if order.cod_status == 'COLLECTED' %}
+                <span class="text-green-600 font-semibold">✓ Collected</span>
+              {% elif order.cod_status == 'FAILED' %}
+                <span class="text-red-500">✗ Failed</span>
+              {% elif order.status == 'DELIVERED' %}
+                <span class="text-red-600 font-semibold">⚠ Not Collected</span>
+              {% else %}
+                <span class="text-yellow-600">Pending</span>
+              {% endif %}
             {% else %}
-              <span class="text-yellow-600">Pending</span>
+              {% if order.payment_status == 'PAID' %}
+                <span class="text-green-600 font-semibold">✓ Paid</span>
+              {% elif order.payment_status == 'FAILED' %}
+                <span class="text-red-500">✗ Failed</span>
+              {% elif order.status == 'DELIVERED' %}
+                <span class="text-red-600 font-semibold">⚠ Unconfirmed</span>
+              {% else %}
+                <span class="text-yellow-600">Pending</span>
+              {% endif %}
             {% endif %}
           </td>
           <td class="px-4 py-3 text-xs">

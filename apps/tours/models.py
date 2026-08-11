@@ -73,6 +73,14 @@ class TourEnquiry(BaseModel):
 
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='tour_enquiries')
     enquiry_number = models.CharField(max_length=30, blank=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='tour_enquiries',
+        db_constraint=False,
+    )
 
     # Customer — can be existing or walk-in
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='tour_enquiries')
@@ -104,24 +112,9 @@ class TourEnquiry(BaseModel):
         return f"{self.enquiry_number} — {self.contact_name}"
 
     def save(self, *args, **kwargs):
-        if not self.enquiry_number:
-            from django.db import transaction
-            from django.utils import timezone
-            with transaction.atomic():
-                last = (
-                    TourEnquiry.objects.select_for_update()
-                    .filter(company=self.company)
-                    .order_by('-created_at')
-                    .first()
-                )
-                if last and last.enquiry_number:
-                    try:
-                        count = int(last.enquiry_number.split('-')[-1]) + 1
-                    except (ValueError, IndexError):
-                        count = TourEnquiry.objects.filter(company=self.company).count() + 1
-                else:
-                    count = 1
-                self.enquiry_number = f"ENQ-{timezone.now().year}-{count:04d}"
+        if not self.enquiry_number and self.company_id:
+            from apps.tours.services import generate_enquiry_number
+            self.enquiry_number, self.sequence_number, self.fiscal_year = generate_enquiry_number(self.company_id)
         super().save(*args, **kwargs)
 
     @property
@@ -139,6 +132,14 @@ class TourBooking(BaseModel):
 
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='tour_bookings')
     booking_number = models.CharField(max_length=30, blank=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='tour_bookings',
+        db_constraint=False,
+    )
     enquiry = models.OneToOneField(TourEnquiry, on_delete=models.SET_NULL, null=True, blank=True, related_name='booking')
 
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='tour_bookings')
@@ -180,24 +181,9 @@ class TourBooking(BaseModel):
         return f"{self.booking_number} — {self.contact_name}"
 
     def save(self, *args, **kwargs):
-        if not self.booking_number:
-            from django.db import transaction
-            from django.utils import timezone
-            with transaction.atomic():
-                last = (
-                    TourBooking.objects.select_for_update()
-                    .filter(company=self.company)
-                    .order_by('-created_at')
-                    .first()
-                )
-                if last and last.booking_number:
-                    try:
-                        count = int(last.booking_number.split('-')[-1]) + 1
-                    except (ValueError, IndexError):
-                        count = TourBooking.objects.filter(company=self.company).count() + 1
-                else:
-                    count = 1
-                self.booking_number = f"BKG-{timezone.now().year}-{count:04d}"
+        if not self.booking_number and self.company_id:
+            from apps.tours.services import generate_booking_number
+            self.booking_number, self.sequence_number, self.fiscal_year = generate_booking_number(self.company_id)
         super().save(*args, **kwargs)
 
     def recalculate_totals(self):

@@ -56,7 +56,7 @@
                             <th class="px-3 py-2 text-right w-20">Qty</th>
                             <th class="px-3 py-2 text-right w-24">Unit Price</th>
                             <th class="px-3 py-2 text-right w-16">Disc%</th>
-                            <th class="px-3 py-2 text-right w-16">Tax%</th>
+                            {% if request.user_company.vat_registered %}<th class="px-3 py-2 text-right w-16">Tax%</th>{% endif %}
                             <th class="px-3 py-2 text-center w-10">Del</th>
                         </tr>
                     </thead>
@@ -69,7 +69,7 @@
                             <td class="px-2 py-1">{{ item_form.quantity|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>
                             <td class="px-2 py-1">{{ item_form.unit_price|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>
                             <td class="px-2 py-1">{{ item_form.discount_percent|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>
-                            <td class="px-2 py-1">{{ item_form.tax_percent|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>
+                            {% if request.user_company.vat_registered %}<td class="px-2 py-1">{{ item_form.tax_percent|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>{% endif %}
                             <td class="px-2 py-1 text-center">{{ item_form.DELETE }}</td>
                         </tr>
                         {% endfor %}
@@ -86,7 +86,7 @@
                     <td class="px-2 py-1">{{ item_formset.empty_form.quantity|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>
                     <td class="px-2 py-1">{{ item_formset.empty_form.unit_price|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>
                     <td class="px-2 py-1">{{ item_formset.empty_form.discount_percent|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>
-                    <td class="px-2 py-1">{{ item_formset.empty_form.tax_percent|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>
+                    {% if request.user_company.vat_registered %}<td class="px-2 py-1">{{ item_formset.empty_form.tax_percent|add_class:"w-full border border-gray-300 px-2 py-1 text-sm text-right" }}</td>{% endif %}
                     <td class="px-2 py-1 text-center">{{ item_formset.empty_form.DELETE }}</td>
                 </tr>
             </tbody></table>

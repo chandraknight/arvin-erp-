@@ -73,13 +73,6 @@ PAYMENT_METHOD_CHOICES = [
     ('OTHER', 'Other')
 ]
 
-# POS checkout only — includes DUE (credit sale, no Payment record created).
-POS_PAYMENT_METHOD_CHOICES = [
-    ('CASH', 'Cash'),
-    ('BANK_TRANSFER', 'Bank'),
-    ('DUE', 'Due'),
-]
-
 PAYMENT_TYPE_CHOICES = [
     ('CUSTOMER', 'Customer Payment'),
     ('VENDOR', 'Vendor Payment'),
@@ -151,7 +144,4 @@ DEFAULT_ACCOUNTS = [
     # NFRS presentation: revenue and purchases reported net of returns
     {"name": "Sales Returns",        "account_type": "REVENUE",   "code": "4100"},
     {"name": "Purchase Returns",     "account_type": "EXPENSE",   "code": "5200"},
-    # Delivery/shipping fees charged to customers — kept separate from Sales
-    # Revenue so P&L shows product sales and delivery income as distinct lines.
-    {"name": "Delivery Income",      "account_type": "REVENUE",   "code": "4200"},
 ]

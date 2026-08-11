@@ -171,10 +171,7 @@ def update_order_status(request, order_id):
         return redirect('ecom:admin_order_detail', order_id=order_id)
 
     order.status = new_status
-    # When admin marks delivered, auto-collect COD
-    if new_status == 'DELIVERED' and order.payment_method == 'COD' and order.cod_status == 'PENDING':
-        order.cod_status = 'COLLECTED'
-    order.save(update_fields=['status', 'cod_status'])
+    order.save(update_fields=['status'])
 
     # Mirror status to the linked SalesOrder
     if order.sales_order:
@@ -189,6 +186,14 @@ def update_order_status(request, order_id):
         if so_status:
             order.sales_order.status = so_status
             order.sales_order.save(update_fields=['status'])
+
+    if new_status == 'CONFIRMED' and order.sales_order and not order.sales_order.invoice_id:
+        from apps.orders.services import create_invoice_from_sales_order
+        create_invoice_from_sales_order(order.sales_order, request.user)
+
+    if new_status == 'CANCELLED':
+        from apps.ecom.services import refund_ecom_order
+        refund_ecom_order(order, request.user)
 
     messages.success(request, f'Order status updated to {order.get_status_display()}.')
     return redirect('ecom:admin_order_detail', order_id=order_id)
@@ -213,7 +218,34 @@ def update_cod_status(request, order_id):
             order.sales_order.status = 'DELIVERED'
             order.sales_order.save(update_fields=['status'])
     order.save(update_fields=['cod_status', 'status'])
+
+    if new_cod == 'COLLECTED':
+        from apps.ecom.services import record_ecom_payment
+        record_ecom_payment(order, request.user)
+
     messages.success(request, f'COD status updated to {order.get_cod_status_display()}.')
+    return redirect('ecom:admin_order_detail', order_id=order_id)
+
+
+@login_required
+@require_POST
+def update_payment_status(request, order_id):
+    company = _get_company(request)
+    order = get_object_or_404(EcomOrder, id=order_id, company=company)
+    new_status = request.POST.get('payment_status')
+    valid = [s[0] for s in EcomOrder._meta.get_field('payment_status').choices]
+    if new_status not in valid:
+        messages.error(request, 'Invalid payment status.')
+        return redirect('ecom:admin_order_detail', order_id=order_id)
+
+    order.payment_status = new_status
+    order.save(update_fields=['payment_status'])
+
+    if new_status == 'PAID':
+        from apps.ecom.services import record_ecom_payment
+        record_ecom_payment(order, request.user)
+
+    messages.success(request, f'Payment status updated to {order.get_payment_status_display()}.')
     return redirect('ecom:admin_order_detail', order_id=order_id)
 
 
@@ -449,17 +481,12 @@ def package_create(request):
             pkg.save(update_fields=['ecom_image'])
         product_ids = request.POST.getlist('product_ids')
         quantities = request.POST.getlist('quantities')
-        item_types = request.POST.getlist('item_types')
-        valid_types = {c[0] for c in PackageItem._meta.get_field('item_type').choices}
-        for pid, qty, item_type in zip(product_ids, quantities, item_types):
+        for pid, qty in zip(product_ids, quantities):
             if pid and qty:
                 from apps.products.models import Product as Prod
                 try:
                     product = Prod.objects.get(id=pid, company=company)
-                    PackageItem.objects.create(
-                        package=pkg, product=product, quantity=int(qty),
-                        item_type=item_type if item_type in valid_types else 'core',
-                    )
+                    PackageItem.objects.create(package=pkg, product=product, quantity=int(qty))
                 except Exception:
                     pass
         messages.success(request, f'Package "{pkg.name}" created.')
@@ -480,25 +507,17 @@ def package_edit(request, package_id):
         pkg.compare_at_price = request.POST.get('compare_at_price', '').strip() or None
         pkg.show_on_ecom = request.POST.get('show_on_ecom') == 'on'
         pkg.ecom_description = request.POST.get('ecom_description', '').strip() or None
-        if request.POST.get('clear_image') == '1' and pkg.ecom_image:
-            pkg.ecom_image.delete(save=False)
-            pkg.ecom_image = None
-        elif request.FILES.get('ecom_image'):
+        if request.FILES.get('ecom_image'):
             pkg.ecom_image = request.FILES['ecom_image']
         pkg.save()
         pkg.items.all().delete()
         product_ids = request.POST.getlist('product_ids')
         quantities = request.POST.getlist('quantities')
-        item_types = request.POST.getlist('item_types')
-        valid_types = {c[0] for c in PackageItem._meta.get_field('item_type').choices}
-        for pid, qty, item_type in zip(product_ids, quantities, item_types):
+        for pid, qty in zip(product_ids, quantities):
             if pid and qty:
                 try:
                     product = Prod.objects.get(id=pid, company=company)
-                    PackageItem.objects.create(
-                        package=pkg, product=product, quantity=int(qty),
-                        item_type=item_type if item_type in valid_types else 'core',
-                    )
+                    PackageItem.objects.create(package=pkg, product=product, quantity=int(qty))
                 except Exception:
                     pass
         messages.success(request, f'Package "{pkg.name}" updated.')

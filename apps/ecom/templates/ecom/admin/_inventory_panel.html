@@ -21,7 +21,7 @@
           {% endfor %}
         </select>
         <div class="relative flex-1 min-w-0" style="max-width: 20rem;">
-          <input type="text" name="q" value="{{ search }}" placeholder="Search products…"
+          <input type="text" name="q" value="{{ search }}" placeholder="Search products, SKU, barcode…"
                  class="inv-filter w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
                  hx-get="{% url 'ecom:admin_ecom_inventory' %}" hx-trigger="keyup changed delay:400ms"
                  hx-target="#inventory-panel" hx-swap="outerHTML" hx-include=".inv-filter" hx-push-url="true">
@@ -48,7 +48,16 @@
               <tbody class="bg-white divide-y divide-gray-100">
               {% for product in products %}
               <tr class="hover:bg-green-50 transition-colors duration-150">
-                <td class="px-6 py-3 text-sm font-medium text-gray-800">{{ product.name }}</td>
+                <td class="px-6 py-3 text-sm font-medium text-gray-800">
+                  {{ product.name }}
+                  {% if product.sku or product.barcode %}
+                  <div class="text-xs text-gray-400 font-normal mt-0.5">
+                    {% if product.sku %}SKU: {{ product.sku }}{% endif %}
+                    {% if product.sku and product.barcode %} &middot; {% endif %}
+                    {% if product.barcode %}Barcode: {{ product.barcode }}{% endif %}
+                  </div>
+                  {% endif %}
+                </td>
                 <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{{ product.category.name|default:"—" }}</td>
                 <td class="px-4 py-3 text-sm text-gray-700 text-right">{{ product.productstock.stock|default:0 }}</td>
                 <td class="px-4 py-3 text-sm text-right font-semibold">

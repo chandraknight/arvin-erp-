@@ -6,7 +6,11 @@ import logging
 from decimal import Decimal
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Max
 
+import nepali_datetime
+
+from apps.company.models import Company, FiscalYear
 from apps.restaurant.models import (
     DiningOrder, DiningOrderItem, PrintJob, PrinterStation,
     RestaurantTable,
@@ -16,22 +20,42 @@ logger = logging.getLogger(__name__)
 audit = logging.getLogger('audit')
 
 
-def generate_order_number(company_id: str) -> str:
-    """Generate a sequential order number like ORD-0001."""
+def generate_order_number(company_id: str):
+    """
+    Format: {COMPANY_PREFIX}-ORD-{FISCAL_YEAR}-{NNNN}, e.g. DPS-ORD-2082/83-0001.
+    Race-safe, fiscal-year-scoped — same pattern as generate_invoice_number.
+    Returns (order_number, sequence, fiscal_year).
+    """
+    today_np = nepali_datetime.date.today()
+    fiscal_year = None
+    try:
+        company = Company.active_objects.get(id=company_id)
+        company_prefix = company.name[:3].upper().strip().ljust(3, 'X')
+        fiscal_year = FiscalYear.active_objects.filter(is_active=True, company=company).first()
+        fiscal_year_name = fiscal_year.name if fiscal_year else today_np.strftime("%y/%m/%d")
+    except (Company.DoesNotExist, AttributeError):
+        company_prefix = "ORD"
+        fiscal_year_name = today_np.strftime("%y/%m/%d")
+
+    prefix = f"{company_prefix}-ORD-{fiscal_year_name}-"
+
+    fy_filter = {'fiscal_year': fiscal_year} if fiscal_year else {'fiscal_year__isnull': True}
     with transaction.atomic():
-        # Order by created_at (not order_number string) to avoid lexicographic ordering bug
-        # where 'ORD-0009' sorts after 'ORD-0010'.
-        last = DiningOrder.objects.select_for_update().filter(
-            company_id=company_id, order_number__startswith='ORD-'
-        ).order_by('-created_at').first()
-        if last and last.order_number:
-            try:
-                seq = int(last.order_number[4:]) + 1
-            except ValueError:
-                seq = DiningOrder.objects.filter(company_id=company_id).count() + 1
-        else:
-            seq = DiningOrder.objects.filter(company_id=company_id).count() + 1
-    return f"ORD-{seq:04d}"
+        last_seq = DiningOrder.objects.select_for_update().filter(
+            company_id=company_id,
+            **fy_filter,
+        ).aggregate(max_seq=Max('sequence_number'))
+
+        sequence = (last_seq['max_seq'] or 0) + 1
+
+        order_number = f"{prefix}{sequence:04d}"
+        while DiningOrder.objects.filter(
+            company_id=company_id, fiscal_year=fiscal_year, sequence_number=sequence
+        ).exists() or DiningOrder.objects.filter(order_number=order_number).exists():
+            sequence += 1
+            order_number = f"{prefix}{sequence:04d}"
+
+    return order_number, sequence, fiscal_year
 
 
 def open_order(request, table: RestaurantTable, covers: int = 1,
@@ -40,12 +64,15 @@ def open_order(request, table: RestaurantTable, covers: int = 1,
     Open a new dining order on a table.
     Marks the table as OCCUPIED.
     """
+    order_number, seq, fy = generate_order_number(str(request.user_company.pk))
     with transaction.atomic():
         order = DiningOrder.objects.create(
             company=request.user_company,
             branch=getattr(request, 'user_branch', None),
             table=table,
-            order_number=generate_order_number(str(request.user_company.pk)),
+            order_number=order_number,
+            sequence_number=seq,
+            fiscal_year=fy,
             covers=covers,
             waiter_name=waiter_name,
             customer=customer,

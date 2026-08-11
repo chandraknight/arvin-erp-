@@ -16,7 +16,12 @@ Design decisions
 from decimal import Decimal
 from django.db import models
 from apps.utils.baseModel import BaseModel
-from apps.utils.constant import POS_PAYMENT_METHOD_CHOICES
+from apps.utils.constant import PAYMENT_METHOD_CHOICES
+
+# POS checkout also allows CREDIT (customer owes payment later) — not part of
+# the shared PAYMENT_METHOD_CHOICES since it isn't a real payment method for
+# vendor/expense/salary payments elsewhere in the ERP.
+POS_PAYMENT_METHOD_CHOICES = PAYMENT_METHOD_CHOICES + [('CREDIT', 'Credit (Pay Later)')]
 
 
 class Referrer(BaseModel):
@@ -85,18 +90,11 @@ class POSSale(BaseModel):
     payment_method = models.CharField(
         max_length=20,
         choices=POS_PAYMENT_METHOD_CHOICES,
-        help_text='Method used at checkout (CASH, BANK_TRANSFER, DUE).',
+        help_text='Method used at checkout (CASH, BANK_TRANSFER, CREDIT, etc.).',
     )
     amount_tendered = models.DecimalField(
         max_digits=12, decimal_places=2, default=Decimal('0.00'),
         help_text='Amount handed over by the customer (cash sales).',
-    )
-    bank_account = models.ForeignKey(
-        'payments.BankAccount',
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='pos_sales',
-        help_text='Bank account the payment was received into (BANK_TRANSFER only).',
     )
     change_given = models.DecimalField(
         max_digits=12, decimal_places=2, default=Decimal('0.00'),

@@ -194,13 +194,22 @@ ECOM_ORDER_STATUS = [
 ]
 
 PAYMENT_METHOD_CHOICES = [
-    ('COD', 'Cash on Delivery'),
+    ('COD',    'Cash on Delivery'),
+    ('ONLINE', 'Paid Online'),
 ]
 
 COD_STATUS_CHOICES = [
     ('PENDING',    'Pending Collection'),
     ('COLLECTED',  'Cash Collected'),
     ('FAILED',     'Collection Failed'),
+]
+
+# Tracks prepaid ONLINE orders — separate from cod_status, which only
+# applies to COD orders and represents cash collected on delivery.
+PAYMENT_STATUS_CHOICES = [
+    ('PENDING', 'Payment Pending'),
+    ('PAID',    'Paid'),
+    ('FAILED',  'Payment Failed'),
 ]
 
 
@@ -230,9 +239,18 @@ class EcomOrder(BaseModel):
 
     # Order details
     order_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    sequence_number = models.PositiveIntegerField(null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        'company.FiscalYear',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='ecom_orders',
+        db_constraint=False,
+    )
     status = models.CharField(max_length=15, choices=ECOM_ORDER_STATUS, default='PENDING')
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, default='COD')
     cod_status = models.CharField(max_length=15, choices=COD_STATUS_CHOICES, default='PENDING')
+    payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
 
     subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
     discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
@@ -250,20 +268,9 @@ class EcomOrder(BaseModel):
         return f"ECOM-{self.order_number or self.id} — {self.customer_name}"
 
     def save(self, *args, **kwargs):
-        if not self.order_number:
-            # Scope to company so each company's sequence is independent
-            last = (
-                EcomOrder.objects
-                .filter(company=self.company, order_number__isnull=False)
-                .exclude(order_number='')
-                .order_by('-created_at')
-                .first()
-            )
-            try:
-                num = int(last.order_number.split('-')[-1]) + 1 if last else 1
-            except (ValueError, IndexError):
-                num = 1
-            self.order_number = f"EC-{num:05d}"
+        if not self.order_number and self.company_id:
+            from apps.ecom.services import generate_ecom_order_number
+            self.order_number, self.sequence_number, self.fiscal_year = generate_ecom_order_number(self.company_id)
         super().save(*args, **kwargs)
 
 

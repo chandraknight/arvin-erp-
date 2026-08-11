@@ -104,13 +104,14 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
                         discount_amount=self.object.discount_amount,
                         tax_amount=self.object.tax_amount,
                         total=self.object.total,
-                        outstanding_balance=0 if is_estimate else self.object.total,
+                        outstanding_balance=self.object.total,
                     )
-                    self.object.outstanding_balance = 0 if is_estimate else self.object.total
+                    self.object.outstanding_balance = self.object.total
 
-                    # Now post the journal entry once, with the final correct total
-                    # Estimates (non-VAT companies) do not create journal entries.
-                    if action == 'issue' and not is_estimate and self.object.invoice_number and self.object.total > 0:
+                    # Now post the journal entry once, with the final correct total.
+                    # Estimates (non-VAT companies) still journalise — only CBMS
+                    # submission and IRD-facing payment collection are VAT-only.
+                    if action == 'issue' and self.object.invoice_number and self.object.total > 0:
                         from apps.bookkeeping.db_functions import post_invoice_journal
                         post_invoice_journal(self.object.id)
 

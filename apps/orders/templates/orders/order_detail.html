@@ -66,9 +66,8 @@
             <dl class="space-y-2 text-sm">
                 <div class="flex justify-between"><dt class="text-gray-500">Subtotal</dt><dd>{{ order.subtotal|floatformat:2|intcomma }}</dd></div>
                 <div class="flex justify-between"><dt class="text-gray-500">Discount</dt><dd class="text-red-600">-{{ order.discount_amount|floatformat:2|intcomma }}</dd></div>
+                {% if order.company.vat_registered %}
                 <div class="flex justify-between"><dt class="text-gray-500">Tax</dt><dd>{{ order.tax_amount|floatformat:2|intcomma }}</dd></div>
-                {% if order.delivery_charge > 0 %}
-                <div class="flex justify-between"><dt class="text-gray-500">Delivery Charge</dt><dd>{{ order.delivery_charge|floatformat:2|intcomma }}</dd></div>
                 {% endif %}
                 <div class="flex justify-between border-t pt-2 font-bold"><dt>Total</dt><dd class="text-green-700">{{ order.total|floatformat:2|intcomma }}</dd></div>
             </dl>
@@ -87,7 +86,7 @@
                         <th class="px-4 py-2 text-right border border-green-700">Qty</th>
                         <th class="px-4 py-2 text-right border border-green-700">Unit Price</th>
                         <th class="px-4 py-2 text-right border border-green-700">Disc%</th>
-                        <th class="px-4 py-2 text-right border border-green-700">Tax%</th>
+                        {% if order.company.vat_registered %}<th class="px-4 py-2 text-right border border-green-700">Tax%</th>{% endif %}
                         <th class="px-4 py-2 text-right border border-green-700">Line Total</th>
                         <th class="px-4 py-2 text-right border border-green-700">Delivered</th>
                         <th class="px-4 py-2 text-right border border-green-700">Pending</th>
@@ -116,7 +115,7 @@
                         <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ item.quantity }}</td>
                         <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ item.unit_price|floatformat:2|intcomma }}</td>
                         <td class="px-4 py-2 border border-gray-200 text-right">{{ item.discount_percent }}%</td>
-                        <td class="px-4 py-2 border border-gray-200 text-right">{{ item.tax_percent }}%</td>
+                        {% if order.company.vat_registered %}<td class="px-4 py-2 border border-gray-200 text-right">{{ item.tax_percent }}%</td>{% endif %}
                         <td class="px-4 py-2 border border-gray-200 text-right font-mono font-semibold">{{ item.line_total|floatformat:2|intcomma }}</td>
                         <td class="px-4 py-2 border border-gray-200 text-right text-green-700">{{ item.quantity_delivered }}</td>
                         <td class="px-4 py-2 border border-gray-200 text-right {% if item.quantity_pending > 0 %}text-amber-600 font-semibold{% else %}text-gray-400{% endif %}">{{ item.quantity_pending }}</td>
