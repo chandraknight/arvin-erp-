@@ -259,6 +259,15 @@ REPORT_REGISTRY = {
         'color': 'sky',
         'module_flag': 'enable_inventory',
     },
+    'stock_disposal_report': {
+        'label': 'Stock Disposal (NFRS 2)',
+        'description': 'Inventory write-offs — damaged, expired, lost, or obsolete stock',
+        'url_name': 'reports:stock_disposal_report',
+        'section': 'Inventory & Products',
+        'icon': 'fas fa-trash-alt',
+        'color': 'red',
+        'module_flag': 'enable_inventory',
+    },
 
     # ── Receivables & Payments (always visible) ───────────────────────────
     'outstanding_invoices_report': {
@@ -430,6 +439,15 @@ REPORT_REGISTRY = {
         'icon': 'fas fa-file-invoice',
         'color': 'emerald',
         'module_flag': 'vat_registered',
+    },
+    'tds_register': {
+        'label': 'TDS Register',
+        'description': 'Vendor-wise withholding tax deductions for e-TDS filing',
+        'url_name': 'reports:tds_register',
+        'section': 'Tax & VAT',
+        'icon': 'fas fa-file-contract',
+        'color': 'orange',
+        'module_flag': None,
     },
 
     # ── Bookkeeping ───────────────────────────────────────────────────────

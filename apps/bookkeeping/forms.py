@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import JournalEntry, JournalEntryLine, LedgerAccount, LedgerOpeningBalance
+from .models import JournalEntry, JournalEntryLine, LedgerAccount, LedgerOpeningBalance, TDSRate
 from django.forms import BaseInlineFormSet
 from django.db import models
 from apps.utils.nepali_date import NepaliDateWidget, NepaliDateField, FiscalYearDateMixin
@@ -167,3 +167,14 @@ class LedgerAccountForm(forms.ModelForm):
     def clean_code(self):
         code = self.cleaned_data.get('code')
         return code.strip() or None if isinstance(code, str) else code
+
+
+class TDSRateForm(forms.ModelForm):
+    class Meta:
+        model = TDSRate
+        fields = ['category', 'rate', 'effective_from', 'is_active']
+        widgets = {
+            'category': forms.Select(attrs={'class': 'form-control'}),
+            'rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'effective_from': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }

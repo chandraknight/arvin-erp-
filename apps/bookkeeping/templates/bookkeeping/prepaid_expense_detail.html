@@ -2,84 +2,84 @@
 {% block title %}{{ prepaid.name }}{% endblock %}
 {% block content %}
 <div class="w-full mt-2 max-w-3xl">
-  <div class="flex items-center justify-between mb-4">
-    <h1 class="text-2xl font-semibold text-gray-800">{{ prepaid.name }}</h1>
-    <a href="{% url 'bookkeeping:prepaid_expense_list' %}"
-       class="text-sm border border-gray-300 px-3 py-1.5 text-gray-600 hover:bg-gray-50 transition">
-      <i class="fas fa-arrow-left mr-1"></i> Back
-    </a>
-  </div>
+ <div class="flex items-center justify-between mb-4">
+ <h1 class="text-2xl font-semibold text-gray-800">{{ prepaid.name }}</h1>
+ <a href="{% url 'bookkeeping:prepaid_expense_list' %}"
+ class="text-sm border border-gray-300 px-3 py-1.5 text-gray-600 hover:bg-gray-50 transition">
+ <i class="fas fa-arrow-left mr-1"></i> Back
+ </a>
+ </div>
 
-  <div class="grid grid-cols-3 gap-4 mb-6">
-    <div class="bg-white border border-gray-200 p-4">
-      <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Total</p>
-      <p class="text-xl font-bold text-gray-800 mt-1">{{ currency_symbol }} {{ prepaid.total_amount|floatformat:2 }}</p>
-    </div>
-    <div class="bg-white border border-gray-200 p-4">
-      <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Amortized</p>
-      <p class="text-xl font-bold text-gray-800 mt-1">{{ currency_symbol }} {{ prepaid.accumulated_amortization|floatformat:2 }}</p>
-    </div>
-    <div class="bg-white border border-gray-200 p-4">
-      <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Remaining</p>
-      <p class="text-xl font-bold text-teal-700 mt-1">{{ currency_symbol }} {{ prepaid.remaining_amount|floatformat:2 }}</p>
-    </div>
-  </div>
+ <div class="grid grid-cols-3 gap-4 mb-6">
+ <div class="bg-white border border-gray-200 p-4">
+ <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Total</p>
+ <p class="text-xl font-bold text-gray-800 mt-1">{{ currency_symbol }} {{ prepaid.total_amount|floatformat:2 }}</p>
+ </div>
+ <div class="bg-white border border-gray-200 p-4">
+ <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Amortized</p>
+ <p class="text-xl font-bold text-gray-800 mt-1">{{ currency_symbol }} {{ prepaid.accumulated_amortization|floatformat:2 }}</p>
+ </div>
+ <div class="bg-white border border-gray-200 p-4">
+ <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Remaining</p>
+ <p class="text-xl font-bold text-teal-700 mt-1">{{ currency_symbol }} {{ prepaid.remaining_amount|floatformat:2 }}</p>
+ </div>
+ </div>
 
-  <div class="bg-white border border-gray-200 p-4 mb-6 text-sm text-gray-600">
-    <p><strong>Period:</strong> {{ prepaid.start_date|date:"Y-m-d" }} – {{ prepaid.end_date|date:"Y-m-d" }}</p>
-    <p><strong>Status:</strong> {{ prepaid.get_status_display }}</p>
-    {% if prepaid.description %}<p><strong>Description:</strong> {{ prepaid.description }}</p>{% endif %}
-  </div>
+ <div class="bg-white border border-gray-200 p-4 mb-6 text-sm text-gray-600">
+ <p><strong>Period:</strong> {{ prepaid.start_date|date:"Y-m-d" }} – {{ prepaid.end_date|date:"Y-m-d" }}</p>
+ <p><strong>Status:</strong> {{ prepaid.get_status_display }}</p>
+ {% if prepaid.description %}<p><strong>Description:</strong> {{ prepaid.description }}</p>{% endif %}
+ </div>
 
-  {% if prepaid.status == 'ACTIVE' %}
-  <div class="bg-white border border-gray-200 shadow-sm p-6 mb-6">
-    <h3 class="text-base font-bold text-teal-800 mb-3">Post Amortization for a Period</h3>
-    <form method="post" action="{% url 'bookkeeping:prepaid_expense_post_amortization' prepaid.pk %}">
-      {% csrf_token %}
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <label class="block text-sm font-semibold text-gray-600 mb-1">Period Start</label>
-          <input type="date" name="period_start" required class="w-full border border-gray-300 px-3 py-2 text-sm">
-        </div>
-        <div>
-          <label class="block text-sm font-semibold text-gray-600 mb-1">Period End</label>
-          <input type="date" name="period_end" required class="w-full border border-gray-300 px-3 py-2 text-sm">
-        </div>
-      </div>
-      <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold">
-        Post Amortization
-      </button>
-    </form>
-  </div>
-  {% endif %}
+ {% if prepaid.status == 'ACTIVE' %}
+ <div class="bg-white border border-gray-200 shadow-sm p-6 mb-6">
+ <h3 class="text-base font-bold text-teal-800 mb-3">Post Amortization for a Period</h3>
+ <form method="post" action="{% url 'bookkeeping:prepaid_expense_post_amortization' prepaid.pk %}">
+ {% csrf_token %}
+ <div class="grid grid-cols-2 gap-4 mb-4">
+ <div>
+ <label class="block text-sm font-semibold text-gray-600 mb-1">Period Start</label>
+ <input type="date" name="period_start" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+ </div>
+ <div>
+ <label class="block text-sm font-semibold text-gray-600 mb-1">Period End</label>
+ <input type="date" name="period_end" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+ </div>
+ </div>
+ <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold">
+ Post Amortization
+ </button>
+ </form>
+ </div>
+ {% endif %}
 
-  <div class="bg-white rounded shadow-md overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
-          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Journal Entry</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        {% for log in amortization_logs %}
-        <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ log.period_start|date:"Y-m-d" }} – {{ log.period_end|date:"Y-m-d" }}</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">{{ currency_symbol }} {{ log.amount|floatformat:2 }}</td>
-          <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-            {% if log.journal_entry %}
-              <a href="{% url 'bookkeeping:journal_entry_detail' log.journal_entry.pk %}" class="text-blue-600 hover:text-blue-900">View</a>
-            {% else %}—{% endif %}
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="3" class="px-4 py-3 text-sm text-gray-500 text-center">No amortization posted yet.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+ <div class="bg-white shadow-md overflow-x-auto">
+ <table class="min-w-full divide-y divide-gray-200">
+ <thead class="bg-gray-50">
+ <tr>
+ <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+ <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+ <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Journal Entry</th>
+ </tr>
+ </thead>
+ <tbody class="bg-white divide-y divide-gray-200">
+ {% for log in amortization_logs %}
+ <tr>
+ <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ log.period_start|date:"Y-m-d" }} – {{ log.period_end|date:"Y-m-d" }}</td>
+ <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">{{ currency_symbol }} {{ log.amount|floatformat:2 }}</td>
+ <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+ {% if log.journal_entry %}
+ <a href="{% url 'bookkeeping:journal_entry_detail' log.journal_entry.pk %}" class="text-blue-600 hover:text-blue-900">View</a>
+ {% else %}—{% endif %}
+ </td>
+ </tr>
+ {% empty %}
+ <tr>
+ <td colspan="3" class="px-4 py-3 text-sm text-gray-500 text-center">No amortization posted yet.</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
 </div>
 {% endblock %}

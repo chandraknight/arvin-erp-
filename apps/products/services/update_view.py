@@ -156,6 +156,80 @@ def dispose_stock(request, item_id):
     })
 
 
+@auth_required('products.change_product')
+def bulk_write_off(request):
+    """Write off stock for multiple products in one submission (NFRS 2 write-off per line)."""
+    company = getattr(request.user, 'company', None)
+
+    if request.method == 'POST':
+        product_ids = request.POST.getlist('product_id[]')
+        quantities = request.POST.getlist('quantity[]')
+        stock_types = request.POST.getlist('stock_type[]')
+        disposal_reasons = request.POST.getlist('disposal_reason[]')
+        reasons = request.POST.getlist('reason[]')
+
+        rows = []
+        errors = []
+        for i, product_id in enumerate(product_ids):
+            if not product_id:
+                continue
+            qty_raw = quantities[i] if i < len(quantities) else ''
+            if not qty_raw.strip():
+                continue
+            try:
+                qty = int(qty_raw)
+            except ValueError:
+                errors.append(f"Row {i + 1}: quantity must be a whole number.")
+                continue
+            rows.append({
+                'product_id': product_id,
+                'quantity': qty,
+                'stock_type': stock_types[i] if i < len(stock_types) else 'POS',
+                'disposal_reason': disposal_reasons[i] if i < len(disposal_reasons) else 'OTHER',
+                'reason': reasons[i] if i < len(reasons) else '',
+            })
+
+        if not rows and not errors:
+            errors.append("Add at least one product to write off.")
+
+        if not errors:
+            try:
+                with transaction.atomic():
+                    products_written_off = 0
+                    for row in rows:
+                        product_lookup = Product.objects.filter(id=row['product_id'])
+                        if company:
+                            product_lookup = product_lookup.filter(company=company)
+                        product = get_object_or_404(product_lookup)
+                        post_stock_disposal(
+                            product=product,
+                            quantity=row['quantity'],
+                            disposal_reason=row['disposal_reason'],
+                            stock_type=row['stock_type'],
+                            reason=row['reason'],
+                            posted_by=request.user,
+                        )
+                        products_written_off += 1
+                messages.success(request, f"{products_written_off} product(s) written off successfully.")
+                return redirect('products:disposal_history')
+            except ValueError as e:
+                errors.append(str(e))
+
+        for err in errors:
+            messages.error(request, err)
+        return redirect('products:bulk_write_off')
+
+    products_qs = Product.active_objects.filter(is_service=False).prefetch_related('productstock')
+    if company:
+        products_qs = products_qs.filter(company=company)
+    products_qs = products_qs.order_by('name')
+
+    return render(request, 'products/bulk_write_off.html', {
+        'products': products_qs,
+        'disposal_reasons': StockTransaction.DISPOSAL_REASON_CHOICES,
+    })
+
+
 @auth_required('products.view_product')
 def disposal_history(request):
     company = request.user.company if hasattr(request.user, 'company') else None

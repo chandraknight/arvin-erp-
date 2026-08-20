@@ -53,6 +53,48 @@ def ledger_account_quick_create(request):
     return render(request, 'bookkeeping/partials/ledger_account_quick_create_modal.html', {'form': form})
 
 
+@login_required
+def contra_entry_create(request):
+    """NFRS contra entry — transfer between the company's own ASSET/LIABILITY
+    accounts (cash<->bank, bank<->bank). Never touches income/expense/equity."""
+    if not (request.user.is_superuser or getattr(request.user, 'is_company_admin', False) or request.user.has_perm('bookkeeping.add_journalentry')):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("You don't have permission to record contra entries.")
+
+    company = request.user_company or getattr(request.user, 'company', None)
+    accounts = LedgerAccount.objects.filter(
+        company=company, account_type__in=['ASSET', 'LIABILITY'],
+    ).order_by('account_type', 'name')
+
+    if request.method == 'POST':
+        from .services.contra_service import post_contra_entry
+        from django.core.exceptions import ValidationError
+
+        try:
+            from_account = get_object_or_404(accounts, pk=request.POST.get('from_account'))
+            to_account = get_object_or_404(accounts, pk=request.POST.get('to_account'))
+            amount = Decimal(request.POST.get('amount') or '0')
+            entry_date = request.POST.get('date') or timezone.now().date()
+            description = request.POST.get('description', '').strip() or (
+                f"Transfer: {from_account.name} to {to_account.name}"
+            )
+            post_contra_entry(
+                company=company,
+                date=entry_date,
+                from_account=from_account,
+                to_account=to_account,
+                amount=amount,
+                description=description,
+                created_by=request.user,
+            )
+            messages.success(request, f"Contra entry posted — {description}.")
+            return redirect('bookkeeping:journal_entry_list')
+        except (ValidationError, ValueError) as e:
+            messages.error(request, str(e) if not hasattr(e, 'messages') else ' '.join(e.messages))
+
+    return render(request, 'bookkeeping/contra_entry_form.html', {'accounts': accounts})
+
+
 class JournalEntryListView(AuthMixin, ListView):
     model = JournalEntry
     template_name = 'bookkeeping/journal_entry_list.html'
@@ -198,7 +240,8 @@ class LedgerAccountListView(AuthMixin, ListView):
             return self.paginate_by
 
     def get_queryset(self):
-        from django.db.models import Q
+        from django.db.models import Q, Prefetch
+        from apps.company.models import FiscalYear
         qs = super().get_queryset()
         if self.request.user_company:
             qs = qs.filter(company=self.request.user_company)
@@ -208,6 +251,19 @@ class LedgerAccountListView(AuthMixin, ListView):
         account_type = self.request.GET.get('account_type', '').strip()
         if account_type:
             qs = qs.filter(account_type=account_type)
+
+        active_fy = FiscalYear.objects.filter(
+            company=self.request.user_company, is_active=True
+        ).first()
+        self.active_fy = active_fy
+        if active_fy:
+            qs = qs.prefetch_related(
+                Prefetch(
+                    'opening_balances',
+                    queryset=LedgerOpeningBalance.objects.filter(fiscal_year=active_fy),
+                    to_attr='current_fy_opening_balances',
+                )
+            )
         return qs.select_related('parent_account').order_by('account_type', 'code', 'name')
 
     def get_template_names(self):
@@ -222,6 +278,7 @@ class LedgerAccountListView(AuthMixin, ListView):
         context['paginate_by'] = self.get_paginate_by(self.get_queryset())
         context['q'] = self.request.GET.get('q', '')
         context['account_type'] = self.request.GET.get('account_type', '')
+        context['active_fy'] = getattr(self, 'active_fy', None)
         return context
 
 

@@ -87,6 +87,13 @@ PURCHASE_STATUS_CHOICES = [
     ('CANCELLED', 'Cancelled'),
 ]
 
+PO_APPROVAL_STATUS_CHOICES = [
+    ('NOT_REQUIRED', 'Not Required'),
+    ('PENDING', 'Pending Approval'),
+    ('APPROVED', 'Approved'),
+    ('REJECTED', 'Rejected'),
+]
+
 PO_ITEM_TYPE_CHOICES = [
     ('STOCK', 'Stock Item'),
     ('SERVICE', 'Service'),
@@ -144,4 +151,17 @@ DEFAULT_ACCOUNTS = [
     # NFRS presentation: revenue and purchases reported net of returns
     {"name": "Sales Returns",        "account_type": "REVENUE",   "code": "4100"},
     {"name": "Purchase Returns",     "account_type": "EXPENSE",   "code": "5200"},
+    # Standard operating expense line items — NFRS P&L presentation classifies
+    # these separately rather than lumping day-to-day office costs under one
+    # generic expense account.
+    {"name": "Staff Meal Expense",         "account_type": "EXPENSE", "code": "5300"},
+    {"name": "Fuel & Vehicle Expense",     "account_type": "EXPENSE", "code": "5310"},
+    {"name": "Communication Expense",      "account_type": "EXPENSE", "code": "5320"},
+    {"name": "Office & Administrative Expense", "account_type": "EXPENSE", "code": "5330"},
+    {"name": "Rent Expense",               "account_type": "EXPENSE", "code": "5340"},
+    {"name": "Utility Expense",            "account_type": "EXPENSE", "code": "5350"},
+    {"name": "Repair & Maintenance Expense", "account_type": "EXPENSE", "code": "5360"},
+    {"name": "Travel & Conveyance Expense", "account_type": "EXPENSE", "code": "5370"},
+    {"name": "Printing & Stationery Expense", "account_type": "EXPENSE", "code": "5380"},
+    {"name": "Miscellaneous Expense",      "account_type": "EXPENSE", "code": "5390"},
 ]

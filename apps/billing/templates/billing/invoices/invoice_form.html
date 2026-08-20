@@ -127,20 +127,19 @@
                 </div>
 
                 <div class="invoice-items-table-wrap">
-                    <table class="w-full border border-gray-200 text-sm" style="table-layout:fixed">
+                    <table id="items-container" class="w-full border border-gray-200 text-sm" style="table-layout:fixed">
                         <thead class="bg-gray-50 text-green-800 hidden sm:table-header-group">
                         <tr>
+                            <th class="py-2 px-2 text-center text-xs font-semibold border-b border-gray-200" style="width:32px">#</th>
                             <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:660px;min-width:660px">Item <span class="font-normal text-gray-400 normal-case">(name/SKU/barcode)</span></th>
                             <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:64px">Qty</th>
                             <th class="py-2 px-2 text-left text-xs font-semibold border-b border-gray-200" style="width:88px">Price</th>
                             <th class="py-2 px-2 text-center text-xs font-semibold border-b border-gray-200" style="width:40px"></th>
                         </tr>
                         </thead>
-                        <tbody id="items-container">
                         {% for item_form in formset %}
                             {% include "billing/partials/invoice_item_row.html" with item_form=item_form org_type=org_type %}
                         {% endfor %}
-                        </tbody>
                     </table>
                 </div>
             </div>
@@ -259,7 +258,7 @@
                         </div>
 
                         <!-- Split total feedback -->
-                        <div id="split-total-bar" class="hidden text-xs py-1.5 px-3 border rounded flex items-center gap-2">
+                        <div id="split-total-bar" class="hidden text-xs py-1.5 px-3 border flex items-center gap-2">
                             <i class="fas fa-info-circle"></i>
                             <span id="split-total-msg"></span>
                         </div>
@@ -304,11 +303,7 @@
             </div>
         </form>
 
-        <c-back-link>
-            <c-slot name="url">
-                {% url 'products:inventory_management' %}
-            </c-slot>
-        </c-back-link>
+        <a href="{% url 'products:inventory_management' %}" class="block text-sm text-gray-500 mt-3">← Back to Overview</a>
         </div>{# end main col #}
 
         {# ── Sidebar (1/4) ── #}
@@ -856,6 +851,19 @@
             });
 
             // Initialize new row after HTMX swap
+            // Renumber the visible "#" badges after any add/remove so they always
+            // reflect display order, not the formset index (which never reuses numbers).
+            function renumberItemRows() {
+                let n = 0;
+                document.querySelectorAll('.item-form').forEach(row => {
+                    if (row.style.display === 'none') return;
+                    n++;
+                    row.querySelectorAll('.item-row-number, .item-row-number-mobile').forEach(badge => {
+                        badge.textContent = n;
+                    });
+                });
+            }
+
             document.addEventListener('htmx:afterSwap', function (event) {
                 if (event.target.id === 'items-container' || event.target.closest('#items-container')) {
                     const newForm = container.lastElementChild;
@@ -875,6 +883,7 @@
                             focusScannerAfterAdd = false;
                             requestAnimationFrame(() => focusRowScanner(newForm));
                         }
+                        renumberItemRows();
                         checkAddButtonState();
                     }
                 }
@@ -897,10 +906,15 @@
                         formCount--;
                         totalForms.value = formCount;
                     }
+                    renumberItemRows();
                     updateCalculations();
                     checkAddButtonState();
                 }
             });
+
+            // Initial numbering on page load (handles error re-renders where some
+            // rows may already be marked deleted/hidden).
+            renumberItemRows();
 
             // Add event listeners to all existing item forms
             function addItemEventListeners(form) {

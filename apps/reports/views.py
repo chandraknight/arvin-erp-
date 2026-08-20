@@ -1027,8 +1027,10 @@ def stock_movement_report(request):
         product__company=user_company
     ).select_related('product', 'user').order_by('-created_at')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from_str = request.GET.get('date_from', '')
+    date_to_str = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
+    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
     product_q = request.GET.get('product', '').strip()
     txn_type = request.GET.get('txn_type', '')
     stock_type = request.GET.get('stock_type', '')
@@ -1100,8 +1102,10 @@ def stock_disposal_report(request):
         product__company=user_company, transaction_type='DISPOSAL',
     ).select_related('product', 'product__category', 'user', 'journal_entry').order_by('-created_at')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from_str = request.GET.get('date_from', '')
+    date_to_str = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
+    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
     product_q = request.GET.get('product', '').strip()
     disposal_reason = request.GET.get('disposal_reason', '')
 
@@ -1520,7 +1524,7 @@ def bank_reconciliation_report(request):
         )
         book_balance = totals['debit'] - totals['credit']
 
-        for line in all_lines.filter(is_reconciled=False):
+        for line in all_lines.filter(is_cleared=False):
             if line.entry_type == 'CREDIT':
                 uncleared_credits.append(line)
                 total_uncleared_credits += line.amount
@@ -1570,9 +1574,9 @@ def bank_reconciliation_toggle_line(request):
     if not line:
         return HttpResponse(status=404)
 
-    line.is_reconciled = True
-    line.reconciled_date = date.today()
-    line.save(update_fields=['is_reconciled', 'reconciled_date'])
+    line.is_cleared = True
+    line.cleared_date = date.today()
+    line.save(update_fields=['is_cleared', 'cleared_date'])
 
     return HttpResponse('')
 
@@ -1691,6 +1695,40 @@ def vat_purchase_register(request):
 
 
 @login_required
+def tds_register(request):
+    """Vendor-wise TDS deduction register for e-TDS filing reference."""
+    from apps.bookkeeping.models import TDSDeduction
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    start_str = request.GET.get('start_date')
+    end_str = request.GET.get('end_date')
+    start_date = bs_str_to_ad(start_str) if start_str else date(date.today().year, 1, 1)
+    end_date = bs_str_to_ad(end_str) if end_str else date.today()
+
+    deductions = TDSDeduction.objects.filter(
+        vendor_bill__vendor__company=user_company,
+        vendor_bill__bill_date__gte=start_date,
+        vendor_bill__bill_date__lte=end_date,
+    ).select_related('vendor_bill', 'vendor_bill__vendor', 'tds_rate').order_by('vendor_bill__bill_date')
+
+    total_tds = deductions.aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
+
+    context = {
+        'company': user_company,
+        'start_date': start_date,
+        'end_date': end_date,
+        'deductions': deductions,
+        'total_tds': total_tds,
+        'report_title': 'TDS Register',
+    }
+    return render(request, 'reports/tax/tds_register.html', context)
+
+
+@login_required
 def general_ledger_report(request):
     """General Ledger — running-balance Dr/Cr statement for any ledger account."""
     user_company = request.user_company
@@ -1757,8 +1795,10 @@ def purchase_order_list_report(request):
         company=user_company
     ).select_related('vendor').order_by('-date')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from_str = request.GET.get('date_from', '')
+    date_to_str = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
+    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
     status = request.GET.get('status', '')
     vendor_q = request.GET.get('vendor', '').strip()
 
@@ -1803,8 +1843,10 @@ def vendor_bill_list_report(request):
 
     qs = qs.select_related('vendor', 'purchase_order').prefetch_related('payments').order_by('-bill_date')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from_str = request.GET.get('date_from', '')
+    date_to_str = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
+    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
     status = request.GET.get('status', '')
     vendor_q = request.GET.get('vendor', '').strip()
 
@@ -1852,8 +1894,10 @@ def vendor_payment_list_report(request):
         vendor_bill__vendor__company=user_company
     ).select_related('vendor_bill__vendor', 'bank_account').order_by('-payment_date')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from_str = request.GET.get('date_from', '')
+    date_to_str = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
+    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
     vendor_q = request.GET.get('vendor', '').strip()
     method = request.GET.get('method', '')
 

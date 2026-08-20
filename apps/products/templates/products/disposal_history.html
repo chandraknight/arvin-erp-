@@ -3,46 +3,46 @@
 
 {% block content %}
 <div class="w-full py-4">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Stock Disposal History</h1>
-    <a href="{% url 'products:inventory_management' %}" class="text-sm text-indigo-600 hover:underline">&larr; Back to Inventory</a>
-  </div>
+ <div class="flex items-center justify-between mb-6">
+ <h1 class="text-2xl font-bold text-gray-800">Stock Disposal History</h1>
+ <a href="{% url 'products:inventory_management' %}" class="text-sm text-indigo-600 hover:underline">&larr; Back to Inventory</a>
+ </div>
 
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-    <table class="w-full text-sm">
-      <thead class="bg-gray-50 border-b border-gray-200">
-        <tr>
-          <th class="text-left px-4 py-3 font-medium text-gray-600">Date</th>
-          <th class="text-left px-4 py-3 font-medium text-gray-600">Product</th>
-          <th class="text-left px-4 py-3 font-medium text-gray-600">Pool</th>
-          <th class="text-right px-4 py-3 font-medium text-gray-600">Quantity</th>
-          <th class="text-left px-4 py-3 font-medium text-gray-600">Reason</th>
-          <th class="text-left px-4 py-3 font-medium text-gray-600">Notes</th>
-          <th class="text-left px-4 py-3 font-medium text-gray-600">Disposed By</th>
-          <th class="text-left px-4 py-3 font-medium text-gray-600">Journal</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-100">
-        {% for d in disposals %}
-        <tr class="hover:bg-gray-50">
-          <td class="px-4 py-3 text-gray-600">{{ d.created_at|date:"Y-m-d H:i" }}</td>
-          <td class="px-4 py-3 font-medium text-gray-800">{{ d.product.name }}</td>
-          <td class="px-4 py-3 text-gray-600">{{ d.get_stock_type_display }}</td>
-          <td class="px-4 py-3 text-right text-gray-800">{{ d.quantity }}</td>
-          <td class="px-4 py-3 text-gray-600">{{ d.get_disposal_reason_display|default:"—" }}</td>
-          <td class="px-4 py-3 text-gray-500">{{ d.reason|default:"—" }}</td>
-          <td class="px-4 py-3 text-gray-600">{{ d.user.get_full_name|default:d.user }}</td>
-          <td class="px-4 py-3 text-gray-500">
-            {% if d.journal_entry %}#{{ d.journal_entry.id }}{% else %}—{% endif %}
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="8" class="px-4 py-8 text-center text-gray-400 text-sm">No disposals recorded yet.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+ <div class="bg-white shadow-sm border border-gray-100 overflow-hidden overflow-x-auto">
+ <table class="w-full text-sm">
+ <thead class="bg-gray-50 border-b border-gray-200">
+ <tr>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Product</th>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Pool</th>
+ <th class="text-right px-4 py-3 font-medium text-gray-600">Quantity</th>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Reason</th>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Notes</th>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Disposed By</th>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Journal</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-100">
+ {% for d in disposals %}
+ <tr class="hover:bg-gray-50">
+ <td class="px-4 py-3 text-gray-600">{{ d.created_at|date:"Y-m-d H:i" }}</td>
+ <td class="px-4 py-3 font-medium text-gray-800">{{ d.product.name }}</td>
+ <td class="px-4 py-3 text-gray-600">{{ d.get_stock_type_display }}</td>
+ <td class="px-4 py-3 text-right text-gray-800">{{ d.quantity }}</td>
+ <td class="px-4 py-3 text-gray-600">{{ d.get_disposal_reason_display|default:"—" }}</td>
+ <td class="px-4 py-3 text-gray-500">{{ d.reason|default:"—" }}</td>
+ <td class="px-4 py-3 text-gray-600">{{ d.user.get_full_name|default:d.user }}</td>
+ <td class="px-4 py-3 text-gray-500">
+ {% if d.journal_entry %}#{{ d.journal_entry.id }}{% else %}—{% endif %}
+ </td>
+ </tr>
+ {% empty %}
+ <tr>
+ <td colspan="8" class="px-4 py-8 text-center text-gray-400 text-sm">No disposals recorded yet.</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
 </div>
 {% endblock %}

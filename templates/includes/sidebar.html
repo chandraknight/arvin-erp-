@@ -196,6 +196,16 @@
                 <a href="{% url 'products:print_labels' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-print nav-icon"></i>Print Labels</a>
                 {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'products.change_product' %}
+                <a href="{% url 'products:write_off_selector' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-trash-alt nav-icon"></i>Write-off Stock</a>
+                <a href="{% url 'products:bulk_write_off' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-layer-group nav-icon"></i>Bulk Write-off</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'products.view_product' %}
+                <a href="{% url 'products:disposal_history' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-history nav-icon"></i>Disposal History</a>
+                {% endif %}
             </div>
         </div>
         {% endif %}
@@ -296,6 +306,12 @@
                 {% if user.is_company_admin or user|group_has_perm:'bookkeeping.add_journalentry' %}
                 <a href="{% url 'bookkeeping:journal_entry_create' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-plus-circle nav-icon"></i>New Journal Entry</a>
+                <a href="{% url 'bookkeeping:contra_entry_create' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-exchange-alt nav-icon"></i>Contra Entry</a>
+                {% endif %}
+                {% if user.is_company_admin or user|group_has_perm:'bookkeeping.view_tdsrate' %}
+                <a href="{% url 'bookkeeping:tds_rate_list' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-percentage nav-icon"></i>TDS Rates</a>
                 {% endif %}
             </div>
         </div>

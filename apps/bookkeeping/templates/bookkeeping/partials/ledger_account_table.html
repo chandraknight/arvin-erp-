@@ -9,6 +9,7 @@
                 <th class="px-4 py-3 text-left border border-green-700">Account Name</th>
                 <th class="px-4 py-3 text-left border border-green-700">Type</th>
                 <th class="px-4 py-3 text-left border border-green-700">Parent</th>
+                <th class="px-4 py-3 text-right border border-green-700">Opening Balance{% if active_fy %} ({{ active_fy.name }}){% endif %}</th>
                 <th class="px-4 py-3 text-center border border-green-700">System</th>
                 <th class="px-4 py-3 text-center border border-green-700">Actions</th>
             </tr>
@@ -41,6 +42,20 @@
                 <td class="px-4 py-2 border border-gray-200 text-gray-500 text-xs">
                     {{ account.parent_account.name|default:"—" }}
                 </td>
+                <td class="px-4 py-2 border border-gray-200 text-right">
+                    {% with ob=account.current_fy_opening_balances.0 %}
+                    {% if ob %}
+                        <span class="font-medium text-gray-800">{{ ob.amount|floatformat:2|intcomma }}</span>
+                        <span class="text-xs text-gray-400">({{ ob.get_opening_type_display }})</span>
+                    {% else %}
+                        <span class="text-gray-300 text-xs">—</span>
+                    {% endif %}
+                    <a href="{% url 'bookkeeping:ledger_report' account.id %}#opening-balance"
+                       class="ml-2 text-blue-600 hover:text-blue-800 text-xs font-medium">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    {% endwith %}
+                </td>
                 <td class="px-4 py-2 border border-gray-200 text-center">
                     {% if account.system_created %}
                         <i class="fas fa-lock text-gray-400 text-xs" title="System account"></i>
@@ -63,7 +78,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" class="px-4 py-12 text-center text-gray-400">
+                <td colspan="7" class="px-4 py-12 text-center text-gray-400">
                     <i class="fas fa-book text-3xl mb-2 block"></i>
                     No ledger accounts found.
                 </td>

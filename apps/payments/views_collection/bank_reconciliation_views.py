@@ -27,10 +27,10 @@ def bank_reconciliation(request, pk):
             line_id = request.POST.get('line_id')
             line = get_object_or_404(
                 JournalEntryLine, pk=line_id, account=bank_account.ledger_account)
-            line.is_reconciled = not line.is_reconciled
+            line.is_cleared = not line.is_cleared
             from django.utils import timezone
-            line.reconciled_date = timezone.now().date() if line.is_reconciled else None
-            line.save(update_fields=['is_reconciled', 'reconciled_date'])
+            line.cleared_date = timezone.now().date() if line.is_cleared else None
+            line.save(update_fields=['is_cleared', 'cleared_date'])
             return redirect('payments:bank_reconciliation', pk=pk)
 
         if request.POST.get('action') == 'save_reconciliation':
@@ -40,6 +40,15 @@ def bank_reconciliation(request, pk):
                 from datetime import date as _date
                 statement_date = _date.fromisoformat(statement_date_str) if statement_date_str else _date.today()
                 statement_balance = Decimal(statement_balance_str or '0')
+
+                def _dec(field_name):
+                    return Decimal(request.POST.get(field_name) or '0')
+
+                deposits_in_transit = _dec('deposits_in_transit')
+                unpresented_cheques = _dec('unpresented_cheques')
+                bank_charges_not_recorded = _dec('bank_charges_not_recorded')
+                interest_not_recorded = _dec('interest_not_recorded')
+                other_adjustments = _dec('other_adjustments')
             except (ValueError, TypeError):
                 messages.error(request, "Invalid statement date or balance.")
                 return redirect('payments:bank_reconciliation', pk=pk)
@@ -52,6 +61,11 @@ def bank_reconciliation(request, pk):
                 book_balance=book_balance,
                 reconciled_by=request.user,
                 notes=request.POST.get('notes', ''),
+                deposits_in_transit=deposits_in_transit,
+                unpresented_cheques=unpresented_cheques,
+                bank_charges_not_recorded=bank_charges_not_recorded,
+                interest_not_recorded=interest_not_recorded,
+                other_adjustments=other_adjustments,
             )
             messages.success(request, f"Reconciliation saved for {statement_date}.")
             return redirect('payments:bank_reconciliation', pk=pk)
@@ -60,7 +74,7 @@ def bank_reconciliation(request, pk):
         account=bank_account.ledger_account, journal_entry__is_deleted=False,
     ).select_related('journal_entry').order_by('-journal_entry__date', '-id')
 
-    uncleared_lines = lines.filter(is_reconciled=False)
+    uncleared_lines = lines.filter(is_cleared=False)
     cleared_balance = _cleared_balance(bank_account.ledger_account)
     book_balance = _account_balance(bank_account.ledger_account)
 
@@ -94,7 +108,7 @@ def _cleared_balance(ledger_account):
     from django.db.models import Sum, Q
     from django.db.models.functions import Coalesce
     agg = JournalEntryLine.objects.filter(
-        account=ledger_account, journal_entry__is_deleted=False, is_reconciled=True,
+        account=ledger_account, journal_entry__is_deleted=False, is_cleared=True,
     ).aggregate(
         debit=Coalesce(Sum('amount', filter=Q(entry_type='DEBIT')), Decimal('0')),
         credit=Coalesce(Sum('amount', filter=Q(entry_type='CREDIT')), Decimal('0')),

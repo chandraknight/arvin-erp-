@@ -101,6 +101,15 @@ class JournalEntry(BaseModel):
     def __str__(self):
         return f"Entry on {self.date.strftime('%Y-%m-%d')}: {self.description[:50]}..."
 
+    def save(self, *args, **kwargs):
+        if self.company_id and self.date and not self.pk:
+            from apps.company.fiscal_year_guard import assert_fiscal_year_open
+            fy = FiscalYear.objects.filter(
+                company_id=self.company_id, start_date__lte=self.date, end_date__gte=self.date,
+            ).first()
+            assert_fiscal_year_open(fy)
+        super().save(*args, **kwargs)
+
     @property
     def debit_total(self):
         cache_key = f'journal_entry_{self.id}_debit_total'
@@ -203,7 +212,7 @@ def get_or_create_system_account(company, name, account_type, code=None, is_curr
     return acc
 
 
-def post_journal_entry(company, date, description, lines, created_by=None, source_type='OTHER'):
+def post_journal_entry(company, date, description, lines, created_by=None, source_type='OTHER', journal_type='GENERAL'):
     """
     Single, safe entry point for posting a balanced double-entry transaction.
 
@@ -227,7 +236,7 @@ def post_journal_entry(company, date, description, lines, created_by=None, sourc
     with transaction.atomic():
         entry = JournalEntry.objects.create(
             company=company, date=date, description=description, created_by=created_by,
-            source_type=source_type,
+            source_type=source_type, journal_type=journal_type,
         )
         for line in lines:
             JournalEntryLine.objects.create(
@@ -494,3 +503,58 @@ class PrepaidExpenseAmortizationLog(BaseModel):
 
     def __str__(self):
         return f"Amortization {self.amount} for {self.prepaid_expense.name} ({self.period_end})"
+
+# ─── Nepal TDS (withholding tax) on vendor bills ─────────────────────────────
+
+TDS_CATEGORY_CHOICES = [
+    ('RENT',              'Rent'),
+    ('SERVICE_FEE',       'Service Fee'),
+    ('CONTRACT',          'Contract Payment'),
+    ('COMMISSION',        'Commission'),
+    ('PROFESSIONAL_FEE',  'Professional Fee'),
+    ('OTHER',              'Other'),
+]
+
+# Nepal-standard TDS rates by category, seeded as editable defaults —
+# actual rate is stored per-company on TDSRate and must be reviewed against
+# the current Finance Act, not read from this dict at runtime.
+TDS_CATEGORY_DEFAULT_RATES = {
+    'RENT': Decimal('10.00'),
+    'SERVICE_FEE': Decimal('15.00'),
+    'CONTRACT': Decimal('1.50'),
+    'COMMISSION': Decimal('15.00'),
+    'PROFESSIONAL_FEE': Decimal('15.00'),
+    'OTHER': Decimal('15.00'),
+}
+
+
+class TDSRate(BaseModel):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='tds_rates')
+    category = models.CharField(max_length=20, choices=TDS_CATEGORY_CHOICES)
+    rate = models.DecimalField(max_digits=5, decimal_places=2, help_text='Withholding tax percentage.')
+    effective_from = models.DateField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company', 'category', 'effective_from'],
+                name='unique_tdsrate_company_category_effective_from',
+            ),
+        ]
+        ordering = ['category', '-effective_from']
+
+    def __str__(self):
+        return f"{self.get_category_display()} @ {self.rate}% from {self.effective_from}"
+
+
+class TDSDeduction(BaseModel):
+    vendor_bill = models.ForeignKey('billing.VendorBill', on_delete=models.CASCADE, related_name='tds_deductions')
+    tds_rate = models.ForeignKey(TDSRate, on_delete=models.PROTECT, related_name='deductions')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name='tds_deductions')
+    certificate_number = models.CharField(max_length=50, blank=True)
+    certificate_issued_at = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"TDS {self.amount} on {self.vendor_bill.bill_number}"

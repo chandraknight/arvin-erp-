@@ -24,25 +24,25 @@ thead { display: table-header-group; }
 </head>
 <body>
 <div class="rh">
-  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
-  <h1>Outstanding Invoices Report</h1>
-  <div class="sub">Generated: {% now "Y-m-d" %}</div>
+ {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+ <h1>Outstanding Invoices Report</h1>
+ <div class="sub">Generated: {% now "Y-m-d" %}</div>
 </div>
 <table>
-  <thead><tr><th>Invoice #</th><th>Customer</th><th>Invoice Date</th><th>Due Date</th><th class="tr">Total</th><th class="tr">Outstanding (NPR)</th></tr></thead>
-  <tbody>
-    {% for inv in outstanding_invoices %}
-    <tr>
-      <td>{{ inv.invoice_number|default:inv.id }}</td>
-      <td>{{ inv.customer.name|default:"N/A" }}</td>
-      <td>{{ inv.created_at|date:"Y-m-d" }}</td>
-      <td>{{ inv.due_date|date:"Y-m-d" }}</td>
-      <td class="tr">{{ inv.total|floatformat:2 }}</td>
-      <td class="tr">{{ inv.outstanding_balance|floatformat:2 }}</td>
-    </tr>
-    {% empty %}<tr><td colspan="6" class="tc">No outstanding invoices found.</td></tr>{% endfor %}
-    {% if outstanding_invoices %}<tr class="tot"><td colspan="5">Total Outstanding</td><td class="tr">{{ total_outstanding_amount|floatformat:2 }}</td></tr>{% endif %}
-  </tbody>
+ <thead><tr><th>Invoice #</th><th>Customer</th><th>Invoice Date</th><th>Due Date</th><th class="tr">Total</th><th class="tr">Outstanding (NPR)</th></tr></thead>
+ <tbody>
+ {% for inv in outstanding_invoices %}
+ <tr>
+ <td>{{ inv.invoice_number|default:inv.id }}</td>
+ <td>{{ inv.customer.name|default:"N/A" }}</td>
+ <td>{{ inv.created_at|date:"Y-m-d" }}</td>
+ <td>{{ inv.due_date|date:"Y-m-d" }}</td>
+ <td class="tr">{{ inv.total|floatformat:2 }}</td>
+ <td class="tr">{{ inv.outstanding_balance|floatformat:2 }}</td>
+ </tr>
+ {% empty %}<tr><td colspan="6" class="tc">No outstanding invoices found.</td></tr>{% endfor %}
+ {% if outstanding_invoices %}<tr class="tot"><td colspan="5">Total Outstanding</td><td class="tr">{{ total_outstanding_amount|floatformat:2 }}</td></tr>{% endif %}
+ </tbody>
 </table>
 </body>
 </html>

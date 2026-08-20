@@ -210,6 +210,8 @@ urlpatterns = [
          name='vat_sales_register'),
     path('tax/vat-purchase-register/', views.vat_purchase_register,
          name='vat_purchase_register'),
+    path('tax/tds-register/', views.tds_register,
+         name='tds_register'),
 
     path('financial/tax-report/', views.tax_report,
          name='tax_report'),

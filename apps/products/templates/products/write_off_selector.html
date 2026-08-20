@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Write-off Stock{% endblock %}
+
+{% block content %}
+
+ <c-card_title_simple
+ title="Write-off Stock"
+ icon="fas fa-trash-alt text-red-700"
+ descriptions="Select a product to dispose damaged, expired, lost or obsolete stock"
+ ></c-card_title_simple>
+
+ <div class="w-full mt-2">
+
+ <div class="flex items-center justify-between mb-4">
+ <form method="get" class="flex gap-2 flex-1 max-w-md">
+ <input type="text" name="q" value="{{ q }}" placeholder="Search name, barcode or SKU…"
+ class="flex-1 border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+ <button type="submit" class="px-4 py-2 bg-red-700 hover:bg-red-800 text-white text-sm font-medium">Search</button>
+ {% if q %}
+ <a href="{% url 'products:write_off_selector' %}" class="px-4 py-2 border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">Clear</a>
+ {% endif %}
+ </form>
+ <div class="flex items-center gap-4 ml-4">
+ <a href="{% url 'products:bulk_write_off' %}"
+ class="inline-flex items-center gap-2 px-4 py-2 bg-red-700 hover:bg-red-800 text-white text-sm font-semibold transition whitespace-nowrap">
+ <i class="fas fa-layer-group"></i> Bulk Write-off
+ </a>
+ <a href="{% url 'products:disposal_history' %}" class="text-sm text-red-700 hover:underline whitespace-nowrap">
+ <i class="fas fa-history mr-1"></i>View Disposal History
+ </a>
+ </div>
+ </div>
+
+ <div class="bg-white shadow-sm border border-gray-100 overflow-x-auto">
+ <table class="w-full text-sm">
+ <thead class="bg-gray-50 border-b border-gray-200">
+ <tr>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Product</th>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Barcode / SKU</th>
+ <th class="text-right px-4 py-3 font-medium text-gray-600">Inventory Stock</th>
+ <th class="text-right px-4 py-3 font-medium text-gray-600">Ecom Stock</th>
+ <th class="text-center px-4 py-3 font-medium text-gray-600 w-32">Action</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-100">
+ {% for product in products %}
+ <tr class="hover:bg-gray-50">
+ <td class="px-4 py-3 font-medium text-gray-800">{{ product.name }}</td>
+ <td class="px-4 py-3 text-gray-500 text-xs">
+ {% if product.barcode %}{{ product.barcode }}{% endif %}
+ {% if product.sku %}<span class="ml-1 text-gray-400">SKU {{ product.sku }}</span>{% endif %}
+ {% if not product.barcode and not product.sku %}<span class="text-gray-300">—</span>{% endif %}
+ </td>
+ <td class="px-4 py-3 text-right {% if product.productstock.stock <= 0 %}text-red-600 font-semibold{% else %}text-gray-700{% endif %}">
+ {{ product.productstock.stock|default:"0" }}
+ </td>
+ <td class="px-4 py-3 text-right {% if product.productstock.ecom_stock <= 0 %}text-red-600 font-semibold{% else %}text-gray-700{% endif %}">
+ {{ product.productstock.ecom_stock|default:"0" }}
+ </td>
+ <td class="px-4 py-3 text-center">
+ <a href="{% url 'products:dispose_stock' item_id=product.id %}"
+ class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition">
+ <i class="fas fa-ban"></i> Write Off
+ </a>
+ </td>
+ </tr>
+ {% empty %}
+ <tr>
+ <td colspan="5" class="px-4 py-10 text-center text-gray-400">No products found.</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+
+ {% if page_obj.has_other_pages %}
+ <div class="mt-4 flex items-center justify-between text-sm">
+ <span class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} &mdash; {{ page_obj.paginator.count }} products</span>
+ <div class="flex gap-1">
+ {% if page_obj.has_previous %}
+ <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}"
+ class="px-3 py-1.5 border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs">&laquo; Prev</a>
+ {% endif %}
+ {% for num in page_obj.paginator.page_range %}
+ {% if page_obj.number == num %}
+ <span class="px-3 py-1.5 bg-red-700 text-white text-xs">{{ num }}</span>
+ {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+ <a href="?{% if q %}q={{ q }}&{% endif %}page={{ num }}"
+ class="px-3 py-1.5 border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs">{{ num }}</a>
+ {% endif %}
+ {% endfor %}
+ {% if page_obj.has_next %}
+ <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}"
+ class="px-3 py-1.5 border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs">Next &raquo;</a>
+ {% endif %}
+ </div>
+ </div>
+ {% endif %}
+
+ <div class="mt-4">
+ <a href="{% url 'products:inventory_management' %}" class="text-sm text-indigo-600 hover:underline">&larr; Back to Inventory</a>
+ </div>
+ </div>
+{% endblock %}

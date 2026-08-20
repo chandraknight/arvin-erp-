@@ -13,6 +13,8 @@ urlpatterns = [
     path('inventory/update-stock/<uuid:item_id>/', views.update_stock, name='update_stock'),
     path('inventory/dispose-stock/<uuid:item_id>/', views.dispose_stock, name='dispose_stock'),
     path('inventory/disposal-history/', views.disposal_history, name='disposal_history'),
+    path('inventory/write-off/', views.write_off_selector, name='write_off_selector'),
+    path('inventory/write-off/bulk/', views.bulk_write_off, name='bulk_write_off'),
     path('inventory/add-category/', views.add_category, name='add_category'),
     path('inventory/edit-category/<uuid:category_id>/', views.edit_category, name='edit_category'),
 

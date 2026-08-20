@@ -18,19 +18,19 @@ tr { page-break-inside: avoid; } thead { display: table-header-group; }
 <body>
 <div class="rh">{% if company %}<div class="co">{{ company.name }}</div>{% endif %}<h1>Cost of Goods Sold (COGS) Report</h1><div class="sub">Generated: {% now "Y-m-d" %}</div></div>
 <table>
-  <thead><tr><th>Date</th><th>Product</th><th>Category</th><th class="tr">Qty</th><th class="tr">Cost Price</th><th class="tr">COGS (NPR)</th></tr></thead>
-  <tbody>
-    {% for item in cogs_data %}
-    <tr>
-      <td>{{ item.invoice.created_at|date:"Y-m-d" }}</td>
-      <td>{{ item.product.name|default:"N/A" }}</td>
-      <td>{{ item.product.category.name|default:"-" }}</td>
-      <td class="tr">{{ item.quantity }}</td>
-      <td class="tr">{{ item.product.cost_price|floatformat:2 }}</td>
-      <td class="tr">{{ item.item_cogs|floatformat:2 }}</td>
-    </tr>
-    {% empty %}<tr><td colspan="6" class="tc">No COGS data found.</td></tr>{% endfor %}
-    {% if cogs_data %}<tr class="tot"><td colspan="5">Total COGS</td><td class="tr">{{ total_cogs|floatformat:2 }}</td></tr>{% endif %}
-  </tbody>
+ <thead><tr><th>Date</th><th>Product</th><th>Category</th><th class="tr">Qty</th><th class="tr">Cost Price</th><th class="tr">COGS (NPR)</th></tr></thead>
+ <tbody>
+ {% for item in cogs_data %}
+ <tr>
+ <td>{{ item.invoice.created_at|date:"Y-m-d" }}</td>
+ <td>{{ item.product.name|default:"N/A" }}</td>
+ <td>{{ item.product.category.name|default:"-" }}</td>
+ <td class="tr">{{ item.quantity }}</td>
+ <td class="tr">{{ item.product.cost_price|floatformat:2 }}</td>
+ <td class="tr">{{ item.item_cogs|floatformat:2 }}</td>
+ </tr>
+ {% empty %}<tr><td colspan="6" class="tc">No COGS data found.</td></tr>{% endfor %}
+ {% if cogs_data %}<tr class="tot"><td colspan="5">Total COGS</td><td class="tr">{{ total_cogs|floatformat:2 }}</td></tr>{% endif %}
+ </tbody>
 </table>
 </body></html>

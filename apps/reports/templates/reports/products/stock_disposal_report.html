@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load global_filter %}
 
 {% block title %}Stock Disposal Report{% endblock %}
 
@@ -14,11 +15,11 @@
     <form method="get" class="mb-4 flex flex-wrap items-end gap-2">
         <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">From</label>
-            <input type="date" name="date_from" value="{{ date_from }}" class="border border-gray-300 rounded-md text-sm px-3 py-2">
+            <input type="text" name="date_from" value="{{ date_from|bs_date }}" class="nepali-datepicker border border-gray-300 rounded-md text-sm px-3 py-2">
         </div>
         <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">To</label>
-            <input type="date" name="date_to" value="{{ date_to }}" class="border border-gray-300 rounded-md text-sm px-3 py-2">
+            <input type="text" name="date_to" value="{{ date_to|bs_date }}" class="nepali-datepicker border border-gray-300 rounded-md text-sm px-3 py-2">
         </div>
         <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">Product</label>
@@ -111,12 +112,12 @@
         <p class="text-sm text-gray-500">{{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</p>
         <nav class="flex items-center gap-1">
             {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}&product={{ product_q }}&disposal_reason={{ disposal_reason }}"
+                <a href="?page={{ page_obj.previous_page_number }}&date_from={{ date_from|bs_date }}&date_to={{ date_to|bs_date }}&product={{ product_q }}&disposal_reason={{ disposal_reason }}"
                    class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50">‹ Prev</a>
             {% endif %}
             <span class="px-3 py-1 text-sm bg-indigo-600 text-white font-bold">{{ page_obj.number }}</span>
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}&product={{ product_q }}&disposal_reason={{ disposal_reason }}"
+                <a href="?page={{ page_obj.next_page_number }}&date_from={{ date_from|bs_date }}&date_to={{ date_to|bs_date }}&product={{ product_q }}&disposal_reason={{ disposal_reason }}"
                    class="px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50">Next ›</a>
             {% endif %}
         </nav>

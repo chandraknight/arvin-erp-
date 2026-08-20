@@ -59,10 +59,24 @@ class BankAccount(BaseModel):
 
 class BankReconciliation(BaseModel):
     """
-    Snapshot of a bank reconciliation session — book balance vs statement
-    balance as of statement_date, with the resulting difference. Individual
-    line-level clearing is tracked on JournalEntryLine.is_cleared/cleared_date;
-    this model records the reconciliation event itself for audit history.
+    Bank Reconciliation Statement as of statement_date — reconciles balance
+    per book to balance per bank statement via an itemized adjustment
+    schedule, per NFRS. Individual line-level clearing is still tracked on
+    JournalEntryLine.is_cleared/cleared_date; this model is the formal BRS
+    snapshot for audit history.
+
+    Balance per Bank Statement
+      + Deposits in transit (recorded in books, not yet on statement)
+      - Unpresented cheques (recorded in books, not yet cleared by bank)
+      = Adjusted balance per statement
+
+    Balance per Book
+      - Bank charges not yet recorded in books
+      + Interest/other credits not yet recorded in books
+      + Other adjustments (net; can be negative)
+      = Adjusted balance per book
+
+    The two adjusted balances must agree — that is the reconciliation.
     """
     bank_account = models.ForeignKey(
         BankAccount, on_delete=models.CASCADE, related_name='reconciliations')
@@ -73,6 +87,23 @@ class BankReconciliation(BaseModel):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     notes = models.TextField(blank=True, default='')
 
+    # Adjusting items — reconciling differences between book and statement
+    deposits_in_transit = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        help_text='Deposits recorded in books but not yet reflected on the bank statement.')
+    unpresented_cheques = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        help_text='Cheques issued and recorded in books but not yet cleared by the bank.')
+    bank_charges_not_recorded = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        help_text='Bank charges/fees on the statement not yet recorded in the books.')
+    interest_not_recorded = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        help_text='Interest or other bank credits on the statement not yet recorded in the books.')
+    other_adjustments = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        help_text='Any other net reconciling adjustment to the book balance (can be negative).')
+
     class Meta:
         ordering = ['-statement_date']
 
@@ -80,8 +111,21 @@ class BankReconciliation(BaseModel):
         return f"Reconciliation — {self.bank_account} as of {self.statement_date}"
 
     @property
+    def adjusted_statement_balance(self):
+        return self.statement_balance + self.deposits_in_transit - self.unpresented_cheques
+
+    @property
+    def adjusted_book_balance(self):
+        return (
+            self.book_balance
+            - self.bank_charges_not_recorded
+            + self.interest_not_recorded
+            + self.other_adjustments
+        )
+
+    @property
     def difference(self):
-        return self.statement_balance - self.book_balance
+        return self.adjusted_statement_balance - self.adjusted_book_balance
 
     @property
     def is_balanced(self):
@@ -159,7 +203,23 @@ class Payment(BaseModel):
             return f"Bill #{self.invoice.invoice_number}: {self.amount} on {self.date.strftime('%Y-%m-%d')}"
         else:
             return f"{self.get_payment_type_display()}: {self.amount} on {self.date.strftime('%Y-%m-%d')}"
-    
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.invoice_id and self.amount is not None and not self.pk:
+            if self.amount > self.invoice.outstanding_balance:
+                raise ValidationError(
+                    f"Payment amount ({self.amount}) exceeds the invoice's outstanding "
+                    f"balance ({self.invoice.outstanding_balance})."
+                )
+        if self.fiscal_year_id and not self.pk:
+            from apps.company.fiscal_year_guard import assert_fiscal_year_open
+            assert_fiscal_year_open(self.fiscal_year)
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     @property
     def payment_number(self):
         """Returns the payment number to be used as bill/invoice number"""
