@@ -6,7 +6,7 @@
 <style>
 * { box-sizing: border-box; }
 @page { size: A4 portrait; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
-  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+ @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
 html { width: 210mm; }
 body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
 .rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
@@ -25,30 +25,30 @@ thead { display: table-header-group; }
 </head>
 <body>
 <div class="rh">
-  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
-  <h1>Vendor Payment List</h1>
-  <div class="sub">Printed: {% now "Y-m-d" %}</div>
+ {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+ <h1>Vendor Payment List</h1>
+ <div class="sub">Printed: {% now "Y-m-d" %}</div>
 </div>
 
 <table>
-  <thead>
-    <tr>
-      <th>Payment Date</th><th>Vendor</th>
-      <th>Reference #</th><th class="tr">Amount (NPR)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for vp in vendor_payments %}
-    <tr>
-      <td>{{ vp.payment_date|date:"Y-m-d" }}</td>
-      <td>{{ vp.vendor.name|default:"N/A" }}</td>
-      <td>{{ vp.reference_number|default:"-" }}</td>
-      <td class="tr">{{ vp.amount|floatformat:2 }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="4" class="tc">No vendor payments found.</td></tr>
-    {% endfor %}
-  </tbody>
+ <thead>
+ <tr>
+ <th>Payment Date</th><th>Vendor</th>
+ <th>Reference #</th><th class="tr">Amount (NPR)</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for vp in vendor_payments %}
+ <tr>
+ <td>{{ vp.payment_date|date:"Y-m-d" }}</td>
+ <td>{{ vp.vendor.name|default:"N/A" }}</td>
+ <td>{{ vp.reference_number|default:"-" }}</td>
+ <td class="tr">{{ vp.amount|floatformat:2 }}</td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="4" class="tc">No vendor payments found.</td></tr>
+ {% endfor %}
+ </tbody>
 </table>
 
 <script>window.onload = function(){ window.print(); };</script>

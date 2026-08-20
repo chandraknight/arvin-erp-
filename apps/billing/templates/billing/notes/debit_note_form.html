@@ -1,66 +1,155 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
 {% block content %}
-<div class="flex gap-6 mt-2 items-start">
+<div class="w-full mt-3">
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
-  <!-- Form -->
-  <div class="flex-1 max-w-2xl bg-white border border-gray-200 shadow-sm p-6">
-    <h2 class="text-xl font-extrabold text-center text-green-800 mb-1 tracking-tight">Purchase Return (Debit Note)</h2>
-    <p class="text-center text-sm text-gray-500 mb-5">Return goods to a vendor — reduces Accounts Payable.</p>
-
-    {% include 'includes/toast.html' %}
-
-    <form method="post" novalidate class="space-y-4" id="note-form">
-      {% csrf_token %}
-
-      {% if form.non_field_errors %}
-        <div class="bg-red-50 border border-red-200 p-3">
-          {% for error in form.non_field_errors %}<p class="text-red-700 text-sm">{{ error|striptags }}</p>{% endfor %}
-        </div>
-      {% endif %}
-
-      <!-- Company -->
-      <div>
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Company</label>
-        {{ form.company|add_class:"w-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-500" }}
-        {% if form.company.errors %}<p class="text-red-600 text-sm mt-1">{{ form.company.errors|striptags }}</p>{% endif %}
-      </div>
-
-      <!-- Vendor -->
-      <div>
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Vendor <span class="text-red-400">*</span></label>
-        {{ form.vendor|add_class:"w-full border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
-        {% if form.vendor.errors %}<p class="text-red-600 text-sm mt-1">{{ form.vendor.errors|striptags }}</p>{% endif %}
-      </div>
-
-      <!-- Vendor Bill -->
-      <div>
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Vendor Bill</label>
-        {{ form.vendor_bill|add_class:"w-full border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
-        {% if form.vendor_bill.errors %}<p class="text-red-600 text-sm mt-1">{{ form.vendor_bill.errors|striptags }}</p>{% endif %}
-        <p class="text-xs text-gray-400 mt-1">VAT is pro-rated from the selected bill.</p>
-      </div>
-
-      <!-- Amount -->
-      <div>
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Amount <span class="text-red-400">*</span></label>
-        {{ form.amount|add_class:"w-full border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
-        {% if form.amount.errors %}<p class="text-red-600 text-sm mt-1">{{ form.amount.errors|striptags }}</p>{% endif %}
-      </div>
-
-      <!-- Reason -->
-      <div>
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Reason</label>
-        {{ form.reason|add_class:"w-full border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
-        {% if form.reason.errors %}<p class="text-red-600 text-sm mt-1">{{ form.reason.errors|striptags }}</p>{% endif %}
-      </div>
-
-      <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 transition duration-150">
-        Submit
-      </button>
-      <a href="{% url 'accounts:user_dashboard' %}" class="block text-sm text-gray-500 mt-2">← Back to Overview</a>
-    </form>
+  {# ── Main form (4/5) ── #}
+  <div class="lg:col-span-4 glass-panel p-5">
+  <div class="mb-6 pb-4 border-b border-white/40 text-center">
+  <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Purchase Return (Debit Note)</h2>
+  <p class="text-sm text-gray-500 mt-1">Return goods to a vendor — reduces Accounts Payable.</p>
   </div>
 
+  {% include 'includes/toast.html' %}
+
+  <form method="post" novalidate class="space-y-4" id="note-form">
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+  <div class=" bg-red-50 border border-red-300 text-red-700 px-4 py-3 text-sm">
+  {% for error in form.non_field_errors %}<p>{{ error|striptags }}</p>{% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Company -->
+  <div>
+  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Company</label>
+  {{ form.company|add_class:"w-full border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500" }}
+  {% if form.company.errors %}<p class="text-red-600 text-sm mt-1">{{ form.company.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <!-- Vendor -->
+  <div>
+  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Vendor <span class="text-red-500">*</span></label>
+  {{ form.vendor|add_class:"w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+  {% if form.vendor.errors %}<p class="text-red-600 text-sm mt-1">{{ form.vendor.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <!-- Vendor Bill -->
+  <div>
+  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Vendor Bill</label>
+  {{ form.vendor_bill|add_class:"w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+  {% if form.vendor_bill.errors %}<p class="text-red-600 text-sm mt-1">{{ form.vendor_bill.errors|striptags }}</p>{% endif %}
+  <p class="text-xs text-gray-400 mt-1">VAT is pro-rated from the selected bill.</p>
+  </div>
+
+  <!-- Amount -->
+  <div>
+  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Amount <span class="text-red-500">*</span></label>
+  {{ form.amount|add_class:"w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+  {% if form.amount.errors %}<p class="text-red-600 text-sm mt-1">{{ form.amount.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <!-- Reason -->
+  <div>
+  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Reason</label>
+  {{ form.reason|add_class:"w-full border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500" }}
+  {% if form.reason.errors %}<p class="text-red-600 text-sm mt-1">{{ form.reason.errors|striptags }}</p>{% endif %}
+  </div>
+
+  <button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 shadow-md transition duration-150">
+  Submit
+  </button>
+  </form>
+
+  <a href="{% url 'accounts:user_dashboard' %}" class="block text-sm text-gray-500 mt-3">← Back to Overview</a>
+  </div>{# end main col #}
+
+  {# ── Sidebar (1/5) ── #}
+  <div class="lg:col-span-1 space-y-4 lg:sticky lg:top-4 self-start">
+
+  {# Vendor info card #}
+  <div class=" overflow-hidden bg-white border border-gray-200 shadow-sm">
+  <div class="flex items-center gap-2 px-4 py-3 bg-green-700 text-white">
+  <i class="fas fa-truck text-green-200 text-sm"></i>
+  <h3 class="text-sm font-bold uppercase tracking-wide">Vendor Info</h3>
+  </div>
+  <div id="vendor-info-panel" class="p-5 text-sm text-gray-500 italic">
+  Select a vendor to see details
+  </div>
+  </div>
+
+  {# Return summary card #}
+  <div class=" overflow-hidden bg-white border border-gray-200 shadow-sm">
+  <div class="px-4 py-3 border-b border-gray-200">
+  <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Return Summary</h3>
+  </div>
+  <div class="p-5 space-y-2 text-sm">
+  <div class="flex justify-between">
+  <span class="text-gray-500">Vendor Bill</span>
+  <span id="s-bill" class="font-medium text-gray-800">—</span>
+  </div>
+  <div class="flex justify-between border-t border-gray-100 pt-2 mt-1">
+  <span class="font-semibold text-gray-800">Return Amount</span>
+  <span id="s-amount" class="font-bold text-green-800 font-mono">₹ 0.00</span>
+  </div>
+  </div>
+  </div>
+
+  </div>{# end sidebar #}
+
+  </div>{# end grid #}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const vendorSelect = document.getElementById('{{ form.vendor.id_for_label }}');
+  const billSelect = document.getElementById('{{ form.vendor_bill.id_for_label }}');
+  const amountInput = document.getElementById('{{ form.amount.id_for_label }}');
+  const infoPanel = document.getElementById('vendor-info-panel');
+  const billLabel = document.getElementById('s-bill');
+  const amountLabel = document.getElementById('s-amount');
+
+  function loadVendorInfo(vendorId) {
+    if (!vendorId) {
+      infoPanel.innerHTML = '<span class="italic text-gray-400">Select a vendor to see details</span>';
+      return;
+    }
+    fetch(`/vendors/api/${vendorId}/json/`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) { infoPanel.innerHTML = '<span class="text-red-500 text-xs">Could not load vendor info.</span>'; return; }
+        infoPanel.innerHTML = `
+          <div class="space-y-2">
+            <div class="font-bold text-gray-800 text-base">${data.name}</div>
+            ${data.contact_person ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-user w-4 text-gray-400 mt-0.5"></i>${data.contact_person}</div>` : ''}
+            ${data.email ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-envelope w-4 text-gray-400 mt-0.5"></i>${data.email}</div>` : ''}
+            ${data.phone ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-phone w-4 text-gray-400 mt-0.5"></i>${data.phone}</div>` : ''}
+            ${data.pan_number ? `<div class="flex gap-2 text-gray-600"><i class="fas fa-id-card w-4 text-gray-400 mt-0.5"></i>PAN: ${data.pan_number}</div>` : ''}
+          </div>`;
+      })
+      .catch(() => { infoPanel.innerHTML = '<span class="text-red-500 text-xs">Error loading vendor.</span>'; });
+  }
+
+  function updateSummary() {
+    const billText = billSelect?.options[billSelect.selectedIndex]?.text || '';
+    billLabel.textContent = (billSelect && billSelect.value && billText !== '---------') ? billText : '—';
+    const amt = parseFloat(amountInput?.value) || 0;
+    amountLabel.textContent = '₹ ' + amt.toFixed(2);
+  }
+
+  if (vendorSelect) {
+    vendorSelect.addEventListener('change', function () { loadVendorInfo(this.value); });
+    if (vendorSelect.value) loadVendorInfo(vendorSelect.value);
+  }
+  $(document).on('select2:select select2:unselect', '#' + '{{ form.vendor.id_for_label }}', function () {
+    loadVendorInfo(this.value);
+  });
+
+  billSelect?.addEventListener('change', updateSummary);
+  amountInput?.addEventListener('input', updateSummary);
+  updateSummary();
+});
+</script>
 {% endblock %}

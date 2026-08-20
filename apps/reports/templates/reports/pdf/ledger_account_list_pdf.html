@@ -22,21 +22,21 @@ thead { display: table-header-group; }
 </head>
 <body>
 <div class="rh">
-  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
-  <h1>Chart of Accounts</h1>
-  <div class="sub">Generated: {% now "Y-m-d" %}</div>
+ {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+ <h1>Chart of Accounts</h1>
+ <div class="sub">Generated: {% now "Y-m-d" %}</div>
 </div>
 <table>
-  <thead><tr><th>#</th><th>Account Name</th><th>Type</th><th>Classification</th></tr></thead>
-  <tbody>
-    {% for acc in ledger_accounts %}
-    <tr>
-      <td>{{ forloop.counter }}</td><td>{{ acc.name }}</td>
-      <td>{{ acc.get_account_type_display }}</td>
-      <td>{% if acc.is_current %}Current{% else %}Non-Current{% endif %}</td>
-    </tr>
-    {% empty %}<tr><td colspan="4" class="tc">No accounts found.</td></tr>{% endfor %}
-  </tbody>
+ <thead><tr><th>#</th><th>Account Name</th><th>Type</th><th>Classification</th></tr></thead>
+ <tbody>
+ {% for acc in ledger_accounts %}
+ <tr>
+ <td>{{ forloop.counter }}</td><td>{{ acc.name }}</td>
+ <td>{{ acc.get_account_type_display }}</td>
+ <td>{% if acc.is_current %}Current{% else %}Non-Current{% endif %}</td>
+ </tr>
+ {% empty %}<tr><td colspan="4" class="tc">No accounts found.</td></tr>{% endfor %}
+ </tbody>
 </table>
 </body>
 </html>

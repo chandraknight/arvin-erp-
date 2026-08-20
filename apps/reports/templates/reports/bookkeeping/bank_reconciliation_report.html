@@ -4,156 +4,156 @@
 
 {% block content %}
 <div class="w-full mt-2">
-    <h1 class="text-2xl font-semibold mb-1 text-gray-800">Bank Reconciliation Statement (BRS)</h1>
-    <p class="text-sm text-gray-500 mb-4">Reconcile the book balance of a bank ledger account against the bank statement as of a given date.</p>
+ <h1 class="text-2xl font-semibold mb-1 text-gray-800">Bank Reconciliation Statement (BRS)</h1>
+ <p class="text-sm text-gray-500 mb-4">Reconcile the book balance of a bank ledger account against the bank statement as of a given date.</p>
 
-    <form method="get" class="mb-4 flex items-end gap-2 flex-wrap">
-        <div>
-            <label for="bank_account" class="block text-xs font-medium text-gray-600 mb-1">Bank Account</label>
-            <select name="bank_account" id="bank_account" class="border border-gray-300 rounded-md text-sm px-3 py-2">
-                {% for ba in bank_accounts %}
-                    <option value="{{ ba.id }}" {% if selected_bank_account.id == ba.id %}selected{% endif %}>
-                        {{ ba.bank_name }} — {{ ba.account_number }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label for="as_of_date" class="block text-xs font-medium text-gray-600 mb-1">As of (BS)</label>
-            <input type="text" name="as_of_date" id="as_of_date" value="{{ as_of_date_bs|default:'' }}"
-                   placeholder="YYYY-MM-DD" autocomplete="off"
-                   class="nepali-datepicker border border-gray-300 rounded-md text-sm px-3 py-2">
-        </div>
-        <div>
-            <label for="statement_balance" class="block text-xs font-medium text-gray-600 mb-1">Bank Statement Closing Balance</label>
-            <input type="number" step="0.01" name="statement_balance" id="statement_balance" value="{{ statement_balance_str }}"
-                   placeholder="0.00"
-                   class="border border-gray-300 rounded-md text-sm px-3 py-2 w-40">
-        </div>
-        <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition text-sm">Reconcile</button>
-    </form>
+ <form method="get" class="mb-4 flex items-end gap-2 flex-wrap">
+ <div>
+ <label for="bank_account" class="block text-xs font-medium text-gray-600 mb-1">Bank Account</label>
+ <select name="bank_account" id="bank_account" class="border border-gray-300 text-sm px-3 py-2">
+ {% for ba in bank_accounts %}
+ <option value="{{ ba.id }}" {% if selected_bank_account.id == ba.id %}selected{% endif %}>
+ {{ ba.bank_name }} — {{ ba.account_number }}
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ <div>
+ <label for="as_of_date" class="block text-xs font-medium text-gray-600 mb-1">As of (BS)</label>
+ <input type="text" name="as_of_date" id="as_of_date" value="{{ as_of_date_bs|default:'' }}"
+ placeholder="YYYY-MM-DD" autocomplete="off"
+ class="nepali-datepicker border border-gray-300 text-sm px-3 py-2">
+ </div>
+ <div>
+ <label for="statement_balance" class="block text-xs font-medium text-gray-600 mb-1">Bank Statement Closing Balance</label>
+ <input type="number" step="0.01" name="statement_balance" id="statement_balance" value="{{ statement_balance_str }}"
+ placeholder="0.00"
+ class="border border-gray-300 text-sm px-3 py-2 w-40">
+ </div>
+ <button type="submit" class="bg-orange-600 text-white px-4 py-2 hover:bg-orange-700 transition text-sm">Reconcile</button>
+ </form>
 
-    {% if not selected_bank_account %}
-        <div class="bg-white rounded shadow-md p-6 text-sm text-gray-500">No bank accounts set up for this company.</div>
-    {% elif book_balance is None %}
-        <div class="bg-white rounded shadow-md p-6 text-sm text-gray-500">This bank account has no linked ledger account.</div>
-    {% else %}
+ {% if not selected_bank_account %}
+ <div class="bg-white shadow-md p-6 text-sm text-gray-500">No bank accounts set up for this company.</div>
+ {% elif book_balance is None %}
+ <div class="bg-white shadow-md p-6 text-sm text-gray-500">This bank account has no linked ledger account.</div>
+ {% else %}
 
-    <!-- BRS Summary -->
-    <div class="bg-white rounded shadow-md p-6 mb-4">
-        <h3 class="text-md font-semibold text-gray-800 mb-3">Reconciliation Summary — as of {{ as_of_date|date:"M d, Y" }}</h3>
-        <table class="min-w-full text-sm max-w-xl">
-            <tbody class="divide-y divide-gray-100">
-                <tr>
-                    <td class="py-2 text-gray-700">Balance as per Bank Book (Ledger)</td>
-                    <td class="py-2 text-right font-medium">{{ book_balance|floatformat:2 }}</td>
-                </tr>
-                <tr>
-                    <td class="py-2 text-gray-700">Add: Deposits recorded in books, not yet credited by bank</td>
-                    <td class="py-2 text-right font-medium text-green-700">+{{ total_uncleared_debits|floatformat:2 }}</td>
-                </tr>
-                <tr>
-                    <td class="py-2 text-gray-700">Less: Cheques/payments issued, not yet presented</td>
-                    <td class="py-2 text-right font-medium text-red-700">-{{ total_uncleared_credits|floatformat:2 }}</td>
-                </tr>
-                <tr class="border-t-2 border-gray-300">
-                    <td class="py-2 font-semibold text-gray-900">Adjusted Book Balance</td>
-                    <td class="py-2 text-right font-bold text-gray-900">{{ adjusted_book_balance|floatformat:2 }}</td>
-                </tr>
-                {% if statement_balance is not None %}
-                <tr>
-                    <td class="py-2 text-gray-700">Balance as per Bank Statement</td>
-                    <td class="py-2 text-right font-medium">{{ statement_balance|floatformat:2 }}</td>
-                </tr>
-                <tr class="border-t-2 border-gray-300">
-                    <td class="py-2 font-semibold">Difference</td>
-                    <td class="py-2 text-right font-bold {% if difference == 0 %}text-green-700{% else %}text-red-700{% endif %}">
-                        {{ difference|floatformat:2 }}
-                        {% if difference == 0 %}<i class="fas fa-check-circle ml-1"></i> Reconciled{% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="2" class="py-2 text-xs text-gray-400 italic">Enter the bank statement's closing balance above to check the difference.</td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
+ <!-- BRS Summary -->
+ <div class="bg-white shadow-md p-6 mb-4">
+ <h3 class="text-md font-semibold text-gray-800 mb-3">Reconciliation Summary — as of {{ as_of_date|date:"M d, Y" }}</h3>
+ <table class="min-w-full text-sm max-w-xl">
+ <tbody class="divide-y divide-gray-100">
+ <tr>
+ <td class="py-2 text-gray-700">Balance as per Bank Book (Ledger)</td>
+ <td class="py-2 text-right font-medium">{{ book_balance|floatformat:2 }}</td>
+ </tr>
+ <tr>
+ <td class="py-2 text-gray-700">Add: Deposits recorded in books, not yet credited by bank</td>
+ <td class="py-2 text-right font-medium text-green-700">+{{ total_uncleared_debits|floatformat:2 }}</td>
+ </tr>
+ <tr>
+ <td class="py-2 text-gray-700">Less: Cheques/payments issued, not yet presented</td>
+ <td class="py-2 text-right font-medium text-red-700">-{{ total_uncleared_credits|floatformat:2 }}</td>
+ </tr>
+ <tr class="border-t-2 border-gray-300">
+ <td class="py-2 font-semibold text-gray-900">Adjusted Book Balance</td>
+ <td class="py-2 text-right font-bold text-gray-900">{{ adjusted_book_balance|floatformat:2 }}</td>
+ </tr>
+ {% if statement_balance is not None %}
+ <tr>
+ <td class="py-2 text-gray-700">Balance as per Bank Statement</td>
+ <td class="py-2 text-right font-medium">{{ statement_balance|floatformat:2 }}</td>
+ </tr>
+ <tr class="border-t-2 border-gray-300">
+ <td class="py-2 font-semibold">Difference</td>
+ <td class="py-2 text-right font-bold {% if difference == 0 %}text-green-700{% else %}text-red-700{% endif %}">
+ {{ difference|floatformat:2 }}
+ {% if difference == 0 %}<i class="fas fa-check-circle ml-1"></i> Reconciled{% endif %}
+ </td>
+ </tr>
+ {% else %}
+ <tr>
+ <td colspan="2" class="py-2 text-xs text-gray-400 italic">Enter the bank statement's closing balance above to check the difference.</td>
+ </tr>
+ {% endif %}
+ </tbody>
+ </table>
+ </div>
 
-    <!-- Uncleared items worksheet -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="bg-white rounded shadow-md overflow-hidden">
-            <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <h4 class="text-sm font-semibold text-gray-800">Cheques / Payments Issued — Not Yet Presented</h4>
-            </div>
-            <table class="min-w-full text-xs">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="text-left px-4 py-2 text-gray-500 uppercase">Date</th>
-                        <th class="text-left px-4 py-2 text-gray-500 uppercase">Description</th>
-                        <th class="text-right px-4 py-2 text-gray-500 uppercase">Amount</th>
-                        <th class="text-center px-4 py-2 text-gray-500 uppercase">Cleared</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    {% for line in uncleared_credits %}
-                    <tr id="brs-line-{{ line.id }}">
-                        <td class="px-4 py-2 whitespace-nowrap text-gray-600">{{ line.journal_entry.date|date:"Y-m-d" }}</td>
-                        <td class="px-4 py-2 text-gray-800">{{ line.narration|default:line.journal_entry.description|default:"—"|truncatechars:40 }}</td>
-                        <td class="px-4 py-2 text-right text-gray-800">{{ line.amount|floatformat:2 }}</td>
-                        <td class="px-4 py-2 text-center">
-                            <input type="checkbox"
-                                   hx-post="{% url 'reports:bank_reconciliation_toggle_line' %}"
-                                   hx-vals='{"line_id": "{{ line.id }}"}'
-                                   hx-target="#brs-line-{{ line.id }}"
-                                   hx-swap="outerHTML swap:200ms"
-                                   hx-trigger="change">
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="4" class="px-4 py-3 text-gray-400 italic text-center">All payments have been presented.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+ <!-- Uncleared items worksheet -->
+ <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+ <div class="bg-white shadow-md overflow-hidden">
+ <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+ <h4 class="text-sm font-semibold text-gray-800">Cheques / Payments Issued — Not Yet Presented</h4>
+ </div>
+ <table class="min-w-full text-xs">
+ <thead class="bg-gray-50">
+ <tr>
+ <th class="text-left px-4 py-2 text-gray-500 uppercase">Date</th>
+ <th class="text-left px-4 py-2 text-gray-500 uppercase">Description</th>
+ <th class="text-right px-4 py-2 text-gray-500 uppercase">Amount</th>
+ <th class="text-center px-4 py-2 text-gray-500 uppercase">Cleared</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-100">
+ {% for line in uncleared_credits %}
+ <tr id="brs-line-{{ line.id }}">
+ <td class="px-4 py-2 whitespace-nowrap text-gray-600">{{ line.journal_entry.date|date:"Y-m-d" }}</td>
+ <td class="px-4 py-2 text-gray-800">{{ line.narration|default:line.journal_entry.description|default:"—"|truncatechars:40 }}</td>
+ <td class="px-4 py-2 text-right text-gray-800">{{ line.amount|floatformat:2 }}</td>
+ <td class="px-4 py-2 text-center">
+ <input type="checkbox"
+ hx-post="{% url 'reports:bank_reconciliation_toggle_line' %}"
+ hx-vals='{"line_id": "{{ line.id }}"}'
+ hx-target="#brs-line-{{ line.id }}"
+ hx-swap="outerHTML swap:200ms"
+ hx-trigger="change">
+ </td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="4" class="px-4 py-3 text-gray-400 italic text-center">All payments have been presented.</td></tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
 
-        <div class="bg-white rounded shadow-md overflow-hidden">
-            <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <h4 class="text-sm font-semibold text-gray-800">Deposits Recorded — Not Yet Credited by Bank</h4>
-            </div>
-            <table class="min-w-full text-xs">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="text-left px-4 py-2 text-gray-500 uppercase">Date</th>
-                        <th class="text-left px-4 py-2 text-gray-500 uppercase">Description</th>
-                        <th class="text-right px-4 py-2 text-gray-500 uppercase">Amount</th>
-                        <th class="text-center px-4 py-2 text-gray-500 uppercase">Cleared</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    {% for line in uncleared_debits %}
-                    <tr id="brs-line-{{ line.id }}">
-                        <td class="px-4 py-2 whitespace-nowrap text-gray-600">{{ line.journal_entry.date|date:"Y-m-d" }}</td>
-                        <td class="px-4 py-2 text-gray-800">{{ line.narration|default:line.journal_entry.description|default:"—"|truncatechars:40 }}</td>
-                        <td class="px-4 py-2 text-right text-gray-800">{{ line.amount|floatformat:2 }}</td>
-                        <td class="px-4 py-2 text-center">
-                            <input type="checkbox"
-                                   hx-post="{% url 'reports:bank_reconciliation_toggle_line' %}"
-                                   hx-vals='{"line_id": "{{ line.id }}"}'
-                                   hx-target="#brs-line-{{ line.id }}"
-                                   hx-swap="outerHTML swap:200ms"
-                                   hx-trigger="change">
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="4" class="px-4 py-3 text-gray-400 italic text-center">All deposits have been credited.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <p class="text-xs text-gray-400 mt-2">Ticking "Cleared" marks the item as reconciled and removes it from this worksheet on next reload — it will no longer appear as outstanding in future BRS runs.</p>
-    {% endif %}
+ <div class="bg-white shadow-md overflow-hidden">
+ <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+ <h4 class="text-sm font-semibold text-gray-800">Deposits Recorded — Not Yet Credited by Bank</h4>
+ </div>
+ <table class="min-w-full text-xs">
+ <thead class="bg-gray-50">
+ <tr>
+ <th class="text-left px-4 py-2 text-gray-500 uppercase">Date</th>
+ <th class="text-left px-4 py-2 text-gray-500 uppercase">Description</th>
+ <th class="text-right px-4 py-2 text-gray-500 uppercase">Amount</th>
+ <th class="text-center px-4 py-2 text-gray-500 uppercase">Cleared</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-100">
+ {% for line in uncleared_debits %}
+ <tr id="brs-line-{{ line.id }}">
+ <td class="px-4 py-2 whitespace-nowrap text-gray-600">{{ line.journal_entry.date|date:"Y-m-d" }}</td>
+ <td class="px-4 py-2 text-gray-800">{{ line.narration|default:line.journal_entry.description|default:"—"|truncatechars:40 }}</td>
+ <td class="px-4 py-2 text-right text-gray-800">{{ line.amount|floatformat:2 }}</td>
+ <td class="px-4 py-2 text-center">
+ <input type="checkbox"
+ hx-post="{% url 'reports:bank_reconciliation_toggle_line' %}"
+ hx-vals='{"line_id": "{{ line.id }}"}'
+ hx-target="#brs-line-{{ line.id }}"
+ hx-swap="outerHTML swap:200ms"
+ hx-trigger="change">
+ </td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="4" class="px-4 py-3 text-gray-400 italic text-center">All deposits have been credited.</td></tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ <p class="text-xs text-gray-400 mt-2">Ticking "Cleared" marks the item as reconciled and removes it from this worksheet on next reload — it will no longer appear as outstanding in future BRS runs.</p>
+ {% endif %}
 </div>
 {% endblock %}

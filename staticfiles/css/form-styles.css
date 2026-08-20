@@ -9,6 +9,14 @@
     --field-border: 1px solid #d1d5db;
 }
 
+/* Text selection highlight — dark text stays readable against it everywhere,
+   including white text on the green sidebar header, which the browser
+   default (light blue bg, unchanged text color) made illegible. */
+::selection {
+    background-color: #16a34a;
+    color: #ffffff;
+}
+
 /* Label spans (the green/ grey prefix boxes) */
 .sm\:flex > span,
 .sm\:flex > label,
@@ -171,24 +179,26 @@ input[readonly] {
 }
 
 /*
- * Compact Select2 inside table rows (e.g. PO / invoice line-item tables).
+ * Select2 inside table rows (e.g. PO / invoice line-item tables) — sized to
+ * match the standard field height token, not a separate compact scale, so
+ * table-row inputs and regular form fields line up visually.
  * Uses tr-element in selector for specificity (0,2,1) > global (0,2,0),
  * so !important here wins over the !important rules above.
  */
 tr .select2-container--default .select2-selection--single {
-    min-height: 30px !important;
-    padding: 3px 6px !important;
+    min-height: calc(var(--field-line-height) * var(--field-font-size) + var(--field-padding-y) * 2 + 2px) !important;
+    padding: var(--field-padding-y) var(--field-padding-x) !important;
 }
 tr .select2-container--default .select2-selection--single .select2-selection__rendered {
-    line-height: 22px !important;
+    line-height: 1.8 !important;
     font-size: 0.875rem !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    padding-left: 2px !important;
+    padding-left: 0.25rem !important;
 }
 tr .select2-container--default .select2-selection--single .select2-selection__arrow {
-    height: 28px !important;
+    height: 100% !important;
 }
 
 /* Select2 dropdown */
@@ -233,26 +243,28 @@ tr .select2-container--default .select2-selection--single .select2-selection__ar
     color: #6b7280 !important;
 }
 
-/* ── Compact table-row inputs (invoice items) ─────────────────────────────── */
+/* ── Table-row inputs (invoice items) — same field height token as the rest
+   of the form, so item rows don't look visually smaller than the header
+   fields above them. ──────────────────────────────────────────────────── */
 
 .item-form input[type="text"],
 .item-form input[type="number"],
 .item-form input:not([type]),
 .item-form select {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
-    line-height: 1.4;
+    padding: var(--field-padding-y) var(--field-padding-x);
+    font-size: var(--field-font-size);
+    line-height: var(--field-line-height);
     border-radius: 0;
 }
 
 .item-form .select2-container--default .select2-selection--single {
-    padding: 0 4px !important;
-    min-height: 1.85rem !important;
+    padding: var(--field-padding-y) var(--field-padding-x) !important;
+    min-height: calc(var(--field-line-height) * var(--field-font-size) + var(--field-padding-y) * 2 + 2px) !important;
 }
 
 .item-form .select2-container--default .select2-selection--single .select2-selection__rendered {
-    line-height: 1.5 !important;
-    font-size: 0.8rem;
+    line-height: 1.8 !important;
+    font-size: var(--field-font-size);
 }
 
 /* ── HTMX request state indicators ──────────────────────────────────────── */
@@ -310,4 +322,15 @@ tr .select2-container--default .select2-selection--single .select2-selection__ar
 @keyframes htmx-shimmer {
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+}
+
+/* Glass panel — frosted card surface for form pages (credit/debit notes, vendor bills).
+   Matches arvin-erp's green accent + no-rounded-corners convention (upstream used
+   border-radius: 0 already, so no reconciliation needed there). */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border: 1px solid rgba(22, 101, 52, 0.15);  /* green-800 tint, matches label accent */
+    border-radius: 0;
 }

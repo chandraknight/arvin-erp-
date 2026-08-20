@@ -18,18 +18,18 @@ tr { page-break-inside: avoid; } thead { display: table-header-group; }
 <body>
 <div class="rh">{% if company %}<div class="co">{{ company.name }}</div>{% endif %}<h1>Payment History Report</h1><div class="sub">Generated: {% now "Y-m-d" %}</div></div>
 <table>
-  <thead><tr><th>Date</th><th>Invoice #</th><th>Customer</th><th>Method</th><th>Reference</th><th class="tr">Amount (NPR)</th></tr></thead>
-  <tbody>
-    {% for p in payments %}
-    <tr>
-      <td>{{ p.date|date:"Y-m-d" }}</td><td>{{ p.invoice.invoice_number|default:"-" }}</td>
-      <td>{{ p.invoice.customer.name|default:"N/A" }}</td>
-      <td>{{ p.get_payment_method_display|default:"-" }}</td>
-      <td>{{ p.reference_number|default:"-" }}</td>
-      <td class="tr">{{ p.amount|floatformat:2 }}</td>
-    </tr>
-    {% empty %}<tr><td colspan="6" class="tc">No payments found.</td></tr>{% endfor %}
-    {% if payments %}<tr class="tot"><td colspan="5">Total</td><td class="tr">{{ total_payments_received|floatformat:2 }}</td></tr>{% endif %}
-  </tbody>
+ <thead><tr><th>Date</th><th>Invoice #</th><th>Customer</th><th>Method</th><th>Reference</th><th class="tr">Amount (NPR)</th></tr></thead>
+ <tbody>
+ {% for p in payments %}
+ <tr>
+ <td>{{ p.date|date:"Y-m-d" }}</td><td>{{ p.invoice.invoice_number|default:"-" }}</td>
+ <td>{{ p.invoice.customer.name|default:"N/A" }}</td>
+ <td>{{ p.get_payment_method_display|default:"-" }}</td>
+ <td>{{ p.reference_number|default:"-" }}</td>
+ <td class="tr">{{ p.amount|floatformat:2 }}</td>
+ </tr>
+ {% empty %}<tr><td colspan="6" class="tc">No payments found.</td></tr>{% endfor %}
+ {% if payments %}<tr class="tot"><td colspan="5">Total</td><td class="tr">{{ total_payments_received|floatformat:2 }}</td></tr>{% endif %}
+ </tbody>
 </table>
 </body></html>

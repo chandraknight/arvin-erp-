@@ -26,32 +26,32 @@ thead { display: table-header-group; }
 </head>
 <body>
 <div class="rh">
-  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
-  <h1>Detailed Sales Report</h1>
-  <div class="sub">Period: {% if start_date %}{{ start_date }}{% else %}All Time{% endif %} to {% if end_date %}{{ end_date }}{% else %}Present{% endif %}</div>
+ {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+ <h1>Detailed Sales Report</h1>
+ <div class="sub">Period: {% if start_date %}{{ start_date }}{% else %}All Time{% endif %} to {% if end_date %}{{ end_date }}{% else %}Present{% endif %}</div>
 </div>
 <table>
-  <thead><tr><th>Invoice #</th><th>Date</th><th>Customer</th><th>Due Date</th><th class="tr">Subtotal</th><th class="tr">Tax</th><th class="tr">Total</th><th>Status</th></tr></thead>
-  <tbody>
-    {% for inv in invoices %}
-    <tr>
-      <td>{{ inv.invoice_number|default:inv.id }}</td>
-      <td>{{ inv.date|date:"Y-m-d"|default:"-" }}</td>
-      <td>{{ inv.customer.name|default:"N/A" }}</td>
-      <td>{{ inv.due_date|date:"Y-m-d" }}</td>
-      <td class="tr">{{ inv.subtotal|floatformat:2 }}</td>
-      <td class="tr">{{ inv.tax_amount|floatformat:2 }}</td>
-      <td class="tr">{{ inv.total|floatformat:2 }}</td>
-      <td>{{ inv.get_status_display|default:"-" }}</td>
-    </tr>
-    {% empty %}<tr><td colspan="8" class="tc">No invoices found.</td></tr>{% endfor %}
-    {% if invoices %}<tr class="tot"><td colspan="6">Total Sales</td><td class="tr">{{ total_sales|floatformat:2 }}</td><td></td></tr>{% endif %}
-  </tbody>
+ <thead><tr><th>Invoice #</th><th>Date</th><th>Customer</th><th>Due Date</th><th class="tr">Subtotal</th><th class="tr">Tax</th><th class="tr">Total</th><th>Status</th></tr></thead>
+ <tbody>
+ {% for inv in invoices %}
+ <tr>
+ <td>{{ inv.invoice_number|default:inv.id }}</td>
+ <td>{{ inv.date|date:"Y-m-d"|default:"-" }}</td>
+ <td>{{ inv.customer.name|default:"N/A" }}</td>
+ <td>{{ inv.due_date|date:"Y-m-d" }}</td>
+ <td class="tr">{{ inv.subtotal|floatformat:2 }}</td>
+ <td class="tr">{{ inv.tax_amount|floatformat:2 }}</td>
+ <td class="tr">{{ inv.total|floatformat:2 }}</td>
+ <td>{{ inv.get_status_display|default:"-" }}</td>
+ </tr>
+ {% empty %}<tr><td colspan="8" class="tc">No invoices found.</td></tr>{% endfor %}
+ {% if invoices %}<tr class="tot"><td colspan="6">Total Sales</td><td class="tr">{{ total_sales|floatformat:2 }}</td><td></td></tr>{% endif %}
+ </tbody>
 </table>
 <div class="sum">
-  <div class="row"><span>Total Invoices:</span><span>{{ invoices|length }}</span></div>
-  <div class="row"><span>Total Items Sold:</span><span>{{ total_items_sold }}</span></div>
-  <div class="row"><strong>Total Sales (NPR):</strong><strong>{{ total_sales|floatformat:2 }}</strong></div>
+ <div class="row"><span>Total Invoices:</span><span>{{ invoices|length }}</span></div>
+ <div class="row"><span>Total Items Sold:</span><span>{{ total_items_sold }}</span></div>
+ <div class="row"><strong>Total Sales (NPR):</strong><strong>{{ total_sales|floatformat:2 }}</strong></div>
 </div>
 </body>
 </html>

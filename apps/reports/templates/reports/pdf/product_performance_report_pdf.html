@@ -23,22 +23,22 @@ thead { display: table-header-group; }
 </head>
 <body>
 <div class="rh">
-  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
-  <h1>Product Performance Report</h1>
-  <div class="sub">Generated: {% now "Y-m-d" %}</div>
+ {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+ <h1>Product Performance Report</h1>
+ <div class="sub">Generated: {% now "Y-m-d" %}</div>
 </div>
 <table>
-  <thead><tr><th>#</th><th>Product</th><th class="tr">Qty Sold</th><th class="tr">Total Revenue (NPR)</th></tr></thead>
-  <tbody>
-    {% for p in product_performance %}
-    <tr>
-      <td>{{ forloop.counter }}</td>
-      <td>{{ p.product__name|default:"Unknown" }}</td>
-      <td class="tr">{{ p.total_quantity_sold }}</td>
-      <td class="tr">{{ p.total_revenue|floatformat:2 }}</td>
-    </tr>
-    {% empty %}<tr><td colspan="4" class="tc">No data found.</td></tr>{% endfor %}
-  </tbody>
+ <thead><tr><th>#</th><th>Product</th><th class="tr">Qty Sold</th><th class="tr">Total Revenue (NPR)</th></tr></thead>
+ <tbody>
+ {% for p in product_performance %}
+ <tr>
+ <td>{{ forloop.counter }}</td>
+ <td>{{ p.product__name|default:"Unknown" }}</td>
+ <td class="tr">{{ p.total_quantity_sold }}</td>
+ <td class="tr">{{ p.total_revenue|floatformat:2 }}</td>
+ </tr>
+ {% empty %}<tr><td colspan="4" class="tc">No data found.</td></tr>{% endfor %}
+ </tbody>
 </table>
 </body>
 </html>

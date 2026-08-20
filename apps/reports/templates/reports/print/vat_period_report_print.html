@@ -6,7 +6,7 @@
 <style>
 * { box-sizing: border-box; }
 @page { size: A4 landscape; margin: 1.5cm 1.5cm 2.2cm 1.5cm;
-  @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
+ @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: Arial,sans-serif; font-size: 8pt; color: #555; } }
 html { width: 297mm; }
 body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; margin: 0; padding: 0; }
 .rh { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #333; padding-bottom: 6px; }
@@ -29,78 +29,78 @@ thead { display: table-header-group; }
 </head>
 <body>
 <div class="rh">
-  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
-  <h1>VAT Period Report</h1>
-  <div class="sub">
-    Period: {{ start_date|date:"Y-m-d" }} to {{ end_date|date:"Y-m-d" }}
-    &nbsp;|&nbsp; Type: {{ period_type|capfirst }}
-    {% if tax_rate %}&nbsp;|&nbsp; VAT Rate: {{ tax_rate }}%{% endif %}
-    &nbsp;|&nbsp; Printed: {% now "Y-m-d" %}
-  </div>
+ {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+ <h1>VAT Period Report</h1>
+ <div class="sub">
+ Period: {{ start_date|date:"Y-m-d" }} to {{ end_date|date:"Y-m-d" }}
+ &nbsp;|&nbsp; Type: {{ period_type|capfirst }}
+ {% if tax_rate %}&nbsp;|&nbsp; VAT Rate: {{ tax_rate }}%{% endif %}
+ &nbsp;|&nbsp; Printed: {% now "Y-m-d" %}
+ </div>
 </div>
 
 <h2>VAT by Period</h2>
 <table>
-  <thead>
-    <tr>
-      <th>Period</th>
-      <th class="tr">Taxable Sales</th><th class="tr">Gross Sales</th>
-      <th class="tr">Output VAT</th><th class="tr">Taxable Purchases</th>
-      <th class="tr">Input VAT</th><th class="tr">Net VAT</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for p in periods %}
-    <tr>
-      <td>{{ p.label }}</td>
-      <td class="tr">{{ p.taxable_sales|floatformat:2 }}</td>
-      <td class="tr">{{ p.gross_sales|floatformat:2 }}</td>
-      <td class="tr">{{ p.output_vat|floatformat:2 }}</td>
-      <td class="tr">{{ p.taxable_purchases|floatformat:2 }}</td>
-      <td class="tr">{{ p.input_vat|floatformat:2 }}</td>
-      <td class="tr {% if p.net_vat > 0 %}net-pos{% else %}net-neg{% endif %}">{{ p.net_vat|floatformat:2 }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="7" class="tc">No period data found.</td></tr>
-    {% endfor %}
-    {% if totals %}
-    <tr class="tot">
-      <td>Grand Total</td>
-      <td class="tr">{{ totals.taxable_sales|floatformat:2 }}</td>
-      <td class="tr">{{ totals.gross_sales|floatformat:2 }}</td>
-      <td class="tr">{{ totals.output_vat|floatformat:2 }}</td>
-      <td class="tr">{{ totals.taxable_purchases|floatformat:2 }}</td>
-      <td class="tr">{{ totals.input_vat|floatformat:2 }}</td>
-      <td class="tr">{{ totals.net_vat|floatformat:2 }}</td>
-    </tr>
-    {% endif %}
-  </tbody>
+ <thead>
+ <tr>
+ <th>Period</th>
+ <th class="tr">Taxable Sales</th><th class="tr">Gross Sales</th>
+ <th class="tr">Output VAT</th><th class="tr">Taxable Purchases</th>
+ <th class="tr">Input VAT</th><th class="tr">Net VAT</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for p in periods %}
+ <tr>
+ <td>{{ p.label }}</td>
+ <td class="tr">{{ p.taxable_sales|floatformat:2 }}</td>
+ <td class="tr">{{ p.gross_sales|floatformat:2 }}</td>
+ <td class="tr">{{ p.output_vat|floatformat:2 }}</td>
+ <td class="tr">{{ p.taxable_purchases|floatformat:2 }}</td>
+ <td class="tr">{{ p.input_vat|floatformat:2 }}</td>
+ <td class="tr {% if p.net_vat > 0 %}net-pos{% else %}net-neg{% endif %}">{{ p.net_vat|floatformat:2 }}</td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="7" class="tc">No period data found.</td></tr>
+ {% endfor %}
+ {% if totals %}
+ <tr class="tot">
+ <td>Grand Total</td>
+ <td class="tr">{{ totals.taxable_sales|floatformat:2 }}</td>
+ <td class="tr">{{ totals.gross_sales|floatformat:2 }}</td>
+ <td class="tr">{{ totals.output_vat|floatformat:2 }}</td>
+ <td class="tr">{{ totals.taxable_purchases|floatformat:2 }}</td>
+ <td class="tr">{{ totals.input_vat|floatformat:2 }}</td>
+ <td class="tr">{{ totals.net_vat|floatformat:2 }}</td>
+ </tr>
+ {% endif %}
+ </tbody>
 </table>
 
 <h2>Invoice Detail</h2>
 <table>
-  <thead>
-    <tr>
-      <th>Invoice #</th><th>Date</th>
-      <th class="tr">Subtotal</th><th class="tr">Discount</th>
-      <th class="tr">Tax %</th><th class="tr">Tax Amount</th><th class="tr">Total</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for inv in invoice_detail %}
-    <tr>
-      <td>{{ inv.invoice_number }}</td>
-      <td>{{ inv.transaction_date|date:"Y-m-d" }}</td>
-      <td class="tr">{{ inv.subtotal|floatformat:2 }}</td>
-      <td class="tr">{{ inv.discount_amount|floatformat:2 }}</td>
-      <td class="tr">{{ inv.tax_percent }}%</td>
-      <td class="tr">{{ inv.tax_amount|floatformat:2 }}</td>
-      <td class="tr">{{ inv.total|floatformat:2 }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="7" class="tc">No invoices found.</td></tr>
-    {% endfor %}
-  </tbody>
+ <thead>
+ <tr>
+ <th>Invoice #</th><th>Date</th>
+ <th class="tr">Subtotal</th><th class="tr">Discount</th>
+ <th class="tr">Tax %</th><th class="tr">Tax Amount</th><th class="tr">Total</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for inv in invoice_detail %}
+ <tr>
+ <td>{{ inv.invoice_number }}</td>
+ <td>{{ inv.transaction_date|date:"Y-m-d" }}</td>
+ <td class="tr">{{ inv.subtotal|floatformat:2 }}</td>
+ <td class="tr">{{ inv.discount_amount|floatformat:2 }}</td>
+ <td class="tr">{{ inv.tax_percent }}%</td>
+ <td class="tr">{{ inv.tax_amount|floatformat:2 }}</td>
+ <td class="tr">{{ inv.total|floatformat:2 }}</td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="7" class="tc">No invoices found.</td></tr>
+ {% endfor %}
+ </tbody>
 </table>
 
 <script>window.onload = function(){ window.print(); };</script>

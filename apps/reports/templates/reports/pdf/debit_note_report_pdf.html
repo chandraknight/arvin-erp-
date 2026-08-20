@@ -17,18 +17,18 @@ tr { page-break-inside: avoid; } thead { display: table-header-group; }
 <body>
 <div class="rh">{% if company %}<div class="co">{{ company.name }}</div>{% endif %}<h1>Debit Note Report</h1><div class="sub">Generated: {% now "Y-m-d" %}</div></div>
 <table>
-  <thead><tr><th>Debit Note #</th><th>Invoice #</th><th>Customer</th><th class="tr">Amount (NPR)</th><th>Status</th><th>Issued At</th></tr></thead>
-  <tbody>
-    {% for dn in debit_notes %}
-    <tr>
-      <td>{{ dn.debit_note_number|default:dn.id }}</td>
-      <td>{{ dn.invoice.invoice_number|default:"-" }}</td>
-      <td>{{ dn.customer.name|default:"N/A" }}</td>
-      <td class="tr">{{ dn.amount|floatformat:2 }}</td>
-      <td>{{ dn.get_status_display|default:dn.status }}</td>
-      <td>{{ dn.created_at|date:"Y-m-d" }}</td>
-    </tr>
-    {% empty %}<tr><td colspan="6" class="tc">No debit notes found.</td></tr>{% endfor %}
-  </tbody>
+ <thead><tr><th>Debit Note #</th><th>Invoice #</th><th>Customer</th><th class="tr">Amount (NPR)</th><th>Status</th><th>Issued At</th></tr></thead>
+ <tbody>
+ {% for dn in debit_notes %}
+ <tr>
+ <td>{{ dn.debit_note_number|default:dn.id }}</td>
+ <td>{{ dn.invoice.invoice_number|default:"-" }}</td>
+ <td>{{ dn.customer.name|default:"N/A" }}</td>
+ <td class="tr">{{ dn.amount|floatformat:2 }}</td>
+ <td>{{ dn.get_status_display|default:dn.status }}</td>
+ <td>{{ dn.created_at|date:"Y-m-d" }}</td>
+ </tr>
+ {% empty %}<tr><td colspan="6" class="tc">No debit notes found.</td></tr>{% endfor %}
+ </tbody>
 </table>
 </body></html>

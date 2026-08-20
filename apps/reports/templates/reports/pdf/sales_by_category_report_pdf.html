@@ -17,9 +17,9 @@ tr { page-break-inside: avoid; } thead { display: table-header-group; }
 <body>
 <div class="rh">{% if company %}<div class="co">{{ company.name }}</div>{% endif %}<h1>Sales by Category Report</h1><div class="sub">Generated: {% now "Y-m-d" %}</div></div>
 <table>
-  <thead><tr><th>#</th><th>Category</th><th class="tr">Total Revenue (NPR)</th></tr></thead>
-  <tbody>
-    {% for cat in sales_by_category %}<tr><td>{{ forloop.counter }}</td><td>{{ cat.product__category__name|default:"Uncategorized" }}</td><td class="tr">{{ cat.total_revenue|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="3" class="tc">No data found.</td></tr>{% endfor %}
-  </tbody>
+ <thead><tr><th>#</th><th>Category</th><th class="tr">Total Revenue (NPR)</th></tr></thead>
+ <tbody>
+ {% for cat in sales_by_category %}<tr><td>{{ forloop.counter }}</td><td>{{ cat.product__category__name|default:"Uncategorized" }}</td><td class="tr">{{ cat.total_revenue|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="3" class="tc">No data found.</td></tr>{% endfor %}
+ </tbody>
 </table>
 </body></html>

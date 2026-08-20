@@ -668,6 +668,28 @@ def print_labels_selector(request):
 
 
 @login_required
+def write_off_selector(request):
+    company = getattr(request.user, 'company', None)
+    qs = Product.active_objects.filter(is_service=False).prefetch_related('productstock')
+    if company:
+        qs = qs.filter(company=company)
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) | Q(barcode__icontains=q) | Q(sku__icontains=q)
+        )
+    qs = qs.order_by('name')
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    return render(request, 'products/write_off_selector.html', {
+        'products': page_obj,
+        'page_obj': page_obj,
+        'q': q,
+    })
+
+
+@login_required
 def label_print_setting_api(request):
     company = getattr(request.user, 'company', None)
     if not company:

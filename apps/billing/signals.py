@@ -288,8 +288,34 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
                 # Still include the tax in AP so the books at least balance
                 # (will appear as part of Purchase Expense implicitly)
 
-        # AP CREDIT = full payable amount to vendor (items subtotal + VAT)
+        # AP CREDIT = full payable amount to vendor (items subtotal + VAT),
+        # reduced by TDS withheld and remitted to IRD instead of the vendor.
         ap_total = items_subtotal + tax_amount
+
+        tds_amount = Decimal("0.00")
+        tds_rate_obj = None
+        if instance.tds_category:
+            from apps.bookkeeping.models import TDSRate, get_or_create_system_account
+            from apps.bookkeeping.tds_service import calculate_tds
+            tds_amount = calculate_tds(instance)
+            if tds_amount > Decimal("0.00"):
+                tds_rate_obj = TDSRate.objects.filter(
+                    company=company,
+                    category=instance.tds_category,
+                    is_active=True,
+                    effective_from__lte=instance.bill_date,
+                ).order_by('-effective_from').first()
+                tds_payable_account = get_or_create_system_account(
+                    company, "TDS Payable", "LIABILITY", code="2150",
+                )
+                ap_total -= tds_amount
+                lines.append(JournalEntryLine(
+                    journal_entry=entry,
+                    account=tds_payable_account,
+                    entry_type="CREDIT",
+                    amount=tds_amount,
+                ))
+
         lines.append(JournalEntryLine(
             journal_entry=entry,
             account=ap_account,
@@ -298,3 +324,10 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
         ))
         JournalEntryLine.objects.bulk_create(lines)
         assert_balanced(entry)
+
+        if tds_amount > Decimal("0.00") and tds_rate_obj:
+            from apps.bookkeeping.models import TDSDeduction
+            TDSDeduction.objects.update_or_create(
+                vendor_bill=instance,
+                defaults={'tds_rate': tds_rate_obj, 'amount': tds_amount, 'journal_entry': entry},
+            )

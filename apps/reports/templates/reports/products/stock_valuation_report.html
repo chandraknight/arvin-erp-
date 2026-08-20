@@ -4,97 +4,97 @@
 
 {% block content %}
 <div class="w-full mt-2">
-    <div class="flex items-center justify-between mb-1">
-        <h1 class="text-2xl font-semibold text-gray-800">Stock Valuation Report</h1>
-        <span class="text-sm text-gray-500">As of {{ as_of_date|date:"Y-m-d" }}</span>
-    </div>
-    <p class="text-sm text-gray-500 mb-4">NFRS 2 (IAS 2) — inventory carried at the lower of cost and net realisable value.</p>
+ <div class="flex items-center justify-between mb-1">
+ <h1 class="text-2xl font-semibold text-gray-800">Stock Valuation Report</h1>
+ <span class="text-sm text-gray-500">As of {{ as_of_date|date:"Y-m-d" }}</span>
+ </div>
+ <p class="text-sm text-gray-500 mb-4">NFRS 2 (IAS 2) — inventory carried at the lower of cost and net realisable value.</p>
 
-    <form method="get" class="mb-4 flex items-end gap-2">
-        <div>
-            <label for="category" class="block text-xs font-medium text-gray-600 mb-1">Category</label>
-            <select name="category" id="category" class="border border-gray-300 rounded-md text-sm px-3 py-2">
-                <option value="">All Categories</option>
-                {% for cat in categories %}
-                    <option value="{{ cat.id }}" {% if category_q == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition text-sm">Filter</button>
-        {% if category_q %}
-            <a href="{% url 'reports:stock_valuation_report' %}" class="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">Clear</a>
-        {% endif %}
-    </form>
+ <form method="get" class="mb-4 flex items-end gap-2">
+ <div>
+ <label for="category" class="block text-xs font-medium text-gray-600 mb-1">Category</label>
+ <select name="category" id="category" class="border border-gray-300 text-sm px-3 py-2">
+ <option value="">All Categories</option>
+ {% for cat in categories %}
+ <option value="{{ cat.id }}" {% if category_q == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+ {% endfor %}
+ </select>
+ </div>
+ <button type="submit" class="bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700 transition text-sm">Filter</button>
+ {% if category_q %}
+ <a href="{% url 'reports:stock_valuation_report' %}" class="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">Clear</a>
+ {% endif %}
+ </form>
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-        <div class="bg-white rounded shadow-md p-4">
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Value at Cost</p>
-            <p class="text-xl font-semibold text-gray-800">NPR {{ total_cost_value|floatformat:"2" }}</p>
-        </div>
-        <div class="bg-white rounded shadow-md p-4">
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Value at NRV</p>
-            <p class="text-xl font-semibold text-gray-800">NPR {{ total_nrv_value|floatformat:"2" }}</p>
-        </div>
-        <div class="bg-white rounded shadow-md p-4 border-l-4 border-indigo-600">
-            <p class="text-xs text-gray-500 uppercase tracking-wider">Carrying Value (Lower of Cost/NRV)</p>
-            <p class="text-xl font-semibold text-indigo-700">NPR {{ total_carrying_value|floatformat:"2" }}</p>
-            {% if total_write_down > 0 %}
-                <p class="text-xs text-red-600 mt-1">Write-down: NPR {{ total_write_down|floatformat:"2" }}</p>
-            {% endif %}
-        </div>
-    </div>
+ <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+ <div class="bg-white shadow-md p-4">
+ <p class="text-xs text-gray-500 uppercase tracking-wider">Value at Cost</p>
+ <p class="text-xl font-semibold text-gray-800">NPR {{ total_cost_value|floatformat:"2" }}</p>
+ </div>
+ <div class="bg-white shadow-md p-4">
+ <p class="text-xs text-gray-500 uppercase tracking-wider">Value at NRV</p>
+ <p class="text-xl font-semibold text-gray-800">NPR {{ total_nrv_value|floatformat:"2" }}</p>
+ </div>
+ <div class="bg-white shadow-md p-4 border-l-4 border-indigo-600">
+ <p class="text-xs text-gray-500 uppercase tracking-wider">Carrying Value (Lower of Cost/NRV)</p>
+ <p class="text-xl font-semibold text-indigo-700">NPR {{ total_carrying_value|floatformat:"2" }}</p>
+ {% if total_write_down > 0 %}
+ <p class="text-xs text-red-600 mt-1">Write-down: NPR {{ total_write_down|floatformat:"2" }}</p>
+ {% endif %}
+ </div>
+ </div>
 
-    <div class="bg-white rounded shadow-md overflow-hidden overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Method</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty on Hand</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Value at Cost</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit NRV</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Value at NRV</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Carrying Value</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Write-down</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% for row in rows %}
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ row.product.name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ row.category|default:"N/A" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ row.cost_method }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.qty }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.unit_cost|floatformat:"2" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.value_at_cost|floatformat:"2" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.nrv|floatformat:"2" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.value_at_nrv|floatformat:"2" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">{{ row.carrying_value|floatformat:"2" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right {% if row.write_down > 0 %}text-red-600{% else %}text-gray-400{% endif %}">
-                            {{ row.write_down|floatformat:"2" }}
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="10" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No stock on hand.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-            {% if rows %}
-            <tfoot class="bg-gray-50">
-                <tr>
-                    <td colspan="5" class="px-6 py-3 text-sm font-semibold text-gray-700 text-right">Total</td>
-                    <td class="px-6 py-3 text-sm font-semibold text-gray-900 text-right">{{ total_cost_value|floatformat:"2" }}</td>
-                    <td></td>
-                    <td class="px-6 py-3 text-sm font-semibold text-gray-900 text-right">{{ total_nrv_value|floatformat:"2" }}</td>
-                    <td class="px-6 py-3 text-sm font-semibold text-indigo-700 text-right">{{ total_carrying_value|floatformat:"2" }}</td>
-                    <td class="px-6 py-3 text-sm font-semibold text-red-600 text-right">{{ total_write_down|floatformat:"2" }}</td>
-                </tr>
-            </tfoot>
-            {% endif %}
-        </table>
-    </div>
+ <div class="bg-white shadow-md overflow-hidden overflow-x-auto">
+ <table class="min-w-full divide-y divide-gray-200">
+ <thead class="bg-gray-50">
+ <tr>
+ <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+ <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+ <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Method</th>
+ <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty on Hand</th>
+ <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
+ <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Value at Cost</th>
+ <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit NRV</th>
+ <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Value at NRV</th>
+ <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Carrying Value</th>
+ <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Write-down</th>
+ </tr>
+ </thead>
+ <tbody class="bg-white divide-y divide-gray-200">
+ {% for row in rows %}
+ <tr>
+ <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ row.product.name }}</td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ row.category|default:"N/A" }}</td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ row.cost_method }}</td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.qty }}</td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.unit_cost|floatformat:"2" }}</td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.value_at_cost|floatformat:"2" }}</td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.nrv|floatformat:"2" }}</td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{{ row.value_at_nrv|floatformat:"2" }}</td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">{{ row.carrying_value|floatformat:"2" }}</td>
+ <td class="px-6 py-4 whitespace-nowrap text-sm text-right {% if row.write_down > 0 %}text-red-600{% else %}text-gray-400{% endif %}">
+ {{ row.write_down|floatformat:"2" }}
+ </td>
+ </tr>
+ {% empty %}
+ <tr>
+ <td colspan="10" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No stock on hand.</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ {% if rows %}
+ <tfoot class="bg-gray-50">
+ <tr>
+ <td colspan="5" class="px-6 py-3 text-sm font-semibold text-gray-700 text-right">Total</td>
+ <td class="px-6 py-3 text-sm font-semibold text-gray-900 text-right">{{ total_cost_value|floatformat:"2" }}</td>
+ <td></td>
+ <td class="px-6 py-3 text-sm font-semibold text-gray-900 text-right">{{ total_nrv_value|floatformat:"2" }}</td>
+ <td class="px-6 py-3 text-sm font-semibold text-indigo-700 text-right">{{ total_carrying_value|floatformat:"2" }}</td>
+ <td class="px-6 py-3 text-sm font-semibold text-red-600 text-right">{{ total_write_down|floatformat:"2" }}</td>
+ </tr>
+ </tfoot>
+ {% endif %}
+ </table>
+ </div>
 </div>
 {% endblock %}

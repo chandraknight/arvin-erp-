@@ -3,7 +3,7 @@ from apps.utils.baseModel import *
 from apps.company.models import Company, Branch
 from apps.customers.models import Customer
 from apps.products.models import Product, Package
-from apps.bookkeeping.models import JournalEntry, LedgerAccount
+from apps.bookkeeping.models import JournalEntry, LedgerAccount, TDS_CATEGORY_CHOICES
 from apps.purchasing.models import PurchaseOrder
 from apps.vendors.models import Vendor
 from decimal import Decimal
@@ -84,6 +84,9 @@ class Invoice(BaseModel):
         return f"Invoice #{self.invoice_number if self.invoice_number else self.id}"
 
     def save(self, *args, **kwargs):
+        if self.fiscal_year_id and not self.pk:
+            from apps.company.fiscal_year_guard import assert_fiscal_year_open
+            assert_fiscal_year_open(self.fiscal_year)
         super().save(*args, **kwargs)
 
     @property
@@ -155,7 +158,10 @@ class InvoiceItem(models.Model):
         return base.quantize(Decimal('0.01'))
 
     def _sync_invoice_totals(self, invoice):
+        old_total = invoice.total or Decimal('0.00')
+        already_paid = old_total - (invoice.outstanding_balance or Decimal('0.00'))
         calculate_total(invoice)
+        new_outstanding = max(Decimal('0.00'), invoice.total - already_paid)
         # Use queryset update so Django's post_save signal is NOT fired.
         # Firing post_save here triggers post_invoice_journal multiple times
         # within the same atomic block, causing FK violations in journalentryline.
@@ -164,7 +170,7 @@ class InvoiceItem(models.Model):
             discount_amount=invoice.discount_amount,
             tax_amount=invoice.tax_amount,
             total=invoice.total,
-            outstanding_balance=invoice.total,
+            outstanding_balance=new_outstanding,
         )
 
     def save(self, *args, **kwargs):
@@ -319,6 +325,10 @@ class VendorBill(models.Model):
     cancellation_reason = models.TextField(
         blank=True, null=True,
         help_text='Required when cancelling a vendor bill.',
+    )
+    tds_category = models.CharField(
+        max_length=20, choices=TDS_CATEGORY_CHOICES, blank=True, null=True,
+        help_text='Nepal withholding tax category. Blank = no TDS applies to this bill.',
     )
 
     objects = models.Manager()

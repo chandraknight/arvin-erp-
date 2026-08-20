@@ -1,7 +1,8 @@
 {% load widget_tweaks %}
-<tr class="border-b border-gray-200 item-form flex flex-wrap sm:table-row bg-white hover:bg-gray-50"
+<tbody class="item-form"
     data-index="{{ forloop.counter0 }}"
     data-item-type="{{ item_form.item_type.value|default:'' }}">
+<tr class="border-b border-gray-200 flex flex-wrap sm:table-row bg-white hover:bg-gray-50">
     {% for hidden in item_form.hidden_fields %}
         {% if hidden.name == 'item_type' %}
             {{ hidden|add_class:"item-type-input" }}
@@ -10,8 +11,15 @@
         {% endif %}
     {% endfor %}
 
+    <td class="py-2 px-2 w-full sm:w-auto hidden sm:table-cell align-top text-center" style="width:32px">
+        <span class="item-row-number inline-flex items-center justify-center h-6 w-6 bg-gray-100 text-gray-500 text-xs font-semibold">{{ forloop.counter }}</span>
+    </td>
+
     <td class="py-2 px-2 w-full block sm:table-cell align-top" style="width:660px;min-width:660px;max-width:660px">
-        <div class="sm:hidden text-xs font-semibold text-green-800 mb-1">Item (name / SKU / barcode)</div>
+        <div class="sm:hidden text-xs font-semibold text-green-800 mb-1 flex items-center gap-1.5">
+            <span class="item-row-number-mobile inline-flex items-center justify-center h-5 w-5 bg-green-600 text-white text-xs shrink-0">{{ forloop.counter }}</span>
+            <span>Item (name / SKU / barcode)</span>
+        </div>
 
         <div class="item-entry-line flex flex-col sm:flex-row sm:items-start gap-1">
             {# Buttons — JS will mark the correct one active on DOMContentLoaded #}
@@ -66,8 +74,29 @@
                        placeholder="Item description">
             </div>
         </div>
+    </td>
 
-        <div class="item-detail-line mt-2 grid grid-cols-1 sm:grid-cols-10 gap-2">
+    <td class="py-2 px-2 w-full block sm:table-cell align-top" style="width:64px;min-width:64px">
+        <div class="sm:hidden text-xs font-semibold text-green-800 mb-1">Qty</div>
+        {{ item_form.quantity|add_class:"quantity-input w-full border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-600 focus:border-green-600" }}
+    </td>
+
+    <td class="py-2 px-2 w-full block sm:table-cell align-top" style="width:88px;min-width:88px">
+        <div class="sm:hidden text-xs font-semibold text-green-800 mb-1">Price</div>
+        {{ item_form.price|add_class:"price-input w-full border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-600 focus:border-green-600" }}
+    </td>
+
+    <td class="py-2 px-2 w-auto text-center block sm:table-cell align-top" style="width:40px">
+        <button type="button"
+                class="remove-item inline-flex h-8 w-8 items-center justify-center border border-red-100 bg-red-50 text-red-500 hover:text-red-700 hover:bg-red-100 transition duration-150"
+                title="Remove row">
+            <i class="fas fa-trash-alt text-sm"></i>
+        </button>
+    </td>
+</tr>
+<tr class="item-form-detail-row border-b border-gray-200 bg-white">
+    <td class="py-2 px-2" colspan="5">
+        <div class="item-detail-line grid grid-cols-1 sm:grid-cols-10 gap-2">
             <div class="min-w-0 sm:col-span-3">
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Description</label>
                 {{ item_form.description|add_class:"description-input border w-full border-gray-300 px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-600 focus:border-green-600" }}
@@ -92,22 +121,5 @@
             </div>
         </div>
     </td>
-
-    <td class="py-2 px-2 w-full block sm:table-cell align-top" style="width:64px;min-width:64px">
-        <div class="sm:hidden text-xs font-semibold text-green-800 mb-1">Qty</div>
-        {{ item_form.quantity|add_class:"quantity-input w-full border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-600 focus:border-green-600" }}
-    </td>
-
-    <td class="py-2 px-2 w-full block sm:table-cell align-top" style="width:88px;min-width:88px">
-        <div class="sm:hidden text-xs font-semibold text-green-800 mb-1">Price</div>
-        {{ item_form.price|add_class:"price-input w-full border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-600 focus:border-green-600" }}
-    </td>
-
-    <td class="py-2 px-2 w-auto text-center block sm:table-cell align-top" style="width:40px">
-        <button type="button"
-                class="remove-item inline-flex h-8 w-8 items-center justify-center rounded border border-red-100 bg-red-50 text-red-500 hover:text-red-700 hover:bg-red-100 transition duration-150"
-                title="Remove row">
-            <i class="fas fa-trash-alt text-sm"></i>
-        </button>
-    </td>
 </tr>
+</tbody>

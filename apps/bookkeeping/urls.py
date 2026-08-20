@@ -5,6 +5,7 @@ from .view_collections.create_view import (
     FixedAssetUpdateView, fixed_asset_dispose,
     prepaid_expense_list, prepaid_expense_create, prepaid_expense_detail,
     prepaid_expense_post_amortization,
+    TDSRateListView, TDSRateCreateView, TDSRateUpdateView,
 )
 
 app_name = 'bookkeeping'
@@ -23,6 +24,12 @@ urlpatterns = [
     path('journal-entries/<uuid:pk>/pdf/', views.JournalEntryPdfView.as_view(), name='journal_entry_pdf'),
     path('journal-entries/<uuid:pk>/reverse/', views.JournalEntryReverseView.as_view(), name='journal_entry_reverse'),
     path('journal/create/', views.JournalEntryCreateView.as_view(), name='journal_entry_create'),
+    path('contra/create/', views.contra_entry_create, name='contra_entry_create'),
+
+    # Nepal TDS rates
+    path('tds-rates/', TDSRateListView.as_view(), name='tds_rate_list'),
+    path('tds-rates/create/', TDSRateCreateView.as_view(), name='tds_rate_create'),
+    path('tds-rates/<uuid:pk>/edit/', TDSRateUpdateView.as_view(), name='tds_rate_update'),
 
     # Superadmin — immutable journal audit trail
     path('journal-audit-log/', views.JournalAuditLogView.as_view(), name='journal_audit_log'),

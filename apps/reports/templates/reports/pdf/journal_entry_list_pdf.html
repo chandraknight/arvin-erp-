@@ -19,21 +19,21 @@ tr { page-break-inside: avoid; } thead { display: table-header-group; }
 <body>
 <div class="rh">{% if company %}<div class="co">{{ company.name }}</div>{% endif %}<h1>Journal Entry List</h1><div class="sub">Generated: {% now "Y-m-d" %}</div></div>
 <table>
-  <thead><tr><th>Date</th><th>Reference #</th><th>Description</th><th>Lines</th></tr></thead>
-  <tbody>
-    {% for je in journal_entries %}
-    <tr>
-      <td>{{ je.date|date:"Y-m-d" }}</td>
-      <td>{{ je.reference_number|default:"-" }}</td>
-      <td>{{ je.description|default:"-"|truncatechars:80 }}</td>
-      <td>
-        <ul class="lines">
-          {% for l in je.lines.all|slice:":5" %}<li>{{ l.entry_type }}: {{ l.account.name }} — {{ l.amount|floatformat:2 }}</li>{% endfor %}
-          {% if je.lines.count > 5 %}<li>+{{ je.lines.count|add:"-5" }} more…</li>{% endif %}
-        </ul>
-      </td>
-    </tr>
-    {% empty %}<tr><td colspan="4" class="tc">No journal entries found.</td></tr>{% endfor %}
-  </tbody>
+ <thead><tr><th>Date</th><th>Reference #</th><th>Description</th><th>Lines</th></tr></thead>
+ <tbody>
+ {% for je in journal_entries %}
+ <tr>
+ <td>{{ je.date|date:"Y-m-d" }}</td>
+ <td>{{ je.reference_number|default:"-" }}</td>
+ <td>{{ je.description|default:"-"|truncatechars:80 }}</td>
+ <td>
+ <ul class="lines">
+ {% for l in je.lines.all|slice:":5" %}<li>{{ l.entry_type }}: {{ l.account.name }} — {{ l.amount|floatformat:2 }}</li>{% endfor %}
+ {% if je.lines.count > 5 %}<li>+{{ je.lines.count|add:"-5" }} more…</li>{% endif %}
+ </ul>
+ </td>
+ </tr>
+ {% empty %}<tr><td colspan="4" class="tc">No journal entries found.</td></tr>{% endfor %}
+ </tbody>
 </table>
 </body></html>

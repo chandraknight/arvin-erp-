@@ -73,6 +73,54 @@ class LedgerAccountCreateView(AuthMixin,CreateView):
     def get_success_url(self):
         return reverse_lazy('bookkeeping:ledger_account_list')
 
+
+# ─── Nepal TDS rates ───────────────────────────────────────────────────────
+
+from django.views.generic import ListView
+from ..forms import TDSRateForm
+from ..models import TDSRate
+
+
+class TDSRateListView(AuthMixin, ListView):
+    model = TDSRate
+    template_name = 'bookkeeping/tds_rate_list.html'
+    context_object_name = 'tds_rates'
+    paginate_by = 20
+    permission_required = ['bookkeeping.view_tdsrate']
+
+    def get_queryset(self):
+        return TDSRate.objects.filter(
+            company=self.request.user_company, is_deleted=False
+        ).order_by('category', '-effective_from')
+
+
+class TDSRateCreateView(AuthMixin, CreateView):
+    model = TDSRate
+    form_class = TDSRateForm
+    template_name = 'bookkeeping/tds_rate_form.html'
+    permission_required = ['bookkeeping.add_tdsrate']
+    success_url = reverse_lazy('bookkeeping:tds_rate_list')
+
+    def form_valid(self, form):
+        form.instance.company = self.request.user_company
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+
+class TDSRateUpdateView(AuthMixin, UpdateView):
+    model = TDSRate
+    form_class = TDSRateForm
+    template_name = 'bookkeeping/tds_rate_form.html'
+    permission_required = ['bookkeeping.change_tdsrate']
+    success_url = reverse_lazy('bookkeeping:tds_rate_list')
+
+    def get_queryset(self):
+        return TDSRate.objects.filter(company=self.request.user_company, is_deleted=False)
+
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user
+        return super().form_valid(form)
+
 # ─── NFRS 13 Fixed Asset views ────────────────────────────────────────────
 
 from django import forms as dj_forms

@@ -23,21 +23,21 @@ thead { display: table-header-group; }
 </head>
 <body>
 <div class="rh">
-  {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
-  <h1>Sales by User Report</h1>
-  <div class="sub">Generated: {% now "Y-m-d" %}</div>
+ {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+ <h1>Sales by User Report</h1>
+ <div class="sub">Generated: {% now "Y-m-d" %}</div>
 </div>
 <table>
-  <thead><tr><th>#</th><th>User</th><th class="tr">Total Sales (NPR)</th></tr></thead>
-  <tbody>
-    {% for u in sales_by_user %}
-    <tr>
-      <td>{{ forloop.counter }}</td>
-      <td>{{ u.created_by__username|default:"Unknown" }}</td>
-      <td class="tr">{{ u.total_sales|floatformat:2 }}</td>
-    </tr>
-    {% empty %}<tr><td colspan="3" class="tc">No data found.</td></tr>{% endfor %}
-  </tbody>
+ <thead><tr><th>#</th><th>User</th><th class="tr">Total Sales (NPR)</th></tr></thead>
+ <tbody>
+ {% for u in sales_by_user %}
+ <tr>
+ <td>{{ forloop.counter }}</td>
+ <td>{{ u.created_by__username|default:"Unknown" }}</td>
+ <td class="tr">{{ u.total_sales|floatformat:2 }}</td>
+ </tr>
+ {% empty %}<tr><td colspan="3" class="tc">No data found.</td></tr>{% endfor %}
+ </tbody>
 </table>
 </body>
 </html>
