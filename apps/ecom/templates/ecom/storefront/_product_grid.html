@@ -3,18 +3,18 @@
 
   {# Active filter tags — inside swap target so they update on every HTMX request #}
   {% if price_min or price_max or selected_colors or search or selected_category %}
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+  <div class="reference-active-filters" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
     <span style="font-size:0.8rem;color:#6b7280;font-weight:600;">Active:</span>
     {% if search %}<span class="active-filter-tag">Search: "{{ search }}" <button onclick="removeParam('q')">×</button></span>{% endif %}
     {% if selected_category %}<span class="active-filter-tag">{{ selected_category_name }} <button onclick="removeParam('category')">×</button></span>{% endif %}
-    {% if price_min or price_max %}<span class="active-filter-tag">Price: Rs.{{ price_min|default:"0" }}–Rs.{{ price_max|default:"∞" }} <button onclick="removeParam('price_min');removeParam('price_max')">×</button></span>{% endif %}
+    {% if price_min or price_max %}<span class="active-filter-tag">Price: ₹{{ price_min|default:"0" }}–₹{{ price_max|default:"∞" }} <button onclick="removeParam('price_min');removeParam('price_max')">×</button></span>{% endif %}
     {% for c in selected_colors %}<span class="active-filter-tag">{{ c }} <button onclick="removeColor('{{ c }}')">×</button></span>{% endfor %}
     <a href="{% url 'ecom:product_list' %}" class="clear-all-btn">Clear All</a>
   </div>
   {% endif %}
 
   {# Topbar — sort / per-page / view toggle #}
-  <div class="grid-topbar">
+  <div class="grid-topbar reference-toolbar">
     <span class="topbar-count">
       <strong>{{ products.paginator.count }}</strong> product{{ products.paginator.count|pluralize }}
       {% if selected_category_name %} in <strong>{{ selected_category_name }}</strong>{% endif %}
@@ -100,7 +100,7 @@
         {% if product.short_description %}<div style="font-size:0.78rem;color:#6b7280;">{{ product.short_description|truncatechars:80 }}</div>{% endif %}
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:1rem;font-weight:700;color:#3730a3;">Rs.{{ product.price|floatformat:"2" }}</div>
+        <div style="font-size:1rem;font-weight:700;color:#3730a3;">₹{{ product.price|floatformat:"2" }}</div>
         {% if product.productstock.ecom_stock > 0 %}
         <div style="font-size:0.73rem;color:#16a34a;margin-top:4px;">In Stock</div>
         {% else %}
@@ -118,7 +118,7 @@
   </div>
 
   {% else %}
-  <div class="row row-tight">
+  <div class="row row-tight reference-product-grid">
     {% for product in products %}
     <div class="col-xl-3 col-lg-4 col-md-6 col-6">
       {% include "ecom/storefront/_product_card.html" %}

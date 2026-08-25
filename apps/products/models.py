@@ -65,6 +65,9 @@ class Product(BaseModel):
     short_description = models.CharField(max_length=500, blank=True, null=True, help_text="Brief product summary for e-commerce listings (max 500 chars)")
     ecom_description = models.TextField(blank=True, null=True, help_text="Full product description shown on the e-commerce store")
     color = models.CharField(max_length=50, blank=True, default='', help_text="Product color for storefront filter (e.g. Red, Blue)")
+    material = models.CharField(max_length=100, blank=True, default='', help_text="Primary material, e.g. Brass or Terracotta")
+    occasion = models.CharField(max_length=200, blank=True, default='', help_text="Comma-separated occasions, e.g. Diwali, Daily Puja")
+    compare_at_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Original price used for sale/offer filtering")
 
     purchase_unit = models.ForeignKey(
         'products.UnitOfMeasure', on_delete=models.PROTECT,
@@ -102,6 +105,16 @@ class Product(BaseModel):
         all_images = self.images.all()
         primary = next((i for i in all_images if i.is_primary), None) or next(iter(all_images), None)
         return primary.image.url if primary else None
+
+    @property
+    def has_discount(self):
+        return bool(self.compare_at_price and self.compare_at_price > self.price)
+
+    @property
+    def discount_percent(self):
+        if not self.has_discount:
+            return 0
+        return round((self.compare_at_price - self.price) / self.compare_at_price * 100)
 
 class ProductStock(BaseModel):
     product = models.OneToOneField(Product, on_delete=models.CASCADE)

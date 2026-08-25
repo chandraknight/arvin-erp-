@@ -6,7 +6,21 @@
 
 {% block content %}
 
-<section class="store-hero">
+{% with spotlight=hero_banners.0 festive=right_banners.0 %}
+<section class="reference-shop-hero home-dynamic-hero">
+  {% if spotlight %}<img src="{{ spotlight.image.url }}" alt="{{ spotlight.title|default:'Puja essentials' }}" loading="eager">{% endif %}
+  <div class="reference-shop-hero-overlay"></div>
+  <div class="container reference-shop-hero-inner">
+    <nav class="reference-breadcrumb" aria-label="Breadcrumb"><a href="{% url 'ecom:home' %}">Home</a><span>/</span><a href="{% url 'ecom:product_list' %}">Shop</a><span>/</span><strong>All Puja Essentials</strong></nav>
+    <p class="reference-eyebrow"><span class="reference-om">ॐ</span> The Temple-lit Boutique</p>
+    <h1>{% if spotlight and spotlight.title %}{{ spotlight.title }}{% else %}<em>Puja</em> Essentials,<br>lit like a shrine.{% endif %}</h1>
+    <p class="reference-hero-copy">{% if spotlight and spotlight.subtitle %}{{ spotlight.subtitle }}{% elif cms and cms.tagline %}{{ cms.tagline }}{% else %}Diyas, idols, incense and havan samagri, curated for devotion and finished for the modern home.{% endif %}</p>
+    <div class="reference-hero-actions"><a href="{% if spotlight and spotlight.link_url %}{{ spotlight.link_url }}{% else %}{% url 'ecom:product_list' %}{% endif %}" class="reference-primary-btn">{{ spotlight.link_label|default:'Explore the catalog' }} <span>→</span></a><a href="{% if festive and festive.link_url %}{{ festive.link_url }}{% else %}{% url 'ecom:bundle_list' %}{% endif %}" class="reference-secondary-btn">✦ {{ festive.link_label|default:'Shop the festive edit' }}</a></div>
+  </div>
+</section>
+{% endwith %}
+
+<section class="store-hero home-reference-hero home-reference-legacy">
   <div class="container">
     <div class="store-hero-grid">
       <div class="store-hero-copy">
@@ -68,7 +82,7 @@
   </div>
 </section>
 
-<section style="padding:56px 0 48px;background:#fff;">
+<section class="store-home-panel store-home-categories home-reference-categories" style="padding:56px 0 48px;background:#fff;">
   <div class="container">
     <div style="text-align:center;margin-bottom:36px;">
       <h2 style="font-size:28px;font-weight:800;color:#6b0000;margin-bottom:8px;">Browse by Occasion</h2>
@@ -107,7 +121,7 @@
 </section>
 
 {% if popular_bundles %}
-<section style="background:#fff;padding:56px 0;border-top:1px solid #f5f5f4;">
+<section class="store-home-panel store-home-bundles" style="background:#fff;padding:56px 0;border-top:1px solid #f5f5f4;">
   <div class="container">
     <div style="text-align:center;margin-bottom:36px;">
       <h2 style="font-size:28px;font-weight:800;color:#6b0000;margin-bottom:8px;">Popular Faith Bundles</h2>
@@ -166,7 +180,7 @@
 {% endif %}
 
 {% if hero_banners %}
-<section style="padding:40px 0;background:#fafaf9;border-top:1px solid #f0ede9;">
+<section class="store-home-panel store-home-banners" style="padding:40px 0;background:#fafaf9;border-top:1px solid #f0ede9;">
   <div class="container">
     <div class="hero-container">
       <div id="hero-left">
@@ -226,7 +240,7 @@
 {% endif %}
 
 {% if flash_products %}
-<section id="all-items-section" style="background:#f8f7f4;padding:56px 0;border-top:1px solid #e7e5e4;">
+<section id="all-items-section" class="store-home-panel store-home-items" style="background:#f8f7f4;padding:56px 0;border-top:1px solid #e7e5e4;">
   <div class="container">
     <div style="text-align:center;margin-bottom:36px;">
       <h2 style="font-size:28px;font-weight:800;color:#6b0000;margin-bottom:8px;">All Individual Items</h2>
@@ -248,6 +262,17 @@
   </div>
 </section>
 {% endif %}
+
+<section class="reference-trust-strip home-reference-trust" aria-label="Why shop with us">
+  <div class="container">
+    <div class="reference-trust-grid">
+      <div><span>♧</span><p><strong>Free shipping</strong><small>On orders over Rs. 5,000</small></p></div>
+      <div><span>✦</span><p><strong>Authentic samagri</strong><small>Sourced from artisans</small></p></div>
+      <div><span>↻</span><p><strong>Easy returns</strong><small>7-day hassle-free</small></p></div>
+      <div><span>✓</span><p><strong>Secure payments</strong><small>UPI · Cards · COD</small></p></div>
+    </div>
+  </div>
+</section>
 
 <section style="background:linear-gradient(135deg,#300000 0%,#500000 100%);color:#fff;padding:64px 0;position:relative;overflow:hidden;">
   <div style="position:absolute;inset:0;opacity:0.06;background-image:radial-gradient(#f59e0b 1px,transparent 1px);background-size:20px 20px;pointer-events:none;"></div>

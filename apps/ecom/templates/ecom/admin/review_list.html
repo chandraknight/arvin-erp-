@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-6 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <div><h1 class="text-2xl font-bold text-gray-900">Customer Reviews</h1><p class="text-sm text-gray-500 mt-1">Approve reviews before they appear in the storefront.</p></div>
+  </div>
+  <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+    <table class="w-full text-sm"><thead class="bg-gray-50 text-left text-gray-500"><tr><th class="px-4 py-3">Product</th><th class="px-4 py-3">Reviewer</th><th class="px-4 py-3">Rating</th><th class="px-4 py-3">Review</th><th class="px-4 py-3">Status</th><th class="px-4 py-3"></th></tr></thead><tbody class="divide-y divide-gray-100">
+      {% for review in reviews %}<tr><td class="px-4 py-3 font-medium">{{ review.product.name }}</td><td class="px-4 py-3">{{ review.reviewer_name }}</td><td class="px-4 py-3 text-amber-600">{{ review.rating }}/5</td><td class="px-4 py-3 max-w-md">{{ review.comment|default:review.title|truncatechars:100 }}</td><td class="px-4 py-3">{% if review.is_approved %}<span class="text-green-700">Approved</span>{% else %}<span class="text-amber-700">Pending</span>{% endif %}</td><td class="px-4 py-3"><form method="post" action="{% url 'ecom:cms_review_toggle' review.id %}">{% csrf_token %}<button class="text-sm font-semibold text-green-700 hover:text-green-900">{% if review.is_approved %}Unapprove{% else %}Approve{% endif %}</button></form></td></tr>{% empty %}<tr><td colspan="6" class="px-4 py-12 text-center text-gray-500">No customer reviews yet.</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>
+{% endblock %}

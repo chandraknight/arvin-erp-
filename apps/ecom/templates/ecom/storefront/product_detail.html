@@ -185,6 +185,8 @@
             onclick="switchTab('tab-description', this)">Description</button>
     <button class="pd-tab-btn" role="tab" aria-selected="false"
             onclick="switchTab('tab-additional', this)">Additional Information</button>
+    <button class="pd-tab-btn" role="tab" aria-selected="false"
+            onclick="switchTab('tab-reviews', this)">Reviews{% if reviews %} ({{ reviews|length }}){% endif %}</button>
   </div>
   <div class="pd-tab-body">
 
@@ -227,6 +229,15 @@
         <tr><td>HS Code</td><td>{{ product.hscode }}</td></tr>
         {% endif %}
       </table>
+    </div>
+
+    <div id="tab-reviews" class="pd-tab-panel" role="tabpanel">
+      {% if review_average %}<p class="pd-desc-body">Customer rating: <strong>{{ review_average|floatformat:1 }}/5</strong></p>{% endif %}
+      {% for review in reviews %}<article class="pd-review"><strong>{{ review.reviewer_name }}</strong><span> · {{ review.rating }}/5</span>{% if review.title %}<h4>{{ review.title }}</h4>{% endif %}<p>{{ review.comment }}</p></article>{% empty %}<p class="pd-no-desc">No approved reviews yet.</p>{% endfor %}
+      <form method="post" action="{% url 'ecom:submit_product_review' product.id %}" class="pd-review-form">
+        {% csrf_token %}<h3>Share your experience</h3>
+        <input name="reviewer_name" required placeholder="Your name"><input name="title" placeholder="Review title"><select name="rating" required><option value="">Rating</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select><textarea name="comment" required rows="4" placeholder="Your review"></textarea><button type="submit">Submit review</button>
+      </form>
     </div>
 
   </div>

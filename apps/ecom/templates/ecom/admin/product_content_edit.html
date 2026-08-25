@@ -130,11 +130,28 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
         <div>
+          <label for="{{ form.material.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">Material</label>
+          {{ form.material|add_class:"border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-full" }}
+        </div>
+        <div>
+          <label for="{{ form.occasion.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">Occasions / Festivals</label>
+          {{ form.occasion|add_class:"border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-full" }}
+          <p class="text-xs text-gray-400 mt-1">Comma-separated, e.g. Diwali, Daily Puja</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+        <div>
           <label for="{{ form.price.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
             Selling Price <span class="text-xs text-gray-400 font-normal">(what the customer pays)</span>
           </label>
           {{ form.price|add_class:"border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-48" }}
           {% if form.price.errors %}<p class="text-red-600 text-sm mt-1">{{ form.price.errors|striptags }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.compare_at_price.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">Original Price</label>
+          {{ form.compare_at_price|add_class:"border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-48" }}
+          <p class="text-xs text-gray-400 mt-1">Used for sale/offer badges and filtering.</p>
         </div>
       </div>
     </div>

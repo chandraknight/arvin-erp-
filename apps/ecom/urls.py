@@ -9,6 +9,7 @@ urlpatterns = [
     path('shop/', storefront.product_list, name='product_list'),
     path('shop/image-search/', storefront.image_search, name='image_search'),
     path('product/<uuid:product_id>/', storefront.product_detail, name='product_detail'),
+    path('product/<uuid:product_id>/review/', storefront.submit_product_review, name='submit_product_review'),
     path('cart/', storefront.cart_view, name='cart'),
     path('cart/add/<uuid:product_id>/', storefront.add_to_cart, name='add_to_cart'),
     path('cart/remove/<uuid:product_id>/', storefront.remove_from_cart, name='remove_from_cart'),
@@ -117,5 +118,7 @@ urlpatterns = [
     # ── CMS: Product E-Commerce Content ───────────────────
     path('manage/cms/products/', cms_admin.product_content_list, name='cms_product_content_list'),
     path('manage/cms/products/<uuid:product_id>/content/', cms_admin.product_content_edit, name='cms_product_content_edit'),
+    path('manage/cms/reviews/', cms_admin.review_list, name='cms_review_list'),
+    path('manage/cms/reviews/<uuid:review_id>/toggle/', cms_admin.review_toggle, name='cms_review_toggle'),
     path('manage/cms/images/<uuid:image_id>/delete/', cms_admin.product_image_delete, name='cms_product_image_delete'),
 ]

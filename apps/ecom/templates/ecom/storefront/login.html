@@ -13,11 +13,15 @@
 <div class="signin-wrap">
   <div class="signin-card">
 
-    {# Left illustration panel #}
+    {# Use the configured storefront/company logo instead of the legacy illustration. #}
     <div class="signin-left">
-      <img src="{% static 'ecom/assets/imgs/template/signin-illustration.svg' %}"
-           onerror="this.src='{% static "ecom/assets/imgs/template/favicon.svg" %}';this.style.width='120px';this.style.opacity='.3';"
-           alt="Sign In">
+      {% if cms and cms.logo %}
+        <img src="{{ cms.logo.url }}" alt="{{ cms.store_name|default:company.name }} logo">
+      {% elif company and company.logo %}
+        <img src="{{ company.logo.url }}" alt="{{ company.name }} logo">
+      {% else %}
+        <div class="signin-brand-mark" aria-hidden="true">🙏</div>
+      {% endif %}
       <h4>Welcome Back!</h4>
       <p>Sign in to continue shopping<br>with {{ company.name|default:"us" }}.</p>
     </div>
