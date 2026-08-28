@@ -7,7 +7,7 @@ from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField
 from django.db import transaction
 from decimal import Decimal
 
-from apps.utils.mixins import AuthMixin
+from apps.utils.mixins import AuthMixin, ModuleRequiredMixin, module_required
 from apps.utils.htmx import is_htmx
 from .models import (
     BillOfMaterials, BOMItem, WorkOrder, WorkOrderMaterial,
@@ -30,6 +30,7 @@ def _require_manufacturing(request):
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_manufacturing')
 def manufacturing_dashboard(request):
     guard = _require_manufacturing(request)
     if guard:
@@ -76,8 +77,9 @@ def manufacturing_dashboard(request):
 
 # ── Bill of Materials ─────────────────────────────────────────────────────────
 
-class BOMListView(AuthMixin, ListView):
+class BOMListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = BillOfMaterials
+    module_flag = 'enable_manufacturing'
     template_name = 'manufacturing/bom_list.html'
     context_object_name = 'boms'
     permission_required = ['manufacturing.view_billofmaterials']
@@ -103,8 +105,9 @@ class BOMListView(AuthMixin, ListView):
         return ctx
 
 
-class BOMDetailView(AuthMixin, DetailView):
+class BOMDetailView(AuthMixin, ModuleRequiredMixin, DetailView):
     model = BillOfMaterials
+    module_flag = 'enable_manufacturing'
     template_name = 'manufacturing/bom_detail.html'
     context_object_name = 'bom'
     permission_required = ['manufacturing.view_billofmaterials']
@@ -118,8 +121,9 @@ class BOMDetailView(AuthMixin, DetailView):
         return ctx
 
 
-class BOMCreateView(AuthMixin, CreateView):
+class BOMCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = BillOfMaterials
+    module_flag = 'enable_manufacturing'
     form_class = BOMForm
     template_name = 'manufacturing/bom_form.html'
     permission_required = ['manufacturing.add_billofmaterials']
@@ -151,8 +155,9 @@ class BOMCreateView(AuthMixin, CreateView):
         return self.form_invalid(form)
 
 
-class BOMUpdateView(AuthMixin, UpdateView):
+class BOMUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = BillOfMaterials
+    module_flag = 'enable_manufacturing'
     form_class = BOMForm
     template_name = 'manufacturing/bom_form.html'
     permission_required = ['manufacturing.change_billofmaterials']
@@ -185,8 +190,9 @@ class BOMUpdateView(AuthMixin, UpdateView):
         return self.form_invalid(form)
 
 
-class BOMDeleteView(AuthMixin, DeleteView):
+class BOMDeleteView(AuthMixin, ModuleRequiredMixin, DeleteView):
     model = BillOfMaterials
+    module_flag = 'enable_manufacturing'
     template_name = 'manufacturing/confirm_delete.html'
     success_url = reverse_lazy('manufacturing:bom_list')
     permission_required = ['manufacturing.delete_billofmaterials']
@@ -202,8 +208,9 @@ class BOMDeleteView(AuthMixin, DeleteView):
 
 # ── Work Orders ───────────────────────────────────────────────────────────────
 
-class WorkOrderListView(AuthMixin, ListView):
+class WorkOrderListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = WorkOrder
+    module_flag = 'enable_manufacturing'
     template_name = 'manufacturing/workorder_list.html'
     context_object_name = 'work_orders'
     permission_required = ['manufacturing.view_workorder']
@@ -236,8 +243,9 @@ class WorkOrderListView(AuthMixin, ListView):
         return ctx
 
 
-class WorkOrderDetailView(AuthMixin, DetailView):
+class WorkOrderDetailView(AuthMixin, ModuleRequiredMixin, DetailView):
     model = WorkOrder
+    module_flag = 'enable_manufacturing'
     template_name = 'manufacturing/workorder_detail.html'
     context_object_name = 'work_order'
     permission_required = ['manufacturing.view_workorder']
@@ -257,8 +265,9 @@ class WorkOrderDetailView(AuthMixin, DetailView):
         return ctx
 
 
-class WorkOrderCreateView(AuthMixin, CreateView):
+class WorkOrderCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = WorkOrder
+    module_flag = 'enable_manufacturing'
     form_class = WorkOrderForm
     template_name = 'manufacturing/workorder_form.html'
     permission_required = ['manufacturing.add_workorder']
@@ -299,8 +308,9 @@ class WorkOrderCreateView(AuthMixin, CreateView):
         return redirect('manufacturing:workorder_detail', pk=self.object.pk)
 
 
-class WorkOrderUpdateView(AuthMixin, UpdateView):
+class WorkOrderUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = WorkOrder
+    module_flag = 'enable_manufacturing'
     form_class = WorkOrderForm
     template_name = 'manufacturing/workorder_form.html'
     permission_required = ['manufacturing.change_workorder']
@@ -326,6 +336,7 @@ class WorkOrderUpdateView(AuthMixin, UpdateView):
 
 
 @login_required
+@module_required('enable_manufacturing')
 def start_work_order(request, pk):
     wo = get_object_or_404(WorkOrder, pk=pk, company=request.user_company, status='PLANNED')
 
@@ -356,6 +367,7 @@ def start_work_order(request, pk):
 
 
 @login_required
+@module_required('enable_manufacturing')
 def complete_work_order(request, pk):
     wo = get_object_or_404(WorkOrder, pk=pk, company=request.user_company, status='IN_PROGRESS')
     from django.utils import timezone
@@ -414,8 +426,9 @@ def complete_work_order(request, pk):
 
 # ── Production Runs ───────────────────────────────────────────────────────────
 
-class ProductionRunCreateView(AuthMixin, CreateView):
+class ProductionRunCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = ProductionRun
+    module_flag = 'enable_manufacturing'
     form_class = ProductionRunForm
     template_name = 'manufacturing/run_form.html'
     permission_required = ['manufacturing.add_productionrun']
@@ -455,8 +468,9 @@ class ProductionRunCreateView(AuthMixin, CreateView):
         return redirect('manufacturing:workorder_detail', pk=wo.pk)
 
 
-class ProductionRunDetailView(AuthMixin, DetailView):
+class ProductionRunDetailView(AuthMixin, ModuleRequiredMixin, DetailView):
     model = ProductionRun
+    module_flag = 'enable_manufacturing'
     template_name = 'manufacturing/run_detail.html'
     context_object_name = 'run'
     permission_required = ['manufacturing.view_productionrun']
@@ -475,8 +489,9 @@ class ProductionRunDetailView(AuthMixin, DetailView):
 
 # ── Quality Control ───────────────────────────────────────────────────────────
 
-class QualityCheckCreateView(AuthMixin, CreateView):
+class QualityCheckCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = QualityCheck
+    module_flag = 'enable_manufacturing'
     form_class = QualityCheckForm
     template_name = 'manufacturing/qc_form.html'
     permission_required = ['manufacturing.add_qualitycheck']
@@ -506,8 +521,9 @@ class QualityCheckCreateView(AuthMixin, CreateView):
 
 # ── Machines ──────────────────────────────────────────────────────────────────
 
-class MachineListView(AuthMixin, ListView):
+class MachineListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = Machine
+    module_flag = 'enable_manufacturing'
     template_name = 'manufacturing/machine_list.html'
     context_object_name = 'machines'
     permission_required = ['manufacturing.view_machine']
@@ -518,8 +534,9 @@ class MachineListView(AuthMixin, ListView):
         ).order_by('name')
 
 
-class MachineDetailView(AuthMixin, DetailView):
+class MachineDetailView(AuthMixin, ModuleRequiredMixin, DetailView):
     model = Machine
+    module_flag = 'enable_manufacturing'
     template_name = 'manufacturing/machine_detail.html'
     context_object_name = 'machine'
     permission_required = ['manufacturing.view_machine']
@@ -534,8 +551,9 @@ class MachineDetailView(AuthMixin, DetailView):
         return ctx
 
 
-class MachineCreateView(AuthMixin, CreateView):
+class MachineCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = Machine
+    module_flag = 'enable_manufacturing'
     form_class = MachineForm
     template_name = 'manufacturing/machine_form.html'
     permission_required = ['manufacturing.add_machine']
@@ -550,8 +568,9 @@ class MachineCreateView(AuthMixin, CreateView):
         return reverse_lazy('manufacturing:machine_detail', kwargs={'pk': self.object.pk})
 
 
-class MachineUpdateView(AuthMixin, UpdateView):
+class MachineUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = Machine
+    module_flag = 'enable_manufacturing'
     form_class = MachineForm
     template_name = 'manufacturing/machine_form.html'
     permission_required = ['manufacturing.change_machine']
@@ -568,8 +587,9 @@ class MachineUpdateView(AuthMixin, UpdateView):
         return reverse_lazy('manufacturing:machine_detail', kwargs={'pk': self.object.pk})
 
 
-class MachineLogCreateView(AuthMixin, CreateView):
+class MachineLogCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = MachineLog
+    module_flag = 'enable_manufacturing'
     form_class = MachineLogForm
     template_name = 'manufacturing/machine_log_form.html'
     permission_required = ['manufacturing.add_machinelog']
@@ -674,6 +694,7 @@ def material_consumption_report(request):
 # ── Cancel Work Order ─────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_manufacturing')
 def cancel_work_order(request, pk):
     wo = get_object_or_404(
         WorkOrder, pk=pk, company=request.user_company

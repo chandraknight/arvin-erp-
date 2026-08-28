@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 from django.utils.text import slugify
 
 from django.utils import timezone
-from apps.ecom.models import SiteSettings, HeroBanner, Page, Announcement, BlogPost, ContactMessage, ProductReview
+from apps.ecom.models import SiteSettings, HeroBanner, Page, Announcement, BlogPost, ContactMessage
 from apps.company.models import Company
 from apps.products.models import Product, ProductImage
 from apps.products.forms import ProductImageFormSet
@@ -36,15 +36,12 @@ def cms_dashboard(request):
     pages = Page.objects.filter(company=company)
     announcements = Announcement.objects.filter(company=company)
     blog_count = BlogPost.objects.filter(company=company).count()
-    from apps.ecom.models import NewsletterSubscriber
-    newsletter_count = NewsletterSubscriber.objects.filter(company=company).count()
     return render(request, 'ecom/admin/cms/dashboard.html', {
         'settings': settings,
         'banners': banners,
         'pages': pages,
         'announcements': announcements,
         'blog_count': blog_count,
-        'newsletter_count': newsletter_count,
     })
 
 
@@ -503,10 +500,7 @@ def product_content_edit(request, product_id):
     class EcomContentForm(django_forms.ModelForm):
         class Meta:
             model = Product
-            fields = [
-                'show_on_ecom', 'price', 'compare_at_price', 'short_description',
-                'ecom_description', 'color', 'material', 'occasion',
-            ]
+            fields = ['show_on_ecom', 'price', 'short_description', 'ecom_description', 'color']
             widgets = {
                 'ecom_description': django_forms.HiddenInput(),
             }
@@ -530,23 +524,6 @@ def product_content_edit(request, product_id):
         'form': form,
         'image_formset': image_formset,
     })
-
-
-@login_required
-def review_list(request):
-    company = _get_company(request)
-    reviews = ProductReview.objects.filter(company=company).select_related('product').order_by('-created_at')
-    return render(request, 'ecom/admin/review_list.html', {'reviews': reviews})
-
-
-@require_POST
-@login_required
-def review_toggle(request, review_id):
-    company = _get_company(request)
-    review = get_object_or_404(ProductReview, id=review_id, company=company)
-    review.is_approved = not review.is_approved
-    review.save(update_fields=['is_approved', 'updated_at'])
-    return redirect('ecom:cms_review_list')
 
 
 @require_POST

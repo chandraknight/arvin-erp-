@@ -4,15 +4,13 @@
 {% block page_title %}Page Not Found{% endblock %}
 
 {% block content %}
-<section class="mb-60">
-  <div class="container">
-    <div class="text-center" style="padding:60px 0;">
-      <h1 style="font-size:8rem;font-weight:900;color:#D97706;line-height:1;">404</h1>
-      <h3 class="color-brand-3 mb-15">Page Not Found</h3>
-      <p class="font-md color-gray-500 mb-30">The page you're looking for doesn't exist or has been moved.</p>
-      <a href="{% url 'ecom:home' %}" class="btn btn-brand-2 mr-10">Go Home</a>
-      <a href="{% url 'ecom:product_list' %}" class="btn btn-cart">Browse Products</a>
-    </div>
-  </div>
+<section class="max-w-[640px] mx-auto px-4 py-24 text-center">
+ <h1 class="font-display text-8xl md:text-9xl leading-none text-transparent bg-clip-text bg-gradient-to-b from-goldlt to-saffron">404</h1>
+ <h3 class="font-display text-2xl text-cream mt-6 mb-3">Page Not Found</h3>
+ <p class="text-cream/60 text-sm mb-8">The page you're looking for doesn't exist or has been moved.</p>
+ <div class="flex flex-wrap items-center justify-center gap-3">
+ <a href="{% url 'ecom:home' %}" class="h-12 px-7 rounded-full bg-saffron text-white font-medium flex items-center gap-2 hover:brightness-110 shadow-glow transition">Go Home</a>
+ <a href="{% url 'ecom:product_list' %}" class="h-12 px-7 rounded-full glass text-cream/85 font-medium flex items-center hover:border-gold transition">Browse Products</a>
+ </div>
 </section>
 {% endblock %}

@@ -1,56 +1,63 @@
 {% load static %}
-{% with product.images.first as img %}
-<article class="reference-product-card {% if not product.is_service and product.productstock.ecom_stock <= 0 %}is-out-of-stock{% endif %}">
+<article class="card group relative rounded-2xl glass shadow-glow overflow-hidden flex flex-col hover:shadow-glowlg hover:border-gold/60 transition-all duration-300 {% if not product.is_service and product.productstock.ecom_stock <= 0 %}opacity-90{% endif %}">
+ <div class="relative aspect-[4/5] overflow-hidden bg-ink">
+ <a href="{% url 'ecom:product_detail' product.id %}" class="block w-full h-full">
+ {% if product.primary_image_url %}
+ <img src="{{ product.primary_image_url }}" alt="{{ product.name }}" loading="lazy"
+ class="card-img w-full h-full object-cover {% if not product.is_service and product.productstock.ecom_stock <= 0 %}grayscale-[.4] opacity-70{% endif %}">
+ {% else %}
+ <div class="w-full h-full grid place-items-center bg-gradient-to-br from-ink to-inkdeep text-gold/40">
+ <i data-lucide="box" class="w-12 h-12"></i>
+ </div>
+ {% endif %}
+ </a>
+ <div class="absolute inset-0 bg-gradient-to-t from-inkdeep/70 via-transparent to-transparent pointer-events-none"></div>
 
-  <div class="reference-product-media">
-  <a href="{% url 'ecom:product_detail' product.id %}" class="reference-product-image-link">
-    {% if img %}
-      <img src="{{ img.image.url }}" alt="{{ product.name }}" loading="lazy"
-           class="reference-product-image">
-    {% else %}
-      <div class="reference-product-placeholder">🙏</div>
-    {% endif %}
-  </a>
-  <div class="reference-product-gradient"></div>
-  {% if not product.is_service and product.productstock.ecom_stock <= 0 %}
-  <span class="reference-product-badge reference-product-badge-muted">Out of stock</span>
-  {% elif product.has_discount %}
-  <span class="reference-product-badge">{{ product.discount_percent }}% Off</span>
-  {% endif %}
-  <a href="{% url 'ecom:product_detail' product.id %}" class="reference-wishlist" aria-label="View {{ product.name }}">♡</a>
-  {% if product.is_service or product.productstock.ecom_stock > 0 %}
-  <form method="post" action="{% url 'ecom:add_to_cart' product.id %}" class="reference-quick-add">
-    {% csrf_token %}
-    <input type="hidden" name="quantity" value="1">
-    <button type="submit">＋ Add to cart</button>
-  </form>
-  {% endif %}
-  </div>
+ {% if product.created_at %}
+ <span class="absolute top-3 left-3 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-maroon text-goldlt border border-gold/40 shadow-md">New</span>
+ {% endif %}
+ {% if not product.is_service and product.productstock.ecom_stock <= 0 %}
+ <span class="absolute top-3 left-3 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-ink/90 text-cream/80 border border-cream/20">Out of stock</span>
+ {% endif %}
 
-  <div class="reference-product-info">
-    {% if product.category %}
-    <span class="reference-product-category">{{ product.category.name }}</span>
-    {% endif %}
+ <button type="button" class="absolute top-3 right-3 w-9 h-9 grid place-items-center rounded-full glass text-cream/85 hover:text-saffron hover:border-saffron transition" aria-label="Add {{ product.name }} to wishlist">
+ <i data-lucide="heart" class="w-4 h-4"></i>
+ </button>
 
-    <a href="{% url 'ecom:product_detail' product.id %}"
-       class="reference-product-title">
-      {{ product.name }}
-    </a>
+ <div class="quick-add absolute inset-x-3 bottom-3">
+ {% if product.is_service or product.productstock.ecom_stock > 0 %}
+ <form method="post" action="{% url 'ecom:add_to_cart' product.id %}">
+ {% csrf_token %}
+ <input type="hidden" name="quantity" value="1">
+ <button type="submit" class="w-full h-11 rounded-full bg-saffron text-white text-sm font-medium flex items-center justify-center gap-2 hover:brightness-110 shadow-glow transition">
+ <i data-lucide="shopping-bag" class="w-4 h-4"></i> Add to cart
+ </button>
+ </form>
+ {% else %}
+ <button type="button" disabled class="w-full h-11 rounded-full glass text-goldlt/60 text-sm font-medium flex items-center justify-center gap-2 cursor-not-allowed">
+ <i data-lucide="bell" class="w-4 h-4"></i> Out of stock
+ </button>
+ {% endif %}
+ </div>
+ </div>
 
-    {% if product.short_description %}
-    <p class="reference-product-description">{{ product.short_description|truncatechars:72 }}</p>
-    {% endif %}
+ <div class="p-4 flex flex-col flex-1">
+ {% if product.category %}
+ <a href="{% url 'ecom:product_list' %}?category={{ product.category.id }}"
+ class="text-[11px] tracking-wide uppercase text-gold/80 font-eyebrow mb-1 hover:text-gold transition">
+ {{ product.category.name }}
+ </a>
+ {% endif %}
+ <a href="{% url 'ecom:product_detail' product.id %}"
+ class="font-display text-[17px] leading-snug text-cream group-hover:text-goldlt transition line-clamp-2">
+ {{ product.name }}
+ </a>
+ {% if product.short_description %}
+ <p class="text-[12.5px] text-cream/50 mt-1 line-clamp-1">{{ product.short_description }}</p>
+ {% endif %}
 
-    <div class="reference-product-rating" aria-label="Product rating">
-      <span>★★★★★</span><small>{% if product.average_rating %}{{ product.average_rating|floatformat:1 }} customer rating{% else %}New sacred find{% endif %}</small>
-    </div>
-
-    <div class="reference-product-price-row">
-      <strong>₹{{ product.price|floatformat:"0" }}</strong>
-      {% if product.has_discount %}<del>₹{{ product.compare_at_price|floatformat:"0" }}</del>{% endif %}
-      {% if product.is_service or product.productstock.ecom_stock > 0 %}<span>In stock</span>{% endif %}
-    </div>
-  </div>
-
+ <div class="mt-3 flex items-end gap-2 pt-3 border-t hair mt-auto">
+ <span class="font-display text-xl text-cream">Rs.{{ product.price|floatformat:"2" }}</span>
+ </div>
+ </div>
 </article>
-{% endwith %}

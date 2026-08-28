@@ -1,0 +1,73 @@
+<!-- reports/templates/reports/tax_depreciation_schedule_report.html -->
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Tax Depreciation Schedule{% endblock %}
+
+{% block content %}
+ <div class="w-full mt-2">
+ <div class="flex justify-between items-center mb-6">
+ <h1 class="text-3xl font-bold text-gray-800">Tax Depreciation Schedule (D1/D2/D3)</h1>
+ <a href="{% url 'reports:report_dashboard' %}" class="inline-block bg-gray-500 text-white px-4 py-2 hover:bg-gray-600 transition duration-200 ease-in-out text-sm">Back to Reports Dashboard</a>
+ </div>
+
+ <form method="get" class="mb-6 flex flex-wrap items-end gap-4">
+ <div>
+ <label for="fiscal_year_id" class="block text-sm font-medium text-gray-700">Fiscal Year:</label>
+ <select name="fiscal_year_id" id="fiscal_year_id" class="mt-1 block w-full px-3 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+ {% for fy in fiscal_years %}
+ <option value="{{ fy.id }}" {% if fy.id == fiscal_year.id %}selected{% endif %}>{{ fy.name|default:fy.start_date_bs }} ({{ fy.start_date }} — {{ fy.end_date }})</option>
+ {% endfor %}
+ </select>
+ </div>
+ <button type="submit" class="bg-blue-500 text-white px-4 py-2 hover:bg-blue-600 transition duration-200 ease-in-out text-sm">Generate Report</button>
+ <button type="button" onclick="window.print()" class="bg-purple-500 text-white px-4 py-2 hover:bg-purple-600 transition duration-200 ease-in-out text-sm">Print Report</button>
+ </form>
+
+ <h2 class="text-xl font-semibold mb-4 text-gray-700">Fiscal Year {{ fiscal_year.start_date }} to {{ fiscal_year.end_date }}</h2>
+
+ <div class="overflow-x-auto">
+ <table class="min-w-full bg-white shadow-md ">
+ <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+ <tr>
+ <th class="py-3 px-6 text-left">Pool</th>
+ <th class="py-3 px-6 text-right">Rate %</th>
+ <th class="py-3 px-6 text-right">Opening WDV</th>
+ <th class="py-3 px-6 text-right">Additions (Full Rate)</th>
+ <th class="py-3 px-6 text-right">Additions (Half Rate)</th>
+ <th class="py-3 px-6 text-right">Disposal Proceeds</th>
+ <th class="py-3 px-6 text-right">Depreciation Base</th>
+ <th class="py-3 px-6 text-right">Depreciation</th>
+ <th class="py-3 px-6 text-right">Closing WDV</th>
+ </tr>
+ </thead>
+ <tbody class="text-gray-600 text-sm font-light">
+ {% for row in pool_rows %}
+ <tr class="border-b border-gray-200 hover:bg-gray-100">
+ <td class="py-3 px-6 text-left">{{ row.label }}</td>
+ <td class="py-3 px-6 text-right">{{ row.rate }}</td>
+ <td class="py-3 px-6 text-right whitespace-nowrap">{{ row.opening_wdv|floatformat:2|intcomma }}</td>
+ <td class="py-3 px-6 text-right whitespace-nowrap">{{ row.additions_full|floatformat:2|intcomma }}</td>
+ <td class="py-3 px-6 text-right whitespace-nowrap">{{ row.additions_half|floatformat:2|intcomma }}</td>
+ <td class="py-3 px-6 text-right whitespace-nowrap">{{ row.disposal_proceeds|floatformat:2|intcomma }}</td>
+ <td class="py-3 px-6 text-right whitespace-nowrap">{{ row.depreciation_base|floatformat:2|intcomma }}</td>
+ <td class="py-3 px-6 text-right whitespace-nowrap font-semibold">{{ row.depreciation|floatformat:2|intcomma }}</td>
+ <td class="py-3 px-6 text-right whitespace-nowrap">{{ row.closing_wdv|floatformat:2|intcomma }}</td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="9" class="py-6 text-center text-gray-400 italic">No assets assigned to an IRD depreciation pool yet — set the "IRD Pool" field on each fixed asset.</td></tr>
+ {% endfor %}
+ </tbody>
+ <tfoot class="bg-gray-100 text-gray-800 font-bold">
+ <tr>
+ <td class="py-3 px-6 text-left" colspan="7">Total Tax Depreciation</td>
+ <td class="py-3 px-6 text-right">{{ total_depreciation|floatformat:2|intcomma }}</td>
+ <td></td>
+ </tr>
+ </tfoot>
+ </table>
+ </div>
+
+ <p class="text-xs text-gray-400 italic mt-4">Pooled WDV depreciation per Income Tax Act 2058, Schedule 2. Additions in service more than half the fiscal year get the full pool rate; half or less get half the rate. Pool E (intangibles) is amortized by useful life and excluded from this pooled table.</p>
+ </div>
+{% endblock %}

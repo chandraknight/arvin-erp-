@@ -5,83 +5,139 @@
 
 {% block content %}
 
-<section class="customer-dashboard-page">
-  <div class="container">
-    <div class="dashboard-stats-grid">
-      <div class="dashboard-stat-card">
-        <span>Past Orders</span>
-        <strong class="dashboard-stat-maroon">{{ order_count|default:0 }}</strong>
-      </div>
-      <div class="dashboard-stat-card">
-        <span>Reminder Alerts</span>
-        <strong class="dashboard-stat-gold">{{ reminder_count|default:3 }}</strong>
-      </div>
-      <div class="dashboard-stat-card">
-        <span>Saved Addresses</span>
-        <strong>{{ saved_address_count|default:2 }}</strong>
-      </div>
-    </div>
+<section class="max-w-[1280px] mx-auto px-4 lg:px-6 py-10">
+ <h1 class="font-display text-3xl text-cream">Hello <span class="italic text-goldlt">{{ request.user.get_full_name|default:request.user.username }}</span></h1>
+ <p class="text-cream/60 text-sm mt-2 max-w-xl">
+ From your account dashboard you can view your recent orders,
+ track deliveries and update your account details.
+ </p>
 
-    <div class="dashboard-panel">
-      <div class="dashboard-panel-heading">
-        <h2>Completed Purchases</h2>
-      </div>
+ <div class="mt-8">
+ <ul class="acc-tabs flex flex-wrap gap-2 border-b hair pb-0" role="tablist">
+ <li>
+ <a class="acc-tab-link active inline-block px-4 py-3 text-sm font-medium text-goldlt border-b-2 border-gold transition" href="#tab-orders" data-tab="tab-orders" role="tab" onclick="return acctSwitchTab(event, this)">Orders</a>
+ </li>
+ <li>
+ <a class="acc-tab-link inline-block px-4 py-3 text-sm font-medium text-cream/50 border-b-2 border-transparent hover:text-cream/80 transition" href="#tab-order-tracking" data-tab="tab-order-tracking" role="tab" onclick="return acctSwitchTab(event, this)">Order Tracking</a>
+ </li>
+ <li>
+ <a class="acc-tab-link inline-block px-4 py-3 text-sm font-medium text-cream/50 border-b-2 border-transparent hover:text-cream/80 transition" href="#tab-setting" data-tab="tab-setting" role="tab" onclick="return acctSwitchTab(event, this)">Settings</a>
+ </li>
+ </ul>
 
-      {% if orders %}
-      <div class="dashboard-order-list">
-        {% for order in orders %}
-        <div class="dashboard-order-row">
-          <div class="dashboard-order-main">
-            <h3>{% with first_item=order.items.first %}{% if first_item %}{{ first_item.product.name }}{% else %}Order {{ order.order_number }}{% endif %}{% endwith %}</h3>
-            <p>{{ order.created_at|date:"M d, Y" }}</p>
-          </div>
-          <div class="dashboard-order-actions">
-            <a href="{% url 'ecom:track_order' %}?order_number={{ order.order_number }}&phone={{ order.customer_phone }}" class="dashboard-inspect-link">
-              <span aria-hidden="true">⊙</span> Inspect Items
-            </a>
-            <span class="dashboard-status-pill {% if order.status == 'DELIVERED' %}is-delivered{% elif order.status == 'CANCELLED' %}is-cancelled{% else %}is-processing{% endif %}">
-              {{ order.get_status_display }}
-            </span>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="dashboard-empty-orders">
-        <img src="{% static 'ecom/assets/imgs/template/cart.svg' %}" alt="">
-        <h3>No orders yet</h3>
-        <p>Your completed purchases will appear here.</p>
-        <a href="{% url 'ecom:product_list' %}" class="dashboard-shop-link">Start Shopping</a>
-      </div>
-      {% endif %}
-    </div>
+ <div class="mt-8">
 
-    <div class="dashboard-panel">
-      <div class="dashboard-panel-heading">
-        <h2>Saved Reminders</h2>
-      </div>
+ {# ── Orders tab ── #}
+ <div class="tab-pane active" id="tab-orders" role="tabpanel">
+ {% if orders %}
+ <div class="rounded-2xl glass shadow-glow overflow-hidden overflow-x-auto">
+ <table class="w-full text-sm">
+ <thead>
+ <tr class="border-b hair text-left">
+ <th class="px-5 py-4 font-eyebrow text-[11px] tracking-wide uppercase text-gold/80">Order #</th>
+ <th class="px-5 py-4 font-eyebrow text-[11px] tracking-wide uppercase text-gold/80">Date</th>
+ <th class="px-5 py-4 font-eyebrow text-[11px] tracking-wide uppercase text-gold/80">Items</th>
+ <th class="px-5 py-4 font-eyebrow text-[11px] tracking-wide uppercase text-gold/80">Total</th>
+ <th class="px-5 py-4 font-eyebrow text-[11px] tracking-wide uppercase text-gold/80">Status</th>
+ <th class="px-5 py-4 font-eyebrow text-[11px] tracking-wide uppercase text-gold/80">Track</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gold/10">
+ {% for order in orders %}
+ <tr>
+ <td class="px-5 py-4 text-cream font-medium">{{ order.order_number }}</td>
+ <td class="px-5 py-4 text-cream/60">{{ order.created_at|date:"d M Y" }}</td>
+ <td class="px-5 py-4 text-cream/60">{{ order.items.count }} item{{ order.items.count|pluralize }}</td>
+ <td class="px-5 py-4 text-cream font-medium">Rs.{{ order.total|floatformat:"0" }}</td>
+ <td class="px-5 py-4">
+ <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full
+ {% if order.status == 'DELIVERED' %}bg-green-500/15 text-green-300
+ {% elif order.status == 'CANCELLED' %}bg-red-500/15 text-red-300
+ {% elif order.status == 'PENDING' %}bg-gold/15 text-goldlt
+ {% else %}bg-saffron/15 text-saffron{% endif %}">
+ {{ order.get_status_display }}
+ </span>
+ </td>
+ <td class="px-5 py-4">
+ <a href="{% url 'ecom:track_order' %}?order_number={{ order.order_number }}&phone={{ order.customer_phone }}"
+ class="inline-flex h-8 px-3 items-center rounded-full glass text-goldlt text-[12px] hover:border-gold transition">Track</a>
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% else %}
+ <div class="text-center py-16">
+ <div class="w-16 h-16 mx-auto mb-5 rounded-full glass grid place-items-center">
+ <i data-lucide="shopping-bag" class="w-6 h-6 text-cream/40"></i>
+ </div>
+ <h5 class="text-cream/60 mb-5">No orders yet</h5>
+ <a href="{% url 'ecom:product_list' %}" class="inline-flex h-11 px-6 rounded-full bg-saffron text-white text-sm font-medium items-center hover:brightness-110 transition">Start Shopping</a>
+ </div>
+ {% endif %}
+ </div>
 
-      <div class="dashboard-reminder-grid">
-        <div class="dashboard-reminder-card">
-          <div class="dashboard-reminder-icon dashboard-reminder-maroon" aria-hidden="true">⌂</div>
-          <div class="dashboard-reminder-copy">
-            <h3>Memorial Remembrance</h3>
-            <p>Reminder: Jan 15, 2027</p>
-          </div>
-          <a href="{% url 'ecom:product_list' %}" class="dashboard-reorder-btn">Quick Reorder</a>
-        </div>
+ {# ── Order Tracking tab ── #}
+ <div class="tab-pane hidden" id="tab-order-tracking" role="tabpanel">
+ <form method="get" action="{% url 'ecom:track_order' %}" class="rounded-2xl glass shadow-glow p-6">
+ <div class="grid md:grid-cols-[1fr_1fr_auto] gap-5 items-end">
+ <div>
+ <label class="block text-[13px] text-cream/70 mb-2">Order Number</label>
+ <input type="text" name="order_number" placeholder="e.g. EC-00001" required
+ class="w-full h-11 px-4 rounded-full bg-ink/50 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none transition">
+ </div>
+ <div>
+ <label class="block text-[13px] text-cream/70 mb-2">Phone Number</label>
+ <input type="tel" name="phone" placeholder="Phone used at checkout" required
+ class="w-full h-11 px-4 rounded-full bg-ink/50 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none transition">
+ </div>
+ <div>
+ <button type="submit" class="h-11 w-full md:w-auto px-7 rounded-full bg-saffron text-white text-sm font-medium hover:brightness-110 transition">Track</button>
+ </div>
+ </div>
+ </form>
+ </div>
 
-        <div class="dashboard-reminder-card">
-          <div class="dashboard-reminder-icon dashboard-reminder-gold" aria-hidden="true">⌁</div>
-          <div class="dashboard-reminder-copy">
-            <h3>Monthly Prayer Refill</h3>
-            <p>Recurring incense, candles, and oil</p>
-          </div>
-          <a href="{% url 'ecom:product_list' %}" class="dashboard-reorder-btn">Quick Reorder</a>
-        </div>
-      </div>
-    </div>
-  </div>
+ {# ── Settings tab ── #}
+ <div class="tab-pane hidden" id="tab-setting" role="tabpanel">
+ <div class="rounded-2xl glass shadow-glow p-6 max-w-md">
+ <h5 class="font-display text-lg text-cream mb-6">Account Information</h5>
+ <div class="mb-4">
+ <label class="text-[12px] text-cream/50 uppercase tracking-wide">Username</label>
+ <p class="text-cream font-medium mt-1">{{ request.user.username }}</p>
+ </div>
+ <div class="mb-4">
+ <label class="text-[12px] text-cream/50 uppercase tracking-wide">Email</label>
+ <p class="text-cream font-medium mt-1">{{ request.user.email }}</p>
+ </div>
+ <div class="mb-4">
+ <label class="text-[12px] text-cream/50 uppercase tracking-wide">Full Name</label>
+ <p class="text-cream font-medium mt-1">{{ request.user.get_full_name|default:"—" }}</p>
+ </div>
+ <div class="mt-6">
+ <a href="{% url 'ecom:customer_logout' %}" class="inline-flex h-11 px-6 rounded-full glass text-cream/85 text-sm items-center hover:border-gold transition">Sign Out</a>
+ </div>
+ </div>
+ </div>
+
+ </div>
+ </div>
 </section>
 
+<script>
+function acctSwitchTab(e, link) {
+ e.preventDefault();
+ document.querySelectorAll('.acc-tab-link').forEach(function(l){
+ l.classList.remove('active','text-goldlt','border-gold');
+ l.classList.add('text-cream/50','border-transparent');
+ });
+ document.querySelectorAll('.tab-pane').forEach(function(p){ p.classList.add('hidden'); p.classList.remove('active'); });
+ link.classList.add('active','text-goldlt','border-gold');
+ link.classList.remove('text-cream/50','border-transparent');
+ var target = document.getElementById(link.dataset.tab);
+ if (target) { target.classList.remove('hidden'); target.classList.add('active'); }
+ return false;
+}
+</script>
 {% endblock %}

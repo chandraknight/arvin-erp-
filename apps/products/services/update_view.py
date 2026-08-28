@@ -197,10 +197,7 @@ def bulk_write_off(request):
                 with transaction.atomic():
                     products_written_off = 0
                     for row in rows:
-                        product_lookup = Product.objects.filter(id=row['product_id'])
-                        if company:
-                            product_lookup = product_lookup.filter(company=company)
-                        product = get_object_or_404(product_lookup)
+                        product = get_object_or_404(Product, id=row['product_id'])
                         post_stock_disposal(
                             product=product,
                             quantity=row['quantity'],

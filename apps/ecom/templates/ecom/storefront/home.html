@@ -2,334 +2,262 @@
 {% load static %}
 
 {% block page_title %}Home{% endblock %}
-{% block nav_active_home %}active{% endblock %}
+{% block nav_active_home %}text-goldlt{% endblock %}
 
 {% block content %}
 
-{% with spotlight=hero_banners.0 festive=right_banners.0 %}
-<section class="reference-shop-hero home-dynamic-hero">
-  {% if spotlight %}<img src="{{ spotlight.image.url }}" alt="{{ spotlight.title|default:'Puja essentials' }}" loading="eager">{% endif %}
-  <div class="reference-shop-hero-overlay"></div>
-  <div class="container reference-shop-hero-inner">
-    <nav class="reference-breadcrumb" aria-label="Breadcrumb"><a href="{% url 'ecom:home' %}">Home</a><span>/</span><a href="{% url 'ecom:product_list' %}">Shop</a><span>/</span><strong>All Puja Essentials</strong></nav>
-    <p class="reference-eyebrow"><span class="reference-om">ॐ</span> The Temple-lit Boutique</p>
-    <h1>{% if spotlight and spotlight.title %}{{ spotlight.title }}{% else %}<em>Puja</em> Essentials,<br>lit like a shrine.{% endif %}</h1>
-    <p class="reference-hero-copy">{% if spotlight and spotlight.subtitle %}{{ spotlight.subtitle }}{% elif cms and cms.tagline %}{{ cms.tagline }}{% else %}Diyas, idols, incense and havan samagri, curated for devotion and finished for the modern home.{% endif %}</p>
-    <div class="reference-hero-actions"><a href="{% if spotlight and spotlight.link_url %}{{ spotlight.link_url }}{% else %}{% url 'ecom:product_list' %}{% endif %}" class="reference-primary-btn">{{ spotlight.link_label|default:'Explore the catalog' }} <span>→</span></a><a href="{% if festive and festive.link_url %}{{ festive.link_url }}{% else %}{% url 'ecom:bundle_list' %}{% endif %}" class="reference-secondary-btn">✦ {{ festive.link_label|default:'Shop the festive edit' }}</a></div>
-  </div>
-</section>
-{% endwith %}
+{# ── HERO ──────────────────────────────────────────────────────────────── #}
+<section class="relative">
+ <div class="relative min-h-[420px] md:min-h-[520px] overflow-hidden">
+ {% with hero_banners.0 as first_hero %}
+ {% if first_hero.image %}
+ <img src="{{ first_hero.image.url }}" alt="{{ first_hero.title|default:'' }}"
+ class="absolute inset-0 w-full h-full object-cover object-center">
+ {% else %}
+ <div class="absolute inset-0 bg-gradient-to-br from-maroon via-ink to-inkdeep"></div>
+ {% endif %}
+ <div class="absolute inset-0" style="background:
+ radial-gradient(120% 90% at 70% 30%, rgba(224,99,30,.25), transparent 55%),
+ linear-gradient(180deg, rgba(27,13,11,.55) 0%, rgba(27,13,11,.35) 40%, rgba(27,13,11,.92) 100%),
+ linear-gradient(90deg, rgba(27,13,11,.85) 0%, rgba(27,13,11,.2) 55%, transparent 100%);"></div>
 
-<section class="store-hero home-reference-hero home-reference-legacy">
-  <div class="container">
-    <div class="store-hero-grid">
-      <div class="store-hero-copy">
-        <span class="store-hero-pill">
-          <span aria-hidden="true">✓</span> Respectfully curated for Hindu tradition
-        </span>
-        <h1>
-          {% if cms and cms.hero_title %}
-            {{ cms.hero_title }}
-          {% else %}
-            Hindu religious essentials<br>for <em>every home</em>
-          {% endif %}
-        </h1>
-        <p>
-          {% if cms and cms.tagline %}{{ cms.tagline }}{% else %}Shop prayer, worship, meditation, festival, and memorial items for Hindu puja and rituals.{% endif %}
-        </p>
-        <div class="store-hero-actions">
-          <a href="{% url 'ecom:bundle_list' %}" class="store-hero-primary">Shop Faith Kits</a>
-          <a href="{% url 'ecom:product_list' %}" class="store-hero-secondary">Browse All Products</a>
-        </div>
-      </div>
-
-      <div class="store-hero-visual" aria-label="Hindu essentials, gifts, and ceremony kits">
-        <div class="store-hero-panel">
-          {% if hero_banners %}
-          <img src="{{ hero_banners.0.image.url }}" alt="{{ hero_banners.0.title|default:'Hindu essentials, gifts, and ceremony kits' }}" style="width:100%;height:100%;object-fit:cover;border-radius:22px;">
-          {% else %}
-          <div class="store-hero-icons" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M7.5 20V9.5c0-1.2 1.8-1.2 1.8 0V15M9.3 15V6.5c0-1.3 1.9-1.3 1.9 0V15M11.2 15V5.5c0-1.3 1.9-1.3 1.9 0V15M13.1 15V7c0-1.2 1.9-1.2 1.9 0v7.6l2.2-2.5c.8-.9 2.2.2 1.5 1.2l-4.1 5.8c-.5.7-1.2 1-2 1H7.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M16.5 20V9.5c0-1.2-1.8-1.2-1.8 0V15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M4 5.5c0-1 1-1.7 2-1.4l4.4 1.3c1 .3 1.6 1.1 1.6 2.1V20c0-1-.6-1.8-1.6-2.1L6 16.6c-1-.3-2 .4-2 1.4V5.5Z" fill="currentColor"/>
-              <path d="M20 5.5c0-1-1-1.7-2-1.4l-4.4 1.3c-1 .3-1.6 1.1-1.6 2.1V20c0-1 .6-1.8 1.6-2.1l4.4-1.3c1-.3 2 .4 2 1.4V5.5Z" fill="currentColor"/>
-            </svg>
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M4 12.5c4.8-.3 7.7-2.3 9.1-6.2.4-1 1.8-1.1 2.3-.1.6 1.3 1.8 2.2 3.6 2.7-1.1.8-2.2 1.2-3.4 1.2 1.5 1.6 3.2 2.5 5.4 2.8-2.9 3.1-6.1 4-9.5 2.8L8 20.5l-.9-5.3C5.8 14.6 4.8 13.7 4 12.5Z" fill="currentColor"/>
-            </svg>
-          </div>
-          <p>[ Hindu essentials, gifts, and ceremony kits ]</p>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
+ <div class="relative max-w-[1280px] mx-auto px-4 lg:px-6 h-full">
+ <div class="flex flex-col justify-center min-h-[420px] md:min-h-[520px] py-14 max-w-xl">
+ <p class="font-eyebrow text-[13px] tracking-[.34em] uppercase text-gold mb-4 flex items-center gap-2">
+ <span class="font-deva text-goldlt text-lg leading-none">&#2384;</span> The Temple-lit Boutique
+ </p>
+ <h1 class="font-display text-5xl md:text-6xl lg:text-[68px] leading-[.98] text-cream">
+ {% if first_hero.title %}
+ {{ first_hero.title }}
+ {% else %}
+ <span class="gold-underline italic">Puja</span> Essentials,<br>lit like a shrine.
+ {% endif %}
+ </h1>
+ <p class="mt-6 text-cream/75 text-[15px] md:text-base leading-relaxed max-w-md">
+ {% if first_hero.subtitle %}{{ first_hero.subtitle }}{% else %}Diyas, idols, incense and havan samagri — sourced from artisans, dispatched in 24 hours. Curated for devotion, finished for the modern home.{% endif %}
+ </p>
+ <div class="mt-8 flex flex-wrap items-center gap-3">
+ <a href="{% if first_hero.link_url %}{{ first_hero.link_url }}{% else %}{% url 'ecom:product_list' %}{% endif %}"
+ class="inline-flex items-center gap-2 h-12 px-6 rounded-full bg-saffron text-white font-medium shadow-glow hover:brightness-110 transition">
+ Explore the catalog <i data-lucide="arrow-right" class="w-4 h-4"></i>
+ </a>
+ <a href="{% url 'ecom:product_list' %}?sort=newest" class="inline-flex items-center gap-2 h-12 px-5 rounded-full border border-gold/50 text-goldlt hover:bg-gold/10 transition">
+ <i data-lucide="flame" class="w-4 h-4"></i> Shop the festive edit
+ </a>
+ </div>
+ </div>
+ </div>
+ {% endwith %}
+ </div>
 </section>
 
-<section class="store-offer-strip">
-  <div class="container">
-    <div class="store-offer-content">
-      <div class="store-offer-icon" aria-hidden="true">%</div>
-      <div>
-        <p>Festival &amp; Holy Season Offers</p>
-        <span>Get <strong>20% off</strong> on selected prayer, worship, and celebration bundles.</span>
-      </div>
-    </div>
-    <a href="{% url 'ecom:bundle_list' %}">Shop Now</a>
-  </div>
+<div class="max-w-[1280px] mx-auto px-4 lg:px-6">
+
+ {# ── CATEGORY CHIPS ───────────────────────────────────────────────────── #}
+ {% if parent_categories %}
+ <section class="py-8 border-b hair" aria-label="Shop by category">
+ <div class="flex items-center justify-between mb-4">
+ <h2 class="font-eyebrow text-[12px] tracking-[.28em] uppercase text-cream/55">Shop by category</h2>
+ <a href="{% url 'ecom:product_list' %}" class="text-[13px] text-goldlt hover:text-gold transition inline-flex items-center gap-1">View all <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></a>
+ </div>
+ <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+ {% for cat in parent_categories %}
+ <a href="{% url 'ecom:product_list' %}?category={{ cat.id }}"
+ class="shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-full glass text-cream/85 text-sm hover:border-gold hover:text-goldlt transition">
+ {% if cat.ecom_image %}
+ <img src="{{ cat.ecom_image.url }}" alt="" class="w-4 h-4 rounded-full object-cover">
+ {% else %}
+ <i data-lucide="sparkle" class="w-4 h-4 text-gold"></i>
+ {% endif %}
+ {{ cat.name }}
+ </a>
+ {% endfor %}
+ </div>
+ </section>
+ {% endif %}
+
+ {# ── PACKAGES ─────────────────────────────────────────────────────────── #}
+ {% if packages %}
+ <section class="py-10">
+ <div class="flex items-center justify-between mb-6">
+ <div>
+ <h2 class="font-display text-3xl md:text-4xl text-cream">Bundles &amp; <span class="italic text-goldlt">Packages</span></h2>
+ <p class="text-cream/55 text-sm mt-1">Save more when you buy together</p>
+ </div>
+ <a href="{% url 'ecom:bundle_list' %}" class="text-[13px] text-goldlt hover:text-gold transition inline-flex items-center gap-1">View All <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></a>
+ </div>
+
+ <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-5">
+ {% for bundle in packages %}
+ <div class="rounded-2xl glass shadow-glow overflow-hidden flex flex-col hover:shadow-glowlg hover:border-gold/60 transition-all duration-300">
+ <a href="{% url 'ecom:bundle_detail' bundle.id %}" class="block relative">
+ {% if bundle.has_discount %}
+ <span class="absolute top-2.5 left-2.5 z-10 bg-saffron text-white text-[10px] font-bold px-2 py-1 rounded-full">
+ -{{ bundle.discount_percent }}%
+ </span>
+ {% endif %}
+ {% if bundle.ecom_image %}
+ <img src="{{ bundle.ecom_image.url }}" alt="{{ bundle.name }}" loading="lazy"
+ class="w-full aspect-[4/3] object-cover block">
+ {% else %}
+ <div class="w-full aspect-[4/3] grid place-items-center bg-gradient-to-br from-ink to-inkdeep">
+ <span class="text-4xl">📦</span>
+ </div>
+ {% endif %}
+ </a>
+ <div class="p-4 flex-1 flex flex-col gap-1.5">
+ <a href="{% url 'ecom:bundle_detail' bundle.id %}" class="font-display text-[15px] text-cream leading-snug hover:text-goldlt transition">
+ {{ bundle.name }}
+ </a>
+ <div class="text-[12px] text-cream/50 line-clamp-2">
+ {% for item in bundle.items.all|slice:":3" %}
+ {{ item.quantity }}&times; {{ item.product.name }}{% if not forloop.last %}, {% endif %}
+ {% endfor %}
+ {% if bundle.items.count > 3 %} + {{ bundle.items.count|add:"-3" }} more{% endif %}
+ </div>
+ <div class="mt-auto pt-2">
+ {% if bundle.has_discount %}
+ <span class="text-[11px] text-cream/40 line-through mr-1.5">Rs {{ bundle.compare_at_price }}</span>
+ {% endif %}
+ <span class="font-display text-lg text-goldlt">Rs {{ bundle.price }}</span>
+ </div>
+ <form method="post" action="{% url 'ecom:add_bundle_to_cart' bundle.id %}" class="mt-2">
+ {% csrf_token %}
+ <button type="submit" class="w-full h-10 rounded-full bg-saffron text-white text-[13px] font-medium hover:brightness-110 transition">
+ Add Bundle to Cart
+ </button>
+ </form>
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ </section>
+ {% endif %}
+
+ {# ── SHOP ─────────────────────────────────────────────────────────────── #}
+ <section class="py-10">
+ <div class="flex items-center justify-between mb-6">
+ <h2 class="font-display text-3xl md:text-4xl text-cream">Shop <span class="italic text-goldlt">All</span></h2>
+ <a href="{% url 'ecom:product_list' %}" class="text-[13px] text-goldlt hover:text-gold transition inline-flex items-center gap-1">View All <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></a>
+ </div>
+
+ {% if products %}
+ <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-5">
+ {% for product in products %}
+ {% include "ecom/storefront/_product_card.html" %}
+ {% endfor %}
+ </div>
+ <div class="text-center mt-8">
+ <a href="{% url 'ecom:product_list' %}" class="inline-flex items-center gap-2 h-12 px-6 rounded-full border border-gold/50 text-goldlt hover:bg-gold/10 transition">View All Products →</a>
+ </div>
+ {% else %}
+ <p class="text-cream/50 text-sm text-center py-16">No products yet. <a href="{% url 'ecom:product_list' %}" class="text-goldlt hover:text-gold">Browse all →</a></p>
+ {% endif %}
+ </section>
+
+ {# ── AD BANNERS ───────────────────────────────────────────────────────── #}
+ {% if promo_banners %}
+ <section class="py-6">
+ <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-5">
+ {% with promo_banners.0 as big %}
+ <a href="{% if big.link_url %}{{ big.link_url }}{% else %}{% url 'ecom:product_list' %}{% endif %}"
+ class="relative rounded-2xl overflow-hidden glass min-h-[220px] group">
+ <img src="{{ big.image.url }}" alt="{{ big.title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500">
+ <div class="absolute inset-0 bg-gradient-to-t from-inkdeep/85 via-inkdeep/10 to-transparent"></div>
+ {% if big.title or big.subtitle %}
+ <div class="absolute bottom-0 left-0 p-6">
+ {% if big.title %}<h4 class="font-display text-2xl text-cream">{{ big.title }}</h4>{% endif %}
+ {% if big.subtitle %}<p class="text-cream/70 text-sm mt-1">{{ big.subtitle }}</p>{% endif %}
+ </div>
+ {% endif %}
+ </a>
+ {% endwith %}
+ <div class="flex flex-col gap-5">
+ {% for promo in promo_banners|slice:"1:3" %}
+ <a href="{% if promo.link_url %}{{ promo.link_url }}{% else %}{% url 'ecom:product_list' %}{% endif %}"
+ class="relative rounded-2xl overflow-hidden glass min-h-[100px] flex-1 group">
+ <img src="{{ promo.image.url }}" alt="{{ promo.title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-500">
+ <div class="absolute inset-0 bg-gradient-to-t from-inkdeep/80 via-transparent to-transparent"></div>
+ {% if promo.title %}
+ <div class="absolute bottom-0 left-0 p-4">
+ <span class="text-cream font-display text-base">{{ promo.title }}</span>
+ </div>
+ {% endif %}
+ </a>
+ {% endfor %}
+ </div>
+ </div>
+ </section>
+ {% endif %}
+</div>
+
+{# ── TRUST STRIP ──────────────────────────────────────────────────────── #}
+<section class="border-y hair bg-ink/40" aria-label="Why shop with us">
+ <div class="max-w-[1280px] mx-auto px-4 lg:px-6 py-10 grid grid-cols-2 lg:grid-cols-4 gap-6">
+ <div class="flex items-center gap-3.5">
+ <span class="grid place-items-center w-12 h-12 rounded-full glass text-gold shrink-0"><i data-lucide="truck" class="w-5 h-5"></i></span>
+ <div><p class="text-cream font-medium text-sm">Free shipping</p><p class="text-cream/55 text-[12.5px]">On orders over Rs.{{ cms.free_shipping_threshold|default:"5,000" }}</p></div>
+ </div>
+ <div class="flex items-center gap-3.5">
+ <span class="grid place-items-center w-12 h-12 rounded-full glass text-gold shrink-0"><i data-lucide="badge-check" class="w-5 h-5"></i></span>
+ <div><p class="text-cream font-medium text-sm">Authentic samagri</p><p class="text-cream/55 text-[12.5px]">Sourced from artisans</p></div>
+ </div>
+ <div class="flex items-center gap-3.5">
+ <span class="grid place-items-center w-12 h-12 rounded-full glass text-gold shrink-0"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></span>
+ <div><p class="text-cream font-medium text-sm">Easy returns</p><p class="text-cream/55 text-[12.5px]">7-day hassle-free</p></div>
+ </div>
+ <div class="flex items-center gap-3.5">
+ <span class="grid place-items-center w-12 h-12 rounded-full glass text-gold shrink-0"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
+ <div><p class="text-cream font-medium text-sm">Secure payments</p><p class="text-cream/55 text-[12.5px]">UPI · Cards · COD</p></div>
+ </div>
+ </div>
 </section>
 
-<section class="store-home-panel store-home-categories home-reference-categories" style="padding:56px 0 48px;background:#fff;">
-  <div class="container">
-    <div style="text-align:center;margin-bottom:36px;">
-      <h2 style="font-size:28px;font-weight:800;color:#6b0000;margin-bottom:8px;">Browse by Occasion</h2>
-      <div style="height:3px;width:56px;background:#D97706;border-radius:2px;margin:0 auto;"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px;">
-      {% if parent_categories %}
-        {% for cat in parent_categories %}
-        <a href="{% url 'ecom:product_list' %}?category={{ cat.id }}" style="text-decoration:none;">
-          <div style="background:#fafaf9;border:1px solid #e7e5e4;border-radius:18px;padding:24px 12px;text-align:center;transition:all 0.25s;cursor:pointer;"
-               onmouseover="this.style.borderColor='#D97706';this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 24px rgba(128,0,0,0.08)'"
-               onmouseout="this.style.borderColor='#e7e5e4';this.style.transform='none';this.style.boxShadow='none'">
-            {% if cat.ecom_image %}
-            <img src="{{ cat.ecom_image.url }}" alt="{{ cat.name }}" style="width:44px;height:44px;object-fit:contain;margin:0 auto 10px;display:block;">
-            {% elif cat.name == 'Hindu Worship' %}<div style="font-size:34px;margin-bottom:10px;">🪔</div>
-            {% else %}<div style="font-size:34px;margin-bottom:10px;">✨</div>
-            {% endif %}
-            <p style="font-size:12px;font-weight:700;color:#1c1917;margin:0;line-height:1.3;">{{ cat.name }}</p>
-          </div>
-        </a>
-        {% endfor %}
-        <a href="{% url 'ecom:bundle_list' %}" style="text-decoration:none;">
-          <div style="background:#fafaf9;border:1px solid #e7e5e4;border-radius:18px;padding:24px 12px;text-align:center;transition:all 0.25s;cursor:pointer;"
-               onmouseover="this.style.borderColor='#D97706';this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 24px rgba(128,0,0,0.08)'"
-               onmouseout="this.style.borderColor='#e7e5e4';this.style.transform='none';this.style.boxShadow='none'">
-            <div style="font-size:34px;margin-bottom:10px;">✨</div>
-            <p style="font-size:12px;font-weight:700;color:#1c1917;margin:0;line-height:1.3;">View All Packages</p>
-          </div>
-        </a>
-      {% else %}
-        <a href="{% url 'ecom:product_list' %}" style="text-decoration:none;"><div style="background:#fafaf9;border:1px solid #e7e5e4;border-radius:18px;padding:24px 12px;text-align:center;cursor:pointer;" onmouseover="this.style.borderColor='#D97706';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='#e7e5e4';this.style.transform='none'"><div style="font-size:34px;margin-bottom:10px;">🪔</div><p style="font-size:12px;font-weight:700;color:#1c1917;margin:0;">Hindu Worship</p></div></a>
-        <a href="{% url 'ecom:bundle_list' %}" style="text-decoration:none;"><div style="background:#fafaf9;border:1px solid #e7e5e4;border-radius:18px;padding:24px 12px;text-align:center;cursor:pointer;" onmouseover="this.style.borderColor='#D97706';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='#e7e5e4';this.style.transform='none'"><div style="font-size:34px;margin-bottom:10px;">✨</div><p style="font-size:12px;font-weight:700;color:#1c1917;margin:0;">View All Packages</p></div></a>
-      {% endif %}
-    </div>
-  </div>
-</section>
-
-{% if popular_bundles %}
-<section class="store-home-panel store-home-bundles" style="background:#fff;padding:56px 0;border-top:1px solid #f5f5f4;">
-  <div class="container">
-    <div style="text-align:center;margin-bottom:36px;">
-      <h2 style="font-size:28px;font-weight:800;color:#6b0000;margin-bottom:8px;">Popular Faith Bundles</h2>
-      <div style="height:3px;width:56px;background:#D97706;border-radius:2px;margin:0 auto 12px;"></div>
-      <p style="color:#78716c;font-size:14px;margin:0;">Most ordered prayer, worship &amp; celebration collections this month.</p>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:24px;">
-      {% for bundle in popular_bundles %}
-      <div style="background:#fff;border:1px solid #e7e5e4;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;position:relative;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);"
-           onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 40px rgba(128,0,0,0.10)';this.style.borderColor='#D97706'"
-           onmouseout="this.style.transform='none';this.style.boxShadow='none';this.style.borderColor='#e7e5e4'">
-
-        <div style="position:absolute;top:12px;left:12px;z-index:3;background:#800000;color:#fbbf24;font-size:9px;font-weight:800;padding:3px 10px;border-radius:4px;letter-spacing:0.08em;text-transform:uppercase;">POPULAR CHOICE</div>
-
-        <a href="{% url 'ecom:bundle_detail' bundle.id %}" style="display:block;">
-          {% if bundle.ecom_image %}
-          <img src="{{ bundle.ecom_image.url }}" alt="{{ bundle.name }}" style="width:100%;height:180px;object-fit:cover;display:block;">
-          {% else %}
-          <div style="width:100%;height:180px;background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;font-size:56px;">🙏</div>
-          {% endif %}
-        </a>
-
-        <div style="padding:16px;flex:1;display:flex;flex-direction:column;gap:6px;">
-          <a href="{% url 'ecom:bundle_detail' bundle.id %}" style="font-size:14px;font-weight:700;color:#1c1917;text-decoration:none;line-height:1.4;">{{ bundle.name }}</a>
-          <p style="font-size:12px;color:#a8a29e;margin:0;">{{ bundle.items.count }} carefully sourced components included</p>
-
-          <div style="margin-top:auto;padding-top:12px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f5f5f4;">
-            <span style="font-size:18px;font-weight:800;color:#6b0000;">Rs. {{ bundle.price }}</span>
-            <a href="{% url 'ecom:bundle_detail' bundle.id %}" style="background:rgba(128,0,0,0.08);color:#800000;font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;text-decoration:none;transition:background 0.15s;"
-               onmouseover="this.style.background='rgba(128,0,0,0.15)'" onmouseout="this.style.background='rgba(128,0,0,0.08)'">
-              Customize Kit
-            </a>
-          </div>
-
-          <form method="post" action="{% url 'ecom:add_bundle_to_cart' bundle.id %}" style="margin-top:6px;">
-            {% csrf_token %}
-            <button type="submit" style="width:100%;background:#800000;color:#fff;border:none;border-radius:10px;padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;transition:background 0.15s;"
-              onmouseover="this.style.background='#500000'" onmouseout="this.style.background='#800000'">
-              Add Bundle to Cart
-            </button>
-          </form>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-
-    <div style="text-align:center;margin-top:32px;">
-      <a href="{% url 'ecom:bundle_list' %}" style="display:inline-flex;align-items:center;gap:8px;border:2px solid #800000;color:#800000;font-weight:700;padding:12px 32px;border-radius:10px;text-decoration:none;font-size:14px;transition:all 0.15s;"
-         onmouseover="this.style.background='#800000';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#800000'">
-        View All Faith Kits →
-      </a>
-    </div>
-  </div>
-</section>
-{% endif %}
-
-{% if hero_banners %}
-<section class="store-home-panel store-home-banners" style="padding:40px 0;background:#fafaf9;border-top:1px solid #f0ede9;">
-  <div class="container">
-    <div class="hero-container">
-      <div id="hero-left">
-        {% for banner in hero_banners %}
-        <div class="hs{% if forloop.first %} active{% endif %}">
-          <a href="{% if banner.link_url %}{{ banner.link_url }}{% else %}{% url 'ecom:product_list' %}{% endif %}" class="hero-slide-link">
-            <img src="{{ banner.image.url }}" alt="{{ banner.title|default:'Banner' }}" style="border-radius:14px;">
-          </a>
-          {% if banner.title or banner.subtitle %}
-          <div class="hero-caption">
-            {% if banner.title %}<h4 class="hero-caption-title">{{ banner.title }}</h4>{% endif %}
-            {% if banner.subtitle %}<p class="hero-caption-sub">{{ banner.subtitle }}</p>{% endif %}
-          </div>
-          {% endif %}
-        </div>
-        {% endfor %}
-        {% if hero_banners|length > 1 %}
-        <button onclick="heroLeft(-1)" class="hero-prev-btn">&#8249;</button>
-        <button onclick="heroLeft(1)"  class="hero-next-btn">&#8250;</button>
-        <div class="hero-dots" id="hero-dots">
-          {% for banner in hero_banners %}<button onclick="heroLeft({{ forloop.counter0 }},true)" class="hero-dot{% if forloop.first %} active{% endif %}"></button>{% endfor %}
-        </div>
-        {% endif %}
-      </div>
-      {% if right_banners %}
-      <div class="hero-right" id="hero-right">
-        {% for banner in right_banners %}
-        <div class="hero-right-slide{% if forloop.first %} active{% endif %}">
-          <a href="{% if banner.link_url %}{{ banner.link_url }}{% else %}{% url 'ecom:product_list' %}{% endif %}" class="hero-right-link">
-            <img src="{{ banner.image.url }}" alt="{{ banner.title|default:'Banner' }}" style="border-radius:10px;">
-            {% if banner.title %}<div class="hero-right-caption"><span class="hero-right-caption-title">{{ banner.title }}</span></div>{% endif %}
-          </a>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </div>
-  </div>
-</section>
-<script>
-(function(){
-  var slides=document.querySelectorAll('#hero-left .hs'),dots=document.querySelectorAll('#hero-dots button'),cur=0,timer;
-  if(!slides.length)return;
-  function show(n){slides[cur].classList.remove('active');if(dots[cur])dots[cur].classList.remove('active');cur=(n+slides.length)%slides.length;slides[cur].classList.add('active');if(dots[cur])dots[cur].classList.add('active');}
-  function start(){timer=setInterval(function(){show(cur+1);},4500);}
-  function stop(){clearInterval(timer);}
-  window.heroLeft=function(n,abs){stop();show(abs?n:cur+n);start();};
-  var el=document.getElementById('hero-left');
-  if(el){el.addEventListener('mouseenter',stop);el.addEventListener('mouseleave',start);}
-  if(slides.length>1)start();
-})();
-(function(){
-  var r=document.querySelectorAll('#hero-right .hero-right-slide');if(r.length<=1)return;
-  var c=0;setInterval(function(){r[c].classList.remove('active');c=(c+1)%r.length;r[c].classList.add('active');},3500);
-})();
-</script>
-{% endif %}
-
-{% if flash_products %}
-<section id="all-items-section" class="store-home-panel store-home-items" style="background:#f8f7f4;padding:56px 0;border-top:1px solid #e7e5e4;">
-  <div class="container">
-    <div style="text-align:center;margin-bottom:36px;">
-      <h2 style="font-size:28px;font-weight:800;color:#6b0000;margin-bottom:8px;">All Individual Items</h2>
-      <div style="height:3px;width:56px;background:#D97706;border-radius:2px;margin:0 auto 12px;"></div>
-      <p style="color:#78716c;font-size:14px;max-width:480px;margin:0 auto;">Find individual devotional items, decor, books, candles, prayer beads, incense, and gift pieces.</p>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;">
-      {% for product in flash_products %}
-      <div>{% include "ecom/storefront/_product_card.html" %}</div>
-      {% endfor %}
-    </div>
-    <div style="text-align:center;margin-top:36px;">
-      <a href="{% url 'ecom:product_list' %}"
-         style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #d6d3d1;color:#1c1917;font-weight:700;padding:12px 32px;border-radius:12px;text-decoration:none;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);transition:all 0.15s;"
-         onmouseover="this.style.borderColor='#800000';this.style.background='#fff5f5'" onmouseout="this.style.borderColor='#d6d3d1';this.style.background='#fff'">
-        View All Products →
-      </a>
-    </div>
-  </div>
-</section>
-{% endif %}
-
-<section class="reference-trust-strip home-reference-trust" aria-label="Why shop with us">
-  <div class="container">
-    <div class="reference-trust-grid">
-      <div><span>♧</span><p><strong>Free shipping</strong><small>On orders over Rs. 5,000</small></p></div>
-      <div><span>✦</span><p><strong>Authentic samagri</strong><small>Sourced from artisans</small></p></div>
-      <div><span>↻</span><p><strong>Easy returns</strong><small>7-day hassle-free</small></p></div>
-      <div><span>✓</span><p><strong>Secure payments</strong><small>UPI · Cards · COD</small></p></div>
-    </div>
-  </div>
-</section>
-
-<section style="background:linear-gradient(135deg,#300000 0%,#500000 100%);color:#fff;padding:64px 0;position:relative;overflow:hidden;">
-  <div style="position:absolute;inset:0;opacity:0.06;background-image:radial-gradient(#f59e0b 1px,transparent 1px);background-size:20px 20px;pointer-events:none;"></div>
-  <div class="container" style="position:relative;z-index:1;text-align:center;">
-    <div style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.12);font-size:24px;margin-bottom:20px;">🔔</div>
-    <h2 style="font-size:clamp(24px,3vw,38px);font-weight:800;color:#fff;margin-bottom:12px;letter-spacing:-0.3px;">Never Miss A Meaningful Date</h2>
-    <p style="color:#e7e5e4;font-size:15px;max-width:440px;margin:0 auto 28px;line-height:1.7;font-weight:400;">Get festival reminders, restock alerts, gift ideas, and seasonal offers for Hindu festivals.</p>
-    <form method="post" action="{% url 'ecom:newsletter_subscribe' %}" style="max-width:440px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
-      {% csrf_token %}
-      <input type="email" name="email" placeholder="yourname@gmail.com" required
-        style="flex:1;min-width:220px;height:48px;padding:0 16px;border-radius:8px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.25);color:#fff;font-size:14px;outline:none;transition:border-color 0.15s;"
-        onfocus="this.style.borderColor='#fbbf24'" onblur="this.style.borderColor='rgba(255,255,255,0.25)'">
-      <button type="submit"
-        style="height:48px;padding:0 28px;background:#D97706;color:#1c0a00;font-weight:700;font-size:14px;border:none;border-radius:8px;cursor:pointer;white-space:nowrap;transition:background 0.15s;"
-        onmouseover="this.style.background='#b45309'" onmouseout="this.style.background='#D97706'">
-        Subscribe
-      </button>
-    </form>
-  </div>
+{# ── NEWSLETTER ───────────────────────────────────────────────────────── #}
+<section class="max-w-[1280px] mx-auto px-4 lg:px-6 py-14">
+ <div class="rounded-2xl glass px-6 py-10 md:px-12 flex flex-col md:flex-row items-center justify-between gap-8">
+ <div class="text-center md:text-left">
+ <h3 class="font-display text-2xl md:text-3xl text-cream">Never Miss A Meaningful Date</h3>
+ <p class="text-cream/60 text-sm mt-2 max-w-md">Get festival reminders, restock alerts, gift ideas, and seasonal offers for Hindu festivals.</p>
+ </div>
+ <form class="flex w-full max-w-sm" method="post" action="{% url 'ecom:newsletter_subscribe' %}">
+ {% csrf_token %}
+ <label class="relative flex-1">
+ <span class="sr-only">Email for newsletter</span>
+ <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gold pointer-events-none"></i>
+ <input type="email" name="email" placeholder="Enter your email address" required
+ class="w-full h-12 pl-10 pr-3 rounded-l-full bg-ink/60 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none">
+ </label>
+ <button type="submit" class="h-12 px-6 rounded-r-full bg-saffron text-white text-sm font-medium hover:brightness-110 transition shrink-0">Subscribe</button>
+ </form>
+ </div>
 </section>
 
 {% if has_blog and recent_blog_posts %}
-<section style="background:#fff;padding:56px 0;border-top:1px solid #f0ede9;">
-  <div class="container">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
-      <div>
-        <h2 style="font-size:24px;font-weight:800;color:#6b0000;margin-bottom:4px;">From Our Blog</h2>
-        <div style="height:3px;width:48px;background:#D97706;border-radius:2px;"></div>
-      </div>
-      <a href="{% url 'ecom:blog_list' %}" style="border:1.5px solid #800000;color:#800000;font-weight:700;padding:9px 22px;border-radius:8px;text-decoration:none;font-size:13px;transition:all 0.15s;"
-         onmouseover="this.style.background='#800000';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#800000'">
-        View All Posts →
-      </a>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;">
-      {% for post in recent_blog_posts %}
-      <div style="background:#fff;border:1px solid #e7e5e4;border-radius:16px;overflow:hidden;transition:all 0.25s;"
-           onmouseover="this.style.boxShadow='0 12px 30px rgba(128,0,0,0.08)';this.style.borderColor='#D97706'" onmouseout="this.style.boxShadow='none';this.style.borderColor='#e7e5e4'">
-        {% if post.cover_image %}
-        <a href="{% url 'ecom:blog_detail' post.slug %}">
-          <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="width:100%;height:180px;object-fit:cover;display:block;">
-        </a>
-        {% endif %}
-        <div style="padding:18px;">
-          <p style="font-size:11px;color:#a8a29e;margin:0 0 6px;">{{ post.published_at|date:"d M Y" }}{% if post.author_name %} · {{ post.author_name }}{% endif %}</p>
-          <h5 style="font-size:15px;font-weight:700;color:#1c1917;margin:0 0 8px;line-height:1.4;">
-            <a href="{% url 'ecom:blog_detail' post.slug %}" style="color:inherit;text-decoration:none;">{{ post.title }}</a>
-          </h5>
-          {% if post.excerpt %}
-          <p style="font-size:13px;color:#78716c;margin:0 0 12px;line-height:1.6;">{{ post.excerpt|truncatewords:18 }}</p>
-          {% endif %}
-          <a href="{% url 'ecom:blog_detail' post.slug %}" style="font-size:12px;font-weight:700;color:#800000;text-decoration:none;">Read More →</a>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
+<section class="max-w-[1280px] mx-auto px-4 lg:px-6 py-10">
+ <div class="flex items-center justify-between mb-6">
+ <div>
+ <p class="font-eyebrow text-[12px] tracking-[.28em] uppercase text-gold">Latest Articles</p>
+ <h2 class="font-display text-3xl text-cream mt-1">From Our Blog</h2>
+ </div>
+ <a href="{% url 'ecom:blog_list' %}" class="inline-flex items-center gap-2 h-11 px-5 rounded-full border border-gold/50 text-goldlt hover:bg-gold/10 transition">View All Posts</a>
+ </div>
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+ {% for post in recent_blog_posts %}
+ <a href="{% url 'ecom:blog_detail' post.slug %}" class="rounded-2xl glass overflow-hidden hover:border-gold/60 transition group">
+ {% if post.cover_image %}
+ <div class="aspect-[16/9] overflow-hidden">
+ <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+ </div>
+ {% endif %}
+ <div class="p-5">
+ <p class="text-[12px] text-cream/45 mb-2">{{ post.published_at|date:"d M Y" }}{% if post.author_name %} · {{ post.author_name }}{% endif %}</p>
+ <h5 class="font-display text-lg text-cream group-hover:text-goldlt transition">{{ post.title }}</h5>
+ {% if post.excerpt %}<p class="text-cream/55 text-sm mt-2 line-clamp-2">{{ post.excerpt|truncatewords:20 }}</p>{% endif %}
+ </div>
+ </a>
+ {% endfor %}
+ </div>
 </section>
 {% endif %}
 

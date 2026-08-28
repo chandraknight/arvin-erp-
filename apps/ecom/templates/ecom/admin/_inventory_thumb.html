@@ -1,0 +1,19 @@
+<label id="thumb-{{ product.id }}"
+ class="group relative block w-12 h-12 overflow-hidden border border-gray-200 bg-gray-50 cursor-pointer flex-shrink-0"
+ title="Click to upload product image">
+ {% if product.primary_image_url %}
+ <img src="{{ product.primary_image_url }}" alt="{{ product.name }}" loading="lazy"
+ class="w-full h-full object-cover">
+ {% else %}
+ <div class="w-full h-full flex items-center justify-center text-gray-300">
+ <i class="fas fa-image text-lg"></i>
+ </div>
+ {% endif %}
+ <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors duration-150">
+ <i class="fas fa-camera text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-150"></i>
+ </div>
+ <input type="file" name="image" accept="image/*" class="sr-only"
+ hx-post="{% url 'ecom:admin_inventory_product_image' product.id %}"
+ hx-trigger="change" hx-target="#thumb-{{ product.id }}" hx-swap="outerHTML"
+ hx-encoding="multipart/form-data">
+</label>

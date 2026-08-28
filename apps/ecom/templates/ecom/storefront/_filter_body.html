@@ -1,0 +1,91 @@
+{% load static %}
+<p class="text-[12px] text-cream/45 mb-4">Refine {{ products.paginator.count|default:0 }} sacred finds</p>
+
+{# ── Categories ── #}
+<details class="border-b hair py-3.5 group" open>
+ <summary class="flex items-center justify-between text-cream font-medium text-[14px] select-none">
+ <span class="flex items-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-gold"></i> Category</span>
+ <i data-lucide="chevron-down" class="acc-caret w-4 h-4 text-cream/50"></i>
+ </summary>
+ <div class="pt-3.5 space-y-1">
+ <a href="#" data-cat-id="" onclick="setCategory('');return false;"
+ class="cat-link block py-1.5 text-[13.5px] transition {% if not selected_category %}is-active text-goldlt font-medium{% else %}text-cream/75 hover:text-goldlt{% endif %}">
+ All Products
+ </a>
+ {% for cat in categories %}
+ <a href="#" data-cat-id="{{ cat.id }}" onclick="setCategory('{{ cat.id }}');return false;"
+ class="cat-link block py-1.5 text-[13.5px] transition {% if selected_category == cat.id|stringformat:'s' %}is-active text-goldlt font-medium{% else %}text-cream/75 hover:text-goldlt{% endif %}">
+ {{ cat.name }}
+ </a>
+ {% endfor %}
+ </div>
+</details>
+
+{# ── Price ── #}
+<details class="border-b hair py-3.5 group" open>
+ <summary class="flex items-center justify-between text-cream font-medium text-[14px] select-none">
+ <span class="flex items-center gap-2"><i data-lucide="banknote" class="w-4 h-4 text-gold"></i> Price</span>
+ <i data-lucide="chevron-down" class="acc-caret w-4 h-4 text-cream/50"></i>
+ </summary>
+ <div class="pt-3.5">
+ <div class="flex items-center justify-between text-[12px] text-cream/60 mb-2">
+ <span>Rs.<span id="price-lo-label">{{ price_min|default:price_lo|floatformat:0 }}</span></span>
+ <span class="text-goldlt font-medium">to</span>
+ <span>Rs.<span id="price-hi-label">{{ price_max|default:price_hi|floatformat:0 }}</span></span>
+ </div>
+ <div class="relative h-4 flex items-center">
+ <div class="absolute inset-x-0 h-1 rounded-full bg-ink/70"></div>
+ <div id="price-track-fill" class="absolute h-1 rounded-full bg-gradient-to-r from-saffron to-gold"></div>
+ <input type="range" id="range-min" name="price_min"
+ min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}"
+ value="{{ price_min|default:price_lo|floatformat:0 }}"
+ class="absolute w-full appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cream [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gold [&::-webkit-slider-thumb]:cursor-pointer">
+ <input type="range" id="range-max" name="price_max"
+ min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}"
+ value="{{ price_max|default:price_hi|floatformat:0 }}"
+ class="absolute w-full appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cream [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gold [&::-webkit-slider-thumb]:cursor-pointer">
+ </div>
+ <div class="flex items-center gap-2 mt-4">
+ <input class="price-input flex-1 h-9 rounded-lg bg-ink/50 border hair text-[13px] text-cream/80 px-2.5 focus:border-gold outline-none" type="number" id="price-min-input"
+ placeholder="Min" value="{{ price_min|default:'' }}"
+ min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}">
+ <span class="text-cream/40">–</span>
+ <input class="price-input flex-1 h-9 rounded-lg bg-ink/50 border hair text-[13px] text-cream/80 px-2.5 focus:border-gold outline-none" type="number" id="price-max-input"
+ placeholder="Max" value="{{ price_max|default:'' }}"
+ min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}">
+ </div>
+ <button type="button" id="apply-price-btn"
+ hx-get="{% url 'ecom:product_list' %}"
+ hx-target="#product-grid"
+ hx-swap="outerHTML"
+ hx-push-url="true"
+ hx-include="#filter-form"
+ onclick="syncPriceInputs()"
+ class="w-full h-10 mt-3 rounded-full bg-saffron text-white text-[13px] font-medium hover:brightness-110 transition">Apply Price</button>
+ </div>
+</details>
+
+{# ── Color ── #}
+{% if all_colors %}
+<details class="border-b hair py-3.5 group">
+ <summary class="flex items-center justify-between text-cream font-medium text-[14px] select-none">
+ <span class="flex items-center gap-2"><i data-lucide="palette" class="w-4 h-4 text-gold"></i> Color</span>
+ <i data-lucide="chevron-down" class="acc-caret w-4 h-4 text-cream/50"></i>
+ </summary>
+ <div class="pt-3.5">
+ <input type="text" placeholder="Search color..." id="color-search"
+ oninput="filterColorList(this.value)"
+ class="w-full h-9 rounded-lg bg-ink/50 border hair text-[13px] text-cream px-3 mb-3 focus:border-gold outline-none">
+ <div id="color-list" class="max-h-56 overflow-y-auto no-scrollbar space-y-1">
+ {% for c in all_colors %}
+ <label class="flex items-center gap-2.5 py-1 cursor-pointer" data-color="{{ c|lower }}">
+ <input type="checkbox" value="{{ c }}" {% if c in selected_colors %}checked{% endif %} onchange="syncColorAndFetch()" class="accent-saffron w-3.5 h-3.5">
+ <span class="w-3.5 h-3.5 rounded-full border border-gold/30 shrink-0" style="background:{{ c|lower }};"></span>
+ <span class="text-[13px] text-cream/75">{{ c }}</span>
+ </label>
+ {% endfor %}
+ </div>
+ <p class="text-[11px] text-cream/40 mt-2">Showing {{ all_colors|length }} option{{ all_colors|length|pluralize }}</p>
+ </div>
+</details>
+{% endif %}

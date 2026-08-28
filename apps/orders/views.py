@@ -335,8 +335,14 @@ def convert_to_invoice(request, pk):
         return redirect('billing:view_invoice_detail', pk=order.invoice.pk)
 
     invoice = create_invoice_from_sales_order(order, request.user)
-    order.status = 'DELIVERED'
-    order.save(update_fields=['status'])
+
+    # Only mark DELIVERED if every delivery note actually is — don't claim a
+    # status the order hasn't reached just because an invoice was raised.
+    all_delivered = order.delivery_notes.filter(is_deleted=False).exists() and \
+        not order.delivery_notes.filter(is_deleted=False).exclude(status='DELIVERED').exists()
+    if all_delivered and order.status != 'DELIVERED':
+        order.status = 'DELIVERED'
+        order.save(update_fields=['status'])
 
     messages.success(request, f"Invoice created from order {order.order_number}.")
     return redirect('billing:view_invoice_detail', pk=invoice.pk)
@@ -391,6 +397,10 @@ class DeliveryNoteDetailView(AuthMixin, DetailView):
             is_deleted=False
         ).order_by('-event_time')
         ctx['tracking_form'] = DeliveryTrackingForm()
+        from apps.payments.models import BankAccount
+        ctx['bank_accounts'] = BankAccount.active_objects.filter(
+            company=self.object.company, is_active=True
+        )
         return ctx
 
 
@@ -429,31 +439,38 @@ class DeliveryNoteCreateView(AuthMixin, CreateView):
         form.instance.sequence_number = seq
         form.instance.fiscal_year = fy
 
-        self.object = form.save()
+        from django.db import transaction
+        from apps.orders.services import dispatch_stock_and_cogs
 
-        # Create delivery items for all order items
-        for item in order.items.filter(is_deleted=False):
-            pending = item.quantity_pending
-            if pending > 0:
-                DeliveryNoteItem.objects.create(
-                    delivery_note=self.object,
-                    order_item=item,
-                    quantity_delivered=pending,
-                    created_by=self.request.user,
-                )
+        with transaction.atomic():
+            self.object = form.save()
 
-        # Update order status
-        order.status = 'DISPATCHED'
-        order.save(update_fields=['status'])
+            # Create delivery items for all order items
+            for item in order.items.filter(is_deleted=False):
+                pending = item.quantity_pending
+                if pending > 0:
+                    DeliveryNoteItem.objects.create(
+                        delivery_note=self.object,
+                        order_item=item,
+                        quantity_delivered=pending,
+                        created_by=self.request.user,
+                    )
 
-        # Add initial tracking event
-        DeliveryTracking.objects.create(
-            delivery_note=self.object,
-            status='DISPATCHED',
-            notes='Delivery note created and dispatched.',
-            updated_by_name=self.request.user.get_full_name() or self.request.user.email,
-            created_by=self.request.user,
-        )
+            # Update order status
+            order.status = 'DISPATCHED'
+            order.save(update_fields=['status'])
+
+            # Add initial tracking event
+            DeliveryTracking.objects.create(
+                delivery_note=self.object,
+                status='DISPATCHED',
+                notes='Delivery note created and dispatched.',
+                updated_by_name=self.request.user.get_full_name() or self.request.user.email,
+                created_by=self.request.user,
+            )
+
+            # Goods leave the warehouse at dispatch — decrement stock + post COGS now
+            dispatch_stock_and_cogs(self.object, self.request.user)
 
         messages.success(self.request, f"Delivery note {self.object.delivery_number} created.")
         return redirect('orders:delivery_detail', pk=self.object.pk)
@@ -497,37 +514,67 @@ def mark_delivered(request, pk):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied('You do not have access to this delivery note.')
     from apps.utils.nepali_date import bs_str_to_ad
+    from django.db import transaction
     from django.utils import timezone
 
-    delivery.status = 'DELIVERED'
-    delivery.actual_delivery_date = timezone.now().date()
-    delivery.received_by = request.POST.get('received_by', '')
-    delivery.updated_by = request.user
-    delivery.save(update_fields=['status', 'actual_delivery_date', 'received_by', 'updated_by'])
+    from apps.orders.services import record_delivery_payment
 
-    # Add tracking event
-    DeliveryTracking.objects.create(
-        delivery_note=delivery,
-        status='DELIVERED',
-        notes=f"Delivered. Received by: {delivery.received_by or 'N/A'}",
-        updated_by_name=request.user.get_full_name() or request.user.email,
-        created_by=request.user,
-    )
+    payment_method = request.POST.get('payment_method', '').strip()
+    if payment_method == 'ONLINE':
+        payment_method = 'BANK_TRANSFER'
+    payment_amount = request.POST.get('payment_amount', '').strip()
 
-    # Check if all deliveries for the order are complete
-    order = delivery.sales_order
-    all_delivered = not order.delivery_notes.filter(
-        is_deleted=False
-    ).exclude(status='DELIVERED').exists()
-    if all_delivered:
-        order.status = 'DELIVERED'
-        order.save(update_fields=['status'])
-        # Sync back to linked EcomOrder so storefront tracking shows correct status
-        if hasattr(order, 'ecom_order') and order.ecom_order:
-            order.ecom_order.status = 'DELIVERED'
-            order.ecom_order.save(update_fields=['status'])
+    bank_account = None
+    bank_account_id = request.POST.get('bank_account', '').strip()
+    if bank_account_id:
+        from apps.payments.models import BankAccount
+        bank_account = BankAccount.active_objects.filter(
+            pk=bank_account_id, company=delivery.company, is_active=True
+        ).first()
 
-    messages.success(request, f"Delivery {delivery.delivery_number} marked as delivered.")
+    with transaction.atomic():
+        delivery.status = 'DELIVERED'
+        delivery.actual_delivery_date = timezone.now().date()
+        delivery.received_by = request.POST.get('received_by', '')
+        delivery.updated_by = request.user
+        delivery.save(update_fields=['status', 'actual_delivery_date', 'received_by', 'updated_by'])
+
+        # Add tracking event
+        DeliveryTracking.objects.create(
+            delivery_note=delivery,
+            status='DELIVERED',
+            notes=f"Delivered. Received by: {delivery.received_by or 'N/A'}",
+            updated_by_name=request.user.get_full_name() or request.user.email,
+            created_by=request.user,
+        )
+
+        # Check if all deliveries for the order are complete
+        order = delivery.sales_order
+        all_delivered = not order.delivery_notes.filter(
+            is_deleted=False
+        ).exclude(status='DELIVERED').exists()
+        if all_delivered:
+            order.status = 'DELIVERED'
+            order.save(update_fields=['status'])
+            # Sync back to linked EcomOrder so storefront tracking shows correct status
+            if hasattr(order, 'ecom_order') and order.ecom_order:
+                order.ecom_order.status = 'DELIVERED'
+                order.ecom_order.save(update_fields=['status'])
+
+        payment = None
+        if payment_method and payment_amount:
+            payment = record_delivery_payment(
+                delivery, payment_amount, payment_method, request.user, bank_account=bank_account
+            )
+
+    if payment:
+        messages.success(
+            request,
+            f"Delivery {delivery.delivery_number} marked as delivered. "
+            f"Payment of {payment.amount} recorded via {payment.get_method_display()}."
+        )
+    else:
+        messages.success(request, f"Delivery {delivery.delivery_number} marked as delivered.")
     return redirect('orders:delivery_detail', pk=pk)
 
 
@@ -570,10 +617,13 @@ def delivery_tracking_view(request, pk):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied('You do not have access to this delivery note.')
     events = delivery.tracking_events.filter(is_deleted=False).order_by('-event_time')
+    from apps.payments.models import BankAccount
+    bank_accounts = BankAccount.active_objects.filter(company=delivery.company, is_active=True)
     return render(request, 'orders/delivery_tracking.html', {
         'delivery': delivery,
         'events': events,
         'form': DeliveryTrackingForm(),
+        'bank_accounts': bank_accounts,
     })
 
 

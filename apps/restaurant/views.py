@@ -21,16 +21,17 @@ from django.views.generic import CreateView, UpdateView, DeleteView, ListView
 from django.urls import reverse_lazy
 
 from apps.utils.decorator import auth_required
-from apps.utils.mixins import AuthMixin
+from apps.utils.mixins import AuthMixin, ModuleRequiredMixin
 from .forms import (
     TableSectionForm, RestaurantTableForm, PrinterStationForm,
     DiningOrderForm, DiningOrderItemForm, TableTransferForm,
+    TableReservationForm, ItemQuantityForm, OrderDiscountForm, OrderMergeForm,
     MenuForm, MenuCategoryForm, MenuItemForm,
     RoomTypeForm, RoomForm, RoomBookingForm, RoomChargeForm,
 )
 from .models import (
     TableSection, RestaurantTable, PrinterStation,
-    DiningOrder, DiningOrderItem, PrintJob,
+    DiningOrder, DiningOrderItem, PrintJob, TableReservation,
     Menu, MenuCategory, MenuItem,
     RoomType, Room, RoomBooking, RoomCharge,
 )
@@ -39,6 +40,7 @@ from .services.order_services import (
     transfer_table, close_order_paid,
     reprint_kot, reprint_bot, send_kot_and_bot,
     void_order, update_item_status,
+    update_item_quantity, apply_order_discount, split_bill, merge_orders,
 )
 from .services.menu_services import (
     get_published_menu, get_active_categories,
@@ -47,6 +49,9 @@ from .services.menu_services import (
 from .services.room_services import (
     create_booking, check_in_room, check_out_room,
     add_room_charge, cancel_booking,
+)
+from .services.reservation_services import (
+    reserve_table, seat_reservation, cancel_reservation,
 )
 
 logger = logging.getLogger(__name__)
@@ -102,8 +107,9 @@ def restaurant_dashboard(request):
 
 # ── Table Management ──────────────────────────────────────────────────────────
 
-class TableListView(AuthMixin, ListView):
+class TableListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = RestaurantTable
+    module_flag = 'enable_restaurant'
     template_name = 'restaurant/table_list.html'
     context_object_name = 'tables'
     permission_required = ['restaurant.view_restauranttable']
@@ -114,8 +120,9 @@ class TableListView(AuthMixin, ListView):
         ).select_related('section').order_by('section__sort_order', 'table_number')
 
 
-class TableCreateView(AuthMixin, CreateView):
+class TableCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = RestaurantTable
+    module_flag = 'enable_restaurant'
     form_class = RestaurantTableForm
     template_name = 'restaurant/table_form.html'
     permission_required = ['restaurant.add_restauranttable']
@@ -133,8 +140,9 @@ class TableCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class TableUpdateView(AuthMixin, UpdateView):
+class TableUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = RestaurantTable
+    module_flag = 'enable_restaurant'
     form_class = RestaurantTableForm
     template_name = 'restaurant/table_form.html'
     permission_required = ['restaurant.change_restauranttable']
@@ -156,8 +164,9 @@ class TableUpdateView(AuthMixin, UpdateView):
 
 # ── Section Management ────────────────────────────────────────────────────────
 
-class SectionCreateView(AuthMixin, CreateView):
+class SectionCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = TableSection
+    module_flag = 'enable_restaurant'
     form_class = TableSectionForm
     template_name = 'restaurant/section_form.html'
     permission_required = ['restaurant.add_tablesection']
@@ -170,8 +179,9 @@ class SectionCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class SectionUpdateView(AuthMixin, UpdateView):
+class SectionUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = TableSection
+    module_flag = 'enable_restaurant'
     form_class = TableSectionForm
     template_name = 'restaurant/section_form.html'
     permission_required = ['restaurant.change_tablesection']
@@ -188,8 +198,9 @@ class SectionUpdateView(AuthMixin, UpdateView):
 
 # ── Printer Stations ──────────────────────────────────────────────────────────
 
-class PrinterListView(AuthMixin, ListView):
+class PrinterListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = PrinterStation
+    module_flag = 'enable_restaurant'
     template_name = 'restaurant/printer_list.html'
     context_object_name = 'printers'
     permission_required = ['restaurant.view_printerstation']
@@ -204,8 +215,9 @@ class PrinterListView(AuthMixin, ListView):
         return context
 
 
-class PrinterCreateView(AuthMixin, CreateView):
+class PrinterCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = PrinterStation
+    module_flag = 'enable_restaurant'
     form_class = PrinterStationForm
     template_name = 'restaurant/printer_form.html'
     permission_required = ['restaurant.add_printerstation']
@@ -223,8 +235,9 @@ class PrinterCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class PrinterUpdateView(AuthMixin, UpdateView):
+class PrinterUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = PrinterStation
+    module_flag = 'enable_restaurant'
     form_class = PrinterStationForm
     template_name = 'restaurant/printer_form.html'
     permission_required = ['restaurant.change_printerstation']
@@ -381,6 +394,67 @@ def order_remove_item(request, pk, item_pk):
     })
 
 
+@auth_required('restaurant.change_diningorderitem')
+def order_item_quantity(request, pk, item_pk):
+    """HTMX POST — update a single item's quantity, return updated item list partial."""
+    guard = _require_restaurant(request)
+    if guard:
+        return guard
+
+    order = _get_order(request, pk)
+    item = get_object_or_404(DiningOrderItem, pk=item_pk, order=order)
+
+    if request.method == 'POST':
+        form = ItemQuantityForm(request.POST)
+        if form.is_valid():
+            try:
+                update_item_quantity(item, form.cleaned_data['quantity'], request)
+            except ValueError as e:
+                return HttpResponse(str(e), status=400)
+            return render(request, 'restaurant/partials/order_items.html', {
+                'order': order,
+                'food_items': order.food_items,
+                'beverage_items': order.beverage_items,
+            })
+        return HttpResponse('Invalid quantity.', status=400)
+
+    return HttpResponse(status=405)
+
+
+# ── Order-level Discount ──────────────────────────────────────────────────────
+
+@auth_required('restaurant.change_diningorder')
+def order_apply_discount(request, pk):
+    """Admin-only: apply an order-level discount with a mandatory reason."""
+    guard = _require_restaurant(request)
+    if guard:
+        return guard
+
+    order = _get_order(request, pk)
+    if not (request.user.is_superuser or getattr(request.user, 'is_company_admin', False)):
+        messages.error(request, "Only a company admin can apply an order-level discount.")
+        return redirect('restaurant:order_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = OrderDiscountForm(request.POST)
+        if form.is_valid():
+            try:
+                apply_order_discount(
+                    order, form.cleaned_data['discount_percent'], form.cleaned_data['reason'], request,
+                )
+                messages.success(request, "Order discount applied.")
+            except ValueError as e:
+                messages.error(request, str(e))
+        else:
+            messages.error(request, "Fix form errors.")
+        return redirect('restaurant:order_detail', pk=pk)
+
+    form = OrderDiscountForm(initial={
+        'discount_percent': order.discount_percent, 'reason': order.discount_reason or '',
+    })
+    return render(request, 'restaurant/order_discount.html', {'order': order, 'form': form})
+
+
 # ── KOT / BOT ─────────────────────────────────────────────────────────────────
 
 @auth_required('restaurant.add_printjob')
@@ -511,6 +585,88 @@ def table_transfer_view(request, pk):
     })
 
 
+# ── Bill Split ────────────────────────────────────────────────────────────────
+
+@auth_required('restaurant.change_diningorder')
+def split_bill_view(request, pk):
+    """
+    Split the order's bill into multiple invoices.
+    POST fields: mode=even|items, ways (for even), or item_ids_<n>=<item_pk> repeated (for items).
+    """
+    guard = _require_restaurant(request)
+    if guard:
+        return guard
+
+    order = _get_order(request, pk)
+    if order.status in ('BILLED', 'PAID', 'CANCELLED'):
+        messages.error(request, "Cannot split a closed order.")
+        return redirect('restaurant:order_detail', pk=pk)
+
+    active_items = list(order.items.exclude(status='CANCELLED'))
+
+    if request.method == 'POST':
+        mode = request.POST.get('mode', 'even')
+        try:
+            if mode == 'even':
+                ways = int(request.POST.get('ways', '2'))
+                if ways < 2:
+                    raise ValueError("Even split requires at least 2 ways.")
+                item_ids = [i.pk for i in active_items]
+                splits = [{'item_ids': []} for _ in range(ways)]
+                for idx, item_id in enumerate(item_ids):
+                    splits[idx % ways]['item_ids'].append(item_id)
+                splits = [s for s in splits if s['item_ids']]
+            else:
+                group_count = int(request.POST.get('group_count', '2'))
+                splits = []
+                for group_idx in range(group_count):
+                    ids = request.POST.getlist(f'group_{group_idx}_items')
+                    if ids:
+                        splits.append({'item_ids': ids})
+
+            invoices = split_bill(order, splits, request)
+            messages.success(
+                request,
+                f"Bill split into {len(invoices)} invoice(s): "
+                + ', '.join(inv.invoice_number for inv in invoices),
+            )
+            return redirect('restaurant:order_detail', pk=pk)
+        except ValueError as e:
+            messages.error(request, str(e))
+
+    return render(request, 'restaurant/split_bill.html', {'order': order, 'items': active_items})
+
+
+# ── Order Merge ───────────────────────────────────────────────────────────────
+
+@auth_required('restaurant.change_diningorder')
+def order_merge_view(request, pk):
+    """Merge this order's items into another open order at the same company."""
+    guard = _require_restaurant(request)
+    if guard:
+        return guard
+
+    source_order = _get_order(request, pk)
+
+    if request.method == 'POST':
+        form = OrderMergeForm(request.POST, company=request.user_company, source_order=source_order)
+        if form.is_valid():
+            target = form.cleaned_data['target_order']
+            try:
+                merge_orders(source_order, target, request)
+                messages.success(
+                    request, f"Order {source_order.order_number} merged into {target.order_number}.",
+                )
+                return redirect('restaurant:order_detail', pk=target.pk)
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect('restaurant:order_detail', pk=pk)
+    else:
+        form = OrderMergeForm(company=request.user_company, source_order=source_order)
+
+    return render(request, 'restaurant/order_merge.html', {'order': source_order, 'form': form})
+
+
 # ── Mark Table Available ──────────────────────────────────────────────────────
 
 @auth_required('restaurant.change_restauranttable')
@@ -539,6 +695,78 @@ def table_set_available(request, table_pk):
         return redirect('restaurant:dashboard')
 
     return render(request, 'restaurant/confirm_available.html', {'table': table})
+
+
+# ── Table Reservations ────────────────────────────────────────────────────────
+
+@auth_required('restaurant.add_tablereservation')
+def reservation_create(request, table_pk):
+    """Reserve an available table for a future guest."""
+    guard = _require_restaurant(request)
+    if guard:
+        return guard
+
+    table = get_object_or_404(
+        RestaurantTable, pk=table_pk, company=request.user_company, is_active=True
+    )
+    if request.method == 'POST':
+        form = TableReservationForm(request.POST)
+        if form.is_valid():
+            try:
+                reserve_table(
+                    company=request.user_company,
+                    table=table,
+                    guest_name=form.cleaned_data['guest_name'],
+                    reserved_for=form.cleaned_data['reserved_for'],
+                    guest_phone=form.cleaned_data.get('guest_phone', ''),
+                    party_size=form.cleaned_data.get('party_size', 1),
+                    notes=form.cleaned_data.get('notes', ''),
+                    created_by=request.user,
+                )
+                messages.success(request, f"{table.label} reserved for {form.cleaned_data['guest_name']}.")
+                return redirect('restaurant:dashboard')
+            except ValueError as e:
+                messages.error(request, str(e))
+    else:
+        form = TableReservationForm()
+
+    return render(request, 'restaurant/reservation_form.html', {'form': form, 'table': table})
+
+
+@auth_required('restaurant.change_tablereservation')
+def reservation_seat(request, pk):
+    """Seat a pending reservation — opens a dining order."""
+    guard = _require_restaurant(request)
+    if guard:
+        return guard
+
+    reservation = get_object_or_404(TableReservation, pk=pk, company=request.user_company)
+    if request.method == 'POST':
+        try:
+            order = seat_reservation(reservation, request)
+            messages.success(request, f"{reservation.guest_name} seated at {reservation.table.label}.")
+            return redirect('restaurant:order_detail', pk=order.pk)
+        except ValueError as e:
+            messages.error(request, str(e))
+    return redirect('restaurant:dashboard')
+
+
+@auth_required('restaurant.change_tablereservation')
+def reservation_cancel(request, pk):
+    """Cancel a pending reservation and free the table."""
+    guard = _require_restaurant(request)
+    if guard:
+        return guard
+
+    reservation = get_object_or_404(TableReservation, pk=pk, company=request.user_company)
+    if request.method == 'POST':
+        try:
+            cancel_reservation(reservation, request)
+            messages.success(request, f"Reservation for {reservation.guest_name} cancelled.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        return redirect('restaurant:dashboard')
+    return render(request, 'restaurant/confirm_reservation_cancel.html', {'reservation': reservation})
 
 
 # ── Print Job API (polled by local print agent) ───────────────────────────────
@@ -1144,8 +1372,9 @@ def room_booking_cancel(request, pk):
 
 # Room type + room CRUD
 
-class RoomTypeListView(AuthMixin, ListView):
+class RoomTypeListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = RoomType
+    module_flag = 'enable_restaurant'
     template_name = 'restaurant/room_type_list.html'
     context_object_name = 'room_types'
     permission_required = ['restaurant.view_roomtype']
@@ -1154,8 +1383,9 @@ class RoomTypeListView(AuthMixin, ListView):
         return RoomType.active_objects.filter(company=self.request.user_company)
 
 
-class RoomTypeCreateView(AuthMixin, CreateView):
+class RoomTypeCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = RoomType
+    module_flag = 'enable_restaurant'
     form_class = RoomTypeForm
     template_name = 'restaurant/room_type_form.html'
     permission_required = ['restaurant.add_roomtype']
@@ -1168,8 +1398,9 @@ class RoomTypeCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class RoomTypeUpdateView(AuthMixin, UpdateView):
+class RoomTypeUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = RoomType
+    module_flag = 'enable_restaurant'
     form_class = RoomTypeForm
     template_name = 'restaurant/room_type_form.html'
     permission_required = ['restaurant.change_roomtype']
@@ -1184,8 +1415,9 @@ class RoomTypeUpdateView(AuthMixin, UpdateView):
         return super().form_valid(form)
 
 
-class RoomListView(AuthMixin, ListView):
+class RoomListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = Room
+    module_flag = 'enable_restaurant'
     template_name = 'restaurant/room_list.html'
     context_object_name = 'rooms'
     permission_required = ['restaurant.view_room']
@@ -1196,8 +1428,9 @@ class RoomListView(AuthMixin, ListView):
         ).select_related('room_type').order_by('floor', 'room_number')
 
 
-class RoomCreateView(AuthMixin, CreateView):
+class RoomCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = Room
+    module_flag = 'enable_restaurant'
     form_class = RoomForm
     template_name = 'restaurant/room_form.html'
     permission_required = ['restaurant.add_room']
@@ -1215,8 +1448,9 @@ class RoomCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class RoomUpdateView(AuthMixin, UpdateView):
+class RoomUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = Room
+    module_flag = 'enable_restaurant'
     form_class = RoomForm
     template_name = 'restaurant/room_form.html'
     permission_required = ['restaurant.change_room']

@@ -14,11 +14,11 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from django.db import transaction
-from django.db.models import Avg, F, Q
+from django.db.models import F, Q
 
 from apps.products.models import Product, Category, ProductStock, StockTransaction
 from apps.company.models import Company
-from apps.ecom.models import EcomOrder, EcomOrderItem, SiteSettings, HeroBanner, Page, Announcement, BlogPost, ContactMessage, DiscountCoupon, ProductReview
+from apps.ecom.models import EcomOrder, EcomOrderItem, SiteSettings, HeroBanner, Page, Announcement, BlogPost, ContactMessage, DiscountCoupon
 from apps.ecom.services import create_sales_order_from_ecom, validate_coupon, apply_coupon_to_order, notify_admin_new_order
 
 
@@ -120,25 +120,14 @@ def store_home(request):
     company = _get_company(request)
     _require_ecom_enabled(company)
 
-    from django.utils import timezone as tz
-    import datetime
-
-    cutoff = tz.now() - datetime.timedelta(days=7)
-
     base_qs = Product.objects.filter(
         company=company, show_on_ecom=True
     ).select_related('category').prefetch_related('images', 'productstock')
+    base_qs = base_qs.filter(
+        Q(is_service=True) | Q(productstock__ecom_stock__gt=0)
+    )
 
-    recent_qs = base_qs.filter(created_at__gte=cutoff).order_by('-created_at')
-
-    flash_products = list(recent_qs[:12])
-    if not flash_products:
-        flash_products = list(base_qs.order_by('-created_at')[:12])
-
-    new_arrivals = list(recent_qs[12:24])
-    if not new_arrivals:
-        new_arrivals = list(base_qs.order_by('-created_at')[12:24])
-
+    products = list(base_qs.order_by('-created_at')[:24])
     total_product_count = base_qs.count()
 
     parent_categories = (
@@ -148,12 +137,18 @@ def store_home(request):
         .order_by('name')
     )
 
+    from apps.products.models import Package
+    packages = list(
+        Package.objects.filter(company=company, show_on_ecom=True)
+        .prefetch_related('items__product')[:8]
+    )
+
     cart = _get_cart(request)
     ctx = _cms_context(company)
     ctx.update({
         'company': company,
-        'flash_products': flash_products,
-        'new_arrivals': new_arrivals,
+        'products': products,
+        'packages': packages,
         'parent_categories': parent_categories,
         'total_product_count': total_product_count,
         'cart_count': sum(cart.values()),
@@ -170,45 +165,19 @@ def product_detail(request, product_id):
     )
     related = Product.objects.filter(
         company=company, show_on_ecom=True, category=product.category
-    ).exclude(id=product.id).prefetch_related('images', 'productstock')[:6]
+    ).exclude(id=product.id).filter(
+        Q(is_service=True) | Q(productstock__ecom_stock__gt=0)
+    ).prefetch_related('images', 'productstock')[:6]
 
     cart = _get_cart(request)
-    reviews = ProductReview.objects.filter(product=product, is_approved=True).select_related('user')
-    review_average = reviews.aggregate(average=Avg('rating'))['average']
     ctx = _cms_context(company)
     ctx.update({
         'company': company,
         'product': product,
         'related_products': related,
         'cart_count': sum(cart.values()),
-        'reviews': reviews,
-        'review_average': review_average,
     })
     return render(request, 'ecom/storefront/product_detail.html', ctx)
-
-
-@require_POST
-def submit_product_review(request, product_id):
-    company = _get_company(request)
-    _require_ecom_enabled(company)
-    product = get_object_or_404(Product, id=product_id, company=company, show_on_ecom=True)
-    try:
-        rating = int(request.POST.get('rating', '0'))
-    except (TypeError, ValueError):
-        rating = 0
-    reviewer_name = request.POST.get('reviewer_name', '').strip()
-    comment = request.POST.get('comment', '').strip()
-    if rating not in range(1, 6) or not reviewer_name or not comment:
-        messages.error(request, 'Please provide your name, a rating, and a review.')
-        return redirect('ecom:product_detail', product_id=product.id)
-    ProductReview.objects.create(
-        company=company, product=product,
-        user=request.user if request.user.is_authenticated else None,
-        reviewer_name=reviewer_name, rating=rating,
-        title=request.POST.get('title', '').strip(), comment=comment,
-    )
-    messages.success(request, 'Thank you. Your review is awaiting approval.')
-    return redirect('ecom:product_detail', product_id=product.id)
 
 
 @require_POST
@@ -609,24 +578,9 @@ def product_list(request):
     category_id = request.GET.get('category', '').strip()
     search = request.GET.get('q', '').strip()
     sort = request.GET.get('sort', 'newest')
-    allowed_sorts = {'az', 'za', 'newest', 'oldest', 'cheapest', 'expensive'}
-    if sort not in allowed_sorts:
-        sort = 'newest'
     colors_param = request.GET.get('colors', '')
     selected_colors = [c.strip() for c in colors_param.split(',') if c.strip()]
     view_mode = request.GET.get('view', 'grid')
-    if view_mode not in {'grid', 'list'}:
-        view_mode = 'grid'
-    in_stock_only = request.GET.get('in_stock') == '1'
-    material_filter = request.GET.get('material', '').strip()
-    occasion_filter = request.GET.get('occasion', '').strip()
-    offers_only = request.GET.get('offers') == '1'
-    try:
-        rating_min = int(request.GET.get('rating', '0'))
-    except (TypeError, ValueError):
-        rating_min = 0
-    if rating_min not in (0, 3, 4):
-        rating_min = 0
 
     try:
         per_page = int(request.GET.get('per_page', 12))
@@ -646,8 +600,9 @@ def product_list(request):
 
     qs = Product.objects.filter(
         company=company, show_on_ecom=True
-    ).select_related('category').prefetch_related('images', 'productstock').annotate(
-        average_rating=Avg('reviews__rating', filter=Q(reviews__is_approved=True)),
+    ).select_related('category').prefetch_related('images', 'productstock')
+    qs = qs.filter(
+        Q(is_service=True) | Q(productstock__ecom_stock__gt=0)
     )
 
     ctx = _cms_context(company)
@@ -668,16 +623,6 @@ def product_list(request):
         qs = qs.filter(price__gte=price_min)
     if price_max is not None:
         qs = qs.filter(price__lte=price_max)
-    if in_stock_only:
-        qs = qs.filter(Q(is_service=True) | Q(productstock__ecom_stock__gt=0))
-    if material_filter:
-        qs = qs.filter(material__iexact=material_filter)
-    if occasion_filter:
-        qs = qs.filter(occasion__icontains=occasion_filter)
-    if offers_only:
-        qs = qs.filter(compare_at_price__gt=F('price'))
-    if rating_min:
-        qs = qs.filter(reviews__is_approved=True, reviews__rating__gte=rating_min).distinct()
 
     sort_map = {
         'az':       'name',
@@ -693,18 +638,14 @@ def product_list(request):
     from django.db.models import Min, Max
     all_colors = (
         Product.objects.filter(company=company, show_on_ecom=True)
+        .filter(Q(is_service=True) | Q(productstock__ecom_stock__gt=0))
         .exclude(color='').values_list('color', flat=True).distinct().order_by('color')
     )
-    price_bounds = Product.objects.filter(company=company, show_on_ecom=True).aggregate(
+    price_bounds = Product.objects.filter(company=company, show_on_ecom=True).filter(
+        Q(is_service=True) | Q(productstock__ecom_stock__gt=0)
+    ).aggregate(
         lo=Min('price'), hi=Max('price')
     )
-    all_materials = list(
-        Product.objects.filter(company=company, show_on_ecom=True)
-        .exclude(material='').values_list('material', flat=True).distinct().order_by('material')
-    )
-    occasion_values = set()
-    for value in Product.objects.filter(company=company, show_on_ecom=True).exclude(occasion='').values_list('occasion', flat=True):
-        occasion_values.update(item.strip() for item in value.split(',') if item.strip())
 
     paginator = Paginator(qs, per_page)
     page_obj = paginator.get_page(request.GET.get('page'))
@@ -729,15 +670,8 @@ def product_list(request):
         'selected_colors': selected_colors,
         'colors_param': colors_param,
         'all_colors': list(all_colors),
-        'all_materials': all_materials,
-        'all_occasions': sorted(occasion_values),
         'price_min': price_min,
         'price_max': price_max,
-        'in_stock_only': in_stock_only,
-        'material_filter': material_filter,
-        'occasion_filter': occasion_filter,
-        'offers_only': offers_only,
-        'rating_min': rating_min,
         'price_lo': float(price_bounds['lo'] or 0),
         'price_hi': float(price_bounds['hi'] or 0),
         'filter_qs': filter_qs,
@@ -770,6 +704,8 @@ def image_search(request):
                 products = search_by_image(img, company)
             except Exception:
                 error = 'Could not process image. Please try a different one.'
+
+    products = [p for p in products if p.is_service or getattr(getattr(p, 'productstock', None), 'ecom_stock', 0) > 0]
 
     cart = _get_cart(request)
     ctx = _cms_context(company)

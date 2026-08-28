@@ -1,7 +1,8 @@
+from decimal import Decimal
 from django import forms
 from .models import (
     TableSection, RestaurantTable, PrinterStation,
-    DiningOrder, DiningOrderItem,
+    DiningOrder, DiningOrderItem, TableReservation,
     Menu, MenuCategory, MenuItem,
     RoomType, Room, RoomBooking, RoomCharge,
 )
@@ -143,6 +144,48 @@ class TableTransferForm(forms.Form):
             if current_table:
                 qs = qs.exclude(pk=current_table.pk)
             self.fields['target_table'].queryset = qs
+
+
+class TableReservationForm(forms.ModelForm):
+    class Meta:
+        model = TableReservation
+        fields = ['guest_name', 'guest_phone', 'party_size', 'reserved_for', 'notes']
+        widgets = {
+            'reserved_for': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'notes': forms.TextInput(attrs={'placeholder': 'Optional notes…'}),
+        }
+
+
+class ItemQuantityForm(forms.Form):
+    quantity = forms.DecimalField(min_value=Decimal('0.001'), decimal_places=3, max_digits=8)
+
+
+class OrderDiscountForm(forms.Form):
+    discount_percent = forms.DecimalField(
+        min_value=Decimal('0'), max_value=Decimal('100'), decimal_places=2, max_digits=5,
+        widget=forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'max': '100'}),
+    )
+    reason = forms.CharField(max_length=255, widget=forms.TextInput(attrs={'placeholder': 'Reason for discount…'}))
+
+
+class OrderMergeForm(forms.Form):
+    target_order = forms.ModelChoiceField(
+        queryset=DiningOrder.objects.none(),
+        label='Merge into Order',
+        help_text='Only other open orders at this company are shown.',
+    )
+
+    def __init__(self, *args, **kwargs):
+        company = kwargs.pop('company', None)
+        source_order = kwargs.pop('source_order', None)
+        super().__init__(*args, **kwargs)
+        if company:
+            qs = DiningOrder.active_objects.filter(
+                company=company, status__in=['OPEN', 'KOT_SENT', 'BOT_SENT']
+            ).select_related('table')
+            if source_order:
+                qs = qs.exclude(pk=source_order.pk)
+            self.fields['target_order'].queryset = qs
 
 
 class MenuForm(forms.ModelForm):

@@ -614,13 +614,14 @@ def _post_payroll_journal(payroll_run, user):
       DR Salary Expense     (gross payroll cost)
       CR Salary Payable     (liability until disbursed)
     When salaries are actually paid via Payment(payment_type='SALARY'),
-    handle_other_payment_journal posts:
+    post_payment_journal (apps/bookkeeping/db_functions.py) posts:
       DR Salary Payable / CR Cash/Bank (clearing the liability).
     """
     if not payroll_run.total_gross_pay or payroll_run.total_gross_pay <= 0:
         return
-    from apps.bookkeeping.models import post_journal_entry, LedgerAccount
+    from apps.bookkeeping.models import JournalEntry, JournalEntryLine, assert_balanced
     from apps.company.services.company_services import setup_default_ledger_accounts
+    from apps.bookkeeping.models import LedgerAccount
 
     company = payroll_run.company
     setup_default_ledger_accounts(company)
@@ -636,17 +637,19 @@ def _post_payroll_journal(payroll_run, user):
         )
         return
 
-    entry = post_journal_entry(
+    entry = JournalEntry.objects.create(
         company=company,
         date=payroll_run.payroll_date,
         description=f"Payroll: {payroll_run.period_start_date} – {payroll_run.period_end_date}",
         created_by=user,
-        lines=[
-            {'account': salary_expense, 'entry_type': 'DEBIT', 'amount': payroll_run.total_gross_pay, 'narration': 'Gross payroll cost'},
-            {'account': salary_payable, 'entry_type': 'CREDIT', 'amount': payroll_run.total_gross_pay, 'narration': 'Salary payable to employees'},
-        ],
-        source_type='PAYROLL',
     )
+    JournalEntryLine.objects.bulk_create([
+        JournalEntryLine(journal_entry=entry, account=salary_expense, entry_type='DEBIT',
+                         amount=payroll_run.total_gross_pay, narration='Gross payroll cost'),
+        JournalEntryLine(journal_entry=entry, account=salary_payable, entry_type='CREDIT',
+                         amount=payroll_run.total_gross_pay, narration='Salary payable to employees'),
+    ])
+    assert_balanced(entry)
 
     from apps.activity_log.models import ActivityLog
     ActivityLog.log(

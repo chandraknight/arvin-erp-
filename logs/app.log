@@ -16433,3 +16433,1820 @@ WARNING 2026-08-25 10:43:22,359 log 96524 6198177792 "GET /static/ecom/assets/im
 WARNING 2026-08-25 10:43:25,715 log 96524 6198177792 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
 WARNING 2026-08-25 10:43:26,766 log 96524 6198177792 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
 WARNING 2026-08-25 10:43:27,738 log 96524 6198177792 "GET /static/ecom/assets/imgs/template/signin-illustration.svg HTTP/1.1" 404 2074
+ERROR 2026-08-28 14:23:03,064 log 20178 6164721664 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 120, in store_home
+    company = _get_company(request)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 26, in _get_company
+    return Company.objects.first()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 1145, in first
+    for obj in queryset[:1]:
+               ~~~~~~~~^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+ERROR 2026-08-28 14:23:03,068 log 20178 6164721664 "GET /store/ HTTP/1.1" 500 161934
+ERROR 2026-08-28 14:25:11,007 log 20178 6181548032 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 120, in store_home
+    company = _get_company(request)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 26, in _get_company
+    return Company.objects.first()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 1145, in first
+    for obj in queryset[:1]:
+               ~~~~~~~~^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+ERROR 2026-08-28 14:25:11,010 log 20178 6181548032 "GET /store/ HTTP/1.1" 500 161934
+ERROR 2026-08-28 14:26:52,777 log 20178 6198374400 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 120, in store_home
+    company = _get_company(request)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 26, in _get_company
+    return Company.objects.first()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 1145, in first
+    for obj in queryset[:1]:
+               ~~~~~~~~^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+ERROR 2026-08-28 14:26:52,780 log 20178 6198374400 "GET /store/ HTTP/1.1" 500 161934
+ERROR 2026-08-28 14:29:00,229 log 20178 6164721664 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 120, in store_home
+    company = _get_company(request)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 26, in _get_company
+    return Company.objects.first()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 1145, in first
+    for obj in queryset[:1]:
+               ~~~~~~~~^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+ERROR 2026-08-28 14:29:00,233 log 20178 6164721664 "GET /store/ HTTP/1.1" 500 161934
+ERROR 2026-08-28 14:31:42,958 log 20178 6181548032 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 120, in store_home
+    company = _get_company(request)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 26, in _get_company
+    return Company.objects.first()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 1145, in first
+    for obj in queryset[:1]:
+               ~~~~~~~~^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+ERROR 2026-08-28 14:31:42,970 log 20178 6181548032 "GET /store/ HTTP/1.1" 500 161934
+ERROR 2026-08-28 14:31:45,500 log 20178 6181548032 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+psycopg2.errors.UndefinedColumn: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 120, in store_home
+    company = _get_company(request)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 26, in _get_company
+    return Company.objects.first()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 1145, in first
+    for obj in queryset[:1]:
+               ~~~~~~~~^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 390, in __iter__
+    self._fetch_all()
+    ~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/query.py", line 95, in __iter__
+    results = compiler.execute_sql(
+        chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/models/sql/compiler.py", line 1624, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: column company_company.po_approval_threshold does not exist
+LINE 1: ...y"."vat_inclusive", "company_company"."cit_rate", "company_c...
+                                                             ^
+
+ERROR 2026-08-28 14:31:45,501 log 20178 6181548032 "GET /store/ HTTP/1.1" 500 161934
+WARNING 2026-08-28 14:33:38,894 log 20178 6232027136 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:33:38,895 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:33:38,904 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:33:38,915 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:33:38,914 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:33:38,916 log 20178 6282506240 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:33:38,916 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:33:38,932 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:33:38,948 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:33:38,953 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:33:38,966 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:33:38,971 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:33:38,978 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:33:38,983 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:33:38,989 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:33:38,990 log 20178 6282506240 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:33:39,007 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:33:39,112 log 20178 6215200768 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:37:54,491 log 20178 6181548032 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:37:54,501 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:37:54,505 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:37:54,505 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:37:54,513 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:37:54,519 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:37:54,556 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:37:54,557 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:37:54,569 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:37:54,571 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:37:54,580 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:37:54,595 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:37:54,600 log 20178 6299332608 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:37:54,600 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:37:54,606 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:37:54,610 log 20178 6282506240 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:37:54,614 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:37:54,687 log 20178 6232027136 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:03,629 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:38:03,630 log 20178 6316158976 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:03,632 log 20178 6299332608 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:38:03,639 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:38:03,646 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:03,647 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:03,657 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:38:03,658 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:38:03,670 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:38:03,688 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:38:03,688 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:38:03,692 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:38:03,692 log 20178 6282506240 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:38:03,693 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:03,697 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:03,702 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:03,704 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:38:18,028 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:38:18,030 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:18,031 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:38:18,035 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:18,056 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:38:18,056 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:38:18,063 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:38:18,064 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:38:18,076 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:38:18,077 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:18,078 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:38:18,081 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:38:18,089 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:38:18,089 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:18,093 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:18,094 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:38:21,403 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:38:21,414 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:38:21,423 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:21,425 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:38:21,427 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:21,429 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:38:21,430 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:38:21,445 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:38:21,445 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:38:21,447 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:21,449 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:38:21,451 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:38:21,456 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:21,457 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:21,459 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:38:21,461 log 20178 6282506240 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:38:21,515 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:38:21,540 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:38:21,545 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:38:21,551 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:21,565 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:21,592 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:38:21,663 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:38:21,670 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:38:21,677 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:38:21,685 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:38:21,690 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:38:21,698 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:21,704 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:38:21,709 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:38:21,715 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:21,720 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:38,211 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:38,214 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:38:38,236 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:38:38,236 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:38:38,236 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:38:38,242 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:38,267 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:38:38,296 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:38:38,298 log 20178 6282506240 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:38:38,298 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:38:38,304 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:38:38,308 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:38,308 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:38:38,310 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:38:38,321 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:38,365 log 20178 6282506240 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:38,423 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:38:38,453 log 20178 6299332608 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:38:38,464 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:38:38,472 log 20178 6316158976 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:38,478 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:38,495 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:38:38,523 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:38:38,535 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:38:38,541 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:38:38,547 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:38:38,552 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:38:38,558 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:38,563 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:38:38,569 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:38:38,575 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:38,581 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:40,754 log 20178 6164721664 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:40,766 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:38:40,768 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:40,772 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:38:40,772 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:38:40,773 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:40,779 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:38:40,779 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:38:40,785 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:38:40,791 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:38:40,792 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:38:40,798 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:38:40,813 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:38:40,814 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:38:40,820 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:38:40,820 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:38:40,837 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:39:43,544 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:39:43,544 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:39:43,544 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:39:43,544 log 20178 6181548032 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:39:43,544 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:39:43,549 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:39:43,559 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:39:43,563 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:39:43,564 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:39:43,579 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:39:43,580 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:39:43,583 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:39:43,583 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:39:43,589 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:39:43,599 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:39:43,599 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:39:43,599 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:39:43,664 log 20178 6164721664 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:41:05,489 log 20178 6164721664 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:41:05,492 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:41:05,500 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:41:05,501 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:41:05,512 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:41:05,516 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:41:05,517 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:41:05,517 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:41:05,524 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:41:05,529 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:41:05,534 log 20178 6248853504 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:41:05,535 log 20178 6232027136 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:41:05,539 log 20178 6181548032 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:41:05,540 log 20178 6164721664 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:41:05,558 log 20178 6282506240 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:41:05,565 log 20178 6265679872 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:41:05,571 log 20178 6215200768 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:43:47,295 log 78700 6137704448 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:43:47,309 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:43:47,313 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:43:47,318 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:43:47,325 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:43:47,355 log 78700 6205009920 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:43:47,365 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:43:47,365 log 78700 6188183552 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:43:47,365 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:43:47,366 log 78700 6221836288 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:43:47,366 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:43:47,373 log 78700 6205009920 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:43:47,378 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:43:47,388 log 78700 6188183552 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:43:47,388 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:43:47,389 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:43:47,394 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:43:47,398 log 78700 6154530816 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:43:49,503 log 78700 6154530816 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:43:49,506 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:43:49,506 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:43:49,510 log 78700 6188183552 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:43:49,513 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:43:49,520 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:43:49,521 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:43:49,524 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:43:49,532 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:43:49,532 log 78700 6188183552 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:43:49,534 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:43:49,539 log 78700 6205009920 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:43:49,542 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:43:49,539 log 78700 6221836288 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:43:49,548 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:43:49,549 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:43:49,557 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:43:50,501 log 78700 6137704448 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:43:50,508 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:43:50,509 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:43:50,516 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:43:50,519 log 78700 6188183552 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:43:50,520 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:43:50,519 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:43:50,526 log 78700 6221836288 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:43:50,526 log 78700 6205009920 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:43:50,528 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:43:50,535 log 78700 6188183552 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:43:50,540 log 78700 6154530816 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:43:50,542 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:43:50,545 log 78700 6205009920 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:43:50,544 log 78700 6221836288 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:43:50,546 log 78700 6171357184 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:43:50,553 log 78700 6137704448 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:44:21,169 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:44:21,190 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:44:21,195 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:44:21,201 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:44:21,202 log 78700 6221262848 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:44:21,209 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:44:21,211 log 78700 6238089216 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:44:21,225 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:44:21,227 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:44:21,240 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:44:21,256 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:44:21,258 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:44:21,270 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:44:21,278 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:44:21,283 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:44:21,284 log 78700 6221262848 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:44:21,306 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:44:21,311 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:48:24,330 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:48:24,333 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:48:24,339 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:48:24,341 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:48:24,342 log 78700 6221262848 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:48:24,344 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:48:24,346 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:48:24,347 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:48:24,349 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:48:24,355 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:48:24,359 log 78700 6221262848 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:48:24,362 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:48:24,362 log 78700 6238089216 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:48:24,363 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:48:24,370 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:48:24,370 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:48:24,424 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:50:56,505 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:50:56,513 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:50:56,513 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:50:56,513 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:50:56,513 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:50:56,516 log 78700 6221262848 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:50:56,523 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:50:56,526 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:50:56,528 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:50:56,532 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:50:56,534 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:50:56,535 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:50:56,537 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:50:56,540 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:50:56,544 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:50:56,544 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:50:56,555 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:50:59,805 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:50:59,813 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:50:59,813 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:50:59,818 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:50:59,818 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:50:59,821 log 78700 6221262848 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:50:59,823 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:50:59,828 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:50:59,832 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:50:59,824 log 78700 6238089216 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:50:59,832 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:50:59,833 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:50:59,836 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:50:59,839 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:50:59,842 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:50:59,844 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:50:59,858 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:51:00,629 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:51:00,630 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:51:00,633 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:51:00,635 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:51:00,637 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:51:00,638 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:51:00,640 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:51:00,643 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:51:00,644 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:51:00,647 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:51:00,650 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:51:00,653 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:51:00,654 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:51:00,657 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:51:00,659 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:51:00,659 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:51:00,672 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:51:01,141 log 78700 6221262848 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:51:01,143 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:51:01,143 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:51:01,145 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:51:01,146 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:51:01,148 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:51:01,150 log 78700 6221262848 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:51:01,152 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:51:01,155 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:51:01,161 log 78700 6153957376 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:51:01,161 log 78700 6221262848 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:51:01,163 log 78700 6170783744 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:51:01,164 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:51:01,165 log 78700 6204436480 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:51:01,166 log 78700 6187610112 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:51:01,169 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:51:01,187 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:51:01,560 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:51:01,612 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:51:02,442 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:51:02,494 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:52:05,058 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:52:05,119 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:52:05,870 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:52:05,920 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:52:06,325 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:52:06,376 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:52:06,789 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:52:07,174 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:52:07,233 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:52:18,366 log 78700 6153957376 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-08-28 14:52:18,370 log 78700 6187610112 Not Found: /favicon.ico
+WARNING 2026-08-28 14:52:18,367 log 78700 6170783744 Not Found: /apple-touch-icon.png
+WARNING 2026-08-28 14:52:18,371 log 78700 6153957376 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-08-28 14:52:18,381 log 78700 6187610112 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-08-28 14:52:18,381 log 78700 6170783744 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-08-28 14:53:59,363 log 78700 6137131008 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:53:59,416 log 78700 6137131008 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:57:09,531 log 27904 6132084736 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:57:09,537 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 14:57:09,541 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:57:09,541 log 27904 6182563840 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:57:09,541 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:57:09,547 log 27904 6199390208 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:57:09,551 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:57:09,552 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:57:09,553 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:57:09,555 log 27904 6182563840 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:57:09,557 log 27904 6216216576 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:57:09,560 log 27904 6233042944 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:57:09,560 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:57:09,564 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:57:09,567 log 27904 6182563840 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:57:09,564 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:57:09,568 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:57:09,616 log 27904 6148911104 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:57:12,250 log 27904 6165737472 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:57:12,252 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 14:57:12,257 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:57:12,257 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 14:57:12,260 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:57:12,264 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 14:57:12,264 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 14:57:12,267 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 14:57:12,269 log 27904 6182563840 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 14:57:12,274 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 14:57:12,276 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 14:57:12,276 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 14:57:12,281 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 14:57:12,282 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 14:57:12,283 log 27904 6182563840 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 14:57:12,285 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 14:57:12,299 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:00:37,359 log 27904 6132084736 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 15:00:37,363 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:00:37,363 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 15:00:37,366 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:00:37,370 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:00:37,372 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 15:00:37,372 log 27904 6182563840 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 15:00:37,375 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 15:00:37,377 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 15:00:37,379 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 15:00:37,381 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 15:00:37,383 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 15:00:37,387 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 15:00:37,385 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 15:00:37,388 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:00:37,391 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:00:37,430 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:00:44,618 log 27904 6132084736 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 15:00:44,620 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:00:44,623 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:00:44,625 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:00:44,628 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 15:00:44,631 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 15:00:44,632 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 15:00:44,634 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 15:00:44,636 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 15:00:44,638 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 15:00:44,641 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 15:00:44,643 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 15:00:44,648 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 15:00:44,646 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 15:00:44,649 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:00:44,652 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:00:44,667 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:00:45,523 log 27904 6132084736 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 15:00:45,551 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/bootstrap.bundle.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:00:45,553 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:00:45,557 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-migrate-3.3.0.min.js HTTP/1.1" 404 2077
+WARNING 2026-08-28 15:00:45,557 log 27904 6182563840 "GET /static/ecom/assets/js/vendors/waypoints.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:00:45,560 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/magnific-popup.js HTTP/1.1" 404 2047
+WARNING 2026-08-28 15:00:45,560 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/wow.js HTTP/1.1" 404 2014
+WARNING 2026-08-28 15:00:45,563 log 27904 6182563840 "GET /static/ecom/assets/js/vendors/perfect-scrollbar.min.js HTTP/1.1" 404 2068
+WARNING 2026-08-28 15:00:45,565 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/select2.min.js HTTP/1.1" 404 2038
+WARNING 2026-08-28 15:00:45,569 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/isotope.js HTTP/1.1" 404 2026
+WARNING 2026-08-28 15:00:45,569 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/scrollup.js HTTP/1.1" 404 2029
+WARNING 2026-08-28 15:00:45,573 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/swiper-bundle.min.js HTTP/1.1" 404 2056
+WARNING 2026-08-28 15:00:45,574 log 27904 6182563840 "GET /static/ecom/assets/js/vendors/noUISlider.js HTTP/1.1" 404 2035
+WARNING 2026-08-28 15:00:45,576 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/slider.js HTTP/1.1" 404 2023
+WARNING 2026-08-28 15:00:45,579 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:00:45,581 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:00:45,583 log 27904 6165737472 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:00:48,479 log 27904 6132084736 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 15:00:48,490 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:00:48,491 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:00:48,528 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:01:33,486 log 27904 6132084736 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 15:01:33,497 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:01:33,499 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:01:33,535 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:01:37,200 log 27904 6132084736 "GET /static/ecom/assets/imgs/template/bg-newsletter.svg HTTP/1.1" 404 2056
+WARNING 2026-08-28 15:01:37,209 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:01:37,209 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:01:37,248 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:01:41,097 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:01:41,099 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:01:41,141 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:01:45,197 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:01:45,199 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:01:45,232 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:01:45,980 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:01:45,983 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:01:46,016 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:01:46,412 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:01:46,414 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:01:46,452 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+WARNING 2026-08-28 15:01:47,255 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/counterup.js HTTP/1.1" 404 2032
+WARNING 2026-08-28 15:01:47,257 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery.countdown.min.js HTTP/1.1" 404 2065
+WARNING 2026-08-28 15:01:47,290 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/modernizr-3.6.0.min.js HTTP/1.1" 404 2062
+ERROR 2026-08-28 15:04:04,190 log 42611 6165360640 Internal Server Error: /store/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/smartif.py", line 181, in translate_token
+    op = OPERATORS[token]
+         ~~~~~~~~~^^^^^^^
+KeyError: '(cms.facebook_url'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 164, in store_home
+    return render(request, 'ecom/storefront/home.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 135, in render
+    compiled_parent = self.get_parent(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 132, in get_parent
+    return self.find_template(parent, context)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 110, in find_template
+    template, origin = context.template.engine.find_template(
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        template_name,
+        ^^^^^^^^^^^^^^
+        skip=history,
+        ^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 159, in find_template
+    template = loader.get_template(name, skip=skip)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loaders/cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loaders/base.py", line 28, in get_template
+    return Template(
+        contents,
+    ...<2 lines>...
+        self.engine,
+    )
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 157, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 199, in compile_nodelist
+    nodelist = parser.parse()
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 585, in parse
+    raise self.error(token, e)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 583, in parse
+    compiled_result = compile_func(self, token)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/defaulttags.py", line 993, in do_if
+    condition = TemplateIfParser(parser, bits).parse()
+                ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/defaulttags.py", line 926, in __init__
+    super().__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/smartif.py", line 172, in __init__
+    mapped_tokens.append(self.translate_token(token))
+                         ~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/smartif.py", line 183, in translate_token
+    return self.create_var(token)
+           ~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/defaulttags.py", line 929, in create_var
+    return TemplateLiteral(self.template_parser.compile_filter(value), value)
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 676, in compile_filter
+    return FilterExpression(token, self)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 776, in __init__
+    raise TemplateSyntaxError(
+    ...<2 lines>...
+    )
+django.template.exceptions.TemplateSyntaxError: Template: /Users/chandraghimire/Django/arvin-erp/apps/ecom/templates/ecom/storefront/base.html, Could not parse the remainder: '(cms.facebook_url' from '(cms.facebook_url'
+ERROR 2026-08-28 15:04:04,194 log 42611 6165360640 "GET /store/ HTTP/1.1" 500 280580
+ERROR 2026-08-28 15:04:58,337 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:04:58,343 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:00,074 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:00,077 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:04,099 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:04,102 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:06,306 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:06,308 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:07,362 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:07,365 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:07,702 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:07,704 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:08,184 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:08,186 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:09,279 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:09,281 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:10,231 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:10,233 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:11,305 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:11,307 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:12,158 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:12,160 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:12,942 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:12,946 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+ERROR 2026-08-28 15:05:13,727 log 27904 6132084736 Internal Server Error: /store/shop/
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader_tags.py", line 200, in render
+    template = context.template.engine.select_template(template_name)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/engine.py", line 234, in select_template
+    raise TemplateDoesNotExist(", ".join(not_found))
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/Users/chandraghimire/Django/arvin-erp/apps/ecom/views/storefront.py", line 691, in product_list
+    return render(request, 'ecom/storefront/product_list.html', ctx)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 109, in render
+    reraise(exc, self.backend)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/chandraghimire/Django/arvin-erp/.venv/lib/python3.14/site-packages/django/template/backends/django.py", line 130, in reraise
+    raise new from exc
+django.template.exceptions.TemplateDoesNotExist: ecom/storefront/_filter_body.html
+ERROR 2026-08-28 15:05:13,729 log 27904 6132084736 "GET /store/shop/ HTTP/1.1" 500 212630
+WARNING 2026-08-28 15:05:45,009 log 27904 6132084736 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:05:45,175 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:05:56,516 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:05:57,233 log 46630 6131675136 Not Found: /store/products/
+WARNING 2026-08-28 15:05:57,234 log 46630 6131675136 "GET /store/products/ HTTP/1.1" 404 32427
+WARNING 2026-08-28 15:05:57,249 log 46630 6131675136 Not Found: /store/products/
+WARNING 2026-08-28 15:05:57,263 log 46630 6131675136 "GET /store/products/?sort=cheapest HTTP/1.1" 404 32441
+WARNING 2026-08-28 15:05:58,097 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:06:37,574 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:07:24,369 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:07:25,594 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:07:30,004 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:07:30,165 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:07:58,720 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:07:59,592 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:08:05,662 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:08:10,589 log 27904 6148911104 "GET /static/ecom/assets/js/vendors/jquery-3.6.0.min.js HTTP/1.1" 404 2053
+WARNING 2026-08-28 15:13:46,085 log 61774 6202535936 Not Found: /store/nonexistent-xyz/
+WARNING 2026-08-28 15:13:46,086 log 61774 6202535936 "GET /store/nonexistent-xyz/ HTTP/1.1" 404 32448
+WARNING 2026-08-28 15:13:55,109 log 61774 6202535936 Not Found: /store/nonexistent-xyz/
+WARNING 2026-08-28 15:13:55,110 log 61774 6202535936 "GET /store/nonexistent-xyz/ HTTP/1.1" 404 32448
+WARNING 2026-08-28 15:14:52,442 log 64779 6123810816 Forbidden (CSRF token from POST has incorrect length.): /store/contact/
+WARNING 2026-08-28 15:14:52,443 log 64779 6123810816 "POST /store/contact/ HTTP/1.1" 403 2514

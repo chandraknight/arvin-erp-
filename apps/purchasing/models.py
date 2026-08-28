@@ -27,6 +27,16 @@ class PurchaseOrder(BaseModel):
     status = models.CharField(max_length=10, choices=PURCHASE_STATUS_CHOICES, default='SENT')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
+    approval_status = models.CharField(
+        max_length=15, choices=PO_APPROVAL_STATUS_CHOICES, default='NOT_REQUIRED',
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='approved_purchase_orders',
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.CharField(max_length=500, blank=True)
+
     class Meta:
         constraints = [
             models.UniqueConstraint(

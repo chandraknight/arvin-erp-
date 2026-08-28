@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.bookkeeping.models import LedgerAccount
 from apps.company.fiscal_year_guard import fiscal_year_open_required
+from apps.company.services.company_services import setup_default_ledger_accounts
 from ..models import Expense
 from ..services.expense_service import cancel_expense, create_expense_batch
 
@@ -16,7 +17,12 @@ def _get_accounts(company):
     if not company:
         return LedgerAccount.objects.none(), LedgerAccount.objects.none()
     exp = LedgerAccount.objects.filter(company=company, account_type='EXPENSE').order_by('name')
-    ast = LedgerAccount.objects.filter(company=company, account_type='ASSET').order_by('name')
+    # Payment source must be an actual cash/bank account — not every ASSET
+    # account (that list also includes per-customer AR sub-ledgers, Input VAT,
+    # etc., none of which money is ever paid *from*).
+    ast = LedgerAccount.objects.filter(company=company, account_type='ASSET').filter(
+        Q(name='Cash') | Q(bank_account__isnull=False)
+    ).order_by('name')
     return exp, ast
 
 
@@ -131,6 +137,8 @@ def expense_list(request):
 @fiscal_year_open_required
 def expense_create(request):
     company = getattr(request.user, 'company', None)
+    if company:
+        setup_default_ledger_accounts(company)
     expense_accounts, asset_accounts = _get_accounts(company)
 
     if request.method == 'POST':

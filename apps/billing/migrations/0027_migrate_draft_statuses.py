@@ -28,7 +28,7 @@ def forwards(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('billing', '0026_debitnote_tax_amount_invoice_status'),
+        ('billing', '0026_debitnote_vendor_debitnote_vendor_bill_and_more'),
         ('purchasing', '0006_alter_purchaseorder_status'),
         ('orders', '0005_alter_salesorder_status'),
         ('manufacturing', '0003_alter_workorder_status'),

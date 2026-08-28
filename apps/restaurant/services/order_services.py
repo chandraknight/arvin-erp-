@@ -110,6 +110,53 @@ def add_item(order: DiningOrder, product, quantity: Decimal,
     return item
 
 
+def update_item_quantity(item: DiningOrderItem, new_quantity: Decimal, request) -> DiningOrderItem:
+    """Change an order item's quantity in place and recalculate order totals."""
+    if item.order.status in ('BILLED', 'PAID', 'CANCELLED'):
+        raise ValueError("Cannot modify items on a closed order.")
+    if new_quantity <= 0:
+        raise ValueError("Quantity must be greater than zero.")
+
+    item.quantity = new_quantity
+    item.updated_by = request.user
+    item.save(update_fields=['quantity', 'updated_by'])
+    item.order.recalculate_totals()
+
+    audit.info(
+        'ITEM_QUANTITY_UPDATED order=%s item=%s quantity=%s actor=%s',
+        item.order.order_number, item.product.name, new_quantity, request.user.email,
+    )
+    return item
+
+
+def apply_order_discount(order: DiningOrder, discount_percent: Decimal, reason: str, request) -> DiningOrder:
+    """
+    Apply an order-level discount on top of item-level discounts.
+    Requires a non-empty reason and an authorizing admin user.
+    """
+    if order.status in ('BILLED', 'PAID', 'CANCELLED'):
+        raise ValueError("Cannot discount a closed order.")
+    if not reason or not reason.strip():
+        raise ValueError("A reason is required to apply an order discount.")
+    if discount_percent < 0 or discount_percent > 100:
+        raise ValueError("Discount percent must be between 0 and 100.")
+    if not (request.user.is_superuser or getattr(request.user, 'is_company_admin', False)):
+        raise ValueError("Only a company admin can authorize an order-level discount.")
+
+    with transaction.atomic():
+        order.discount_percent = discount_percent
+        order.discount_reason = reason.strip()
+        order.updated_by = request.user
+        order.save(update_fields=['discount_percent', 'discount_reason', 'updated_by'])
+        order.recalculate_totals()
+
+        audit.info(
+            'ORDER_DISCOUNT_APPLIED order=%s percent=%s reason=%s authorized_by=%s',
+            order.order_number, discount_percent, reason.strip(), request.user.email,
+        )
+    return order
+
+
 def _build_kot_payload(order: DiningOrder) -> dict:
     """Serialise unprinted food items for the KOT print job."""
     items = list(order.unprinted_food_items)
@@ -261,13 +308,80 @@ def print_bot(order: DiningOrder, request) -> PrintJob | None:
     return job
 
 
+def _create_invoice_for_items(order: DiningOrder, items, discount_percent: Decimal, request):
+    """
+    Create one Invoice covering the given (non-cancelled) DiningOrderItems.
+    discount_percent is the order-level discount to apply proportionally to this portion.
+    Marks each item.invoice. Does not touch order/table status — caller's job.
+    """
+    from apps.billing.models import Invoice, InvoiceItem
+    from apps.billing.services.invoice_service import generate_invoice_number, vat_invoice_fields
+    from django.utils import timezone as tz
+
+    items = list(items)
+    item_subtotal = sum(i.line_subtotal for i in items)
+    item_discount = sum(i.discount_amount for i in items)
+    tax = sum(i.tax_amount for i in items)
+    order_discount = ((item_subtotal - item_discount) * discount_percent / 100).quantize(Decimal('0.01'))
+    total_discount = item_discount + order_discount
+    total = item_subtotal - total_discount + tax
+
+    vat_fields = vat_invoice_fields(order.company)
+    invoice_number, seq, fy = generate_invoice_number(order.company.id, doc_type=vat_fields['doc_type'])
+    invoice = Invoice.objects.create(
+        company=order.company,
+        branch=order.branch,
+        customer=order.customer,
+        invoice_number=invoice_number,
+        fiscal_year=fy,
+        transaction_date=tz.now().date(),
+        subtotal=item_subtotal,
+        discount_amount=total_discount,
+        tax_amount=tax,
+        total=total,
+        outstanding_balance=total,
+        tax_percent=vat_fields['tax_percent'],
+        status=vat_fields['status'],
+        sequence_number=seq,
+        created_by=request.user,
+    )
+
+    for item in items:
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            product=item.product,
+            description=item.product.name,
+            quantity=int(item.quantity),
+            price=item.unit_price,
+            discount_percent=item.discount_percent,
+        )
+
+    DiningOrderItem.objects.filter(pk__in=[i.pk for i in items]).update(invoice=invoice)
+
+    printer = PrinterStation.active_objects.filter(
+        company=order.company, printer_type='BILL', is_active=True, is_default=True
+    ).first() or PrinterStation.active_objects.filter(
+        company=order.company, printer_type='BILL', is_active=True
+    ).first()
+
+    PrintJob.objects.create(
+        company=order.company,
+        printer=printer,
+        dining_order=order,
+        job_type='BILL',
+        status='QUEUED',
+        payload=_build_bill_payload(order),
+        created_by=request.user,
+    )
+    return invoice
+
+
 def issue_bill(order: DiningOrder, request):
     """
     Convert a DiningOrder to an Invoice.
     Sets order status to BILLED and table status to CLEANING.
     Returns the created Invoice.
     """
-    from apps.billing.models import Invoice, InvoiceItem
     from apps.company.services.company_services import setup_default_ledger_accounts
     from django.utils import timezone as tz
 
@@ -278,55 +392,9 @@ def issue_bill(order: DiningOrder, request):
 
     setup_default_ledger_accounts(order.company)
 
-    from apps.billing.services.invoice_service import generate_invoice_number, vat_invoice_fields
-
     with transaction.atomic():
-        vat_fields = vat_invoice_fields(order.company)
-        invoice_number, seq, fy = generate_invoice_number(order.company.id, doc_type=vat_fields['doc_type'])
-        invoice = Invoice.objects.create(
-            company=order.company,
-            branch=order.branch,
-            customer=order.customer,
-            invoice_number=invoice_number,
-            fiscal_year=fy,
-            transaction_date=tz.now().date(),
-            subtotal=order.subtotal,
-            discount_amount=order.discount_amount,
-            tax_amount=order.tax_amount,
-            total=order.total,
-            outstanding_balance=order.total,
-            tax_percent=vat_fields['tax_percent'],
-            status=vat_fields['status'],
-            sequence_number=seq,
-            created_by=request.user,
-        )
-
-        for item in order.items.exclude(status='CANCELLED'):
-            InvoiceItem.objects.create(
-                invoice=invoice,
-                product=item.product,
-                description=item.product.name,
-                quantity=int(item.quantity),
-                price=item.unit_price,
-                discount_percent=item.discount_percent,
-            )
-
-        # Create bill print job
-        printer = PrinterStation.active_objects.filter(
-            company=order.company, printer_type='BILL', is_active=True, is_default=True
-        ).first() or PrinterStation.active_objects.filter(
-            company=order.company, printer_type='BILL', is_active=True
-        ).first()
-
-        PrintJob.objects.create(
-            company=order.company,
-            printer=printer,
-            dining_order=order,
-            job_type='BILL',
-            status='QUEUED',
-            payload=_build_bill_payload(order),
-            created_by=request.user,
-        )
+        items = order.items.exclude(status='CANCELLED')
+        invoice = _create_invoice_for_items(order, items, order.discount_percent, request)
 
         order.invoice = invoice
         order.status = 'BILLED'
@@ -343,6 +411,103 @@ def issue_bill(order: DiningOrder, request):
         )
 
     return invoice
+
+
+def split_bill(order: DiningOrder, splits: list, request) -> list:
+    """
+    Split a DiningOrder's bill into multiple invoices.
+    Each split dict is either:
+      {'mode': 'even', 'item_ids': [...]}   -- caller pre-partitions items evenly
+      {'mode': 'items', 'item_ids': [...]}  -- staff-selected items per split
+    Every non-cancelled item must be covered by exactly one split.
+    Sets order to BILLED and table to CLEANING once all items are covered.
+    Returns the list of created Invoices.
+    """
+    from apps.company.services.company_services import setup_default_ledger_accounts
+    from django.utils import timezone as tz
+
+    if order.status in ('BILLED', 'PAID', 'CANCELLED'):
+        raise ValueError(f"Order {order.order_number} is already {order.status}.")
+    if not splits:
+        raise ValueError("At least one split is required.")
+
+    active_items = list(order.items.exclude(status='CANCELLED'))
+    active_ids = {i.pk for i in active_items}
+    covered_ids = set()
+    for split in splits:
+        item_ids = {item_id for item_id in split.get('item_ids', [])}
+        if not item_ids:
+            raise ValueError("Each split must include at least one item.")
+        if not item_ids.issubset(active_ids):
+            raise ValueError("A split references an item not on this order.")
+        if item_ids & covered_ids:
+            raise ValueError("An item was assigned to more than one split.")
+        covered_ids |= item_ids
+
+    if covered_ids != active_ids:
+        raise ValueError("All order items must be covered by some split.")
+
+    setup_default_ledger_accounts(order.company)
+
+    with transaction.atomic():
+        invoices = []
+        items_by_id = {i.pk: i for i in active_items}
+        for split in splits:
+            split_items = [items_by_id[item_id] for item_id in split['item_ids']]
+            invoice = _create_invoice_for_items(order, split_items, order.discount_percent, request)
+            invoices.append(invoice)
+
+        order.invoice = invoices[0]
+        order.status = 'BILLED'
+        order.closed_at = tz.now()
+        order.save(update_fields=['invoice', 'status', 'closed_at'])
+
+        order.table.status = 'CLEANING'
+        order.table.save(update_fields=['status'])
+
+        audit.info(
+            'BILL_SPLIT order=%s invoices=%s actor=%s company=%s',
+            order.order_number, ','.join(i.invoice_number for i in invoices),
+            request.user.email, order.company,
+        )
+
+    return invoices
+
+
+def merge_orders(source_order: DiningOrder, target_order: DiningOrder, request) -> DiningOrder:
+    """
+    Merge source_order's items into target_order. Cancels source_order and
+    frees its table. target_order's table stays OCCUPIED.
+    """
+    OPEN_STATUSES = ('OPEN', 'KOT_SENT', 'BOT_SENT')
+
+    if source_order.pk == target_order.pk:
+        raise ValueError("Cannot merge an order into itself.")
+    if source_order.company_id != target_order.company_id:
+        raise ValueError("Orders belong to different companies.")
+    if source_order.status not in OPEN_STATUSES:
+        raise ValueError(f"Source order is {source_order.status} — only open orders can be merged.")
+    if target_order.status not in OPEN_STATUSES:
+        raise ValueError(f"Target order is {target_order.status} — only open orders can be merged.")
+
+    with transaction.atomic():
+        source_order.items.exclude(status='CANCELLED').update(order=target_order)
+        target_order.recalculate_totals()
+
+        source_table = source_order.table
+        source_order.status = 'CANCELLED'
+        source_order.notes = (source_order.notes or '') + f'\nMerged into {target_order.order_number}'
+        source_order.closed_at = timezone.now()
+        source_order.save(update_fields=['status', 'notes', 'closed_at'])
+
+        source_table.status = 'AVAILABLE'
+        source_table.save(update_fields=['status'])
+
+        audit.info(
+            'ORDERS_MERGED source=%s target=%s actor=%s',
+            source_order.order_number, target_order.order_number, request.user.email,
+        )
+    return target_order
 
 
 def transfer_table(order: DiningOrder, target_table: RestaurantTable, request) -> DiningOrder:

@@ -135,7 +135,7 @@ def create_sales_order_from_ecom(ecom_order):
 
 # ── Payment / refund lifecycle ────────────────────────────────────────────────
 
-def record_ecom_payment(ecom_order, user):
+def record_ecom_payment(ecom_order, user, bank_account=None):
     """
     Create a Payment for the full outstanding balance once COD cash is
     collected or an online payment is confirmed paid. Journalises via the
@@ -175,6 +175,7 @@ def record_ecom_payment(ecom_order, user):
         amount_applied=amount,
         method=method,
         payment_type='CUSTOMER',
+        bank_account=bank_account,
         reference_number=reference_number,
         fiscal_year=pay_fy,
         description=f'Ecom order {ecom_order.order_number} — {ecom_order.get_payment_method_display()}',

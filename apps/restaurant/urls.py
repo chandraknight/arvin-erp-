@@ -13,6 +13,11 @@ urlpatterns = [
     path('tables/<uuid:pk>/update/', views.TableUpdateView.as_view(), name='table_update'),
     path('tables/<uuid:table_pk>/set-available/', views.table_set_available, name='table_set_available'),
 
+    # Table reservations
+    path('tables/<uuid:table_pk>/reserve/', views.reservation_create, name='reservation_create'),
+    path('reservations/<uuid:pk>/seat/', views.reservation_seat, name='reservation_seat'),
+    path('reservations/<uuid:pk>/cancel/', views.reservation_cancel, name='reservation_cancel'),
+
     # Sections
     path('sections/create/', views.SectionCreateView.as_view(), name='section_create'),
     path('sections/<uuid:pk>/update/', views.SectionUpdateView.as_view(), name='section_update'),
@@ -28,6 +33,16 @@ urlpatterns = [
     path('orders/<uuid:pk>/', views.order_detail, name='order_detail'),
     path('orders/<uuid:pk>/add-item/', views.order_add_item, name='order_add_item'),
     path('orders/<uuid:pk>/remove-item/<uuid:item_pk>/', views.order_remove_item, name='order_remove_item'),
+    path('orders/<uuid:pk>/items/<uuid:item_pk>/quantity/', views.order_item_quantity, name='order_item_quantity'),
+
+    # Order-level discount
+    path('orders/<uuid:pk>/discount/', views.order_apply_discount, name='order_apply_discount'),
+
+    # Bill split
+    path('orders/<uuid:pk>/split-bill/', views.split_bill_view, name='split_bill'),
+
+    # Order merge
+    path('orders/<uuid:pk>/merge/', views.order_merge_view, name='order_merge'),
 
     # KOT / BOT — send new items
     path('orders/<uuid:pk>/kot/', views.print_kot_view, name='print_kot'),

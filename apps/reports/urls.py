@@ -24,6 +24,12 @@ urlpatterns = [
     path('cash-flow/', views.cash_flow_report, name='cash_flow_report'),
     path('sales/detailed/', views.detailed_sales_report,
          name='detailed_sales_report'),
+    path('sales/daily-by-payment-method/', views.daily_sales_by_payment_method_report,
+         name='daily_sales_by_payment_method_report'),
+    path('sales/daily-by-payment-method/export/excel/', views.export_daily_sales_by_payment_method_excel,
+         name='export_daily_sales_by_payment_method_excel'),
+    path('sales/delivery-charges/', views.delivery_charges_report,
+         name='delivery_charges_report'),
     path('sales/by-user/', views.sales_by_user_report,
          name='sales_by_user_report'),
     path('sales/by-user/export/excel/', views.export_sales_by_user_report_excel,
@@ -188,11 +194,6 @@ urlpatterns = [
     path('financial/expense-register/', views.expense_register_report,
          name='expense_register_report'),
 
-    path('sales/daily-by-payment-method/', views.daily_sales_by_payment_method_report,
-         name='daily_sales_by_payment_method_report'),
-    path('sales/daily-by-payment-method/export/excel/', views.export_daily_sales_by_payment_method_excel,
-         name='export_daily_sales_by_payment_method_excel'),
-
     path('bookkeeping/cash-book/', views.cash_book_report,
          name='cash_book_report'),
     path('bookkeeping/bank-book/', views.bank_book_report,
@@ -206,13 +207,12 @@ urlpatterns = [
     path('bookkeeping/general-ledger/', views.general_ledger_report,
          name='general_ledger_report'),
 
-    path('tax/vat-sales-register/', views.vat_sales_register,
+    path('financial/vat-sales-register/', views.vat_sales_register,
          name='vat_sales_register'),
-    path('tax/vat-purchase-register/', views.vat_purchase_register,
+    path('financial/vat-purchase-register/', views.vat_purchase_register,
          name='vat_purchase_register'),
-    path('tax/tds-register/', views.tds_register,
+    path('financial/tds-register/', views.tds_register,
          name='tds_register'),
-
     path('financial/tax-report/', views.tax_report,
          name='tax_report'),
     path('financial/tax-report/export/excel/', views.export_tax_report_excel,
@@ -248,11 +248,7 @@ urlpatterns = [
     path('financial/fixed-assets/', views.fixed_asset_register_report,
          name='fixed_asset_register_report'),
 
-    # Delivery Charges (ecom + order management)
-    path('sales/delivery-charges/', views.delivery_charges_report,
-         name='delivery_charges_report'),
-
-    # NFRS — Notes to the Financial Statements
+    # NFRS Notes to the Financial Statements
     path('financial/notes-to-accounts/', views.notes_to_accounts_report,
          name='notes_to_accounts_report'),
     path('financial/notes-to-accounts/policy/edit/', views.edit_accounting_policy_note,
@@ -296,4 +292,10 @@ urlpatterns = [
     path('access/', views.report_access_manage, name='report_access_manage'),
     path('access/<uuid:user_pk>/toggle/', views.report_access_toggle, name='report_access_toggle'),
     path('access/<uuid:user_pk>/bulk/', views.report_access_bulk, name='report_access_bulk'),
+
+    # ── Nepal IRD Compliance — NFRIS, tax depreciation, balance confirmation ──
+    path('tax/nfris/', views.nfris_tax_report, name='nfris_tax_report'),
+    path('tax/depreciation-schedule/', views.tax_depreciation_schedule_report, name='tax_depreciation_schedule_report'),
+    path('audit/balance-confirmation/', views.balance_confirmation_report, name='balance_confirmation_report'),
+    path('audit/balance-confirmation/<uuid:pk>/print/', views.balance_confirmation_print, name='balance_confirmation_print'),
 ]

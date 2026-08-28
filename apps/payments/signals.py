@@ -1,9 +1,9 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db import DatabaseError
+from django.db import DatabaseError, transaction
 import logging
 
-from apps.bookkeeping.models import LedgerAccount, post_journal_entry
+from apps.bookkeeping.models import LedgerAccount, JournalEntry, JournalEntryLine, assert_balanced
 from apps.company.services.company_services import setup_default_ledger_accounts
 from apps.payments.models import Payment, VendorPayment
 
@@ -115,16 +115,17 @@ def create_journal_entry_for_vendor_payment(sender, instance, created, **kwargs)
         )
         return
 
-    entry = post_journal_entry(
-        company=company,
-        date=instance.payment_date,
-        description=f"Vendor Payment {instance.reference_number or ''} for Bill {instance.vendor_bill.bill_number}".strip(),
-        lines=[
-            {'account': ap_account, 'entry_type': 'DEBIT', 'amount': instance.amount},
-            {'account': cash_bank, 'entry_type': 'CREDIT', 'amount': instance.amount},
-        ],
-        source_type='PAYMENT',
-    )
+    with transaction.atomic():
+        entry = JournalEntry.objects.create(
+            company=company,
+            date=instance.payment_date,
+            description=f"Vendor Payment {instance.reference_number or ''} for Bill {instance.vendor_bill.bill_number}".strip(),
+        )
+        JournalEntryLine.objects.bulk_create([
+            JournalEntryLine(journal_entry=entry, account=ap_account, entry_type="DEBIT",  amount=instance.amount),
+            JournalEntryLine(journal_entry=entry, account=cash_bank,  entry_type="CREDIT", amount=instance.amount),
+        ])
+        assert_balanced(entry)
 
     audit_logger.info(
         "VENDOR_PAYMENT_JOURNALISED vendor_payment=%s bill=%s journal_entry=%s company=%s",

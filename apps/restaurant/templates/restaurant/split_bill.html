@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Split Bill — {{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="w-full mt-2" x-data="{ mode: 'even' }">
+ <div class="max-w-2xl mx-auto bg-white border border-gray-200 shadow-sm ">
+ <div class="px-6 py-4 bg-green-700 text-white ">
+ <h1 class="text-lg font-bold"><i class="fas fa-divide mr-2"></i>Split Bill — {{ order.order_number }}</h1>
+ </div>
+ <form method="post" class="p-6 space-y-5">
+ {% csrf_token %}
+
+ <div class="flex gap-4 text-sm font-semibold text-gray-700">
+ <label class="flex items-center gap-2">
+ <input type="radio" name="mode" value="even" x-model="mode"> Split evenly
+ </label>
+ <label class="flex items-center gap-2">
+ <input type="radio" name="mode" value="items" x-model="mode"> Split by item
+ </label>
+ </div>
+
+ <div x-show="mode === 'even'">
+ <label class="block text-sm font-semibold text-gray-600 mb-1">Number of ways</label>
+ <input type="number" name="ways" min="2" value="2"
+ class="w-32 border border-gray-300 px-3 py-2 text-sm">
+ </div>
+
+ <div x-show="mode === 'items'" x-cloak class="space-y-3">
+ <div class="flex items-center justify-between">
+ <label class="block text-sm font-semibold text-gray-600">Number of groups</label>
+ <input type="number" name="group_count" min="2" value="2" x-data
+ @input="$dispatch('group-count', $event.target.value)"
+ class="w-24 border border-gray-300 px-3 py-2 text-sm">
+ </div>
+ <div class="overflow-x-auto border border-gray-200 ">
+ <table class="min-w-full divide-y divide-gray-200 text-sm">
+ <thead class="bg-gray-50">
+ <tr>
+ <th class="px-3 py-2 text-left font-semibold text-gray-600">Item</th>
+ <th class="px-3 py-2 text-right font-semibold text-gray-600">Amount</th>
+ <th class="px-3 py-2 text-left font-semibold text-gray-600">Group 1</th>
+ <th class="px-3 py-2 text-left font-semibold text-gray-600">Group 2</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-100">
+ {% for item in items %}
+ <tr>
+ <td class="px-3 py-2">{{ item.quantity }} × {{ item.product.name }}</td>
+ <td class="px-3 py-2 text-right">{{ item.line_total }}</td>
+ <td class="px-3 py-2"><input type="radio" name="item_group_{{ item.pk }}" value="0" checked
+ onclick="document.getElementById('g0-{{ item.pk }}').disabled=false;document.getElementById('g1-{{ item.pk }}').disabled=true;"></td>
+ <td class="px-3 py-2"><input type="radio" name="item_group_{{ item.pk }}" value="1"
+ onclick="document.getElementById('g0-{{ item.pk }}').disabled=true;document.getElementById('g1-{{ item.pk }}').disabled=false;"></td>
+ <input type="hidden" id="g0-{{ item.pk }}" name="group_0_items" value="{{ item.pk }}">
+ <input type="hidden" id="g1-{{ item.pk }}" name="group_1_items" value="{{ item.pk }}" disabled>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ <p class="text-xs text-gray-500">Item-mode currently supports 2 groups. For more, use even split or bill in rounds.</p>
+ </div>
+
+ <div class="flex gap-3 pt-2">
+ <button type="submit" class="px-6 py-3 bg-green-700 hover:bg-green-800 text-white font-semibold shadow-md transition">
+ <i class="fas fa-divide mr-1"></i>Split Bill
+ </button>
+ <a href="{% url 'restaurant:order_detail' order.pk %}"
+ class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold shadow-md transition">Cancel</a>
+ </div>
+ </form>
+ </div>
+</div>
+{% endblock %}

@@ -1,12 +1,13 @@
 from datetime import date
+from decimal import Decimal
 
-from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from apps.company.models import Company, FiscalYear
 from apps.bookkeeping.models import (
-    LedgerAccount, JournalEntry, JournalEntryLine, assert_balanced, reverse_journal,
+    LedgerAccount, JournalEntry, JournalEntryLine, TDSRate, assert_balanced, reverse_journal,
 )
+from apps.bookkeeping.tds_service import calculate_tds
 
 
 class DoubleEntryBalanceTests(TestCase):
@@ -65,18 +66,41 @@ class FiscalYearSpanTests(TestCase):
         fy = FiscalYear.objects.create(
             company=self.company,
             start_date=date(2024, 7, 16),
-            end_date=date(2025, 7, 16),
+            end_date=date(2025, 7, 15),
             start_date_bs="2081-04-01",
-            end_date_bs="2082-03-32",
+            end_date_bs="2082-03-31",
         )
         self.assertEqual(fy.name, "2081/82")
 
     def test_wrong_start_month_rejected(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValueError):
             FiscalYear.objects.create(
                 company=self.company,
                 start_date=date(2024, 1, 1),
                 end_date=date(2025, 1, 1),
                 start_date_bs="2081-01-01",
-                end_date_bs="2082-03-32",
+                end_date_bs="2082-03-31",
             )
+
+
+class CalculateTdsTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(name="TDS Co")
+        from apps.vendors.models import Vendor
+        from apps.billing.models import VendorBill
+        self.vendor = Vendor.objects.create(company=self.company, name="Test Vendor")
+        TDSRate.objects.create(
+            company=self.company, category="RENT", rate=Decimal("10.00"),
+            effective_from=date(2024, 1, 1),
+        )
+        self.bill = VendorBill.objects.create(
+            vendor=self.vendor, bill_number="TDS-BILL-1", bill_date=date(2024, 6, 1),
+            total_amount=Decimal("1000.00"), tds_category="RENT",
+        )
+
+    def test_calculate_tds_applies_active_rate(self):
+        self.assertEqual(calculate_tds(self.bill), Decimal("100.00"))
+
+    def test_calculate_tds_returns_zero_without_category(self):
+        self.bill.tds_category = None
+        self.assertEqual(calculate_tds(self.bill), Decimal("0.00"))

@@ -134,6 +134,7 @@ class StockTransactionForm(forms.ModelForm):
             self.fields['product'].queryset = Product.objects.filter(pk=initial_product.pk)
             self.initial['product'] = initial_product
 
+
 class StockDisposalForm(forms.Form):
     quantity = forms.IntegerField(min_value=1)
     stock_type = forms.ChoiceField(choices=StockTransaction.STOCK_TYPES, initial='POS')

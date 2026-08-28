@@ -1,38 +1,61 @@
 {% load global_filter %}
 {% with order=table.active_order %}
 
-<div class="relative rounded-lg shadow-md p-4 flex flex-col items-center justify-center min-h-[100px] cursor-pointer transition select-none
-  {% if table.status == 'AVAILABLE' %}bg-green-500 hover:bg-green-600 text-white
-  {% elif table.status == 'OCCUPIED' %}bg-red-500 hover:bg-red-600 text-white
-  {% elif table.status == 'RESERVED' %}bg-yellow-400 hover:bg-yellow-500 text-gray-900
-  {% else %}bg-gray-400 hover:bg-gray-500 text-white{% endif %}"
-     title="{{ table.label }} — {{ table.get_status_display }}">
+<div class="relative shadow-md p-4 flex flex-col items-center justify-center min-h-[100px] cursor-pointer transition select-none
+ {% if table.status == 'AVAILABLE' %}bg-green-500 hover:bg-green-600 text-white
+ {% elif table.status == 'OCCUPIED' %}bg-red-500 hover:bg-red-600 text-white
+ {% elif table.status == 'RESERVED' %}bg-yellow-400 hover:bg-yellow-500 text-gray-900
+ {% else %}bg-gray-400 hover:bg-gray-500 text-white{% endif %}"
+ title="{{ table.label }} — {{ table.get_status_display }}">
 
-  <span class="text-lg font-bold">{{ table.label }}</span>
-  <span class="text-xs mt-0.5 opacity-80">Cap: {{ table.capacity }}</span>
+ <span class="text-lg font-bold">{{ table.label }}</span>
+ <span class="text-xs mt-0.5 opacity-80">Cap: {{ table.capacity }}</span>
 
-  {% if order %}
-    <span class="text-xs mt-1 font-semibold">{{ order.order_number }}</span>
-    <span class="text-xs opacity-80">{{ order.covers }} pax</span>
-    <a href="{% url 'restaurant:order_detail' pk=order.pk %}"
-       class="absolute inset-0 rounded-lg" aria-label="Open order {{ order.order_number }}"></a>
-  {% elif table.status == 'AVAILABLE' and user|group_has_perm:'restaurant.add_diningorder' %}
-    <a href="{% url 'restaurant:order_open' table_pk=table.pk %}"
-       class="absolute inset-0 rounded-lg" aria-label="Open order on {{ table.label }}"></a>
-  {% elif table.status == 'CLEANING' and user|group_has_perm:'restaurant.change_restauranttable' %}
-    <form method="post" action="{% url 'restaurant:table_set_available' table_pk=table.pk %}" class="mt-2">
-      {% csrf_token %}
-      <button type="submit" class="text-xs underline opacity-80 hover:opacity-100">Mark Available</button>
-    </form>
-  {% endif %}
+ {% if order %}
+ <span class="text-xs mt-1 font-semibold">{{ order.order_number }}</span>
+ <span class="text-xs opacity-80">{{ order.covers }} pax</span>
+ <a href="{% url 'restaurant:order_detail' pk=order.pk %}"
+ class="absolute inset-0 " aria-label="Open order {{ order.order_number }}"></a>
+ {% elif table.status == 'RESERVED' and table.active_reservation %}
+ {% with reservation=table.active_reservation %}
+ <span class="text-xs mt-1 font-semibold">{{ reservation.guest_name }}</span>
+ <span class="text-xs opacity-80">{{ reservation.reserved_for|date:"H:i" }} · {{ reservation.party_size }} pax</span>
+ {% if user|group_has_perm:'restaurant.add_diningorder' %}
+ <form method="post" action="{% url 'restaurant:reservation_seat' pk=reservation.pk %}" class="mt-1 z-10 relative">
+ {% csrf_token %}
+ <button type="submit" class="text-xs underline opacity-90 hover:opacity-100">Seat Guest</button>
+ </form>
+ {% endif %}
+ {% if user|group_has_perm:'restaurant.change_tablereservation' %}
+ <a href="{% url 'restaurant:reservation_cancel' pk=reservation.pk %}"
+ class="text-xs underline opacity-90 hover:opacity-100 z-10 relative">Cancel</a>
+ {% endif %}
+ {% endwith %}
+ {% elif table.status == 'AVAILABLE' and user|group_has_perm:'restaurant.add_diningorder' %}
+ <a href="{% url 'restaurant:order_open' table_pk=table.pk %}"
+ class="absolute inset-0 " aria-label="Open order on {{ table.label }}"></a>
+ {% elif table.status == 'CLEANING' and user|group_has_perm:'restaurant.change_restauranttable' %}
+ <form method="post" action="{% url 'restaurant:table_set_available' table_pk=table.pk %}" class="mt-2">
+ {% csrf_token %}
+ <button type="submit" class="text-xs underline opacity-80 hover:opacity-100">Mark Available</button>
+ </form>
+ {% endif %}
 
-  {% if user|group_has_perm:'restaurant.change_restauranttable' %}
-  <a href="{% url 'restaurant:table_update' pk=table.pk %}"
-     class="absolute top-1 right-1 text-white opacity-50 hover:opacity-100 z-10"
-     title="Edit table">
-    <i class="fas fa-cog text-xs"></i>
-  </a>
-  {% endif %}
+ {% if table.status == 'AVAILABLE' and user|group_has_perm:'restaurant.add_tablereservation' %}
+ <a href="{% url 'restaurant:reservation_create' table_pk=table.pk %}"
+ class="absolute bottom-1 left-1 text-white opacity-70 hover:opacity-100 z-10"
+ title="Reserve table" onclick="event.stopPropagation();">
+ <i class="fas fa-calendar-plus text-xs"></i>
+ </a>
+ {% endif %}
+
+ {% if user|group_has_perm:'restaurant.change_restauranttable' %}
+ <a href="{% url 'restaurant:table_update' pk=table.pk %}"
+ class="absolute top-1 right-1 text-white opacity-50 hover:opacity-100 z-10"
+ title="Edit table">
+ <i class="fas fa-cog text-xs"></i>
+ </a>
+ {% endif %}
 </div>
 
 {% endwith %}

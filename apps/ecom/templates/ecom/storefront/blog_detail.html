@@ -5,25 +5,21 @@
 
 {% block content %}
 
-<section class="mb-60">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-lg-9">
-        {% if post.cover_image %}
-        <div class="mb-30" style="border-radius:8px;overflow:hidden;max-height:400px;">
-          <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="width:100%;object-fit:cover;">
-        </div>
-        {% endif %}
-        <span class="font-xs color-gray-500">{{ post.published_at|date:"F d, Y" }}{% if post.author_name %} · by {{ post.author_name }}{% endif %}</span>
-        <h2 class="mt-10 mb-30 color-brand-3">{{ post.title }}</h2>
-        <div class="content-page font-sm color-gray-900" style="line-height:2;">
-          {{ post.content|linebreaks }}
-        </div>
-        <div class="mt-40 pt-30" style="border-top:1px solid #eee;">
-          <a href="{% url 'ecom:blog_list' %}" class="btn btn-cart">← Back to Blog</a>
-        </div>
-      </div>
-    </div>
-  </div>
+<section class="max-w-[860px] mx-auto px-4 py-14">
+ {% if post.cover_image %}
+ <div class="mb-8 rounded-2xl overflow-hidden max-h-[400px] glass">
+ <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" class="w-full object-cover">
+ </div>
+ {% endif %}
+ <span class="text-[12.5px] text-cream/45 font-eyebrow">{{ post.published_at|date:"F d, Y" }}{% if post.author_name %} &middot; by {{ post.author_name }}{% endif %}</span>
+ <h2 class="font-display text-3xl text-cream mt-2 mb-8">{{ post.title }}</h2>
+ <div class="content-page text-cream/70 text-[15px] leading-[2]">
+ {{ post.content|linebreaks }}
+ </div>
+ <div class="mt-10 pt-8 border-t hair">
+ <a href="{% url 'ecom:blog_list' %}" class="inline-flex items-center gap-2 h-11 px-6 rounded-full glass text-cream/85 text-sm hover:border-gold transition">
+ <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Blog
+ </a>
+ </div>
 </section>
 {% endblock %}

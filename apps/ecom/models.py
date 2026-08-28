@@ -1,7 +1,5 @@
 from decimal import Decimal
 from django.db import models
-from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
 from apps.utils.baseModel import BaseModel
 
@@ -182,27 +180,6 @@ class DiscountCoupon(BaseModel):
         if self.discount_type == 'PERCENT':
             return min((subtotal * self.value / 100).quantize(Decimal('0.01')), subtotal)
         return min(self.value, subtotal)
-
-
-# ── Product reviews ──────────────────────────────────────────────────────────
-
-class ProductReview(BaseModel):
-    """Customer review moderated by the store before it appears publicly."""
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, related_name='product_reviews')
-    product = models.ForeignKey('products.Product', on_delete=models.CASCADE, related_name='reviews')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='product_reviews')
-    reviewer_name = models.CharField(max_length=120)
-    rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
-    title = models.CharField(max_length=160, blank=True)
-    comment = models.TextField(blank=True)
-    is_approved = models.BooleanField(default=False)
-
-    class Meta:
-        ordering = ['-created_at']
-        indexes = [models.Index(fields=['product', 'is_approved'])]
-
-    def __str__(self):
-        return f"{self.product.name} — {self.rating}/5 by {self.reviewer_name}"
 
 
 # ── Orders ────────────────────────────────────────────────────────────────────

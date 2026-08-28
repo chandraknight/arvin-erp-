@@ -4,6 +4,7 @@ from apps.purchasing.models import PurchaseOrder
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.db import transaction
+from apps.purchasing.services.approval_services import evaluate_approval_requirement
 
 
 class PurchaseOrderMixin:
@@ -54,6 +55,7 @@ class PurchaseOrderMixin:
                     for item in self.object.items.all()
                 )
                 self.object.save(update_fields=['total_amount'])
+                evaluate_approval_requirement(self.object)
 
                 messages.success(
                     self.request,

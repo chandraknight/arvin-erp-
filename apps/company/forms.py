@@ -9,12 +9,14 @@ class CompanyForm(forms.ModelForm):
         model = Company
         fields = [
             'name', 'address', 'phone', 'email', 'logo', 'tax_rate', 'cit_rate',
+            'po_approval_threshold',
             'organisation_type',
             'pan_number', 'vat_registered', 'vat_number', 'vat_inclusive',
             'enable_branch_accounting', 'enable_project_tracking', 'enable_forecasting',
             'enable_order_management', 'enable_manufacturing',
             'enable_hr_payroll', 'enable_purchasing', 'enable_inventory',
             'enable_restaurant', 'enable_pos', 'enable_tours', 'enable_ecom',
+            'enable_ssf',
             'enable_ebilling', 'cbms_username', 'cbms_password',
             'invoice_print_format', 'sales_order_print_format', 'pos_receipt_print_format',
             'receipt_footer_text',
@@ -28,6 +30,7 @@ class CompanyForm(forms.ModelForm):
             'pan_number': 'PAN registration number. Enter this even if the company is not VAT-registered.',
             'vat_registered': 'Check only if this company is registered for VAT (charges VAT on sales).',
             'vat_inclusive': 'Check if prices already include VAT.',
+            'po_approval_threshold': 'POs at or above this amount require admin approval before being sent. Leave blank to skip PO approval.',
             'enable_branch_accounting': 'Enables branch selection on invoices and branch-wise reports.',
             'enable_project_tracking': 'Enables the Projects & Cost Centres module.',
             'enable_forecasting': 'Enables Budget and Forecast module.',
@@ -40,6 +43,7 @@ class CompanyForm(forms.ModelForm):
             'enable_pos': 'Enables Point of Sale (POS) module for quick retail/counter sales.',
             'enable_tours': 'Enables Tours & Ticketing module (Enquiries, Bookings, Invoicing).',
             'enable_ecom': 'Enables E-Commerce storefront (/store/). Customers can browse and place COD orders online.',
+            'enable_ssf': 'Enables Social Security Fund (SSF) contributions on payroll. Explicit opt-in — not auto-enabled by organisation type.',
             'enable_ebilling': 'Enables real-time bill submission to Nepal IRD CBMS. Requires VAT number and CBMS credentials.',
             'invoice_print_format': 'Default format when printing an invoice (no ?mode= override in the URL).',
             'sales_order_print_format': 'Default format when printing a sales order receipt.',
@@ -53,6 +57,14 @@ class CompanyForm(forms.ModelForm):
         # tax_rate has a model default (13.00) — allow blank in the form
         self.fields['tax_rate'].required = False
         self.fields['tax_rate'].initial = '13.00'
+        # cit_rate and print-format fields all have model defaults but aren't
+        # rendered on the create wizard — fall back to those defaults instead
+        # of forcing every caller of this form to render them.
+        self.fields['cit_rate'].required = False
+        self.fields['cit_rate'].initial = self._meta.model.cit_rate.field.default
+        for field_name in ('invoice_print_format', 'sales_order_print_format', 'pos_receipt_print_format'):
+            self.fields[field_name].required = False
+            self.fields[field_name].initial = self._meta.model._meta.get_field(field_name).default
 
     def clean_tax_rate(self):
         from decimal import Decimal
@@ -60,6 +72,22 @@ class CompanyForm(forms.ModelForm):
         if val is None or val == '':
             return Decimal('13.00')
         return val
+
+    def clean_cit_rate(self):
+        val = self.cleaned_data.get('cit_rate')
+        return val if val not in (None, '') else self._meta.model.cit_rate.field.default
+
+    def clean_invoice_print_format(self):
+        val = self.cleaned_data.get('invoice_print_format')
+        return val or self._meta.model._meta.get_field('invoice_print_format').default
+
+    def clean_sales_order_print_format(self):
+        val = self.cleaned_data.get('sales_order_print_format')
+        return val or self._meta.model._meta.get_field('sales_order_print_format').default
+
+    def clean_pos_receipt_print_format(self):
+        val = self.cleaned_data.get('pos_receipt_print_format')
+        return val or self._meta.model._meta.get_field('pos_receipt_print_format').default
 
     def clean(self):
         cleaned = super().clean()

@@ -406,62 +406,71 @@ class LedgerReportView(AuthMixin, View):
             messages.error(request, "Amount must be greater than zero.")
             return redirect('bookkeeping:ledger_report', account_id=account_id)
 
-        # Save / update the opening balance record
-        LedgerOpeningBalance.objects.update_or_create(
-            account=account,
-            fiscal_year=active_fy,
-            defaults={'amount': amount, 'opening_type': opening_type},
-        )
-
         # Resolve entry date
         entry_date = bs_str_to_ad(date_str) if date_str else active_fy.start_date
 
-        # Find the contra account ("Opening Balance Equity" or similar)
-        contra = (
-            LedgerAccount.objects.filter(
-                company=account.company,
-                name__icontains='Opening Balance',
-            )
-            .exclude(pk=account.pk)
-            .first()
-        )
+        from django.db import transaction
+        from apps.bookkeeping.models import assert_balanced, reverse_journal
 
-        if contra:
-            from django.db import transaction
-            from apps.bookkeeping.models import assert_balanced
-            with transaction.atomic():
-                journal = JournalEntry.objects.create(
-                    company=account.company,
-                    date=entry_date,
-                    description=f"Opening Balance – {account.name}",
-                )
-                counter_type = 'CREDIT' if opening_type == 'DEBIT' else 'DEBIT'
-                JournalEntryLine.objects.bulk_create([
-                    JournalEntryLine(
-                        journal_entry=journal,
-                        account=account,
-                        entry_type=opening_type,
-                        amount=amount,
-                        narration="Opening Balance",
-                    ),
-                    JournalEntryLine(
-                        journal_entry=journal,
-                        account=contra,
-                        entry_type=counter_type,
-                        amount=amount,
-                        narration="Opening Balance",
-                    ),
-                ])
-                assert_balanced(journal)
-            messages.success(
-                request,
-                f"Opening balance of {amount} ({opening_type}) set and journal entry created."
+        with transaction.atomic():
+            # Save / update the opening balance record
+            LedgerOpeningBalance.objects.update_or_create(
+                account=account,
+                fiscal_year=active_fy,
+                defaults={'amount': amount, 'opening_type': opening_type},
             )
-        else:
-            messages.warning(
-                request,
-                f"Opening balance saved, but no 'Opening Balance' contra account found — journal entry skipped."
+
+            # Reverse any prior opening-balance entry for this account+FY first —
+            # editing must never leave the old posting live alongside the new
+            # one, or the GL double-counts the balance even though the
+            # LedgerOpeningBalance record itself was correctly overwritten.
+            description = f"Opening Balance – {account.name}"
+            prior_entries = JournalEntry.objects.filter(
+                company=account.company,
+                description=description,
+                is_reversed=False,
+                is_deleted=False,
             )
+            for prior in prior_entries:
+                reverse_journal(prior, reason='Superseded by opening balance edit', user=request.user)
+
+            # Find (or create) the contra account — never skip posting silently,
+            # that would leave the subledger and GL out of sync.
+            contra, _ = LedgerAccount.objects.get_or_create(
+                company=account.company,
+                name='Opening Balance Equity',
+                defaults={'account_type': 'EQUITY', 'system_created': True},
+            )
+
+            journal = JournalEntry.objects.create(
+                company=account.company,
+                date=entry_date,
+                description=description,
+                created_by=request.user,
+            )
+            counter_type = 'CREDIT' if opening_type == 'DEBIT' else 'DEBIT'
+            JournalEntryLine.objects.bulk_create([
+                JournalEntryLine(
+                    journal_entry=journal,
+                    account=account,
+                    entry_type=opening_type,
+                    amount=amount,
+                    narration="Opening Balance",
+                ),
+                JournalEntryLine(
+                    journal_entry=journal,
+                    account=contra,
+                    entry_type=counter_type,
+                    amount=amount,
+                    narration="Opening Balance",
+                ),
+            ])
+            assert_balanced(journal)
+
+        messages.success(
+            request,
+            f"Opening balance of {amount} ({opening_type}) set and journal entry created."
+        )
 
         return redirect('bookkeeping:ledger_report', account_id=account_id)
 

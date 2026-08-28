@@ -1,13 +1,14 @@
 from django.utils import timezone
 from django.views.generic import CreateView
-from apps.utils.mixins import AuthMixin
+from apps.utils.mixins import AuthMixin, ModuleRequiredMixin
 from apps.company.fiscal_year_guard import FiscalYearOpenMixin
 from .helper import *
 from ..services.purchases_services import generate_po_number
 
 
-class PurchaseOrderCreateView(AuthMixin, FiscalYearOpenMixin, PurchaseOrderMixin, CreateView):
+class PurchaseOrderCreateView(AuthMixin, ModuleRequiredMixin, FiscalYearOpenMixin, PurchaseOrderMixin, CreateView):
     permission_required = ['purchasing.add_purchaseorder']
+    module_flag = 'enable_purchasing'
     def get_initial(self):
         company = getattr(self.request.user, 'company', None)
         preview_number = generate_po_number(company.id)[0] if company else ''

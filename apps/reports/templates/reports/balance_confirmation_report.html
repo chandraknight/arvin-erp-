@@ -1,0 +1,79 @@
+<!-- reports/templates/reports/balance_confirmation_report.html -->
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Balance Confirmation{% endblock %}
+
+{% block content %}
+ <div class="w-full mt-2">
+ <div class="flex justify-between items-center mb-6">
+ <h1 class="text-3xl font-bold text-gray-800">Balance Confirmation</h1>
+ <a href="{% url 'reports:report_dashboard' %}" class="inline-block bg-gray-500 text-white px-4 py-2 hover:bg-gray-600 transition duration-200 ease-in-out text-sm">Back to Reports Dashboard</a>
+ </div>
+
+ <form method="post" class="mb-8 bg-white shadow-md p-6 flex flex-wrap items-end gap-4">
+ {% csrf_token %}
+ <div>
+ <label for="party_type" class="block text-sm font-medium text-gray-700">Party Type:</label>
+ <select name="party_type" id="party_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+ <option value="customer">Customer</option>
+ <option value="vendor">Vendor</option>
+ </select>
+ </div>
+ <div>
+ <label for="party_id" class="block text-sm font-medium text-gray-700">Party:</label>
+ <select name="party_id" id="party_id" class="mt-1 block w-full px-3 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+ <optgroup label="Customers">
+ {% for c in customers %}<option value="{{ c.id }}" data-type="customer">{{ c.name }}</option>{% endfor %}
+ </optgroup>
+ <optgroup label="Vendors">
+ {% for v in vendors %}<option value="{{ v.id }}" data-type="vendor">{{ v.name }}</option>{% endfor %}
+ </optgroup>
+ </select>
+ </div>
+ <div>
+ <label for="as_of_date" class="block text-sm font-medium text-gray-700">As Of Date:</label>
+ <input type="text" name="as_of_date" id="as_of_date" placeholder="YYYY-MM-DD" autocomplete="off" class="nepali-datepicker mt-1 block w-full px-3 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm">
+ </div>
+ <button type="submit" class="bg-blue-500 text-white px-4 py-2 hover:bg-blue-600 transition duration-200 ease-in-out text-sm">Generate Confirmation</button>
+ </form>
+
+ <div class="overflow-x-auto">
+ <table class="min-w-full bg-white shadow-md ">
+ <thead class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+ <tr>
+ <th class="py-3 px-6 text-left">As Of</th>
+ <th class="py-3 px-6 text-left">Party</th>
+ <th class="py-3 px-6 text-left">Type</th>
+ <th class="py-3 px-6 text-right">Balance</th>
+ <th class="py-3 px-6 text-left">Status</th>
+ <th class="py-3 px-6 text-left">Action</th>
+ </tr>
+ </thead>
+ <tbody class="text-gray-600 text-sm font-light">
+ {% for c in confirmations %}
+ <tr class="border-b border-gray-200 hover:bg-gray-100">
+ <td class="py-3 px-6 text-left whitespace-nowrap">{{ c.as_of_date }}</td>
+ <td class="py-3 px-6 text-left">{{ c.party }}</td>
+ <td class="py-3 px-6 text-left">{% if c.customer %}Customer{% else %}Vendor{% endif %}</td>
+ <td class="py-3 px-6 text-right whitespace-nowrap">{{ c.balance|floatformat:2|intcomma }}</td>
+ <td class="py-3 px-6 text-left">{{ c.get_status_display }}</td>
+ <td class="py-3 px-6 text-left"><a href="{% url 'reports:balance_confirmation_print' c.pk %}" class="text-blue-600 hover:underline">Print Letter</a></td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="6" class="py-6 text-center text-gray-400 italic">No balance confirmations generated yet.</td></tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+
+ <script>
+ document.getElementById('party_type').addEventListener('change', function () {
+ const type = this.value;
+ document.querySelectorAll('#party_id option[data-type]').forEach(function (opt) {
+ opt.hidden = opt.dataset.type !== type;
+ });
+ });
+ </script>
+{% endblock %}

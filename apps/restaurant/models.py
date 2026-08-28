@@ -132,6 +132,42 @@ class RestaurantTable(BaseModel):
             status__in=['OPEN', 'KOT_SENT', 'BOT_SENT', 'BILLED']
         ).first()
 
+    @property
+    def active_reservation(self):
+        return self.reservations.filter(status='PENDING').order_by('reserved_for').first()
+
+
+RESERVATION_STATUS_CHOICES = [
+    ('PENDING',   'Pending'),
+    ('SEATED',    'Seated'),
+    ('CANCELLED', 'Cancelled'),
+    ('NO_SHOW',   'No Show'),
+]
+
+
+class TableReservation(BaseModel):
+    """A pending reservation on a table, awaiting seating or cancellation."""
+    company = models.ForeignKey(
+        'company.Company', on_delete=models.CASCADE, related_name='table_reservations'
+    )
+    table = models.ForeignKey(
+        RestaurantTable, on_delete=models.CASCADE, related_name='reservations'
+    )
+    guest_name = models.CharField(max_length=200)
+    guest_phone = models.CharField(max_length=20, blank=True)
+    party_size = models.PositiveSmallIntegerField(default=1)
+    reserved_for = models.DateTimeField()
+    notes = models.CharField(max_length=255, blank=True)
+    status = models.CharField(
+        max_length=10, choices=RESERVATION_STATUS_CHOICES, default='PENDING'
+    )
+
+    class Meta:
+        ordering = ['reserved_for']
+
+    def __str__(self):
+        return f"{self.guest_name} — {self.table.label} @ {self.reserved_for}"
+
 
 CONNECTION_TYPE_CHOICES = [
     ('NETWORK', 'Network (IP address)'),
@@ -250,6 +286,10 @@ class DiningOrder(BaseModel):
     tax_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
     total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
 
+    # Order-level discount, layered on top of item-level discounts. Requires authorization.
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    discount_reason = models.CharField(max_length=255, blank=True, null=True)
+
     # Link to invoice once billed
     invoice = models.OneToOneField(
         'billing.Invoice', on_delete=models.SET_NULL, null=True, blank=True,
@@ -264,15 +304,16 @@ class DiningOrder(BaseModel):
         return f"Order {self.order_number or self.id} — {self.table}"
 
     def recalculate_totals(self):
-        """Recompute subtotal / tax / total from active items."""
+        """Recompute subtotal / tax / total from active items, plus order-level discount."""
         items = self.items.exclude(status='CANCELLED')
         subtotal = sum(i.line_subtotal for i in items)
-        discount = sum(i.discount_amount for i in items)
+        item_discount = sum(i.discount_amount for i in items)
         tax = sum(i.tax_amount for i in items)
+        order_discount = ((subtotal - item_discount) * self.discount_percent / 100).quantize(Decimal('0.01'))
         self.subtotal = subtotal
-        self.discount_amount = discount
+        self.discount_amount = item_discount + order_discount
         self.tax_amount = tax
-        self.total = subtotal - discount + tax
+        self.total = subtotal - self.discount_amount + tax
         self.save(update_fields=['subtotal', 'discount_amount', 'tax_amount', 'total'])
 
     @property
@@ -329,6 +370,11 @@ class DiningOrderItem(BaseModel):
     notes = models.CharField(
         max_length=255, blank=True, null=True,
         help_text='Special instructions, e.g. "no onions".'
+    )
+    invoice = models.ForeignKey(
+        'billing.Invoice', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='dining_order_items',
+        help_text='Set at bill time — which split invoice (if any) covers this item.'
     )
 
     class Meta:

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Apply Discount — {{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+ <div class="bg-white border border-gray-200 shadow-sm ">
+ <div class="px-6 py-4 bg-green-700 text-white ">
+ <h1 class="text-lg font-bold"><i class="fas fa-percentage mr-2"></i>Order Discount</h1>
+ </div>
+ <div class="p-6 space-y-4">
+ <div class="text-sm text-gray-700 space-y-1">
+ <p><strong>Order:</strong> {{ order.order_number }}</p>
+ <p><strong>Table:</strong> {{ order.table.label }}</p>
+ <p><strong>Subtotal:</strong> {{ order.subtotal }}</p>
+ </div>
+ <div class="bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+ This applies an additional order-wide discount on top of any item-level discounts. A reason is required for audit.
+ </div>
+ <form method="post">
+ {% csrf_token %}
+ <div class="mb-4">
+ <label class="block text-sm font-semibold text-gray-600 mb-1">Discount %</label>
+ {{ form.discount_percent }}
+ {% if form.discount_percent.errors %}<p class="text-red-600 text-sm mt-1">{{ form.discount_percent.errors|striptags }}</p>{% endif %}
+ </div>
+ <div class="mb-4">
+ <label class="block text-sm font-semibold text-gray-600 mb-1">Reason</label>
+ {{ form.reason }}
+ {% if form.reason.errors %}<p class="text-red-600 text-sm mt-1">{{ form.reason.errors|striptags }}</p>{% endif %}
+ </div>
+ <div class="flex gap-3">
+ <button type="submit" class="px-5 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold">
+ Apply Discount
+ </button>
+ <a href="{% url 'restaurant:order_detail' order.pk %}"
+ class="px-5 py-2 border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">Cancel</a>
+ </div>
+ </form>
+ </div>
+ </div>
+</div>
+{% endblock %}

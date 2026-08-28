@@ -82,6 +82,7 @@ PAYMENT_TYPE_CHOICES = [
 ]
 
 PURCHASE_STATUS_CHOICES = [
+    ('DRAFT', 'Draft'),
     ('SENT', 'Sent'),
     ('RECEIVED', 'Received'),
     ('CANCELLED', 'Cancelled'),

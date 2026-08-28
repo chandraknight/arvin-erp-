@@ -14,7 +14,9 @@ Design decisions
 """
 
 from decimal import Decimal
+from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from apps.utils.baseModel import BaseModel
 from apps.utils.constant import PAYMENT_METHOD_CHOICES
 
@@ -111,6 +113,14 @@ class POSSale(BaseModel):
     # Optional note (e.g. "split bill", "loyalty discount applied")
     notes = models.CharField(max_length=255, blank=True, null=True)
 
+    shift = models.ForeignKey(
+        'pos.PosShift',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='sales',
+        help_text='Till shift this sale was rung up under.',
+    )
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'POS Sale'
@@ -118,3 +128,90 @@ class POSSale(BaseModel):
 
     def __str__(self):
         return f"POS {self.invoice.invoice_number} — {self.total}"
+
+
+class PosShift(BaseModel):
+    """A single cashier's till session — opening float through closing cash count."""
+
+    STATUS_CHOICES = [
+        ('OPEN', 'Open'),
+        ('CLOSED', 'Closed'),
+    ]
+
+    company = models.ForeignKey(
+        'company.Company',
+        on_delete=models.CASCADE,
+        related_name='pos_shifts',
+    )
+    branch = models.ForeignKey(
+        'company.Branch',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='pos_shifts',
+    )
+    terminal_name = models.CharField(max_length=100, blank=True, default='')
+
+    opened_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='opened_pos_shifts',
+    )
+    opened_at = models.DateTimeField(default=timezone.now)
+    opening_float = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='closed_pos_shifts',
+    )
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='OPEN')
+
+    expected_cash = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    counted_cash = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    variance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    closing_notes = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['-opened_at']
+        verbose_name = 'POS Shift'
+        verbose_name_plural = 'POS Shifts'
+
+    def __str__(self):
+        return f"Shift {self.opened_at:%Y-%m-%d %H:%M} ({self.status})"
+
+
+class PosCashMovement(BaseModel):
+    """Manual cash in/out against an open till shift (petty cash, safe drop, etc.)."""
+
+    MOVEMENT_TYPE_CHOICES = [
+        ('CASH_IN', 'Cash In'),
+        ('CASH_OUT', 'Cash Out'),
+    ]
+
+    shift = models.ForeignKey(
+        PosShift,
+        on_delete=models.CASCADE,
+        related_name='cash_movements',
+    )
+    movement_type = models.CharField(max_length=10, choices=MOVEMENT_TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reason = models.CharField(max_length=255)
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='pos_cash_movements',
+    )
+    recorded_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-recorded_at']
+        verbose_name = 'POS Cash Movement'
+        verbose_name_plural = 'POS Cash Movements'
+
+    def __str__(self):
+        return f"{self.movement_type} {self.amount} — {self.reason}"

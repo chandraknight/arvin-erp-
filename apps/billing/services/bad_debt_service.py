@@ -55,14 +55,6 @@ def write_off_bad_debt(invoice, amount, reason, user):
         company, 'Bad Debt Expense', 'EXPENSE', code='5930'
     )
 
-    journal_entry = JournalEntry.objects.create(
-        company=company,
-        date=invoice.transaction_date,
-        description=f"Bad debt write-off — Invoice {invoice.invoice_number} ({reason[:100]})",
-        created_by=user,
-        journal_type='PROVISION',
-    )
-
     # Nepal VAT Act: output VAT already remitted on an uncollected sale can be
     # reclaimed proportionally to the amount written off.
     vat_portion = Decimal('0.00')
@@ -83,19 +75,26 @@ def write_off_bad_debt(invoice, amount, reason, user):
             expense_portion = amount
             vat_portion = Decimal('0.00')
 
+    journal_entry = JournalEntry.objects.create(
+        company=company,
+        date=invoice.transaction_date,
+        description=f"Bad debt write-off — Invoice {invoice.invoice_number} ({reason[:100]})",
+        created_by=user,
+        journal_type='PROVISION',
+    )
     JournalEntryLine.objects.create(
         journal_entry=journal_entry, account=bad_debt_expense_acc, entry_type='DEBIT',
         amount=expense_portion, narration=f'Write-off of Invoice {invoice.invoice_number}',
-    )
-    JournalEntryLine.objects.create(
-        journal_entry=journal_entry, account=invoice.customer.related_ledger_account, entry_type='CREDIT',
-        amount=amount, narration=f'Write-off of Invoice {invoice.invoice_number}',
     )
     if vat_portion > 0 and tax_payable_acc:
         JournalEntryLine.objects.create(
             journal_entry=journal_entry, account=tax_payable_acc, entry_type='DEBIT',
             amount=vat_portion, narration=f'VAT relief on write-off of Invoice {invoice.invoice_number}',
         )
+    JournalEntryLine.objects.create(
+        journal_entry=journal_entry, account=invoice.customer.related_ledger_account, entry_type='CREDIT',
+        amount=amount, narration=f'Write-off of Invoice {invoice.invoice_number}',
+    )
     assert_balanced(journal_entry)
 
     Invoice.objects.filter(pk=invoice.pk).update(

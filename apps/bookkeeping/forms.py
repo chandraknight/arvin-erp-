@@ -152,6 +152,8 @@ class LedgerAccountForm(forms.ModelForm):
 
         if self.company:
             self.fields['company'].initial = self.company
+
+
             self.fields['company'].disabled = True
             self.fields['company'].widget.attrs['readonly'] = True
 
@@ -164,10 +166,6 @@ class LedgerAccountForm(forms.ModelForm):
             if self.instance and self.instance.pk:
                 self.fields['parent_account'].queryset = qs.exclude(pk=self.instance.pk)
 
-    def clean_code(self):
-        code = self.cleaned_data.get('code')
-        return code.strip() or None if isinstance(code, str) else code
-
 
 class TDSRateForm(forms.ModelForm):
     class Meta:
@@ -178,3 +176,7 @@ class TDSRateForm(forms.ModelForm):
             'rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'effective_from': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
+
+    def clean_code(self):
+        code = self.cleaned_data.get('code')
+        return code.strip() or None if isinstance(code, str) else code

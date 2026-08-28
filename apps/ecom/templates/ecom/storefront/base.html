@@ -2,304 +2,351 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>{% block title %}{% if cms %}{{ cms.store_name }}{% else %}{{ company.name }}{% endif %} — {% block page_title %}Store{% endblock %}{% endblock %}</title>
-  <meta name="description" content="{% block meta_desc %}{% if cms %}{{ cms.tagline }}{% else %}{{ company.name }} Online Store{% endif %}{% endblock %}">
-  {% if cms and cms.favicon %}
-    <link rel="shortcut icon" type="image/x-icon" href="{{ cms.favicon.url }}">
-  {% endif %}
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Marcellus&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet" />
-  <link href="{% static 'ecom/assets/css/style.css' %}" rel="stylesheet">
-  <link href="{% static 'ecom/assets/css/store-theme.css' %}" rel="stylesheet">
-  {% block extra_head %}{% endblock %}
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+ <meta http-equiv="X-UA-Compatible" content="ie=edge">
+ <title>{% block title %}{% if cms %}{{ cms.store_name }}{% else %}{{ company.name }}{% endif %} — {% block page_title %}Store{% endblock %}{% endblock %}</title>
+ <meta name="description" content="{% block meta_desc %}{% if cms %}{{ cms.tagline }}{% else %}{{ company.name }} Online Store{% endif %}{% endblock %}">
+ {% if cms and cms.favicon %}
+ <link rel="shortcut icon" type="image/x-icon" href="{{ cms.favicon.url }}">
+ {% endif %}
+
+ <script src="https://cdn.tailwindcss.com"></script>
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Tiro+Devanagari+Sanskrit:ital@0;1&display=swap" rel="stylesheet">
+ <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+ <script>
+ tailwind.config = {
+ theme: {
+ extend: {
+ colors: {
+ saffron: '#E0631E',
+ maroon: '#7C1D28',
+ gold: '#C4972F',
+ goldlt: '#E4C67C',
+ cream: '#FBF6EA',
+ clay: '#6E5B4B',
+ ink: '#2A1512',
+ inkdeep: '#1B0D0B',
+ },
+ fontFamily: {
+ display: ['Fraunces', 'serif'],
+ eyebrow: ['Marcellus', 'serif'],
+ sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+ deva: ['"Tiro Devanagari Sanskrit"', 'serif'],
+ },
+ boxShadow: {
+ glow: '0 0 0 1px rgba(196,151,47,.18), 0 18px 50px -12px rgba(0,0,0,.7)',
+ glowlg: '0 0 0 1px rgba(196,151,47,.4), 0 30px 70px -18px rgba(224,99,30,.35), 0 0 60px -20px rgba(196,151,47,.55)',
+ },
+ },
+ },
+ };
+ </script>
+
+ <style>
+ :root { color-scheme: dark; }
+ html { scroll-behavior: smooth; }
+ body {
+ background-color: #2A1512;
+ background-image:
+ radial-gradient(1200px 640px at 78% -8%, rgba(224,99,30,.28), transparent 60%),
+ radial-gradient(900px 620px at 8% 12%, rgba(124,29,40,.55), transparent 62%),
+ radial-gradient(1000px 900px at 50% 120%, rgba(196,151,47,.10), transparent 60%),
+ linear-gradient(180deg, #2A1512 0%, #3a1618 42%, #1B0D0B 100%);
+ background-attachment: fixed;
+ }
+ .paper::before {
+ content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .05;
+ background-image:
+ repeating-linear-gradient(0deg, rgba(255,255,255,.5) 0 1px, transparent 1px 3px),
+ repeating-linear-gradient(90deg, rgba(255,255,255,.5) 0 1px, transparent 1px 3px);
+ mix-blend-mode: overlay;
+ }
+ .glass {
+ background: linear-gradient(180deg, rgba(43,21,18,.72), rgba(27,13,11,.66));
+ backdrop-filter: blur(14px);
+ -webkit-backdrop-filter: blur(14px);
+ border: 1px solid rgba(196,151,47,.28);
+ }
+ .hair { border-color: rgba(196,151,47,.22); }
+ .gold-underline { position: relative; display: inline-block; }
+ .gold-underline::after {
+ content: ""; position: absolute; left: 0; bottom: -.28em; height: 3px; width: 78%;
+ background: linear-gradient(90deg, #C4972F, #E0631E 60%, transparent);
+ border-radius: 3px;
+ }
+ .card-img { transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+ .card:hover .card-img { transform: scale(1.06); }
+ .quick-add { transform: translateY(12px); opacity: 0; transition: transform .35s ease, opacity .35s ease; }
+ .card:hover .quick-add, .card:focus-within .quick-add { transform: translateY(0); opacity: 1; }
+ details > summary { list-style: none; cursor: pointer; }
+ details > summary::-webkit-details-marker { display: none; }
+ details[open] .acc-caret { transform: rotate(180deg); }
+ .acc-caret { transition: transform .25s ease; }
+ .no-scrollbar::-webkit-scrollbar { display: none; }
+ .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+ outline: 2px solid #E4C67C; outline-offset: 2px; border-radius: 6px;
+ }
+ .drawer-open { overflow: hidden; }
+ </style>
+
+ {% block extra_head %}{% endblock %}
 </head>
-<body class="storefront-dark">
+<body class="font-sans text-cream antialiased paper">
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:bg-saffron focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">Skip to content</a>
 
-<div id="preloader-active">
-  <div class="preloader d-flex align-items-center justify-content-center">
-    <div class="store-loader" role="status" aria-live="polite" aria-label="Loading store">
-      <div class="store-loader-mark" aria-hidden="true">
-        <span class="store-loader-hands">🙏</span>
-        <span class="store-loader-cart">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M4 5h2l2.2 9.3a2 2 0 0 0 2 1.5h6.7a2 2 0 0 0 1.9-1.4L20 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="10" cy="20" r="1.5" fill="currentColor"/>
-            <circle cx="18" cy="20" r="1.5" fill="currentColor"/>
-          </svg>
-        </span>
-      </div>
-      <div class="store-loader-copy">
-        <strong>{% if cms and cms.store_name %}{{ cms.store_name }}{% else %}{{ company.name }}{% endif %}</strong>
-        <span>Preparing your sacred store</span>
-      </div>
-      <div class="store-loader-bar" aria-hidden="true"><span></span></div>
-    </div>
-  </div>
-</div>
-
-{# ── Announcement Strip (optional) ── #}
 {% if not cms or cms.show_topbar %}
-<div style="background:#500000;padding:7px 0;text-align:center;font-size:12px;color:#fff;">
-  {% if top_announcements %}
-    {% for ann in top_announcements %}
-      <span style="margin-right:8px;">{{ ann.text }}</span>
-      {% if ann.link_url %}<a href="{{ ann.link_url }}" style="color:#fcd34d;font-weight:700;text-decoration:none;">{{ ann.link_label|default:"Learn more →" }}</a>{% endif %}
-    {% endfor %}
-  {% else %}
-    <span>&#128666; Free Shipping on orders over <strong style="color:#fcd34d;">Rs. {{ cms.free_shipping_threshold|default:"5,000" }}</strong></span>
-    {% if cms and cms.contact_phone %}
-      <span style="margin-left:24px;opacity:0.8;">&#9742; {{ cms.contact_phone }}</span>
-    {% endif %}
-  {% endif %}
+<div class="relative z-20 bg-gradient-to-r from-maroon via-ink to-maroon text-goldlt text-[12.5px] tracking-wide border-b hair">
+ <div class="max-w-[1280px] mx-auto px-4 h-9 flex items-center justify-center gap-3 text-center">
+ <i data-lucide="sparkles" class="w-3.5 h-3.5 text-gold shrink-0"></i>
+ {% if top_announcements %}
+ {% for ann in top_announcements %}
+ <span class="font-eyebrow">{{ ann.text }}</span>
+ {% if ann.link_url %}<a href="{{ ann.link_url }}" class="text-cream hover:text-white underline">{{ ann.link_label|default:"Learn more" }}</a>{% endif %}
+ {% endfor %}
+ {% else %}
+ <span class="font-eyebrow">Free shipping over <span class="text-cream">Rs.{{ cms.free_shipping_threshold|default:"5,000" }}</span></span>
+ {% if cms and cms.contact_phone %}
+ <span class="opacity-40">·</span>
+ <span class="hidden sm:inline">&#9742; {{ cms.contact_phone }}</span>
+ {% endif %}
+ {% endif %}
+ </div>
 </div>
 {% endif %}
 
-{# ── Main Sticky Nav (SacredCart style) ── #}
-<nav id="sacred-nav" style="position:sticky;top:0;z-index:999;background:rgba(255,255,255,0.97);backdrop-filter:blur(8px);border-bottom:1px solid #f0ede9;box-shadow:0 1px 8px rgba(128,0,0,0.07);">
-  <div class="container" style="padding-top:0;padding-bottom:0;">
-    <div style="display:flex;align-items:center;justify-content:space-between;height:68px;gap:12px;">
+<header class="sticky top-0 z-40 glass">
+ <div class="max-w-[1280px] mx-auto px-4 lg:px-6">
+ <div class="h-[68px] flex items-center gap-4">
 
-      {# ── Logo ── #}
-      <a href="{% url 'ecom:home' %}" style="display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;">
-        {% if cms and cms.logo %}
-          <img alt="{{ company.name }}" src="{{ cms.logo.url }}" style="height:36px;width:auto;object-fit:contain;">
-        {% else %}
-          <div style="width:40px;height:40px;background:#800000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(128,0,0,0.3);flex-shrink:0;">🙏</div>
-          <span style="font-size:20px;font-weight:800;color:#6b0000;letter-spacing:-0.3px;line-height:1;">
-            {% if cms and cms.store_name %}{{ cms.store_name }}{% else %}{{ company.name }}{% endif %}
-          </span>
-        {% endif %}
-      </a>
+ <a href="{% url 'ecom:home' %}" class="flex items-center gap-2.5 shrink-0" aria-label="{{ company.name }} home">
+ {% if cms and cms.logo %}
+ <img alt="{{ company.name }}" src="{{ cms.logo.url }}" class="h-10 w-auto rounded-full">
+ {% else %}
+ <span class="grid place-items-center w-10 h-10 rounded-full border border-gold/50 bg-ink/60 shadow-glow">
+ <span class="font-deva text-gold text-xl leading-none">&#2384;</span>
+ </span>
+ {% endif %}
+ <span class="leading-none">
+ <span class="block font-display text-[22px] text-cream">
+ {% if cms and cms.store_name %}{{ cms.store_name }}{% else %}{{ company.name }}{% endif %}
+ </span>
+ {% if cms and cms.tagline %}
+ <span class="hidden sm:block text-[10px] tracking-[.2em] uppercase text-cream/50 font-eyebrow mt-0.5">{{ cms.tagline }}</span>
+ {% endif %}
+ </span>
+ </a>
 
-      {# ── Desktop Nav Links ── #}
-      <div class="d-none d-xl-flex" style="align-items:center;gap:2px;font-weight:500;">
-        <a href="{% url 'ecom:home' %}" class="sacred-nav-link {% block nav_active_home %}{% endblock %}">Home</a>
-        <a href="{% url 'ecom:product_list' %}" class="sacred-nav-link {% block nav_active_shop %}{% endblock %}">Products</a>
-        <a href="{% url 'ecom:bundle_list' %}" class="sacred-nav-link">Faith Kits</a>
-        <a href="{% url 'ecom:track_order' %}" class="sacred-nav-link {% block nav_active_orders %}{% endblock %}">Orders</a>
-        {% for page in nav_pages %}
-        <a href="{% url 'ecom:static_page' page.slug %}" class="sacred-nav-link">{{ page.title }}</a>
-        {% endfor %}
-        {% if has_blog %}<a href="{% url 'ecom:blog_list' %}" class="sacred-nav-link">Blog</a>{% endif %}
-        <a href="{% url 'ecom:contact' %}" class="sacred-nav-link {% block nav_active_contact %}{% endblock %}">Contact</a>
+ <nav class="hidden lg:flex items-center gap-6 ml-4 text-[14px] text-cream/80">
+ <a href="{% url 'ecom:home' %}" class="hover:text-goldlt transition {% block nav_active_home %}{% endblock %}">Home</a>
+ <a href="{% url 'ecom:product_list' %}" class="hover:text-goldlt transition {% block nav_active_shop %}{% endblock %}">Shop</a>
+ {% for page in nav_pages %}
+ <a href="{% url 'ecom:static_page' page.slug %}" class="hover:text-goldlt transition">{{ page.title }}</a>
+ {% endfor %}
+ <a href="{% url 'ecom:contact' %}" class="hover:text-goldlt transition {% block nav_active_contact %}{% endblock %}">Contact</a>
+ </nav>
 
-        {# Categories dropdown #}
-        <div style="position:relative;margin-left:4px;">
-          <button id="hdrCatBtn" type="button"
-            onclick="var m=document.getElementById('hdrCatMenu');m.style.display=m.style.display==='block'?'none':'block';"
-            style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:#800000;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:background 0.15s;"
-            onmouseover="this.style.background='#500000'" onmouseout="this.style.background='#800000'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            Categories
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div id="hdrCatMenu" class="header-cat-menu">
-            {% for cat in nav_categories %}
-            <a href="{% url 'ecom:product_list' %}?category={{ cat.id }}" class="header-cat-item">{{ cat.name }}</a>
-            {% empty %}
-            <a href="{% url 'ecom:product_list' %}" class="header-cat-item">All Products</a>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
+ <div class="hidden md:flex flex-1 max-w-sm ml-auto">
+ <form method="get" action="{% url 'ecom:product_list' %}" class="relative w-full">
+ <label class="relative w-full">
+ <span class="sr-only">Search products</span>
+ <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gold pointer-events-none"></i>
+ <input type="text" name="q" value="{{ search|default:'' }}" placeholder="Search diyas, idols, incense…"
+ class="w-full h-10 pl-10 pr-3 rounded-full bg-ink/50 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none transition">
+ </label>
+ </form>
+ </div>
 
-      {# ── Search + Cart + Account ── #}
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+ <div class="flex items-center gap-1.5 ml-auto md:ml-2 shrink-0">
+ <button class="md:hidden w-10 h-10 grid place-items-center rounded-full hover:bg-ink/60 transition" aria-label="Search" onclick="document.getElementById('mobile-search-form').classList.toggle('hidden')">
+ <i data-lucide="search" class="w-5 h-5 text-cream/85"></i>
+ </button>
+ <a href="{% if request.user.is_authenticated and not request.user.is_staff %}{% url 'ecom:account' %}{% else %}{% url 'ecom:login' %}{% endif %}"
+ class="w-10 h-10 grid place-items-center rounded-full hover:bg-ink/60 transition" aria-label="Account">
+ <i data-lucide="user" class="w-5 h-5 text-cream/85"></i>
+ </a>
+ <a href="{% url 'ecom:cart' %}" class="relative w-10 h-10 grid place-items-center rounded-full hover:bg-ink/60 transition" aria-label="Cart{% if cart_count %}, {{ cart_count }} items{% endif %}">
+ <i data-lucide="shopping-bag" class="w-5 h-5 text-cream/85"></i>
+ {% if cart_count %}
+ <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center text-[10px] font-bold rounded-full bg-saffron text-white ring-2 ring-ink">{{ cart_count }}</span>
+ {% endif %}
+ </a>
+ <button class="lg:hidden w-10 h-10 grid place-items-center rounded-full hover:bg-ink/60 transition" aria-label="Menu" onclick="document.getElementById('mobile-nav').classList.remove('hidden');document.body.classList.add('drawer-open');">
+ <i data-lucide="menu" class="w-5 h-5 text-cream/85"></i>
+ </button>
+ </div>
+ </div>
 
-        {# Inline search (desktop) #}
-        <form id="txt-search-form" method="get" action="{% url 'ecom:product_list' %}"
-          class="d-none d-xl-flex"
-          style="align-items:center;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:10px;overflow:hidden;height:40px;">
-          <span style="padding:0 10px;color:#9ca3af;display:flex;align-items:center;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </span>
-          <input type="text" name="q" value="{{ search|default:'' }}" placeholder="Search sacred items…"
-            style="border:none;outline:none;background:transparent;font-size:13px;width:180px;color:#1c1917;">
-        </form>
+ <form id="mobile-search-form" method="get" action="{% url 'ecom:product_list' %}" class="hidden md:hidden pb-3">
+ <label class="relative w-full">
+ <span class="sr-only">Search products</span>
+ <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gold pointer-events-none"></i>
+ <input type="text" name="q" value="{{ search|default:'' }}" placeholder="Search diyas, idols, incense…"
+ class="w-full h-10 pl-10 pr-3 rounded-full bg-ink/50 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none transition">
+ </label>
+ </form>
+ </div>
+</header>
 
-        {# Hidden image search #}
-        <form id="img-search-form" method="post" action="{% url 'ecom:image_search' %}" enctype="multipart/form-data" hidden>
-          {% csrf_token %}
-          <input type="file" id="img-search-input" name="image" accept="image/*"
-            onchange="document.getElementById('img-search-form').submit()">
-        </form>
-
-        {# Cart icon #}
-        <a href="{% url 'ecom:cart' %}" style="position:relative;display:flex;align-items:center;padding:8px;color:#57534e;text-decoration:none;transition:color 0.15s;"
-           onmouseover="this.style.color='#800000'" onmouseout="this.style.color='#57534e'">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-          {% if cart_count %}
-          <span style="position:absolute;top:2px;right:2px;background:#D97706;color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;">{{ cart_count }}</span>
-          {% endif %}
-        </a>
-
-        {# Account icon #}
-        <a href="{% if request.user.is_authenticated and not request.user.is_staff %}{% url 'ecom:account' %}{% else %}{% url 'ecom:login' %}{% endif %}"
-           style="display:flex;align-items:center;padding:8px;color:#57534e;text-decoration:none;transition:color 0.15s;"
-           onmouseover="this.style.color='#800000'" onmouseout="this.style.color='#57534e'">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </a>
-
-        {# Sign in button (desktop, only when logged out) #}
-        {% if not request.user.is_authenticated or request.user.is_staff %}
-        <a href="{% url 'ecom:login' %}" class="d-none d-xl-flex"
-           style="align-items:center;background:#800000;color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:background 0.15s;white-space:nowrap;"
-           onmouseover="this.style.background='#500000'" onmouseout="this.style.background='#800000'">
-          Sign In
-        </a>
-        {% endif %}
-
-        {# Mobile burger #}
-        <button class="d-xl-none" id="mobile-nav-toggle"
-          style="display:flex;align-items:center;padding:8px;background:none;border:none;cursor:pointer;color:#57534e;"
-          onclick="document.getElementById('sacred-mobile-menu').classList.toggle('sacred-mobile-open')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-
-      </div>
-    </div>
-  </div>
-
-  {# ── Mobile Menu ── #}
-  <div id="sacred-mobile-menu" style="display:none;border-top:1px solid #f0ede9;background:#fff;padding:12px 16px 20px;">
-    <form method="get" action="{% url 'ecom:product_list' %}" style="margin-bottom:14px;">
-      <div style="display:flex;align-items:center;background:#fafaf9;border:1.5px solid #e8d5c4;border-radius:10px;overflow:hidden;height:40px;">
-        <span style="padding:0 10px;color:#9ca3af;display:flex;align-items:center;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </span>
-        <input type="text" name="q" placeholder="Search…" style="border:none;outline:none;background:transparent;font-size:13px;flex:1;">
-      </div>
-    </form>
-    <nav style="display:flex;flex-direction:column;gap:2px;">
-      <a href="{% url 'ecom:home' %}" style="padding:10px 12px;font-size:14px;font-weight:600;color:#1c1917;text-decoration:none;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='#fdf6ee'" onmouseout="this.style.background='transparent'">Home</a>
-      <a href="{% url 'ecom:product_list' %}" style="padding:10px 12px;font-size:14px;font-weight:600;color:#1c1917;text-decoration:none;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='#fdf6ee'" onmouseout="this.style.background='transparent'">Products</a>
-      <a href="{% url 'ecom:bundle_list' %}" style="padding:10px 12px;font-size:14px;font-weight:600;color:#1c1917;text-decoration:none;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='#fdf6ee'" onmouseout="this.style.background='transparent'">Faith Kits</a>
-      {% for cat in nav_categories %}
-      <a href="{% url 'ecom:product_list' %}?category={{ cat.id }}" style="padding:9px 12px 9px 24px;font-size:13px;color:#57534e;text-decoration:none;border-radius:8px;" onmouseover="this.style.background='#fdf6ee'" onmouseout="this.style.background='transparent'">{{ cat.name }}</a>
-      {% endfor %}
-      {% for page in nav_pages %}
-      <a href="{% url 'ecom:static_page' page.slug %}" style="padding:10px 12px;font-size:14px;font-weight:600;color:#1c1917;text-decoration:none;border-radius:8px;" onmouseover="this.style.background='#fdf6ee'" onmouseout="this.style.background='transparent'">{{ page.title }}</a>
-      {% endfor %}
-      {% if has_blog %}<a href="{% url 'ecom:blog_list' %}" style="padding:10px 12px;font-size:14px;font-weight:600;color:#1c1917;text-decoration:none;border-radius:8px;" onmouseover="this.style.background='#fdf6ee'" onmouseout="this.style.background='transparent'">Blog</a>{% endif %}
-      <a href="{% url 'ecom:contact' %}" style="padding:10px 12px;font-size:14px;font-weight:600;color:#1c1917;text-decoration:none;border-radius:8px;" onmouseover="this.style.background='#fdf6ee'" onmouseout="this.style.background='transparent'">Contact Us</a>
-      <a href="{% url 'ecom:track_order' %}" style="padding:10px 12px;font-size:14px;font-weight:600;color:#1c1917;text-decoration:none;border-radius:8px;" onmouseover="this.style.background='#fdf6ee'" onmouseout="this.style.background='transparent'">Track Order</a>
-      <div style="border-top:1px solid #f0ede9;margin:8px 0;"></div>
-      {% if request.user.is_authenticated and not request.user.is_staff %}
-        <a href="{% url 'ecom:account' %}" style="padding:10px 12px;font-size:14px;font-weight:600;color:#800000;text-decoration:none;border-radius:8px;">My Account</a>
-        <a href="{% url 'ecom:customer_logout' %}" style="padding:10px 12px;font-size:14px;color:#6b7280;text-decoration:none;border-radius:8px;">Sign Out</a>
-      {% else %}
-        <a href="{% url 'ecom:login' %}" style="display:block;margin:4px 0;padding:11px;background:#800000;color:#fff;text-align:center;font-weight:700;font-size:14px;border-radius:8px;text-decoration:none;">Sign In</a>
-        <a href="{% url 'ecom:register' %}" style="display:block;padding:10px;border:1.5px solid #800000;color:#800000;text-align:center;font-weight:700;font-size:14px;border-radius:8px;text-decoration:none;">Register</a>
-      {% endif %}
-    </nav>
-  </div>
-</nav>
-
-{# ── News ticker bar (below nav, if items present) ── #}
-{% if news_items %}
-<div style="background:#fef3c7;border-bottom:1px solid #fde68a;padding:6px 0;overflow:hidden;">
-  <div class="container" style="display:flex;align-items:center;gap:10px;">
-    <span style="background:#D97706;color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;">LATEST</span>
-    <div id="news-flip" style="overflow:hidden;height:20px;position:relative;flex:1;">
-      {% for news in news_items %}
-      <div class="nf-item" style="position:absolute;width:100%;transition:transform 0.45s ease,opacity 0.45s ease;{% if not forloop.first %}transform:translateY(100%);opacity:0;{% endif %}">
-        <span style="font-size:12px;font-weight:600;color:#78350f;">{{ news.text }}</span>
-        {% if news.link_url %}<a href="{{ news.link_url }}" style="color:#800000;font-weight:700;margin-left:8px;font-size:12px;text-decoration:none;">{{ news.link_label|default:"→" }}</a>{% endif %}
-      </div>
-      {% endfor %}
-    </div>
-  </div>
+{# ── Mobile nav drawer ── #}
+<div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+ <div class="absolute inset-0 bg-inkdeep/80 backdrop-blur-sm" onclick="document.getElementById('mobile-nav').classList.add('hidden');document.body.classList.remove('drawer-open');"></div>
+ <div class="absolute inset-y-0 left-0 w-[86%] max-w-[360px] glass shadow-glowlg flex flex-col">
+ <div class="flex items-center justify-between px-5 h-16 border-b hair shrink-0">
+ <span class="font-display text-xl text-cream">Menu</span>
+ <button class="w-10 h-10 grid place-items-center rounded-full hover:bg-ink/60 transition" aria-label="Close menu"
+ onclick="document.getElementById('mobile-nav').classList.add('hidden');document.body.classList.remove('drawer-open');">
+ <i data-lucide="x" class="w-5 h-5 text-cream/85"></i>
+ </button>
+ </div>
+ <div class="flex-1 overflow-y-auto px-5 py-4 no-scrollbar">
+ <ul class="space-y-1 text-[15px]">
+ <li><a href="{% url 'ecom:home' %}" class="block py-2.5 text-cream/85 hover:text-goldlt transition">Home</a></li>
+ <li><a href="{% url 'ecom:product_list' %}" class="block py-2.5 text-cream/85 hover:text-goldlt transition">Shop</a></li>
+ {% for cat in nav_categories %}
+ <li><a href="{% url 'ecom:product_list' %}?category={{ cat.id }}" class="block py-2.5 text-cream/85 hover:text-goldlt transition">{{ cat.name }}</a></li>
+ {% endfor %}
+ {% if has_blog %}<li><a href="{% url 'ecom:blog_list' %}" class="block py-2.5 text-cream/85 hover:text-goldlt transition">Blog</a></li>{% endif %}
+ <li><a href="{% url 'ecom:contact' %}" class="block py-2.5 text-cream/85 hover:text-goldlt transition">Contact Us</a></li>
+ <li><a href="{% url 'ecom:track_order' %}" class="block py-2.5 text-cream/85 hover:text-goldlt transition">Track Order</a></li>
+ </ul>
+ <div class="mt-6 pt-6 border-t hair">
+ {% if request.user.is_authenticated and not request.user.is_staff %}
+ <p class="text-cream/60 text-sm mb-3">Hello, <span class="text-goldlt">{{ request.user.get_short_name|default:request.user.username }}</span></p>
+ <a href="{% url 'ecom:account' %}" class="block py-2 text-cream/85 hover:text-goldlt transition">My Account</a>
+ <a href="{% url 'ecom:customer_logout' %}" class="block py-2 text-cream/85 hover:text-goldlt transition">Sign out</a>
+ {% else %}
+ <a href="{% url 'ecom:login' %}" class="block py-2 text-cream/85 hover:text-goldlt transition">Sign In</a>
+ <a href="{% url 'ecom:register' %}" class="block py-2 text-cream/85 hover:text-goldlt transition">Register</a>
+ {% endif %}
+ </div>
+ </div>
+ </div>
 </div>
-<script>
-(function(){
-  var items = document.querySelectorAll('#news-flip .nf-item');
-  if(items.length <= 1) return;
-  var cur = 0;
-  setInterval(function(){
-    items[cur].style.transform = 'translateY(-100%)';
-    items[cur].style.opacity   = '0';
-    cur = (cur + 1) % items.length;
-    items[cur].style.transition = 'none';
-    items[cur].style.transform  = 'translateY(100%)';
-    items[cur].style.opacity    = '0';
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        items[cur].style.transition = 'transform 0.45s ease,opacity 0.45s ease';
-        items[cur].style.transform  = 'translateY(0)';
-        items[cur].style.opacity    = '1';
-      });
-    });
-  }, 3000);
-})();
-</script>
-{% endif %}
 
-<script>
-document.addEventListener('click', function(e){
-  var btn=document.getElementById('hdrCatBtn'), menu=document.getElementById('hdrCatMenu');
-  if(menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) menu.style.display='none';
-});
-document.getElementById('sacred-mobile-menu').style.display='none';
-document.getElementById('mobile-nav-toggle') && document.getElementById('mobile-nav-toggle').addEventListener('click',function(){
-  var m=document.getElementById('sacred-mobile-menu');
-  m.style.display = m.style.display==='none'?'block':'none';
-});
-</script>
-
-{# ── Nav link styles ── #}
-<style>
-.sacred-nav-link {
-  display:inline-flex;align-items:center;padding:8px 14px;font-size:13px;font-weight:500;
-  color:#44403c;text-decoration:none;border-radius:8px;transition:background 0.15s,color 0.15s;
-  white-space:nowrap;
-}
-.sacred-nav-link:hover { background:#fdf6ee; color:#800000; }
-.sacred-nav-link.active { background:#fef3c7; color:#800000; border-bottom:2px solid #800000; border-radius:8px 8px 0 0; font-weight:700; }
-</style>
-
+{# Hidden image-search form kept from the previous theme #}
+<form id="img-search-form" method="post" action="{% url 'ecom:image_search' %}" enctype="multipart/form-data" hidden>
+ {% csrf_token %}
+ <input type="file" id="img-search-input" name="image" accept="image/*"
+ onchange="document.getElementById('img-search-form').submit()">
+</form>
 
 {% if messages %}
-<div class="container mt-15">
-  {% for msg in messages %}
-  <div class="alert {% if msg.tags == 'error' %}alert-danger{% elif msg.tags == 'success' %}alert-success{% else %}alert-warning{% endif %} alert-dismissible fade show" role="alert">
-    {{ msg }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-  {% endfor %}
+<div class="max-w-[1280px] mx-auto px-4 lg:px-6 mt-4 relative z-10">
+ {% for msg in messages %}
+ <div class="rounded-xl px-4 py-3 mb-3 text-sm glass {% if msg.tags == 'error' %}text-red-300 border-red-500/40{% elif msg.tags == 'success' %}text-green-300 border-green-500/40{% else %}text-goldlt{% endif %}" role="alert">
+ {{ msg }}
+ </div>
+ {% endfor %}
 </div>
 {% endif %}
 
-<main class="main">
-  {% block content %}{% endblock %}
+<main id="main-content" class="relative z-10">
+ {% block content %}{% endblock %}
 </main>
 
-<footer style="background:#0c0a09;border-top:1px solid #1c1917;padding:28px 0;">
-  <div class="container">
-    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
-      <p style="margin:0;font-size:12px;color:#78716c;">
-        &copy; {% now "Y" %} {% if cms and cms.store_name %}{{ cms.store_name }}{% else %}{{ company.name }}{% endif %} Pvt. Ltd. All rights reserved.
-      </p>
-      <div style="display:flex;flex-wrap:wrap;gap:24px;">
-        {% for page in footer_pages %}
-        <a href="{% url 'ecom:static_page' page.slug %}" style="font-size:12px;font-weight:500;color:#78716c;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#d6d3d1'" onmouseout="this.style.color='#78716c'">{{ page.title }}</a>
-        {% endfor %}
-        <a href="{% url 'ecom:contact' %}" style="font-size:12px;font-weight:500;color:#78716c;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#d6d3d1'" onmouseout="this.style.color='#78716c'">Contact Support</a>
-        <a href="{% url 'ecom:track_order' %}" style="font-size:12px;font-weight:500;color:#78716c;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#d6d3d1'" onmouseout="this.style.color='#78716c'">Track Order</a>
-        {% if cms %}
-          {% if cms.facebook_url %}<a href="{{ cms.facebook_url }}" target="_blank" rel="noopener" style="font-size:12px;font-weight:500;color:#78716c;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#d6d3d1'" onmouseout="this.style.color='#78716c'">Facebook</a>{% endif %}
-          {% if cms.instagram_url %}<a href="{{ cms.instagram_url }}" target="_blank" rel="noopener" style="font-size:12px;font-weight:500;color:#78716c;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#d6d3d1'" onmouseout="this.style.color='#78716c'">Instagram</a>{% endif %}
-        {% endif %}
-      </div>
-    </div>
-  </div>
+<footer class="relative z-10 bg-inkdeep/80 border-t hair">
+ <div class="max-w-[1280px] mx-auto px-4 lg:px-6 py-14">
+ <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+
+ <div>
+ <a href="{% url 'ecom:home' %}" class="flex items-center gap-2.5 mb-4" aria-label="{{ company.name }} home">
+ {% if cms and cms.logo %}
+ <img alt="{{ company.name }}" src="{{ cms.logo.url }}" class="h-10 w-auto rounded-full">
+ {% else %}
+ <span class="grid place-items-center w-10 h-10 rounded-full border border-gold/50 bg-ink/60">
+ <span class="font-deva text-gold text-xl leading-none">&#2384;</span>
+ </span>
+ {% endif %}
+ <span class="font-display text-[22px] text-cream">{% if cms and cms.store_name %}{{ cms.store_name }}{% else %}{{ company.name }}{% endif %}</span>
+ </a>
+ <p class="text-cream/60 text-sm max-w-xs leading-relaxed">{% if cms and cms.tagline %}{{ cms.tagline }}{% else %}Devotional essentials, crafted with care and lit for the modern home.{% endif %}</p>
+
+ <form class="mt-5 flex max-w-sm" method="post" action="{% url 'ecom:newsletter_subscribe' %}">
+ {% csrf_token %}
+ <label class="relative flex-1">
+ <span class="sr-only">Email for newsletter</span>
+ <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gold pointer-events-none"></i>
+ <input type="email" name="email" placeholder="Your email for festive drops" required
+ class="w-full h-11 pl-10 pr-3 rounded-l-full bg-ink/60 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none">
+ </label>
+ <button type="submit" class="h-11 px-5 rounded-r-full bg-saffron text-white text-sm font-medium hover:brightness-110 transition">Subscribe</button>
+ </form>
+ </div>
+
+ <div>
+ <h3 class="font-eyebrow text-[12px] tracking-[.22em] uppercase text-gold mb-4">Shop</h3>
+ <ul class="space-y-2.5 text-sm text-cream/65">
+ <li><a href="{% url 'ecom:product_list' %}" class="hover:text-goldlt transition">All Products</a></li>
+ {% for cat in categories|slice:":5" %}
+ <li><a href="{% url 'ecom:product_list' %}?category={{ cat.id }}" class="hover:text-goldlt transition">{{ cat.name }}</a></li>
+ {% endfor %}
+ </ul>
+ </div>
+
+ <div>
+ <h3 class="font-eyebrow text-[12px] tracking-[.22em] uppercase text-gold mb-4">Help</h3>
+ <ul class="space-y-2.5 text-sm text-cream/65">
+ <li><a href="{% url 'ecom:track_order' %}" class="hover:text-goldlt transition">Track Order</a></li>
+ <li><a href="{% url 'ecom:contact' %}" class="hover:text-goldlt transition">Contact Us</a></li>
+ {% if has_blog %}<li><a href="{% url 'ecom:blog_list' %}" class="hover:text-goldlt transition">Blog</a></li>{% endif %}
+ {% for page in footer_pages %}
+ <li><a href="{% url 'ecom:static_page' page.slug %}" class="hover:text-goldlt transition">{{ page.title }}</a></li>
+ {% endfor %}
+ </ul>
+ </div>
+
+ <div>
+ <h3 class="font-eyebrow text-[12px] tracking-[.22em] uppercase text-gold mb-4">Account</h3>
+ <ul class="space-y-2.5 text-sm text-cream/65">
+ {% if request.user.is_authenticated and not request.user.is_staff %}
+ <li><a href="{% url 'ecom:account' %}" class="hover:text-goldlt transition">My Orders</a></li>
+ <li><a href="{% url 'ecom:customer_logout' %}" class="hover:text-goldlt transition">Sign Out</a></li>
+ {% else %}
+ <li><a href="{% url 'ecom:login' %}" class="hover:text-goldlt transition">Sign In</a></li>
+ <li><a href="{% url 'ecom:register' %}" class="hover:text-goldlt transition">Register</a></li>
+ {% endif %}
+ <li><a href="{% url 'ecom:cart' %}" class="hover:text-goldlt transition">My Cart</a></li>
+ </ul>
+ {% if cms.facebook_url or cms.instagram_url or cms.twitter_url or cms.tiktok_url %}
+ <h3 class="font-eyebrow text-[12px] tracking-[.22em] uppercase text-gold mt-6 mb-3">Follow</h3>
+ <div class="flex gap-2">
+ {% if cms.instagram_url %}<a href="{{ cms.instagram_url }}" target="_blank" rel="noopener" aria-label="Instagram" class="w-9 h-9 grid place-items-center rounded-full glass text-cream/80 hover:text-goldlt hover:border-gold transition"><i data-lucide="instagram" class="w-4 h-4"></i></a>{% endif %}
+ {% if cms.facebook_url %}<a href="{{ cms.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook" class="w-9 h-9 grid place-items-center rounded-full glass text-cream/80 hover:text-goldlt hover:border-gold transition"><i data-lucide="facebook" class="w-4 h-4"></i></a>{% endif %}
+ {% if cms.twitter_url %}<a href="{{ cms.twitter_url }}" target="_blank" rel="noopener" aria-label="Twitter" class="w-9 h-9 grid place-items-center rounded-full glass text-cream/80 hover:text-goldlt hover:border-gold transition"><i data-lucide="twitter" class="w-4 h-4"></i></a>{% endif %}
+ {% endif %}
+ </div>
+ </div>
+ </div>
+
+ <div class="mt-12 pt-6 border-t hair flex flex-col md:flex-row items-center justify-between gap-4">
+ <p class="text-cream/50 text-[12.5px] flex items-center gap-2">
+ <span class="font-deva text-gold text-base">&#2384;</span>
+ Copyright {% now "Y" %} © {% if cms and cms.store_name %}{{ cms.store_name }}{% else %}{{ company.name }}{% endif %}
+ {% if cms and cms.footer_text %} — {{ cms.footer_text }}{% endif %}. All rights reserved.
+ </p>
+ <div class="flex items-center gap-2 text-cream/60">
+ <span class="text-[12px] mr-1">We accept</span>
+ <span class="h-7 px-2.5 grid place-items-center rounded-md glass text-[11px] font-semibold">UPI</span>
+ <span class="h-7 px-2.5 grid place-items-center rounded-md glass text-[11px] font-semibold">Cards</span>
+ <span class="h-7 px-2.5 grid place-items-center rounded-md glass text-[11px] font-semibold">COD</span>
+ </div>
+ </div>
+ </div>
 </footer>
 
-<script src="{% static 'ecom/assets/js/main.js' %}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+<script>
+ htmx.config.scrollBehavior = 'smooth';
+ lucide.createIcons();
+ document.body.addEventListener('htmx:afterSwap', function () { lucide.createIcons(); });
+ document.body.addEventListener('htmx:afterSettle', function () { lucide.createIcons(); });
+</script>
 {% block extra_js %}{% endblock %}
-<script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js" defer onload="htmx.config.scrollBehavior='smooth';"></script>
 </body>
 </html>

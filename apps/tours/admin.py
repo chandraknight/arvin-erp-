@@ -4,10 +4,30 @@ from .models import (
     IATAAirline, IATAAirport, AirTicket, IATASourceFile, IATAReconciliationItem,
 )
 
-admin.site.register(TourDestination)
-admin.site.register(TourPackage)
-admin.site.register(TourEnquiry)
-admin.site.register(TourBooking)
+@admin.register(TourDestination)
+class TourDestinationAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'company')
+    list_filter = ('company',)
+
+
+@admin.register(TourPackage)
+class TourPackageAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'company')
+    list_filter = ('company',)
+
+
+@admin.register(TourEnquiry)
+class TourEnquiryAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'company', 'fiscal_year')
+    list_filter = ('company', 'fiscal_year')
+
+
+@admin.register(TourBooking)
+class TourBookingAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'company', 'fiscal_year')
+    list_filter = ('company', 'fiscal_year')
+
+
 admin.site.register(TourBookingItem)
 
 
@@ -27,9 +47,9 @@ class IATAAirportAdmin(admin.ModelAdmin):
 
 @admin.register(AirTicket)
 class AirTicketAdmin(admin.ModelAdmin):
-    list_display = ['ticket_number', 'passenger_name', 'issue_date', 'validating_carrier', 'routing', 'gross_fare', 'status']
+    list_display = ['ticket_number', 'passenger_name', 'company', 'issue_date', 'validating_carrier', 'routing', 'gross_fare', 'status']
     search_fields = ['ticket_number', 'passenger_name', 'pnr']
-    list_filter = ['status', 'trip_type', 'cabin']
+    list_filter = ['company', 'status', 'trip_type', 'cabin']
     date_hierarchy = 'issue_date'
 
 

@@ -4,55 +4,54 @@
 {% block page_title %}Register{% endblock %}
 
 {% block content %}
-<section class="mb-60">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-lg-6 col-md-8">
-        <div class="border p-40" style="border-radius:8px;">
-          <div class="text-center mb-30">
-            <h3 class="color-brand-3">Create Account</h3>
-            <p class="font-sm color-gray-500">Register to track orders and get faster checkout.</p>
-          </div>
-          <form method="post" action="">
-            {% csrf_token %}
-            <div class="row">
-              <div class="col-sm-12 mb-20">
-                <label class="font-sm color-gray-900 mb-10" for="name">Full Name <span class="color-brand-1">*</span></label>
-                <input type="text" id="name" name="name" class="ecom-input" placeholder="Your full name" required>
-              </div>
-              <div class="col-sm-6 mb-20">
-                <label class="font-sm color-gray-900 mb-10" for="email">Email <span class="color-brand-1">*</span></label>
-                <input type="email" id="email" name="email" class="ecom-input" placeholder="your@email.com" required>
-              </div>
-              <div class="col-sm-6 mb-20">
-                <label class="font-sm color-gray-900 mb-10" for="phone">Phone</label>
-                <input type="tel" id="phone" name="phone" class="ecom-input" placeholder="Your phone number">
-              </div>
-              <div class="col-sm-6 mb-20">
-                <label class="font-sm color-gray-900 mb-10" for="password1">Password <span class="color-brand-1">*</span></label>
-                <input type="password" id="password1" name="password1" class="ecom-input" placeholder="Min. 8 characters" required>
-              </div>
-              <div class="col-sm-6 mb-20">
-                <label class="font-sm color-gray-900 mb-10" for="password2">Confirm Password <span class="color-brand-1">*</span></label>
-                <input type="password" id="password2" name="password2" class="ecom-input" placeholder="Repeat password" required>
-              </div>
-              {% if form_errors %}
-              <div class="col-12 mb-15">
-                <div class="alert alert-danger font-sm" role="alert">{{ form_errors }}</div>
-              </div>
-              {% endif %}
-              <div class="col-12">
-                <button type="submit" class="btn btn-buy w-100">Create Account →</button>
-              </div>
-            </div>
-          </form>
-          <div class="text-center mt-20">
-            <span class="font-sm color-gray-500">Already have an account?</span>
-            <a href="{% url 'ecom:login' %}" class="font-sm color-brand-1 ml-5">Sign in</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<section class="max-w-[720px] mx-auto px-4 py-14">
+ <div class="rounded-2xl glass shadow-glow p-8 sm:p-10">
+ <div class="text-center mb-8">
+ <h3 class="font-display text-2xl text-cream">Create Account</h3>
+ <p class="text-cream/50 text-sm mt-1">Register to track orders and get faster checkout.</p>
+ </div>
+ <form method="post" action="">
+ {% csrf_token %}
+ <div class="grid sm:grid-cols-2 gap-5">
+ <div class="sm:col-span-2">
+ <label class="block text-[13px] text-cream/70 mb-2" for="name">Full Name <span class="text-saffron">*</span></label>
+ <input type="text" id="name" name="name" placeholder="Your full name" required
+ class="w-full h-11 px-4 rounded-full bg-ink/50 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none transition">
+ </div>
+ <div>
+ <label class="block text-[13px] text-cream/70 mb-2" for="email">Email <span class="text-saffron">*</span></label>
+ <input type="email" id="email" name="email" placeholder="your@email.com" required
+ class="w-full h-11 px-4 rounded-full bg-ink/50 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none transition">
+ </div>
+ <div>
+ <label class="block text-[13px] text-cream/70 mb-2" for="phone">Phone</label>
+ <input type="tel" id="phone" name="phone" placeholder="Your phone number"
+ class="w-full h-11 px-4 rounded-full bg-ink/50 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none transition">
+ </div>
+ <div>
+ <label class="block text-[13px] text-cream/70 mb-2" for="password1">Password <span class="text-saffron">*</span></label>
+ <input type="password" id="password1" name="password1" placeholder="Min. 8 characters" required
+ class="w-full h-11 px-4 rounded-full bg-ink/50 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none transition">
+ </div>
+ <div>
+ <label class="block text-[13px] text-cream/70 mb-2" for="password2">Confirm Password <span class="text-saffron">*</span></label>
+ <input type="password" id="password2" name="password2" placeholder="Repeat password" required
+ class="w-full h-11 px-4 rounded-full bg-ink/50 border hair text-cream placeholder:text-cream/40 text-sm focus:border-gold outline-none transition">
+ </div>
+ {% if form_errors %}
+ <div class="sm:col-span-2">
+ <div class="rounded-xl px-4 py-3 text-sm text-red-300 glass border-red-500/40" role="alert">{{ form_errors }}</div>
+ </div>
+ {% endif %}
+ <div class="sm:col-span-2">
+ <button type="submit" class="w-full h-12 rounded-full bg-saffron text-white font-medium flex items-center justify-center gap-2 hover:brightness-110 shadow-glow transition">Create Account <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+ </div>
+ </div>
+ </form>
+ <div class="text-center mt-6">
+ <span class="text-sm text-cream/50">Already have an account?</span>
+ <a href="{% url 'ecom:login' %}" class="text-sm text-goldlt hover:text-gold transition ml-1.5">Sign in</a>
+ </div>
+ </div>
 </section>
 {% endblock %}

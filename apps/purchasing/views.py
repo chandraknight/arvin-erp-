@@ -64,6 +64,58 @@ def purchase_order_detail(request, pk):
             raise PermissionDenied('You do not have access to this purchase order.')
     return render(request, 'purchasing/purchase_order_detail.html', {'purchase_order': purchase_order})
 
+
+def _get_owned_purchase_order(request, pk):
+    if request.user.is_superuser:
+        return get_object_or_404(PurchaseOrder, pk=pk)
+    from django.db.models import Q
+    purchase_order = get_object_or_404(
+        PurchaseOrder,
+        Q(company=request.user.company) | Q(vendor__company=request.user.company),
+        pk=pk,
+    )
+    user_branch = getattr(request, 'user_branch', None)
+    if user_branch is not None and purchase_order.branch != user_branch:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied('You do not have access to this purchase order.')
+    return purchase_order
+
+
+@login_required
+def purchase_order_approve(request, pk):
+    guard = _purchasing_guard(request)
+    if guard:
+        return guard
+    if request.method != 'POST':
+        return redirect('purchasing:purchase_order_detail', pk=pk)
+    purchase_order = _get_owned_purchase_order(request, pk)
+    from apps.purchasing.services.approval_services import approve_purchase_order
+    try:
+        approve_purchase_order(purchase_order, request.user, request)
+        messages.success(request, f"Purchase Order {purchase_order.purchase_order_number} approved and sent.")
+    except ValueError as e:
+        messages.error(request, str(e))
+    return redirect('purchasing:purchase_order_detail', pk=pk)
+
+
+@login_required
+def purchase_order_reject(request, pk):
+    guard = _purchasing_guard(request)
+    if guard:
+        return guard
+    purchase_order = _get_owned_purchase_order(request, pk)
+    if request.method == 'POST':
+        from apps.purchasing.services.approval_services import reject_purchase_order
+        try:
+            reject_purchase_order(purchase_order, request.POST.get('reason', ''), request.user, request)
+            messages.success(request, f"Purchase Order {purchase_order.purchase_order_number} rejected.")
+            return redirect('purchasing:purchase_order_detail', pk=pk)
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('purchasing:purchase_order_detail', pk=pk)
+    return render(request, 'purchasing/purchase_order_reject.html', {'purchase_order': purchase_order})
+
+
 @login_required
 @fiscal_year_open_required
 def receive_purchase_order(request, pk):
@@ -476,6 +528,10 @@ def purchase_order_dashboard(request):
     if status:
         purchase_orders = purchase_orders.filter(status=status)
 
+    approval = request.GET.get('approval', '').strip()
+    if approval:
+        purchase_orders = purchase_orders.filter(approval_status=approval)
+
     total_po_amount = purchase_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
 
     paginator = Paginator(purchase_orders, 20)
@@ -489,6 +545,7 @@ def purchase_order_dashboard(request):
         'rupee': RUPEE,
         'q': q,
         'status': status,
+        'approval': approval,
     }
 
     if is_htmx(request):

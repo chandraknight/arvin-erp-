@@ -29,4 +29,11 @@ urlpatterns = [
     # Product / referrer search JSON
     path('api/products/',              views.pos_product_search,  name='product_search'),
     path('api/referrers/',             views.pos_referrer_search, name='referrer_search'),
+
+    # Till shifts
+    path('shift/open/',                views.pos_shift_open,     name='shift_open'),
+    path('shift/close/',               views.pos_shift_close,    name='shift_close'),
+    path('shift/cash-movement/',       views.pos_cash_movement,  name='cash_movement'),
+    path('shifts/',                    views.pos_shift_list,     name='shift_list'),
+    path('shift/<uuid:pk>/',           views.pos_shift_detail,   name='shift_detail'),
 ]

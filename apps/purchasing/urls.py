@@ -14,6 +14,8 @@ urlpatterns = [
     path('purchase-orders/<uuid:pk>/', views.purchase_order_detail, name='purchase_order_detail'),
     path('purchase-orders/<uuid:pk>/edit/', PurchaseOrderUpdateView.as_view(), name='purchase_order_update'),
     path('purchase-orders/<uuid:pk>/receive/', views.receive_purchase_order, name='receive_purchase_order'),
+    path('purchase-orders/<uuid:pk>/approve/', views.purchase_order_approve, name='purchase_order_approve'),
+    path('purchase-orders/<uuid:pk>/reject/', views.purchase_order_reject, name='purchase_order_reject'),
 
     # ── Vendor Bills ──────────────────────────────────────────────────────
     path('vendor-bills/', views.vendor_bill_list, name='vendor_bill_list'),

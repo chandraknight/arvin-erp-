@@ -1,88 +1,12 @@
-from django.db import IntegrityError, transaction
-from django.db.models import F
+from django.db import IntegrityError
 from decimal import Decimal
 from django.utils import timezone
 import logging
 
-from apps.bookkeeping.models import LedgerAccount, JournalEntry, JournalEntryLine, assert_balanced
 from apps.payments.models import Payment
 from .payment_number_service import generate_payment_number
 
 logger = logging.getLogger(__name__)
-
-
-def handle_customer_payment_journal(instance):
-    """Create journal entry for customer payment."""
-    ar_account = LedgerAccount.objects.filter(company=instance.company, name="Accounts Receivable").first()
-    if not ar_account:
-        raise ValueError(f"Ledger account 'Accounts Receivable' not found for company {instance.company}. Run company setup first.")
-    bank_or_cash_account = get_payment_account(instance.company, instance.method)
-
-    with transaction.atomic():
-        entry = JournalEntry.objects.create(
-            company=instance.company,
-            date=instance.date,
-            description=f"Payment for Invoice {instance.invoice.invoice_number}",
-            source_type='PAYMENT',
-        )
-
-        JournalEntryLine.objects.bulk_create([
-            JournalEntryLine(journal_entry=entry, account=bank_or_cash_account, entry_type="DEBIT", amount=instance.amount),
-            JournalEntryLine(journal_entry=entry, account=ar_account, entry_type="CREDIT", amount=instance.amount),
-        ])
-        assert_balanced(entry)
-
-        instance.journal_entry = entry
-        instance.amount_applied = instance.amount
-        instance.save(update_fields=["journal_entry", "amount_applied"])
-
-
-def handle_other_payment_journal(instance):
-    """Create journal entry for non-customer payments."""
-    if not instance.company:
-        return
-    
-    setup_default_ledger_accounts(instance.company)
-
-    if instance.payment_type == 'VENDOR':
-        target_account_name = "Accounts Payable"
-        description = "Payment to Vendor"
-    elif instance.payment_type == 'EXPENSE':
-        if not instance.ledger_account:
-            raise ValueError("EXPENSE payment requires a ledger_account to be set.")
-        target_account_name = instance.ledger_account.name
-        description = "Expense Payment"
-    elif instance.payment_type == 'SALARY':
-        target_account_name = "Salary Expense"
-        description = "Salary Payment"
-    else:  # Handle OTHER payments
-        target_account_name = instance.ledger_account.name if instance.ledger_account else "Miscellaneous Expense"
-        description = "Other Payment"
-
-    destination_account = LedgerAccount.objects.filter(company=instance.company, name=target_account_name).first()
-    if not destination_account:
-        raise ValueError(f"Ledger account '{target_account_name}' not found for company {instance.company}. Run company setup first.")
-    source_account = get_payment_account(instance.company, instance.method)
-
-    with transaction.atomic():
-        entry = JournalEntry.objects.create(
-            company=instance.company,
-            date=instance.date,
-            description=description,
-            source_type='PAYMENT',
-        )
-
-        # SALARY: DR expense/payable account, CR cash/bank (paying out money)
-        # VENDOR/EXPENSE/OTHER: DR expense account, CR cash/bank (same direction)
-        JournalEntryLine.objects.bulk_create([
-            JournalEntryLine(journal_entry=entry, account=destination_account, entry_type="DEBIT", amount=instance.amount),
-            JournalEntryLine(journal_entry=entry, account=source_account, entry_type="CREDIT", amount=instance.amount),
-        ])
-        assert_balanced(entry)
-
-        instance.journal_entry = entry
-        instance.amount_applied = instance.amount
-        instance.save(update_fields=["journal_entry", "amount_applied"])
 
 
 def create_invoice_payment(

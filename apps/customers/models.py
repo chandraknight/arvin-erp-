@@ -6,8 +6,8 @@ from apps.utils.baseModel import BaseModel
 class Customer(BaseModel):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, related_name='customers', null=True, blank=True)
     name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True, blank=True, null=True)
-    phone = models.CharField(max_length=15, blank=True, null=True, unique=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(max_length=200, blank=True, null=True)
     text = models.TextField(max_length=200, blank=True, null=True)
     pan_number = models.CharField(
@@ -29,6 +29,20 @@ class Customer(BaseModel):
         related_name='customer_accounts',
         help_text="Automatically assigned ledger account for this customer's receivables."
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company', 'email'],
+                condition=models.Q(email__isnull=False),
+                name='unique_customer_email_per_company',
+            ),
+            models.UniqueConstraint(
+                fields=['company', 'phone'],
+                condition=models.Q(phone__isnull=False),
+                name='unique_customer_phone_per_company',
+            ),
+        ]
 
     def __str__(self):
         return self.name

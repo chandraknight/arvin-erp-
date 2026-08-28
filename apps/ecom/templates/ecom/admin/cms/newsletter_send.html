@@ -2,69 +2,69 @@
 {% block title %}Send Newsletter — Ecom CMS{% endblock %}
 {% block content %}
 <div class="p-6 max-w-4xl">
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800">Send Newsletter</h1>
-      <p class="text-sm text-gray-500 mt-1">
-        Will be sent to <span class="font-semibold text-gray-700">{{ subscriber_count }}</span>
-        active subscriber{{ subscriber_count|pluralize }}. Addresses are kept in BCC.
-      </p>
-    </div>
-    <a href="{% url 'ecom:cms_newsletter_list' %}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium">
-      ← Subscribers
-    </a>
-  </div>
+ <div class="flex items-center justify-between mb-6">
+ <div>
+ <h1 class="text-2xl font-bold text-gray-800">Send Newsletter</h1>
+ <p class="text-sm text-gray-500 mt-1">
+ Will be sent to <span class="font-semibold text-gray-700">{{ subscriber_count }}</span>
+ active subscriber{{ subscriber_count|pluralize }}. Addresses are kept in BCC.
+ </p>
+ </div>
+ <a href="{% url 'ecom:cms_newsletter_list' %}" class="text-sm text-indigo-600 hover:text-indigo-900 font-medium">
+ ← Subscribers
+ </a>
+ </div>
 
-  {% include 'includes/toast.html' %}
+ {% include 'includes/toast.html' %}
 
-  <form method="post" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4"
-        onsubmit="return confirm('Send this newsletter to {{ subscriber_count }} subscriber{{ subscriber_count|pluralize }}?');">
-    {% csrf_token %}
-    <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-1">Subject</label>
-      <input type="text" name="subject" required maxlength="300"
-             placeholder="e.g. Tihar Festival Collection — 20% off this week"
-             class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-      <p class="text-xs text-gray-400 mt-1">Your store name is prefixed automatically.</p>
-    </div>
-    <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-1">Message</label>
-      <textarea name="body" required rows="12"
-                placeholder="Write your newsletter here (plain text)…"
-                class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-    </div>
-    <button type="submit" {% if not subscriber_count %}disabled{% endif %}
-            class="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 font-semibold hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
-      <i class="fas fa-paper-plane"></i> Send Newsletter
-    </button>
-  </form>
+ <form method="post" class="bg-white shadow-sm border border-gray-100 p-6 space-y-4"
+ onsubmit="return confirm('Send this newsletter to {{ subscriber_count }} subscriber{{ subscriber_count|pluralize }}?');">
+ {% csrf_token %}
+ <div>
+ <label class="block text-sm font-semibold text-gray-700 mb-1">Subject</label>
+ <input type="text" name="subject" required maxlength="300"
+ placeholder="e.g. Tihar Festival Collection — 20% off this week"
+ class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+ <p class="text-xs text-gray-400 mt-1">Your store name is prefixed automatically.</p>
+ </div>
+ <div>
+ <label class="block text-sm font-semibold text-gray-700 mb-1">Message</label>
+ <textarea name="body" required rows="12"
+ placeholder="Write your newsletter here (plain text)…"
+ class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+ </div>
+ <button type="submit" {% if not subscriber_count %}disabled{% endif %}
+ class="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 font-semibold hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+ <i class="fas fa-paper-plane"></i> Send Newsletter
+ </button>
+ </form>
 
-  {% if campaigns %}
-  <div class="mt-8">
-    <h2 class="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Recent Campaigns</h2>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">Subject</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600">Sent</th>
-            <th class="text-right px-4 py-3 font-medium text-gray-600">Recipients</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          {% for camp in campaigns %}
-          <tr class="hover:bg-gray-50">
-            <td class="px-4 py-3 text-gray-800">{{ camp.subject }}</td>
-            <td class="px-4 py-3 text-gray-500 whitespace-nowrap">
-              {% if camp.sent_at %}{{ camp.sent_at|date:"d M Y H:i" }}{% else %}—{% endif %}
-            </td>
-            <td class="px-4 py-3 text-right text-gray-600">{{ camp.recipient_count }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-  {% endif %}
+ {% if campaigns %}
+ <div class="mt-8">
+ <h2 class="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Recent Campaigns</h2>
+ <div class="bg-white shadow-sm border border-gray-100 overflow-hidden">
+ <table class="w-full text-sm">
+ <thead class="bg-gray-50 border-b border-gray-200">
+ <tr>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Subject</th>
+ <th class="text-left px-4 py-3 font-medium text-gray-600">Sent</th>
+ <th class="text-right px-4 py-3 font-medium text-gray-600">Recipients</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-100">
+ {% for camp in campaigns %}
+ <tr class="hover:bg-gray-50">
+ <td class="px-4 py-3 text-gray-800">{{ camp.subject }}</td>
+ <td class="px-4 py-3 text-gray-500 whitespace-nowrap">
+ {% if camp.sent_at %}{{ camp.sent_at|date:"d M Y H:i" }}{% else %}—{% endif %}
+ </td>
+ <td class="px-4 py-3 text-right text-gray-600">{{ camp.recipient_count }}</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ {% endif %}
 </div>
 {% endblock %}

@@ -96,11 +96,6 @@ def get_closing_stock_valuation(company):
     snapshot from Product.cost_price and current stock on hand — same basis as
     the standalone stock_valuation_report. NRV is computed live from cost_price
     (see valuation_service.compute_stock_valuation for the rationale).
-
-    This is independent of post_closing_stock (which posts the same NFRS 2
-    valuation to the ledger as a DR Closing Stock / CR COGS entry) — use one
-    approach or the other per company; this function does not read or affect
-    what post_closing_stock has posted.
     """
     products = Product.objects.filter(
         company=company, is_service=False
@@ -311,62 +306,74 @@ def cash_flow_report(request):
     investing_lines  = []
     financing_lines  = []
 
+    def _classify(account):
+        if account is None:
+            return 'operating'
+        if account.account_type in ('REVENUE', 'EXPENSE'):
+            return 'operating'
+        if account.account_type == 'ASSET' and not account.is_current:
+            return 'investing'
+        if account.account_type in ('LIABILITY', 'EQUITY'):
+            return 'financing'
+        return 'operating'
+
     for line in lines_qs:
         je = line.journal_entry
-        # Find counter-account(s) in the same entry
-        counter_lines = JournalEntryLine.objects.filter(
+        # A journal entry can touch several counter-accounts of different
+        # NFRS activity types (e.g. an invoice touches AR, Tax Payable, Revenue).
+        # Split this cash line proportionally across each counter-line's amount
+        # and classification instead of filing the whole movement under the
+        # first counter-account found, which misclassifies split entries.
+        counter_lines = list(JournalEntryLine.objects.filter(
             journal_entry=je
         ).exclude(
             account__in=cash_bank_accounts
-        ).select_related('account')
-
-        counter_type = None
-        counter_is_current = True
-        counter_name = je.description or ''
-        for cl in counter_lines:
-            counter_type = cl.account.account_type
-            counter_is_current = cl.account.is_current
-            counter_name = cl.account.name
-            break  # use first counter-account to classify
+        ).select_related('account'))
 
         amount = line.amount
         is_inflow = (line.entry_type == 'DEBIT')
+        counter_total = sum((cl.amount for cl in counter_lines), Decimal('0.00'))
 
-        if counter_type in ('REVENUE', 'EXPENSE') or counter_type is None:
-            category = 'operating'
-        elif counter_type == 'ASSET' and not counter_is_current:
-            category = 'investing'
-        elif counter_type in ('LIABILITY', 'EQUITY'):
-            category = 'financing'
+        if not counter_lines or counter_total == 0:
+            allocations = [(amount, je.description or '', 'operating')]
         else:
-            category = 'operating'
+            allocations = []
+            allocated_so_far = Decimal('0.00')
+            for i, cl in enumerate(counter_lines):
+                if i == len(counter_lines) - 1:
+                    share = amount - allocated_so_far  # remainder avoids rounding drift
+                else:
+                    share = (amount * cl.amount / counter_total).quantize(Decimal('0.01'))
+                    allocated_so_far += share
+                allocations.append((share, cl.account.name, _classify(cl.account)))
 
-        row = {
-            'date': je.date,
-            'description': je.description,
-            'account': counter_name,
-            'amount': amount,
-            'is_inflow': is_inflow,
-        }
+        for share_amount, counter_name, category in allocations:
+            row = {
+                'date': je.date,
+                'description': je.description,
+                'account': counter_name,
+                'amount': share_amount,
+                'is_inflow': is_inflow,
+            }
 
-        if category == 'operating':
-            operating_lines.append(row)
-            if is_inflow:
-                operating_in += amount
+            if category == 'operating':
+                operating_lines.append(row)
+                if is_inflow:
+                    operating_in += share_amount
+                else:
+                    operating_out += share_amount
+            elif category == 'investing':
+                investing_lines.append(row)
+                if is_inflow:
+                    investing_in += share_amount
+                else:
+                    investing_out += share_amount
             else:
-                operating_out += amount
-        elif category == 'investing':
-            investing_lines.append(row)
-            if is_inflow:
-                investing_in += amount
-            else:
-                investing_out += amount
-        else:
-            financing_lines.append(row)
-            if is_inflow:
-                financing_in += amount
-            else:
-                financing_out += amount
+                financing_lines.append(row)
+                if is_inflow:
+                    financing_in += share_amount
+                else:
+                    financing_out += share_amount
 
     net_operating  = operating_in  - operating_out
     net_investing  = investing_in  - investing_out
@@ -658,6 +665,106 @@ def product_performance_report(request):
     return render(request, 'reports/product_performance_report.html', context)
 
 
+def _daily_sales_by_payment_method_data(request, user_company):
+    date_from_str = request.GET.get('date_from')
+    date_to_str = request.GET.get('date_to')
+    date_from = bs_str_to_ad(date_from_str) if date_from_str else date.today()
+    date_to = bs_str_to_ad(date_to_str) if date_to_str else date.today()
+
+    branch = get_report_branch(request, user_company)
+    sales = POSSale.objects.filter(
+        company=user_company,
+        created_at__date__gte=date_from,
+        created_at__date__lte=date_to,
+    )
+    sales = apply_branch_filters(sales, branch, 'branch')
+
+    rows = sales.values('created_at__date', 'payment_method').annotate(
+        total=Sum('total'), count=Count('id'),
+    ).order_by('created_at__date', 'payment_method')
+
+    payment_method_labels = dict(PAYMENT_METHOD_CHOICES)
+    methods = sorted({r['payment_method'] for r in rows})
+
+    by_date = {}
+    for r in rows:
+        d = r['created_at__date']
+        by_date.setdefault(d, {}).update({r['payment_method']: r['total']})
+
+    daily_rows = []
+    grand_totals = {m: Decimal('0') for m in methods}
+    for d in sorted(by_date.keys()):
+        method_amounts = by_date[d]
+        day_total = sum(method_amounts.values(), Decimal('0'))
+        for m in methods:
+            grand_totals[m] += method_amounts.get(m, Decimal('0'))
+        daily_rows.append({
+            'date': d,
+            'amounts': {m: method_amounts.get(m, Decimal('0')) for m in methods},
+            'day_total': day_total,
+        })
+    grand_total = sum(grand_totals.values(), Decimal('0'))
+
+    return {
+        'date_from': date_from,
+        'date_to': date_to,
+        'date_from_bs': date_from_str or ad_date_to_bs_str(date_from),
+        'date_to_bs': date_to_str or ad_date_to_bs_str(date_to),
+        'methods': methods,
+        'payment_method_labels': payment_method_labels,
+        'daily_rows': daily_rows,
+        'grand_totals': grand_totals,
+        'grand_total': grand_total,
+        'branch': branch,
+    }
+
+
+@login_required
+def daily_sales_by_payment_method_report(request):
+    """Daily sales totals broken down by payment method (cash, bank transfer, etc.)."""
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    data = _daily_sales_by_payment_method_data(request, user_company)
+    context = {
+        'company': user_company,
+        **data,
+        **report_branch_context(user_company, data['branch']),
+    }
+    return render(request, 'reports/daily_sales_by_payment_method_report.html', context)
+
+
+@login_required
+def export_daily_sales_by_payment_method_excel(request):
+    user_company = request.user_company
+    if not user_company:
+        return redirect('accounts:user_dashboard')
+
+    data = _daily_sales_by_payment_method_data(request, user_company)
+    payment_method_labels = data['payment_method_labels']
+    methods = data['methods']
+
+    records = []
+    for row in data['daily_rows']:
+        record = {'Date': row['date']}
+        for m in methods:
+            record[payment_method_labels.get(m, m)] = float(row['amounts'][m])
+        record['Total'] = float(row['day_total'])
+        records.append(record)
+
+    columns = ['Date'] + [payment_method_labels.get(m, m) for m in methods] + ['Total']
+    df = pd.DataFrame(records, columns=columns) if records else pd.DataFrame(columns=columns)
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="daily_sales_by_payment_method.xlsx"'
+    df.to_excel(response, index=False, sheet_name='Daily Sales by Payment Method')
+    return response
+
+
 @login_required
 def sales_by_user_report(request):
     # noinspection PyUnresolvedReferences
@@ -819,12 +926,29 @@ def ar_aging_report(request):
         company=user_company, outstanding_balance__gt=0).select_related('customer')
     invoices = apply_branch_filters(invoices, branch, 'branch')
 
+    # NFRS 9: expected credit loss (ECL) rates by aging bucket — simplified
+    # provision matrix approach, standard for trade receivables without a due date.
+    ECL_RATES = {'current': Decimal('0.01'), 'days_1_30': Decimal('0.02'),
+                 'days_31_60': Decimal('0.10'), 'days_61_90': Decimal('0.25'),
+                 'days_over_90': Decimal('0.50')}
+
     ar_aging_data = []
+    total_outstanding = Decimal('0.00')
+    total_ecl_provision = Decimal('0.00')
     for invoice in invoices:
-        if not invoice.due_date:
-            continue
-        days_past_due = (today - invoice.due_date).days
+        # Invoices without an explicit due date age from the invoice date itself —
+        # previously these were silently dropped from the report entirely.
+        aging_date = invoice.due_date or invoice.created_at.date()
+        days_past_due = (today - aging_date).days
         balance = invoice.outstanding_balance
+        buckets = {
+            'current': balance if days_past_due < 0 else Decimal('0'),
+            'days_1_30': balance if 0 <= days_past_due <= 30 else Decimal('0'),
+            'days_31_60': balance if 31 <= days_past_due <= 60 else Decimal('0'),
+            'days_61_90': balance if 61 <= days_past_due <= 90 else Decimal('0'),
+            'days_over_90': balance if days_past_due > 90 else Decimal('0'),
+        }
+        ecl_provision = sum(buckets[b] * ECL_RATES[b] for b in buckets)
         row = {
             'invoice_id': invoice.pk,
             'invoice_number': invoice.invoice_number,
@@ -832,16 +956,18 @@ def ar_aging_report(request):
             'due_date': invoice.due_date,
             'total_amount': invoice.total,
             'outstanding_balance': balance,
-            'current': balance if days_past_due < 0 else 0,
-            'days_1_30': balance if 0 <= days_past_due <= 30 else 0,
-            'days_31_60': balance if 31 <= days_past_due <= 60 else 0,
-            'days_61_90': balance if 61 <= days_past_due <= 90 else 0,
-            'days_over_90': balance if days_past_due > 90 else 0,
+            'ecl_provision': ecl_provision,
+            **buckets,
         }
         ar_aging_data.append(row)
+        total_outstanding += balance
+        total_ecl_provision += ecl_provision
 
     context = {
         'ar_aging_data': ar_aging_data,
+        'total_outstanding': total_outstanding,
+        'total_ecl_provision': total_ecl_provision,
+        'net_receivables': total_outstanding - total_ecl_provision,
         **report_branch_context(user_company, branch),
     }
     return render(request, 'reports/ar_aging_report.html', context)
@@ -963,20 +1089,10 @@ def profitability_report(request):
     total_sales = apply_branch_filters(total_sales, branch, 'branch').aggregate(
         Sum('total'))['total__sum'] or Decimal('0.00')
 
-    # Calculate Total COGS (re-using logic from cogs_report)
-    cogs_data = InvoiceItem.objects.filter(
-        invoice__company=user_company,
-        invoice__outstanding_balance=0,  # Filter for paid invoices
-        product__isnull=False
-    )
-    cogs_data = apply_branch_filters(cogs_data, branch, 'invoice__branch').annotate(
-        line_item_cogs=ExpressionWrapper(
-            F('quantity') * F('product__cost_price'),
-            output_field=DecimalField()
-        )
-    )
-    total_cogs = cogs_data.aggregate(Sum('line_item_cogs'))[
-        'line_item_cogs__sum'] or Decimal('0.00')
+    # NFRS 2: same COGS basis as profit_and_loss_report's Gross Profit line.
+    # Branch filtering isn't supported by the shared helper (single-company scope);
+    # this report only shows the company-wide COGS figure.
+    _, total_cogs = get_cogs_by_product(user_company)
 
     gross_profit = total_sales - total_cogs
 
@@ -1027,10 +1143,8 @@ def stock_movement_report(request):
         product__company=user_company
     ).select_related('product', 'user').order_by('-created_at')
 
-    date_from_str = request.GET.get('date_from', '')
-    date_to_str = request.GET.get('date_to', '')
-    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
-    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
     product_q = request.GET.get('product', '').strip()
     txn_type = request.GET.get('txn_type', '')
     stock_type = request.GET.get('stock_type', '')
@@ -1063,33 +1177,6 @@ def stock_movement_report(request):
 
 
 @login_required
-def stock_valuation_report(request):
-    """NFRS 2 (IAS 2) inventory valuation — lower of cost or net realisable value."""
-    user_company = request.user_company
-    if not user_company:
-        messages.warning(
-            request, "Your account is not associated with a company. Please contact an administrator.")
-        return redirect('accounts:user_dashboard')
-
-    category_q = request.GET.get('category', '').strip()
-
-    from apps.products.services.valuation_service import compute_stock_valuation
-    rows, totals = compute_stock_valuation(user_company, category_id=category_q or None)
-
-    context = {
-        'rows': rows,
-        'category_q': category_q,
-        'categories': Category.objects.filter(company=user_company).order_by('name'),
-        'total_cost_value': totals['total_cost_value'],
-        'total_nrv_value': totals['total_nrv_value'],
-        'total_carrying_value': totals['total_carrying_value'],
-        'total_write_down': totals['total_write_down'],
-        'as_of_date': date.today(),
-    }
-    return render(request, 'reports/products/stock_valuation_report.html', context)
-
-
-@login_required
 def stock_disposal_report(request):
     """NFRS 2 (IAS 2) — inventory write-offs. Item-wise disposal detail with journal linkage."""
     user_company = request.user_company
@@ -1102,10 +1189,8 @@ def stock_disposal_report(request):
         product__company=user_company, transaction_type='DISPOSAL',
     ).select_related('product', 'product__category', 'user', 'journal_entry').order_by('-created_at')
 
-    date_from_str = request.GET.get('date_from', '')
-    date_to_str = request.GET.get('date_to', '')
-    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
-    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
     product_q = request.GET.get('product', '').strip()
     disposal_reason = request.GET.get('disposal_reason', '')
 
@@ -1149,6 +1234,182 @@ def stock_disposal_report(request):
         'report_title': 'Stock Disposal Report',
     }
     return render(request, 'reports/products/stock_disposal_report.html', context)
+
+
+@login_required
+def stock_valuation_report(request):
+    """NFRS 2 (IAS 2) inventory valuation — lower of cost or net realisable value."""
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    category_q = request.GET.get('category', '').strip()
+
+    from apps.products.services.valuation_service import compute_stock_valuation
+    rows, totals = compute_stock_valuation(user_company, category_id=category_q or None)
+
+    context = {
+        'rows': rows,
+        'category_q': category_q,
+        'categories': Category.objects.filter(company=user_company).order_by('name'),
+        'total_cost_value': totals['total_cost_value'],
+        'total_nrv_value': totals['total_nrv_value'],
+        'total_carrying_value': totals['total_carrying_value'],
+        'total_write_down': totals['total_write_down'],
+        'as_of_date': date.today(),
+    }
+    return render(request, 'reports/products/stock_valuation_report.html', context)
+
+
+@login_required
+def delivery_charges_report(request):
+    """
+    Invoice-level detail behind the 'Delivery Income' ledger balance shown in
+    P&L — which invoice/order it came from, ecom vs manual/order-management
+    origin, and the customer. The P&L's Delivery Income line is the NFRS
+    revenue-by-nature figure; this report is the transaction-level backup
+    for it (same relationship as the account_drilldown partial elsewhere in
+    this app, but as its own report since delivery charges span both the
+    ecom and orders apps and don't map to a single account-drilldown row).
+    """
+    from apps.orders.models import SalesOrder
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    start_date = bs_str_to_ad(start_date_str) if start_date_str else None
+    end_date = bs_str_to_ad(end_date_str) if end_date_str else None
+
+    invoices = Invoice.active_objects.filter(
+        company=user_company, delivery_charge__gt=0, status='ISSUED',
+    ).select_related('customer').order_by('-transaction_date')
+    if start_date:
+        invoices = invoices.filter(transaction_date__gte=start_date)
+    if end_date:
+        invoices = invoices.filter(transaction_date__lte=end_date)
+
+    # Tag each invoice with its originating SalesOrder (if any) so ecom vs
+    # order-management vs directly-billed origin is visible on the report.
+    orders_by_invoice = {
+        so.invoice_id: so
+        for so in SalesOrder.objects.filter(invoice__in=invoices).only('id', 'invoice_id', 'order_number', 'notes')
+    }
+    rows = []
+    for inv in invoices:
+        so = orders_by_invoice.get(inv.id)
+        origin = 'Direct Invoice'
+        if so:
+            origin = 'Ecom Order' if so.notes and so.notes.startswith('[ECOM #') else 'Sales Order'
+        rows.append({'invoice': inv, 'order': so, 'origin': origin})
+
+    total_delivery_income = invoices.aggregate(t=Coalesce(Sum('delivery_charge'), Decimal('0.00')))['t']
+
+    context = {
+        'company': user_company,
+        'rows': rows,
+        'total_delivery_income': total_delivery_income,
+        'start_date': start_date,
+        'end_date': end_date,
+        'start_date_bs': start_date_str or '',
+        'end_date_bs': end_date_str or '',
+    }
+    return render(request, 'reports/delivery_charges_report.html', context)
+
+
+@login_required
+def expense_register_report(request):
+    """
+    NFRS 1 (para 99-105) requires expenses to be presented either by nature
+    or by function, with disclosure sufficient to support the figures in the
+    P&L. This report is that disclosure and the audit trail behind it:
+
+      - Expenses grouped "by nature" under each expense LedgerAccount
+        (rent, salaries, utilities, ...), matching how the P&L already
+        presents expense-by-nature lines from journal_entry postings.
+      - Each row traces forward from the source Expense record to the
+        JournalEntry it posted (DR expense account / CR cash-bank), so an
+        auditor can go from "what does this P&L line consist of" down to
+        the individual voucher, and from a voucher up to its ledger impact.
+      - A reconciliation column per account: sum of RECORDED expense rows
+        vs. the DEBIT total actually posted to that account's ledger for
+        the same period — these should always agree; a mismatch means an
+        expense was journaled outside this module (data-integrity flag).
+    """
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    date_from_str = request.GET.get('date_from')
+    date_to_str = request.GET.get('date_to')
+    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
+    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
+    account_id = request.GET.get('account', '').strip()
+
+    expenses = Expense.active_objects.filter(
+        company=user_company, status='RECORDED',
+    ).select_related('expense_account', 'payment_account', 'journal_entry').order_by(
+        'expense_account__name', '-date'
+    )
+    if date_from:
+        expenses = expenses.filter(date__gte=date_from)
+    if date_to:
+        expenses = expenses.filter(date__lte=date_to)
+    if account_id:
+        expenses = expenses.filter(expense_account_id=account_id)
+
+    # Group by expense account ("by nature") for NFRS disclosure.
+    groups = {}
+    grand_total = Decimal('0.00')
+    for exp in expenses:
+        acc = exp.expense_account
+        bucket = groups.setdefault(acc.id, {'account': acc, 'rows': [], 'total': Decimal('0.00')})
+        bucket['rows'].append(exp)
+        bucket['total'] += exp.amount
+        grand_total += exp.amount
+
+    # Reconcile each account's expense-register total against what's actually
+    # posted (DEBIT side) to that ledger account for the same period — the
+    # two should match; a gap means something posted outside this module.
+    for bucket in groups.values():
+        acc = bucket['account']
+        posted_qs = JournalEntryLine.objects.filter(
+            account=acc, entry_type='DEBIT', journal_entry__company=user_company,
+            journal_entry__is_deleted=False,
+        )
+        if date_from:
+            posted_qs = posted_qs.filter(journal_entry__date__gte=date_from)
+        if date_to:
+            posted_qs = posted_qs.filter(journal_entry__date__lte=date_to)
+        posted_total = posted_qs.aggregate(t=Coalesce(Sum('amount'), Decimal('0.00')))['t']
+        bucket['posted_total'] = posted_total
+        bucket['variance'] = posted_total - bucket['total']
+
+    groups_sorted = sorted(groups.values(), key=lambda b: b['account'].name)
+
+    expense_accounts = LedgerAccount.objects.filter(
+        company=user_company, account_type='EXPENSE', is_deleted=False,
+    ).order_by('name')
+
+    context = {
+        'company': user_company,
+        'groups': groups_sorted,
+        'grand_total': grand_total,
+        'expense_accounts': expense_accounts,
+        'account_id': account_id,
+        'date_from': date_from,
+        'date_to': date_to,
+        'date_from_bs': date_from_str or '',
+        'date_to_bs': date_to_str or '',
+    }
+    return render(request, 'reports/expense_register_report.html', context)
 
 
 @login_required
@@ -1290,104 +1551,6 @@ def export_debtors_creditors_excel(request):
     return response
 
 
-def _daily_sales_by_payment_method_data(request, user_company):
-    date_from_str = request.GET.get('date_from')
-    date_to_str = request.GET.get('date_to')
-    date_from = bs_str_to_ad(date_from_str) if date_from_str else date.today()
-    date_to = bs_str_to_ad(date_to_str) if date_to_str else date.today()
-
-    branch = get_report_branch(request, user_company)
-    sales = POSSale.objects.filter(
-        company=user_company,
-        created_at__date__gte=date_from,
-        created_at__date__lte=date_to,
-    )
-    sales = apply_branch_filters(sales, branch, 'branch')
-
-    rows = sales.values('created_at__date', 'payment_method').annotate(
-        total=Sum('total'), count=Count('id'),
-    ).order_by('created_at__date', 'payment_method')
-
-    payment_method_labels = dict(PAYMENT_METHOD_CHOICES)
-    methods = sorted({r['payment_method'] for r in rows})
-
-    by_date = {}
-    for r in rows:
-        d = r['created_at__date']
-        by_date.setdefault(d, {}).update({r['payment_method']: r['total']})
-
-    daily_rows = []
-    grand_totals = {m: Decimal('0') for m in methods}
-    for d in sorted(by_date.keys()):
-        method_amounts = by_date[d]
-        day_total = sum(method_amounts.values(), Decimal('0'))
-        for m in methods:
-            grand_totals[m] += method_amounts.get(m, Decimal('0'))
-        daily_rows.append({
-            'date': d,
-            'amounts': {m: method_amounts.get(m, Decimal('0')) for m in methods},
-            'day_total': day_total,
-        })
-    grand_total = sum(grand_totals.values(), Decimal('0'))
-
-    return {
-        'date_from': date_from,
-        'date_to': date_to,
-        'branch': branch,
-        'methods': methods,
-        'payment_method_labels': payment_method_labels,
-        'daily_rows': daily_rows,
-        'grand_totals': grand_totals,
-        'grand_total': grand_total,
-    }
-
-
-@login_required
-def daily_sales_by_payment_method_report(request):
-    """Daily sales totals broken down by payment method (cash, bank transfer, etc.)."""
-    user_company = request.user_company
-    if not user_company:
-        messages.warning(
-            request, "Your account is not associated with a company. Please contact an administrator.")
-        return redirect('accounts:user_dashboard')
-
-    data = _daily_sales_by_payment_method_data(request, user_company)
-    context = {
-        'company': user_company,
-        **data,
-        **report_branch_context(user_company, data['branch']),
-    }
-    return render(request, 'reports/daily_sales_by_payment_method_report.html', context)
-
-
-@login_required
-def export_daily_sales_by_payment_method_excel(request):
-    user_company = request.user_company
-    if not user_company:
-        return redirect('accounts:user_dashboard')
-
-    data = _daily_sales_by_payment_method_data(request, user_company)
-    payment_method_labels = data['payment_method_labels']
-    methods = data['methods']
-
-    records = []
-    for row in data['daily_rows']:
-        record = {'Date': row['date']}
-        for m in methods:
-            record[payment_method_labels.get(m, m)] = float(row['amounts'][m])
-        record['Total'] = float(row['day_total'])
-        records.append(record)
-
-    columns = ['Date'] + [payment_method_labels.get(m, m) for m in methods] + ['Total']
-    df = pd.DataFrame(records, columns=columns) if records else pd.DataFrame(columns=columns)
-
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="daily_sales_by_payment_method.xlsx"'
-    df.to_excel(response, index=False, sheet_name='Daily Sales by Payment Method')
-    return response
-
-
 @login_required
 def cash_book_report(request):
     """NFRS Cash Book — chronological Dr/Cr movement in the company's Cash ledger account."""
@@ -1414,8 +1577,6 @@ def cash_book_report(request):
         'statement': statement,
         'date_from': date_from,
         'date_to': date_to,
-        'date_from_bs': date_from_str or '',
-        'date_to_bs': date_to_str or '',
     }
     return render(request, 'reports/bookkeeping/cash_book_report.html', context)
 
@@ -1451,8 +1612,6 @@ def bank_book_report(request):
         'statement': statement,
         'date_from': date_from,
         'date_to': date_to,
-        'date_from_bs': date_from_str or '',
-        'date_to_bs': date_to_str or '',
     }
     return render(request, 'reports/bookkeeping/bank_book_report.html', context)
 
@@ -1466,9 +1625,9 @@ def bank_reconciliation_report(request):
     reconciled to the bank statement's closing balance by listing items posted
     in the books but not yet reflected on the bank statement:
       - Cheques/payments issued but not yet presented (book DEBIT-side entries
-        reducing bank, i.e. CREDIT lines on the bank account, unreconciled)
+        reducing bank, i.e. CREDIT lines on the bank account, uncleared)
       - Deposits recorded but not yet credited by the bank (DEBIT lines on the
-        bank account, unreconciled)
+        bank account, uncleared)
 
     Reconciliation status is a per-JournalEntryLine flag the user sets by
     ticking each line against the physical/e-statement — see
@@ -1558,10 +1717,10 @@ def bank_reconciliation_report(request):
 @login_required
 def bank_reconciliation_toggle_line(request):
     """
-    HTMX endpoint: marks a JournalEntryLine as reconciled from the BRS worksheet.
+    HTMX endpoint: marks a JournalEntryLine as cleared from the BRS worksheet.
     Ticking the checkbox is a one-way "mark cleared" action — the row is removed
     from the outstanding-items worksheet by returning an empty swap, since an
-    already-reconciled line has nothing left to render there.
+    already-cleared line has nothing left to render there.
     """
     user_company = request.user_company
     if not user_company or request.method != 'POST':
@@ -1618,114 +1777,8 @@ def party_ledger_report(request):
         'statement': statement,
         'date_from': date_from,
         'date_to': date_to,
-        'date_from_bs': date_from_str or '',
-        'date_to_bs': date_to_str or '',
     }
     return render(request, 'reports/party_ledger_report.html', context)
-
-
-@login_required
-def vat_sales_register(request):
-    """IRD-style Sales Register — transaction-level VAT output tax, one row per invoice."""
-    user_company = request.user_company
-    if not user_company:
-        messages.warning(request, "Your account is not associated with a company.")
-        return redirect('accounts:user_dashboard')
-
-    start_str = request.GET.get('start_date')
-    end_str = request.GET.get('end_date')
-    start_date = bs_str_to_ad(start_str) if start_str else date(date.today().year, 1, 1)
-    end_date = bs_str_to_ad(end_str) if end_str else date.today()
-
-    invoices = Invoice.objects.filter(
-        company=user_company, status='ISSUED',
-        transaction_date__gte=start_date, transaction_date__lte=end_date,
-    ).select_related('customer').order_by('transaction_date', 'invoice_number')
-
-    totals = invoices.aggregate(
-        taxable=Coalesce(Sum('subtotal'), Decimal('0')),
-        vat=Coalesce(Sum('tax_amount'), Decimal('0')),
-        total=Coalesce(Sum('total'), Decimal('0')),
-    )
-
-    context = {
-        'company': user_company,
-        'start_date': start_date,
-        'end_date': end_date,
-        'invoices': invoices,
-        'totals': totals,
-    }
-    return render(request, 'reports/tax/vat_sales_register.html', context)
-
-
-@login_required
-def vat_purchase_register(request):
-    """IRD-style Purchase Register — transaction-level VAT input tax, one row per vendor bill."""
-    user_company = request.user_company
-    if not user_company:
-        messages.warning(request, "Your account is not associated with a company.")
-        return redirect('accounts:user_dashboard')
-
-    start_str = request.GET.get('start_date')
-    end_str = request.GET.get('end_date')
-    start_date = bs_str_to_ad(start_str) if start_str else date(date.today().year, 1, 1)
-    end_date = bs_str_to_ad(end_str) if end_str else date.today()
-
-    bills = VendorBill.objects.filter(
-        vendor__company=user_company,
-        bill_date__gte=start_date, bill_date__lte=end_date,
-    ).exclude(status='CANCELLED').select_related('vendor').annotate(
-        taxable_amount=F('total_amount') - F('tax_amount')
-    ).order_by('bill_date', 'bill_number')
-
-    totals = bills.aggregate(
-        vat=Coalesce(Sum('tax_amount'), Decimal('0')),
-        total=Coalesce(Sum('total_amount'), Decimal('0')),
-    )
-    totals['taxable'] = totals['total'] - totals['vat']
-
-    context = {
-        'company': user_company,
-        'start_date': start_date,
-        'end_date': end_date,
-        'bills': bills,
-        'totals': totals,
-    }
-    return render(request, 'reports/tax/vat_purchase_register.html', context)
-
-
-@login_required
-def tds_register(request):
-    """Vendor-wise TDS deduction register for e-TDS filing reference."""
-    from apps.bookkeeping.models import TDSDeduction
-
-    user_company = request.user_company
-    if not user_company:
-        messages.warning(request, "Your account is not associated with a company.")
-        return redirect('accounts:user_dashboard')
-
-    start_str = request.GET.get('start_date')
-    end_str = request.GET.get('end_date')
-    start_date = bs_str_to_ad(start_str) if start_str else date(date.today().year, 1, 1)
-    end_date = bs_str_to_ad(end_str) if end_str else date.today()
-
-    deductions = TDSDeduction.objects.filter(
-        vendor_bill__vendor__company=user_company,
-        vendor_bill__bill_date__gte=start_date,
-        vendor_bill__bill_date__lte=end_date,
-    ).select_related('vendor_bill', 'vendor_bill__vendor', 'tds_rate').order_by('vendor_bill__bill_date')
-
-    total_tds = deductions.aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
-
-    context = {
-        'company': user_company,
-        'start_date': start_date,
-        'end_date': end_date,
-        'deductions': deductions,
-        'total_tds': total_tds,
-        'report_title': 'TDS Register',
-    }
-    return render(request, 'reports/tax/tds_register.html', context)
 
 
 @login_required
@@ -1755,8 +1808,6 @@ def general_ledger_report(request):
         'statement': statement,
         'date_from': date_from,
         'date_to': date_to,
-        'date_from_bs': date_from_str or '',
-        'date_to_bs': date_to_str or '',
     }
     return render(request, 'reports/bookkeeping/general_ledger_report.html', context)
 
@@ -1795,10 +1846,8 @@ def purchase_order_list_report(request):
         company=user_company
     ).select_related('vendor').order_by('-date')
 
-    date_from_str = request.GET.get('date_from', '')
-    date_to_str = request.GET.get('date_to', '')
-    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
-    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
     status = request.GET.get('status', '')
     vendor_q = request.GET.get('vendor', '').strip()
 
@@ -1843,10 +1892,8 @@ def vendor_bill_list_report(request):
 
     qs = qs.select_related('vendor', 'purchase_order').prefetch_related('payments').order_by('-bill_date')
 
-    date_from_str = request.GET.get('date_from', '')
-    date_to_str = request.GET.get('date_to', '')
-    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
-    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
     status = request.GET.get('status', '')
     vendor_q = request.GET.get('vendor', '').strip()
 
@@ -1894,10 +1941,8 @@ def vendor_payment_list_report(request):
         vendor_bill__vendor__company=user_company
     ).select_related('vendor_bill__vendor', 'bank_account').order_by('-payment_date')
 
-    date_from_str = request.GET.get('date_from', '')
-    date_to_str = request.GET.get('date_to', '')
-    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
-    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
     vendor_q = request.GET.get('vendor', '').strip()
     method = request.GET.get('method', '')
 
@@ -2883,18 +2928,14 @@ def trial_balance_report(request):
     # Filter out accounts with zero balance
     trial_balance_data = [item for item in trial_balance_data if item['debit_balance'] > 0 or item['credit_balance'] > 0]
 
-    # Item-wise drill-down — underlying transactions for every account, plus a
-    # per-product breakdown for accounts that map to products (sales, purchases,
-    # COGS, closing stock). See apps/reports/services/account_drilldown.py.
-    from apps.reports.services.account_drilldown import get_account_transactions, get_product_breakdown
-    for item in trial_balance_data:
-        item['transactions'] = get_account_transactions(item['account'], date_to=report_date)
-        item['product_breakdown'] = get_product_breakdown(item['account'], user_company, date_to=report_date)
-
     # Check if trial balance is balanced
     is_balanced = abs(total_debits - total_credits) < Decimal('0.01')
     difference = total_debits - total_credits
-    
+
+    # NFRS 2: no ledger 'Inventory' account is posted on purchase/sale, so closing
+    # stock is shown as a computed memo line — it does not participate in is_balanced.
+    closing_stock_rows, closing_stock_total = get_closing_stock_valuation(user_company)
+
     context = {
         'report_date': report_date,
         'report_date_bs': ad_date_to_bs_str(report_date),
@@ -2903,6 +2944,8 @@ def trial_balance_report(request):
         'total_credits': total_credits,
         'difference': difference,
         'is_balanced': is_balanced,
+        'closing_stock_rows': closing_stock_rows,
+        'closing_stock_total': closing_stock_total,
         'fiscal_year': fiscal_year,
         'company': user_company,
         'report_title': 'Trial Balance Report',
@@ -3012,13 +3055,10 @@ def balance_sheet_report(request):
     noncurrent_liabilities  = [l for l in liabilities if not l['account'].is_current]
     total_equity_all = total_equity + net_income_up_to_date
 
-    # Item-wise drill-down — underlying transactions for every account, plus a
-    # per-product breakdown for accounts that map to products (this is where
-    # "Closing Stock" gets its per-product valuation rows).
-    from apps.reports.services.account_drilldown import get_account_transactions, get_product_breakdown
-    for item in assets + liabilities + equity:
-        item['transactions'] = get_account_transactions(item['account'], date_to=report_date)
-        item['product_breakdown'] = get_product_breakdown(item['account'], user_company, date_to=report_date)
+    # NFRS 2: no ledger 'Inventory' account is posted on purchase/sale, so closing
+    # stock (lower of cost or NRV) is added here as a computed current asset.
+    closing_stock_rows, closing_stock_total = get_closing_stock_valuation(user_company)
+    total_assets_with_stock = total_assets + closing_stock_total
 
     context = {
         'report_date': report_date,
@@ -3031,10 +3071,12 @@ def balance_sheet_report(request):
         'noncurrent_liabilities': noncurrent_liabilities,
         'equity': equity,
         'current_year_profit': net_income_up_to_date,
-        'total_assets': total_assets,
+        'closing_stock_rows': closing_stock_rows,
+        'closing_stock_total': closing_stock_total,
+        'total_assets': total_assets_with_stock,
         'total_liabilities': total_liabilities,
         'total_equity': total_equity_all,
-        'balance_sheet_balanced': abs(total_assets - (total_liabilities + total_equity_all)) < Decimal('0.01'),
+        'balance_sheet_balanced': abs(total_assets_with_stock - (total_liabilities + total_equity_all)) < Decimal('0.01'),
         'report_title': 'Statement of Financial Position',
         'fiscal_year': fiscal_year,
         'company': user_company,
@@ -4810,26 +4852,11 @@ def profit_and_loss_report(request):
             expense_lines.append({'account': acc, 'amount': net})
             total_expenses += net
 
-    profit_before_tax = total_revenue - total_expenses
-
-    # Item-wise drill-down — underlying transactions for every account, plus a
-    # per-product breakdown for accounts that map to products (revenue, COGS).
-    from apps.reports.services.account_drilldown import get_account_transactions, get_product_breakdown
-    for item in revenue_lines + expense_lines:
-        item['transactions'] = get_account_transactions(item['account'], date_from=start_date, date_to=end_date)
-        item['product_breakdown'] = get_product_breakdown(item['account'], user_company, date_from=start_date, date_to=end_date)
-
-    # NFRS Statement of Profit or Loss layout: split expenses into Cost of Sales
-    # (accounts feeding the Trading Account — Purchases and the Closing Stock
-    # contra-account credited by post_closing_stock) vs Operating Expenses, so
-    # Gross Profit can be shown before other opex, same account-name convention
-    # already used by the ratio/profitability report's gross-profit lookup.
-    COST_OF_SALES_ACCOUNT_NAMES = {'Purchase Expense', 'Purchases', 'Cost of Goods Sold', 'COGS'}
-    cost_of_sales_lines = [l for l in expense_lines if l['account'].name in COST_OF_SALES_ACCOUNT_NAMES]
-    operating_expense_lines = [l for l in expense_lines if l['account'].name not in COST_OF_SALES_ACCOUNT_NAMES]
-    total_cost_of_sales = sum((l['amount'] for l in cost_of_sales_lines), Decimal('0.00'))
-    total_operating_expenses = sum((l['amount'] for l in operating_expense_lines), Decimal('0.00'))
-    gross_profit = total_revenue - total_cost_of_sales
+    # NFRS 2 (IAS 2): COGS must be matched against revenue in the same period —
+    # separated from the "by nature" expense accounts above so Gross Profit is visible.
+    cogs_rows, total_cogs = get_cogs_by_product(user_company, start_date, end_date)
+    gross_profit = total_revenue - total_cogs
+    profit_before_tax = gross_profit - total_expenses
 
     # NFRS 12 (IAS 12): Corporate Income Tax provision
     # Nepal CIT rate: 25% for most companies (15% for special industries)
@@ -4840,14 +4867,12 @@ def profit_and_loss_report(request):
     profit_after_tax = profit_before_tax - tax_expense
 
     context = {
-        'revenue_lines':            revenue_lines,
-        'expense_lines':            expense_lines,
-        'cost_of_sales_lines':      cost_of_sales_lines,
-        'operating_expense_lines':  operating_expense_lines,
-        'total_cost_of_sales':      total_cost_of_sales,
-        'total_operating_expenses': total_operating_expenses,
-        'gross_profit':             gross_profit,
+        'revenue_lines':     revenue_lines,
+        'expense_lines':     expense_lines,
         'total_revenue':     total_revenue,
+        'cogs_rows':         cogs_rows,
+        'total_cogs':        total_cogs,
+        'gross_profit':      gross_profit,
         'total_expenses':    total_expenses,
         'profit_before_tax': profit_before_tax,
         'cit_rate':          cit_rate,
@@ -4871,7 +4896,15 @@ def post_income_tax_provision(request):
     the report uses — never trusts a client-supplied amount — and refuses to post
     twice for the same company/period-end date.
     """
-    from apps.bookkeeping.models import post_journal_entry, get_or_create_system_account
+    from apps.bookkeeping.models import LedgerAccount as _LedgerAccount
+
+    def _get_or_create_account(company, name, account_type, code=None):
+        acc, _ = _LedgerAccount.objects.get_or_create(
+            company=company,
+            name=name,
+            defaults={'account_type': account_type, 'code': code, 'system_created': True},
+        )
+        return acc
 
     user_company = request.user_company
     if not user_company:
@@ -4928,7 +4961,12 @@ def post_income_tax_provision(request):
         )).aggregate(s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
         total_expenses += (dr - cr)
 
-    profit_before_tax = total_revenue - total_expenses
+    # NFRS 2: COGS is a computed overlay (never posted to the ledger — see
+    # get_cogs_by_product), so it must be subtracted here too or the posted
+    # tax provision would overstate profit relative to what the P&L report shows.
+    _, total_cogs = get_cogs_by_product(user_company, start_date, end_date)
+
+    profit_before_tax = total_revenue - total_cogs - total_expenses
     cit_rate = Decimal(str(getattr(user_company, 'cit_rate', 25) or 25))
     tax_expense = Decimal('0.00')
     if profit_before_tax > Decimal('0.00'):
@@ -4939,26 +4977,32 @@ def post_income_tax_provision(request):
         return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
 
     already_posted = JournalEntry.objects.filter(
-        company=user_company, source_type='TAX_PROVISION', date=end_date, is_deleted=False,
+        company=user_company, journal_type='PROVISION', date=end_date, is_deleted=False,
+        description__startswith='Income tax provision',
     ).exists()
     if already_posted:
         messages.error(request, f"An income tax provision has already been posted for period ending {end_date}.")
         return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
 
-    tax_expense_acc = get_or_create_system_account(user_company, 'Income Tax Expense', 'EXPENSE', code='5950')
-    tax_payable_acc = get_or_create_system_account(user_company, 'Income Tax Payable', 'LIABILITY', code='2210', is_current=True)
+    tax_expense_acc = _get_or_create_account(user_company, 'Income Tax Expense', 'EXPENSE', code='5950')
+    tax_payable_acc = _get_or_create_account(user_company, 'Income Tax Payable', 'LIABILITY', code='2210')
 
-    post_journal_entry(
+    entry = JournalEntry.objects.create(
         company=user_company,
         date=end_date,
         description=f"Income tax provision — period ending {end_date} (CIT @ {cit_rate}%)",
-        lines=[
-            {'account': tax_expense_acc, 'entry_type': 'DEBIT', 'amount': tax_expense, 'narration': 'Income tax provision'},
-            {'account': tax_payable_acc, 'entry_type': 'CREDIT', 'amount': tax_expense, 'narration': 'Income tax provision'},
-        ],
+        journal_type='PROVISION',
         created_by=request.user,
-        source_type='TAX_PROVISION',
     )
+    JournalEntryLine.objects.bulk_create([
+        JournalEntryLine(journal_entry=entry, account=tax_expense_acc, entry_type='DEBIT',
+                          amount=tax_expense, narration='Income tax provision'),
+        JournalEntryLine(journal_entry=entry, account=tax_payable_acc, entry_type='CREDIT',
+                          amount=tax_expense, narration='Income tax provision'),
+    ])
+    from apps.bookkeeping.models import assert_balanced
+    assert_balanced(entry)
+
     messages.success(request, f"Income tax provision of {tax_expense} posted for period ending {end_date}.")
     return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
 
@@ -4969,11 +5013,10 @@ def post_closing_stock(request):
     Post the NFRS 2 period-end closing stock adjustment: DR Closing Stock (asset)
     / CR Cost of Goods Sold (expense), valued at the lower of cost or NRV.
 
-    Crediting a dedicated "Cost of Goods Sold" account (rather than the existing
-    "Purchase Expense" account) means it nets against Purchase Expense inside
-    profit_and_loss_report's existing "sum every EXPENSE account" aggregation
-    with no changes to that logic — total_expenses becomes Purchases − Closing
-    Stock (true COGS) automatically once this account has a balance.
+    This ledger posting is independent of get_cogs_by_product/get_closing_stock_valuation
+    (this project's existing computed-only NFRS overlay used directly by the P&L
+    report) — posting here does not feed into or double-count against that
+    computation. Use one approach or the other per company to avoid confusion.
 
     Valuation is against LIVE current stock (see compute_stock_valuation) —
     accurate only if posted at period-end before further stock movement.
@@ -5101,7 +5144,11 @@ def ratio_analysis_report(request, template='reports/ratio_analysis_report.html'
         credits=Coalesce(Sum('amount', filter=Q(entry_type='CREDIT')), Decimal('0')),
     )
     cash_and_bank = cash_balance['debits'] - cash_balance['credits']
-    current_assets_total = cash_and_bank + ar_balance
+
+    # NFRS 2: closing stock is a current asset but excluded from the Quick Ratio
+    # (inventory isn't "quick" — it must be sold first to become cash).
+    _, closing_stock_total = get_closing_stock_valuation(user_company)
+    current_assets_total = cash_and_bank + ar_balance + closing_stock_total
 
     # Current liabilities = AP
     ap_ids = list(LedgerAccount.objects.filter(
@@ -5146,17 +5193,11 @@ def ratio_analysis_report(request, template='reports/ratio_analysis_report.html'
     total_expenses = expense_qs.aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
     net_income     = total_revenue - total_expenses
 
-    # COGS approximation = Purchase Expense account
-    cogs_ids = list(LedgerAccount.objects.filter(
-        company=user_company, account_type='EXPENSE',
-        name__in=['Purchase Expense', 'Cost of Goods Sold', 'COGS']
-    ).values_list('id', flat=True))
-    cogs = JournalEntryLine.objects.filter(
-        account_id__in=cogs_ids,
-        entry_type='DEBIT',
-        journal_entry__company=user_company,
-        journal_entry__is_deleted=False,
-    ).aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
+    # NFRS 2: COGS is never posted to the ledger (see get_cogs_by_product docstring) —
+    # computed from qty sold x cost_price, same basis as the P&L's Gross Profit line.
+    period_start = fiscal_year.start_date if fiscal_year else None
+    period_end   = fiscal_year.end_date if fiscal_year else None
+    _, cogs = get_cogs_by_product(user_company, period_start, period_end)
     gross_profit = total_revenue - cogs
 
     # ── Turnover helpers ─────────────────────────────────────────────────
@@ -5188,9 +5229,10 @@ def ratio_analysis_report(request, template='reports/ratio_analysis_report.html'
         'roa_pct':          pct(net_income, total_assets),
         'roe_pct':          pct(net_income, total_equity),
         # Efficiency
-        'ar_turnover':      safe_div(total_invoiced, ar_balance),
-        'ap_turnover':      safe_div(total_purchases, current_liabilities),
-        'asset_turnover':   safe_div(total_revenue, total_assets),
+        'ar_turnover':          safe_div(total_invoiced, ar_balance),
+        'ap_turnover':          safe_div(total_purchases, current_liabilities),
+        'asset_turnover':       safe_div(total_revenue, total_assets),
+        'inventory_turnover':   safe_div(cogs, closing_stock_total),
         # Leverage
         'debt_to_equity':   safe_div(total_liabilities, total_equity),
         'debt_ratio':       safe_div(total_liabilities, total_assets),
@@ -5211,6 +5253,7 @@ def ratio_analysis_report(request, template='reports/ratio_analysis_report.html'
         'current_liabilities': current_liabilities,
         'cash_and_bank': cash_and_bank,
         'ar_balance': ar_balance,
+        'closing_stock_total': closing_stock_total,
         'total_revenue': total_revenue,
         'total_expenses': total_expenses,
         'gross_profit': gross_profit,
@@ -5301,70 +5344,201 @@ def ap_aging_report(request):
 
 @login_required
 def export_ap_aging_excel(request):
+    from openpyxl import Workbook
     user_company = request.user_company
     if not user_company:
         return redirect('accounts:user_dashboard')
+    return redirect('reports:ap_aging_report')
 
-    as_of_date_str = request.GET.get('as_of_date')
-    as_of_date = bs_str_to_ad(as_of_date_str) if as_of_date_str else date.today()
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STATUTORY / COMPLIANCE — VAT sales/purchase registers, TDS register
+# ═══════════════════════════════════════════════════════════════════════════
+
+@login_required
+def vat_sales_register(request):
+    """IRD Bikri Khata — party-wise output tax register from Invoice + CreditNote (net of returns)."""
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+    if not user_company.vat_registered:
+        messages.warning(request, "This report only applies to VAT-registered companies.")
+        return redirect('reports:report_dashboard')
+
+    start_str = request.GET.get('start_date')
+    end_str = request.GET.get('end_date')
+    start_date = bs_str_to_ad(start_str) if start_str else date(date.today().year, 1, 1)
+    end_date = bs_str_to_ad(end_str) if end_str else date.today()
+
+    invoices = Invoice.active_objects.filter(
+        company=user_company,
+        transaction_date__gte=start_date,
+        transaction_date__lte=end_date,
+        tax_amount__gt=0,
+    ).select_related('customer').order_by('transaction_date')
+
+    rows = []
+    total_taxable = Decimal('0.00')
+    total_vat = Decimal('0.00')
+    for inv in invoices:
+        taxable = inv.subtotal - inv.discount_amount
+        rows.append({
+            'date': inv.transaction_date,
+            'document_number': inv.invoice_number,
+            'party_name': inv.customer.name if inv.customer else '—',
+            'party_pan': inv.customer.pan_number if inv.customer else '',
+            'taxable_amount': taxable,
+            'vat_amount': inv.tax_amount,
+            'total': inv.total,
+        })
+        total_taxable += taxable
+        total_vat += inv.tax_amount
+
+    credit_notes = CreditNote.objects.filter(
+        company=user_company,
+        status='APPLIED',
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date,
+        tax_amount__gt=0,
+    ).select_related('customer').order_by('created_at')
+
+    for cn in credit_notes:
+        taxable = cn.amount - cn.tax_amount
+        rows.append({
+            'date': cn.created_at.date(),
+            'document_number': f"CN-{cn.credit_note_number}",
+            'party_name': cn.customer.name if cn.customer else '—',
+            'party_pan': cn.customer.pan_number if cn.customer else '',
+            'taxable_amount': -taxable,
+            'vat_amount': -cn.tax_amount,
+            'total': -cn.amount,
+        })
+        total_taxable -= taxable
+        total_vat -= cn.tax_amount
+
+    rows.sort(key=lambda r: r['date'])
+
+    context = {
+        'company': user_company,
+        'start_date': start_date,
+        'end_date': end_date,
+        'rows': rows,
+        'total_taxable': total_taxable,
+        'total_vat': total_vat,
+        'report_title': 'VAT Sales Register',
+    }
+    return render(request, 'reports/vat_sales_register.html', context)
+
+
+@login_required
+def vat_purchase_register(request):
+    """IRD Kharid Khata — vendor-wise input tax register from VendorBill + DebitNote."""
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+    if not user_company.vat_registered:
+        messages.warning(request, "This report only applies to VAT-registered companies.")
+        return redirect('reports:report_dashboard')
+
+    start_str = request.GET.get('start_date')
+    end_str = request.GET.get('end_date')
+    start_date = bs_str_to_ad(start_str) if start_str else date(date.today().year, 1, 1)
+    end_date = bs_str_to_ad(end_str) if end_str else date.today()
 
     bills = VendorBill.objects.filter(
         vendor__company=user_company,
-        status='UNPAID',
-    ).select_related('vendor').order_by('due_date')
+        bill_date__gte=start_date,
+        bill_date__lte=end_date,
+        tax_amount__gt=0,
+    ).select_related('vendor').order_by('bill_date')
 
-    aging_data = []
+    rows = []
+    total_taxable = Decimal('0.00')
+    total_vat = Decimal('0.00')
     for bill in bills:
-        paid = bill.payments.aggregate(
-            t=Coalesce(Sum('amount'), Decimal('0'))
-        )['t']
-        outstanding = bill.total_amount - paid
-        if outstanding <= 0:
-            continue
-
-        days_overdue = (as_of_date - bill.due_date).days if bill.due_date else 0
-        if days_overdue <= 0:
-            aging_category = 'Current'
-        elif days_overdue <= 30:
-            aging_category = '0-30 Days'
-        elif days_overdue <= 60:
-            aging_category = '31-60 Days'
-        elif days_overdue <= 90:
-            aging_category = '61-90 Days'
-        else:
-            aging_category = '>90 Days'
-
-        aging_data.append({
-            'bill_number': bill.bill_number,
-            'vendor_name': bill.vendor.name if bill.vendor else 'N/A',
-            'total_amount': bill.total_amount,
-            'due_date': bill.due_date,
-            'days_overdue': days_overdue,
-            'aging_category': aging_category,
-            'outstanding': outstanding,
+        taxable = bill.total_amount - bill.tax_amount
+        rows.append({
+            'date': bill.bill_date,
+            'document_number': bill.bill_number,
+            'party_name': bill.vendor.name,
+            'party_pan': bill.vendor.pan_number,
+            'taxable_amount': taxable,
+            'vat_amount': bill.tax_amount,
+            'total': bill.total_amount,
         })
+        total_taxable += taxable
+        total_vat += bill.tax_amount
 
-    df = pd.DataFrame(aging_data)
+    debit_notes = DebitNote.objects.filter(
+        company=user_company,
+        status='APPLIED',
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date,
+        tax_amount__gt=0,
+    ).select_related('vendor').order_by('created_at')
 
-    ordered_columns = ['Current', '0-30 Days', '31-60 Days', '61-90 Days', '>90 Days']
-    if not df.empty:
-        pivot_table = df.pivot_table(values='outstanding', index='vendor_name',
-                                     columns='aging_category', aggfunc='sum', fill_value=0)
-        for col in ordered_columns:
-            if col not in pivot_table.columns:
-                pivot_table[col] = 0
-        pivot_table = pivot_table[ordered_columns]
-        pivot_table['Total Outstanding'] = pivot_table.sum(axis=1)
-    else:
-        pivot_table = pd.DataFrame(columns=ordered_columns + ['Total Outstanding'])
+    for dn in debit_notes:
+        taxable = dn.amount - dn.tax_amount
+        rows.append({
+            'date': dn.created_at.date(),
+            'document_number': f"DN-{dn.debit_note_number}",
+            'party_name': dn.vendor.name if dn.vendor else '—',
+            'party_pan': dn.vendor.pan_number if dn.vendor else '',
+            'taxable_amount': -taxable,
+            'vat_amount': -dn.tax_amount,
+            'total': -dn.amount,
+        })
+        total_taxable -= taxable
+        total_vat -= dn.tax_amount
 
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="ap_aging_report.xlsx"'
+    rows.sort(key=lambda r: r['date'])
 
-    pivot_table.to_excel(response, index=True, sheet_name='AP Aging Report')
+    context = {
+        'company': user_company,
+        'start_date': start_date,
+        'end_date': end_date,
+        'rows': rows,
+        'total_taxable': total_taxable,
+        'total_vat': total_vat,
+        'report_title': 'VAT Purchase Register',
+    }
+    return render(request, 'reports/vat_purchase_register.html', context)
 
-    return response
+
+@login_required
+def tds_register(request):
+    """Vendor-wise TDS deduction register for e-TDS filing reference."""
+    from apps.bookkeeping.models import TDSDeduction
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    start_str = request.GET.get('start_date')
+    end_str = request.GET.get('end_date')
+    start_date = bs_str_to_ad(start_str) if start_str else date(date.today().year, 1, 1)
+    end_date = bs_str_to_ad(end_str) if end_str else date.today()
+
+    deductions = TDSDeduction.objects.filter(
+        vendor_bill__vendor__company=user_company,
+        vendor_bill__bill_date__gte=start_date,
+        vendor_bill__bill_date__lte=end_date,
+    ).select_related('vendor_bill', 'vendor_bill__vendor', 'tds_rate').order_by('vendor_bill__bill_date')
+
+    total_tds = deductions.aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
+
+    context = {
+        'company': user_company,
+        'start_date': start_date,
+        'end_date': end_date,
+        'deductions': deductions,
+        'total_tds': total_tds,
+        'report_title': 'TDS Register',
+    }
+    return render(request, 'reports/tds_register.html', context)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -5417,15 +5591,18 @@ def tax_report(request, template='reports/tax_report.html'):
         t=Coalesce(Sum('tax_amount'), Decimal('0'))
     )
     input_tax = purchase_agg['t']
-    # Legacy bills with no stored tax_amount: fall back to derived estimate
+    # Legacy bills with no stored tax_amount: derive from total_amount, which is
+    # tax-inclusive (items_subtotal + tax_amount — see create_journal_entry_for_vendor_bill).
+    # Must back the tax OUT of total_amount, not add it on top, or input tax is overstated.
     if input_tax == Decimal('0'):
         total_bills = VendorBill.objects.filter(
             vendor__company=user_company,
             bill_date__gte=start_date,
             bill_date__lte=end_date,
         ).aggregate(t=Coalesce(Sum('total_amount'), Decimal('0')))['t']
-        if total_bills > Decimal('0'):
-            input_tax = (total_bills * user_company.tax_rate / Decimal('100')).quantize(Decimal('0.01'))
+        rate = user_company.tax_rate or Decimal('0')
+        if total_bills > Decimal('0') and rate > Decimal('0'):
+            input_tax = (total_bills * rate / (Decimal('100') + rate)).quantize(Decimal('0.01'))
 
     net_tax_payable = output_tax - input_tax
 
@@ -6263,7 +6440,10 @@ def changes_in_equity_report(request):
             journal_entry__date__gte=fiscal_year.start_date,
             journal_entry__date__lte=fiscal_year.end_date,
         ).aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
-        net_income = rev - exp
+        # NFRS 2: COGS is a computed overlay (see get_cogs_by_product) — must be
+        # subtracted here too, or closing Retained Earnings disagrees with the P&L.
+        _, cogs = get_cogs_by_product(user_company, fiscal_year.start_date, fiscal_year.end_date)
+        net_income = rev - cogs - exp
     else:
         net_income = Decimal('0.00')
 
@@ -6326,178 +6506,16 @@ def fixed_asset_register_report(request):
     return render(request, 'reports/fixed_asset_register_report.html', context)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# DELIVERY CHARGES REPORT
-# ═══════════════════════════════════════════════════════════════════════════
-
-@login_required
-def delivery_charges_report(request):
-    """
-    Invoice-level detail behind the 'Delivery Income' ledger balance shown in
-    P&L — which invoice/order it came from, ecom vs manual/order-management
-    origin, and the customer. The P&L's Delivery Income line is the NFRS
-    revenue-by-nature figure; this report is the transaction-level backup
-    for it (same relationship as the account_drilldown partial elsewhere in
-    this app, but as its own report since delivery charges span both the
-    ecom and orders apps and don't map to a single account-drilldown row).
-    """
-    from apps.orders.models import SalesOrder
-
-    user_company = request.user_company
-    if not user_company:
-        messages.warning(request, "Your account is not associated with a company.")
-        return redirect('accounts:user_dashboard')
-
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-    start_date = bs_str_to_ad(start_date_str) if start_date_str else None
-    end_date = bs_str_to_ad(end_date_str) if end_date_str else None
-
-    invoices = Invoice.active_objects.filter(
-        company=user_company, delivery_charge__gt=0, status='ISSUED',
-    ).select_related('customer').order_by('-transaction_date')
-    if start_date:
-        invoices = invoices.filter(transaction_date__gte=start_date)
-    if end_date:
-        invoices = invoices.filter(transaction_date__lte=end_date)
-
-    # Tag each invoice with its originating SalesOrder (if any) so ecom vs
-    # order-management vs directly-billed origin is visible on the report.
-    orders_by_invoice = {
-        so.invoice_id: so
-        for so in SalesOrder.objects.filter(invoice__in=invoices).only('id', 'invoice_id', 'order_number', 'notes')
-    }
-    rows = []
-    for inv in invoices:
-        so = orders_by_invoice.get(inv.id)
-        origin = 'Direct Invoice'
-        if so:
-            origin = 'Ecom Order' if so.notes and so.notes.startswith('[ECOM #') else 'Sales Order'
-        rows.append({'invoice': inv, 'order': so, 'origin': origin})
-
-    total_delivery_income = invoices.aggregate(t=Coalesce(Sum('delivery_charge'), Decimal('0.00')))['t']
-
-    context = {
-        'company': user_company,
-        'rows': rows,
-        'total_delivery_income': total_delivery_income,
-        'start_date': start_date,
-        'end_date': end_date,
-        'start_date_bs': start_date_str or '',
-        'end_date_bs': end_date_str or '',
-    }
-    return render(request, 'reports/delivery_charges_report.html', context)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# EXPENSE REGISTER (NFRS 1 — expenses disclosed by nature, with audit trail)
-# ═══════════════════════════════════════════════════════════════════════════
-
-@login_required
-def expense_register_report(request):
-    """
-    NFRS 1 (para 99-105) requires expenses to be presented either by nature
-    or by function, with disclosure sufficient to support the figures in the
-    P&L. This report is that disclosure and the audit trail behind it:
-
-      - Expenses grouped "by nature" under each expense LedgerAccount
-        (rent, salaries, utilities, ...), matching how the P&L already
-        presents expense-by-nature lines from journal_entry postings.
-      - Each row traces forward from the source Expense record to the
-        JournalEntry it posted (DR expense account / CR cash-bank), so an
-        auditor can go from "what does this P&L line consist of" down to
-        the individual voucher, and from a voucher up to its ledger impact.
-      - A reconciliation column per account: sum of RECORDED expense rows
-        vs. the DEBIT total actually posted to that account's ledger for
-        the same period — these should always agree; a mismatch means an
-        expense was journaled outside this module (data-integrity flag).
-    """
-    user_company = request.user_company
-    if not user_company:
-        messages.warning(
-            request, "Your account is not associated with a company. Please contact an administrator.")
-        return redirect('accounts:user_dashboard')
-
-    date_from_str = request.GET.get('date_from')
-    date_to_str = request.GET.get('date_to')
-    date_from = bs_str_to_ad(date_from_str) if date_from_str else None
-    date_to = bs_str_to_ad(date_to_str) if date_to_str else None
-    account_id = request.GET.get('account', '').strip()
-
-    expenses = Expense.active_objects.filter(
-        company=user_company, status='RECORDED',
-    ).select_related('expense_account', 'payment_account', 'journal_entry').order_by(
-        'expense_account__name', '-date'
-    )
-    if date_from:
-        expenses = expenses.filter(date__gte=date_from)
-    if date_to:
-        expenses = expenses.filter(date__lte=date_to)
-    if account_id:
-        expenses = expenses.filter(expense_account_id=account_id)
-
-    # Group by expense account ("by nature") for NFRS disclosure.
-    groups = {}
-    grand_total = Decimal('0.00')
-    for exp in expenses:
-        acc = exp.expense_account
-        bucket = groups.setdefault(acc.id, {'account': acc, 'rows': [], 'total': Decimal('0.00')})
-        bucket['rows'].append(exp)
-        bucket['total'] += exp.amount
-        grand_total += exp.amount
-
-    # Reconcile each account's expense-register total against what's actually
-    # posted (DEBIT side) to that ledger account for the same period — the
-    # two should match; a gap means something posted outside this module.
-    for bucket in groups.values():
-        acc = bucket['account']
-        posted_qs = JournalEntryLine.objects.filter(
-            account=acc, entry_type='DEBIT', journal_entry__company=user_company,
-            journal_entry__is_deleted=False,
-        )
-        if date_from:
-            posted_qs = posted_qs.filter(journal_entry__date__gte=date_from)
-        if date_to:
-            posted_qs = posted_qs.filter(journal_entry__date__lte=date_to)
-        posted_total = posted_qs.aggregate(t=Coalesce(Sum('amount'), Decimal('0.00')))['t']
-        bucket['posted_total'] = posted_total
-        bucket['variance'] = posted_total - bucket['total']
-
-    groups_sorted = sorted(groups.values(), key=lambda b: b['account'].name)
-
-    expense_accounts = LedgerAccount.objects.filter(
-        company=user_company, account_type='EXPENSE', is_deleted=False,
-    ).order_by('name')
-
-    context = {
-        'company': user_company,
-        'groups': groups_sorted,
-        'grand_total': grand_total,
-        'expense_accounts': expense_accounts,
-        'account_id': account_id,
-        'date_from': date_from,
-        'date_to': date_to,
-        'date_from_bs': date_from_str or '',
-        'date_to_bs': date_to_str or '',
-    }
-    return render(request, 'reports/expense_register_report.html', context)
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# NOTES TO THE FINANCIAL STATEMENTS (NFRS disclosure requirements)
-# ═══════════════════════════════════════════════════════════════════════════
-
 @login_required
 def notes_to_accounts_report(request):
     """
     NFRS Notes to the Financial Statements — the disclosure notes that must
     accompany the primary statements (Balance Sheet, P&L, Cash Flow, Changes
     in Equity). Composed from data the system already tracks (PPE from the
-    Fixed Asset Register, provisions/accruals from journal source types,
-    receivables/payables from the debtors-creditors schedule) plus the two
-    disclosure registers that have no other source (Related Party
-    Transactions, Contingent Liabilities) and the free-text accounting
-    policy statement.
+    Fixed Asset Register, provisions/accruals from journal entries, receivables
+    /payables from the debtors-creditors schedule) plus the two disclosure
+    registers that have no other source (Related Party Transactions,
+    Contingent Liabilities) and the free-text accounting policy statement.
     """
     from apps.bookkeeping.models import FixedAsset
     from apps.reports.models import AccountingPolicyNote, RelatedPartyTransaction, ContingentLiability
@@ -6521,21 +6539,21 @@ def notes_to_accounts_report(request):
     ppe_count = assets.count()
 
     # Note: Provisions & accruals — balances of accounts posted via those
-    # journal source types, since that's the only place this data lives.
-    provision_source_types = ['DOUBTFUL_DEBT_PROVISION', 'ACCRUED_EXPENSE', 'PREPAID_AMORTIZATION']
+    # journal types, since that's the only place this data lives.
+    provision_journal_types = ['PROVISION', 'ADJUSTING']
     provision_lines = JournalEntryLine.objects.filter(
         journal_entry__company=user_company,
-        journal_entry__source_type__in=provision_source_types,
+        journal_entry__journal_type__in=provision_journal_types,
         journal_entry__is_deleted=False,
         journal_entry__date__lte=as_of_date,
     ).select_related('journal_entry', 'account')
     provision_rows = (
-        provision_lines.values('journal_entry__source_type', 'account__name')
+        provision_lines.values('journal_entry__journal_type', 'account__name')
         .annotate(
             debit=Coalesce(Sum('amount', filter=Q(entry_type='DEBIT')), Decimal('0')),
             credit=Coalesce(Sum('amount', filter=Q(entry_type='CREDIT')), Decimal('0')),
         )
-        .order_by('journal_entry__source_type')
+        .order_by('journal_entry__journal_type')
     )
 
     # Note: Trade Receivables / Payables — same figures as the debtors-creditors schedule.
@@ -7510,3 +7528,166 @@ def export_daybook_report_excel(request):
     response['Content-Disposition'] = f'attachment; filename="daybook_{selected_date}.xlsx"'
     wb.save(response)
     return response
+
+
+# ─── Nepal IRD Compliance — NFRIS tax return, pooled tax depreciation, balance confirmation ──
+
+@login_required
+def nfris_tax_report(request):
+    """
+    Consolidated IRD e-billing (NFRIS) tax return summary for a period:
+    output VAT, input VAT, TDS withheld, and estimated corporate tax —
+    the figures IRD's annual/periodic return forms ask for in one place.
+    """
+    from apps.bookkeeping.models import TDSDeduction
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    fiscal_year_id = request.session.get('active_fiscal_year_id')
+    fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id, company=user_company).first() if fiscal_year_id else None
+
+    start_str = request.GET.get('start_date')
+    end_str = request.GET.get('end_date')
+    start_date = bs_str_to_ad(start_str) if start_str else (fiscal_year.start_date if fiscal_year else date(date.today().year, 1, 1))
+    end_date = bs_str_to_ad(end_str) if end_str else date.today()
+
+    sales_agg = Invoice.active_objects.filter(
+        company=user_company, transaction_date__gte=start_date, transaction_date__lte=end_date,
+    ).aggregate(
+        taxable_sales=Coalesce(Sum('subtotal'), Decimal('0')),
+        output_vat=Coalesce(Sum('tax_amount'), Decimal('0')),
+        gross_sales=Coalesce(Sum('total'), Decimal('0')),
+    )
+
+    purchase_agg = VendorBill.objects.filter(
+        vendor__company=user_company, bill_date__gte=start_date, bill_date__lte=end_date,
+    ).aggregate(
+        total_purchases=Coalesce(Sum('total_amount'), Decimal('0')),
+        input_vat=Coalesce(Sum('tax_amount'), Decimal('0')),
+    )
+    purchase_agg['taxable_purchases'] = purchase_agg['total_purchases'] - purchase_agg['input_vat']
+
+    tds_total = TDSDeduction.objects.filter(
+        vendor_bill__vendor__company=user_company,
+        vendor_bill__bill_date__gte=start_date,
+        vendor_bill__bill_date__lte=end_date,
+    ).aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
+
+    net_vat_payable = sales_agg['output_vat'] - purchase_agg['input_vat']
+
+    net_income = (sales_agg['taxable_sales'] - purchase_agg['taxable_purchases'])
+    estimated_cit = max(
+        (net_income * user_company.cit_rate / Decimal('100')).quantize(Decimal('0.01')),
+        Decimal('0.00'),
+    )
+
+    context = {
+        'company': user_company,
+        'fiscal_year': fiscal_year,
+        'start_date': start_date,
+        'end_date': end_date,
+        'sales_agg': sales_agg,
+        'purchase_agg': purchase_agg,
+        'tds_total': tds_total,
+        'net_vat_payable': net_vat_payable,
+        'net_income': net_income,
+        'estimated_cit': estimated_cit,
+        'cit_rate': user_company.cit_rate,
+        'report_title': 'NFRIS Tax Report',
+    }
+    return render(request, 'reports/nfris_tax_report.html', context)
+
+
+@login_required
+def tax_depreciation_schedule_report(request):
+    """Income Tax Act Schedule 2 — pooled tax depreciation (D1/D2/D3 filing basis)."""
+    from apps.bookkeeping.ird_depreciation_service import pooled_depreciation_schedule
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    fiscal_year_id = request.GET.get('fiscal_year_id') or request.session.get('active_fiscal_year_id')
+    fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id, company=user_company).first() \
+        if fiscal_year_id else FiscalYear.objects.filter(company=user_company, is_active=True).first()
+
+    if not fiscal_year:
+        messages.warning(request, "No fiscal year available.")
+        return redirect('reports:report_dashboard')
+
+    pool_rows = pooled_depreciation_schedule(user_company, fiscal_year)
+    total_depreciation = sum((row['depreciation'] for row in pool_rows), Decimal('0.00'))
+
+    context = {
+        'company': user_company,
+        'fiscal_year': fiscal_year,
+        'fiscal_years': FiscalYear.objects.filter(company=user_company).order_by('-start_date'),
+        'pool_rows': pool_rows,
+        'total_depreciation': total_depreciation,
+        'report_title': 'Tax Depreciation Schedule (D1/D2/D3)',
+    }
+    return render(request, 'reports/tax_depreciation_schedule_report.html', context)
+
+
+@login_required
+def balance_confirmation_report(request):
+    """List and generate audit balance-confirmation snapshots for customers/vendors."""
+    from apps.bookkeeping.models import BalanceConfirmationRequest
+    from apps.bookkeeping.balance_confirmation_service import generate_confirmation
+
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(request, "Your account is not associated with a company.")
+        return redirect('accounts:user_dashboard')
+
+    if request.method == 'POST':
+        party_type = request.POST.get('party_type')
+        party_id = request.POST.get('party_id')
+        as_of_str = request.POST.get('as_of_date')
+        as_of_date = bs_str_to_ad(as_of_str) if as_of_str else date.today()
+
+        party = (Customer if party_type == 'customer' else Vendor).objects.filter(
+            company=user_company, pk=party_id
+        ).first()
+        if not party:
+            messages.error(request, "Party not found.")
+        else:
+            try:
+                generate_confirmation(user_company, party, as_of_date)
+                messages.success(request, f"Balance confirmation generated for {party}.")
+            except ValueError as e:
+                messages.error(request, str(e))
+        return redirect('reports:balance_confirmation_report')
+
+    confirmations = BalanceConfirmationRequest.objects.filter(
+        company=user_company, is_deleted=False,
+    ).select_related('customer', 'vendor').order_by('-as_of_date')
+
+    context = {
+        'company': user_company,
+        'confirmations': confirmations,
+        'customers': Customer.objects.filter(company=user_company).order_by('name'),
+        'vendors': Vendor.objects.filter(company=user_company).order_by('name'),
+        'report_title': 'Balance Confirmation',
+    }
+    return render(request, 'reports/balance_confirmation_report.html', context)
+
+
+@login_required
+def balance_confirmation_print(request, pk):
+    """Printable audit confirmation letter for a single party balance snapshot."""
+    from apps.bookkeeping.models import BalanceConfirmationRequest
+
+    user_company = request.user_company
+    confirmation = get_object_or_404(
+        BalanceConfirmationRequest, pk=pk, company=user_company, is_deleted=False,
+    )
+    context = {
+        'company': user_company,
+        'confirmation': confirmation,
+    }
+    return render(request, 'reports/balance_confirmation_print.html', context)

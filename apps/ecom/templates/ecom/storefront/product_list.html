@@ -2,73 +2,203 @@
 {% load static %}
 
 {% block page_title %}Shop{% endblock %}
-{% block nav_active_shop %}active{% endblock %}
-{% block nav_bottom_shop %}class="active"{% endblock %}
+{% block nav_active_shop %}text-goldlt{% endblock %}
 
 {% block content %}
-{% with spotlight=hero_banners.0 %}
-<section class="reference-shop-hero">
-  {% if spotlight %}<img src="{{ spotlight.image.url }}" alt="{{ spotlight.title|default:'Puja essentials' }}" loading="eager">{% endif %}
-  <div class="reference-shop-hero-overlay"></div>
-  <div class="container reference-shop-hero-inner">
-    <nav class="reference-breadcrumb" aria-label="Breadcrumb"><a href="{% url 'ecom:home' %}">Home</a><span>/</span><a href="{% url 'ecom:product_list' %}">Shop</a><span>/</span><strong>{% if selected_category_name %}{{ selected_category_name }}{% else %}All Puja Essentials{% endif %}</strong></nav>
-    <p class="reference-eyebrow"><span class="reference-om">ॐ</span> The Temple-lit Boutique</p>
-    <h1><em>Puja</em> Essentials,<br>lit like a shrine.</h1>
-    <p class="reference-hero-copy">Diyas, idols, incense and havan samagri, curated for devotion and finished for the modern home.</p>
-    <div class="reference-hero-actions"><a href="#catalog" class="reference-primary-btn">Explore the catalog <span>→</span></a><a href="#catalog" class="reference-secondary-btn">✦ Shop the festive edit</a></div>
-  </div>
-</section>
-{% endwith %}
+<div class="max-w-[1280px] mx-auto px-4 lg:px-6">
+ <form id="filter-form"
+ hx-get="{% url 'ecom:product_list' %}"
+ hx-target="#product-grid"
+ hx-swap="outerHTML"
+ hx-push-url="true"
+ hx-on:htmx:config-request="injectTopbarParams(event)">
+ <input type="hidden" name="colors" id="colors-hidden" value="{{ colors_param }}">
+ <input type="hidden" name="category" id="category-hidden" value="{{ selected_category|default:'' }}">
 
-<div class="reference-catalog-shell" id="catalog">
-  <div class="container">
-    <section class="reference-category-strip" aria-label="Shop by category">
-      <div class="reference-section-heading"><h2>Shop by category</h2><a href="{% url 'ecom:product_list' %}">View all →</a></div>
-      <div class="reference-category-chips">
-        <a class="reference-category-chip {% if not selected_category %}is-active{% endif %}" href="{% url 'ecom:product_list' %}">✦ All products <span>{{ products.paginator.count }}</span></a>
-        {% for cat in categories|slice:":8" %}<a class="reference-category-chip {% if selected_category == cat.id|stringformat:'s' %}is-active{% endif %}" href="{% url 'ecom:product_list' %}?category={{ cat.id }}">✦ {{ cat.name }}</a>{% endfor %}
-      </div>
-    </section>
+ <div class="flex gap-8 py-8">
+ {# ── FILTER RAIL (desktop) ── #}
+ <aside class="hidden lg:block w-[288px] shrink-0">
+ <div class="sticky top-[88px] max-h-[calc(100vh-104px)] overflow-y-auto no-scrollbar pr-1">
+ <div class="glass rounded-2xl p-5 shadow-glow">
+ <div class="flex items-center justify-between mb-1">
+ <h2 class="font-display text-xl text-cream flex items-center gap-2">
+ <i data-lucide="sliders-horizontal" class="w-4.5 h-4.5 text-gold"></i> Filters
+ </h2>
+ <a href="{% url 'ecom:product_list' %}" class="text-[12px] text-goldlt hover:text-gold transition">Clear all</a>
+ </div>
+ {% include "ecom/storefront/_filter_body.html" %}
+ </div>
+ </div>
+ </aside>
 
-    <div class="reference-listing-body reference-main-content-new-bg"><div class="row">
-      <div class="col-12 col-lg-4 col-xl-3 mb-20 reference-filter-column">
-        <button class="d-lg-none btn btn-sm btn-buy w-100 mb-10 reference-mobile-filter" onclick="document.getElementById('sidebar-filters').classList.toggle('d-none')">☷ Filters &amp; Sort</button>
-        <form id="filter-form" hx-get="{% url 'ecom:product_list' %}" hx-target="#product-grid" hx-swap="outerHTML" hx-push-url="true" hx-on:htmx:config-request="injectTopbarParams(event)">
-          <input type="hidden" name="colors" id="colors-hidden" value="{{ colors_param }}"><input type="hidden" name="category" id="category-hidden" value="{{ selected_category|default:'' }}">
-          <input type="hidden" name="q" id="search-hidden" value="{{ search|default:'' }}">
-          <div class="sidebar-filters reference-filter-box d-none d-lg-block" id="sidebar-filters">
-            <div class="reference-filter-heading"><div><h2>☷ Filters</h2><p>Refine {{ products.paginator.count }} sacred finds</p></div><a href="{% url 'ecom:product_list' %}">Clear all</a></div>
-            <div class="filter-panel reference-filter-group category-filter-group mb-15"><div class="filter-title">Categories</div>
-              <label class="catalog-filter-check {% if not selected_category %}is-selected{% endif %}"><input type="checkbox" {% if not selected_category %}checked{% endif %} onchange="setCategory('')"><span class="catalog-filter-box">✓</span><span>All Products</span></label>
-              {% for cat in categories %}<label class="catalog-filter-check {% if selected_category == cat.id|stringformat:'s' %}is-selected{% endif %}"><input type="checkbox" value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:'s' %}checked{% endif %} onchange="setCategory(this.checked ? '{{ cat.id }}' : '')"><span class="catalog-filter-box">✓</span><span>{{ cat.name }}</span></label>{% endfor %}
-            </div>
-            <div class="filter-panel reference-filter-group mb-15"><div class="filter-title">Price</div><div class="price-range-wrap"><div class="price-range-label">Range: ₹<span id="price-lo-label">{{ price_min|default:price_lo|floatformat:0 }}</span> – ₹<span id="price-hi-label">{{ price_max|default:price_hi|floatformat:0 }}</span></div><div class="price-slider-wrap"><div class="price-track-fill" id="price-track-fill"></div><input type="range" id="range-min" name="price_min" min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}" value="{{ price_min|default:price_lo|floatformat:0 }}"><input type="range" id="range-max" name="price_max" min="{{ price_lo|floatformat:0 }}" max="{{ price_hi|floatformat:0 }}" value="{{ price_max|default:price_hi|floatformat:0 }}"></div><div class="price-inputs"><input class="price-input" type="number" id="price-min-input" placeholder="Min" value="{{ price_min|default:'' }}"><input class="price-input" type="number" id="price-max-input" placeholder="Max" value="{{ price_max|default:'' }}"></div><button type="button" class="apply-btn" hx-get="{% url 'ecom:product_list' %}" hx-target="#product-grid" hx-swap="outerHTML" hx-push-url="true" hx-include="#filter-form" onclick="syncPriceInputs()">Apply Price</button></div></div>
-            {% if all_colors %}<div class="filter-panel reference-filter-group mb-15"><div class="filter-title">Color</div><input class="color-search-input" type="text" placeholder="Search color..." oninput="filterColorList(this.value)" id="color-search"><div id="color-list" class="color-list-scroll">{% for c in all_colors %}<label class="color-check" data-color="{{ c|lower }}"><input type="checkbox" value="{{ c }}" {% if c in selected_colors %}checked{% endif %} onchange="syncColorAndFetch()"><span class="color-dot" style="background:{{ c|lower }}"></span>{{ c }}</label>{% endfor %}</div></div>{% endif %}
-            <details class="reference-filter-accordion" open><summary><span>☆ Customer Rating</span><b>⌄</b></summary><div class="reference-filter-accordion-body"><label class="catalog-filter-check"><input type="checkbox" name="rating" value="4" {% if rating_min == 4 %}checked{% endif %} onchange="this.form.requestSubmit()"><span class="catalog-filter-box">✓</span><span>★★★★ &amp; above</span></label><label class="catalog-filter-check"><input type="checkbox" name="rating" value="3" {% if rating_min == 3 %}checked{% endif %} onchange="this.form.requestSubmit()"><span class="catalog-filter-box">✓</span><span>★★★ &amp; above</span></label></div></details>
-            <details class="reference-filter-accordion"><summary><span>◇ Material</span><b>⌄</b></summary><div class="reference-filter-accordion-body">{% for material in all_materials %}<label class="catalog-filter-check"><input type="checkbox" name="material" value="{{ material }}" {% if material_filter == material %}checked{% endif %} onchange="this.form.requestSubmit()"><span class="catalog-filter-box">✓</span><span>{{ material }}</span></label>{% empty %}<small>No material filters configured.</small>{% endfor %}</div></details>
-            <details class="reference-filter-accordion"><summary><span>▣ Occasion / Festival</span><b>⌄</b></summary><div class="reference-filter-accordion-body">{% for occasion in all_occasions %}<label class="catalog-filter-check"><input type="checkbox" name="occasion" value="{{ occasion }}" {% if occasion_filter == occasion %}checked{% endif %} onchange="this.form.requestSubmit()"><span class="catalog-filter-box">✓</span><span>{{ occasion }}</span></label>{% empty %}<small>No occasion filters configured.</small>{% endfor %}</div></details>
-            <details class="reference-filter-accordion"><summary><span>◇ Offers</span><b>⌄</b></summary><div class="reference-filter-accordion-body"><label class="catalog-filter-check"><input type="checkbox" name="offers" value="1" {% if offers_only %}checked{% endif %} onchange="this.form.requestSubmit()"><span class="catalog-filter-box">✓</span><span>On sale</span></label></div></details>
-            <details class="reference-filter-accordion"><summary><span>▱ Availability</span><b>⌄</b></summary><div class="reference-filter-accordion-body"><label class="catalog-filter-check"><input type="checkbox" name="in_stock" value="1" {% if in_stock_only %}checked{% endif %} onchange="this.form.requestSubmit()"><span class="catalog-filter-box">✓</span><span>In stock only</span></label></div></details>
-          </div>
-        </form>
-      </div>
-      <div class="col-12 col-lg-8 col-xl-9 reference-results-column"><div class="reference-listing-heading"><h2>Shop <em>{% if selected_category_name %}{{ selected_category_name }}{% else %}All{% endif %}</em></h2><p>Every diya, idol and offering, hand-picked for the home shrine.</p></div>{% include "ecom/storefront/_product_grid.html" %}</div>
-    </div></div>
-  </div>
-  <section class="reference-trust-strip" aria-label="Why shop with us"><div class="container"><div class="reference-trust-grid"><div><span>♧</span><p><strong>Free shipping</strong><small>On orders over Rs. 5,000</small></p></div><div><span>✦</span><p><strong>Authentic samagri</strong><small>Sourced from artisans</small></p></div><div><span>↻</span><p><strong>Easy returns</strong><small>7-day hassle-free</small></p></div><div><span>✓</span><p><strong>Secure payments</strong><small>UPI · Cards · COD</small></p></div></div></div></section>
+ {# ── RIGHT: grid ── #}
+ <section class="flex-1 min-w-0">
+ {% include "ecom/storefront/_product_grid.html" %}
+ </section>
+ </div>
+ </form>
 </div>
+
+{# ── MOBILE FILTER DRAWER ── #}
+<div id="drawer" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Filters">
+ <div id="drawer-overlay" class="absolute inset-0 bg-inkdeep/80 backdrop-blur-sm"></div>
+ <div id="drawer-panel" class="absolute inset-y-0 left-0 w-[86%] max-w-[360px] glass shadow-glowlg -translate-x-full transition-transform duration-300 flex flex-col">
+ <div class="flex items-center justify-between px-5 h-16 border-b hair shrink-0">
+ <h2 class="font-display text-xl text-cream flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4.5 h-4.5 text-gold"></i> Filters</h2>
+ <button id="close-filters" type="button" class="w-10 h-10 grid place-items-center rounded-full hover:bg-ink/60 transition" aria-label="Close filters">
+ <i data-lucide="x" class="w-5 h-5 text-cream/85"></i>
+ </button>
+ </div>
+ <div class="flex-1 overflow-y-auto px-5 py-4 no-scrollbar" id="filter-body-mobile">
+ {% include "ecom/storefront/_filter_body.html" %}
+ </div>
+ <div class="p-4 border-t hair shrink-0 flex gap-3">
+ <a href="{% url 'ecom:product_list' %}" id="clear-mobile" class="flex-1 h-11 rounded-full border border-gold/50 text-goldlt hover:bg-gold/10 transition text-sm flex items-center justify-center">Clear all</a>
+ <button id="apply-mobile" type="button" class="flex-1 h-11 rounded-full bg-saffron text-white font-medium text-sm hover:brightness-110 transition">Show results</button>
+ </div>
+ </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function setCategory(id){document.getElementById('category-hidden').value=id;document.querySelectorAll('.category-filter-group .catalog-filter-check').forEach(function(el,i){var c=el.querySelector('input');var s=id===''?i===0:c.value===String(id);c.checked=s;el.classList.toggle('is-selected',s)});htmx.trigger('#filter-form','submit')}
-function getTopbarParams(){var s=document.querySelector('#product-grid .sort-select'),p=document.querySelector('#product-grid .per-page-select'),v=document.querySelector('#product-grid .view-btn.active');return{sort:s?s.value:'{{ sort }}',per_page:p?p.value:'{{ per_page }}',view:v?(v.title==='List view'?'list':'grid'):'{{ view_mode }}'}}
-function injectTopbarParams(e){var p=getTopbarParams();if(!e.detail.parameters.sort)e.detail.parameters.sort=p.sort;if(!e.detail.parameters.per_page)e.detail.parameters.per_page=p.per_page;if(!e.detail.parameters.view)e.detail.parameters.view=p.view}
-function syncColorAndFetch(){var c=Array.from(document.querySelectorAll('#color-list input:checked')).map(function(x){return x.value});document.getElementById('colors-hidden').value=c.join(',');htmx.trigger('#filter-form','submit')}
-function filterColorList(q){document.querySelectorAll('#color-list label').forEach(function(x){x.style.display=x.dataset.color.includes(q.toLowerCase())?'':'none'})}
-function syncPriceInputs(){document.getElementById('range-min').value=document.getElementById('price-min-input').value||document.getElementById('range-min').min;document.getElementById('range-max').value=document.getElementById('price-max-input').value||document.getElementById('range-max').max}
-function removeParam(key){var params=new URLSearchParams(window.location.search);params.delete(key);params.delete('page');var top=getTopbarParams();params.set('sort',top.sort);params.set('per_page',top.per_page);params.set('view',top.view);htmx.ajax('GET','{% url "ecom:product_list" %}?'+params.toString(),{target:'#product-grid',swap:'outerHTML',pushUrl:true})}
-function removeColor(color){var hidden=document.getElementById('colors-hidden');var colors=(hidden.value||'').split(',').filter(function(c){return c&&c.toLowerCase()!==color.toLowerCase()});hidden.value=colors.join(',');var params=new URLSearchParams(window.location.search);params.set('colors',hidden.value);params.delete('page');var top=getTopbarParams();params.set('sort',top.sort);params.set('per_page',top.per_page);params.set('view',top.view);htmx.ajax('GET','{% url "ecom:product_list" %}?'+params.toString(),{target:'#product-grid',swap:'outerHTML',pushUrl:true})}
-(function(){var a=document.getElementById('range-min'),b=document.getElementById('range-max');if(!a)return;function u(){if(+a.value>+b.value)a.value=b.value;if(+b.value<+a.value)b.value=a.value;document.getElementById('price-lo-label').textContent=a.value;document.getElementById('price-hi-label').textContent=b.value;var f=document.getElementById('price-track-fill'),lo=+a.min,hi=+a.max,l=(+a.value-lo)/(hi-lo)*100,r=(+b.value-lo)/(hi-lo)*100;if(f){f.style.left=l+'%';f.style.width=(r-l)+'%'}}a.addEventListener('input',u);b.addEventListener('input',u);u()})();
+// Set category hidden input, update active link, trigger filter-form HTMX request
+function setCategory(id) {
+ document.getElementById('category-hidden').value = id;
+ document.querySelectorAll('.cat-link').forEach(function(el) {
+ el.classList.toggle('is-active', el.dataset.catId === String(id));
+ });
+ htmx.trigger('#filter-form', 'submit');
+}
+
+// Read current sort/per_page/view from the topbar selects/buttons
+function getTopbarParams() {
+ var sort = document.querySelector('#product-grid .sort-select');
+ var pp = document.querySelector('#product-grid .per-page-select');
+ var view = document.querySelector('#product-grid .view-btn.is-active');
+ return {
+ sort: sort ? sort.value : '{{ sort }}',
+ per_page: pp ? pp.value : '{{ per_page }}',
+ view: view ? (view.title === 'List view' ? 'list' : 'grid') : '{{ view_mode }}'
+ };
+}
+
+// Inject topbar state into filter-form HTMX requests (search, price, color)
+function injectTopbarParams(evt) {
+ var p = getTopbarParams();
+ if (!evt.detail.parameters['sort']) evt.detail.parameters['sort'] = p.sort;
+ if (!evt.detail.parameters['per_page']) evt.detail.parameters['per_page'] = p.per_page;
+ if (!evt.detail.parameters['view']) evt.detail.parameters['view'] = p.view;
+}
+
+// Colour filter — sync hidden input then fire HTMX manually
+function syncColorAndFetch() {
+ var checked = Array.from(document.querySelectorAll('#color-list input[type="checkbox"]:checked'))
+ .map(function(cb){ return cb.value; });
+ document.getElementById('colors-hidden').value = checked.join(',');
+ htmx.trigger('#filter-form', 'submit');
+}
+
+function filterColorList(q) {
+ document.querySelectorAll('#color-list label').forEach(function(el){
+ el.style.display = el.dataset.color.includes(q.toLowerCase()) ? '' : 'none';
+ });
+}
+
+// Copy price inputs into the named fields that filter-form will submit
+function syncPriceInputs() {
+ var mn = document.getElementById('price-min-input').value;
+ var mx = document.getElementById('price-max-input').value;
+ document.getElementById('range-min').value = mn || document.getElementById('range-min').min;
+ document.getElementById('range-max').value = mx || document.getElementById('range-max').max;
+}
+
+// Active-filter tag removal
+function removeParam(key) {
+ if (key === 'category') document.getElementById('category-hidden').value = '';
+ if (key === 'colors') document.getElementById('colors-hidden').value = '';
+ var p = new URLSearchParams(window.location.search);
+ p.delete(key);
+ p.delete('page');
+ var tb = getTopbarParams();
+ p.set('sort', tb.sort); p.set('per_page', tb.per_page); p.set('view', tb.view);
+ htmx.ajax('GET', '{% url "ecom:product_list" %}?' + p.toString(),
+ {target:'#product-grid', swap:'outerHTML', pushUrl:true});
+}
+
+function removeColor(color) {
+ var hidden = document.getElementById('colors-hidden');
+ var colors = (hidden.value || '').split(',').filter(function(c){ return c && c.toLowerCase() !== color.toLowerCase(); });
+ hidden.value = colors.join(',');
+ document.querySelectorAll('#color-list input[type="checkbox"]').forEach(function(cb){
+ if (cb.value.toLowerCase() === color.toLowerCase()) cb.checked = false;
+ });
+ htmx.trigger('#filter-form', 'submit');
+}
+
+// Price range sliders — update labels and number inputs
+(function(){
+ function bindPriceSliders() {
+ var rMin = document.getElementById('range-min');
+ var rMax = document.getElementById('range-max');
+ var iMin = document.getElementById('price-min-input');
+ var iMax = document.getElementById('price-max-input');
+ var lLo = document.getElementById('price-lo-label');
+ var lHi = document.getElementById('price-hi-label');
+ var fill = document.getElementById('price-track-fill');
+ if (!rMin || rMin.dataset.bound) return;
+ rMin.dataset.bound = '1';
+
+ function updateTrack() {
+ var lo = parseFloat(rMin.min), hi = parseFloat(rMin.max);
+ var vMin = parseFloat(rMin.value), vMax = parseFloat(rMax.value);
+ var pMin = (vMin - lo) / (hi - lo) * 100;
+ var pMax = (vMax - lo) / (hi - lo) * 100;
+ if (fill) { fill.style.left = pMin + '%'; fill.style.width = (pMax - pMin) + '%'; }
+ }
+
+ rMin.addEventListener('input', function(){
+ if (parseFloat(rMin.value) > parseFloat(rMax.value)) rMin.value = rMax.value;
+ if (iMin) iMin.value = rMin.value;
+ if (lLo) lLo.textContent = rMin.value;
+ updateTrack();
+ });
+ rMax.addEventListener('input', function(){
+ if (parseFloat(rMax.value) < parseFloat(rMin.value)) rMax.value = rMin.value;
+ if (iMax) iMax.value = rMax.value;
+ if (lHi) lHi.textContent = rMax.value;
+ updateTrack();
+ });
+ if (iMin) iMin.addEventListener('input', function(){ rMin.value = this.value; if(lLo) lLo.textContent = this.value; updateTrack(); });
+ if (iMax) iMax.addEventListener('input', function(){ rMax.value = this.value; if(lHi) lHi.textContent = this.value; updateTrack(); });
+ updateTrack();
+ }
+ bindPriceSliders();
+ document.body.addEventListener('htmx:afterSwap', bindPriceSliders);
+})();
+
+// Mobile filter drawer
+(function(){
+ var drawer = document.getElementById('drawer');
+ var panel = document.getElementById('drawer-panel');
+ function openDrawer(){
+ drawer.classList.remove('hidden');
+ document.body.classList.add('drawer-open');
+ requestAnimationFrame(function(){ panel.classList.remove('-translate-x-full'); });
+ }
+ function closeDrawer(){
+ panel.classList.add('-translate-x-full');
+ document.body.classList.remove('drawer-open');
+ setTimeout(function(){ drawer.classList.add('hidden'); }, 300);
+ }
+ document.body.addEventListener('click', function(e){
+ if (e.target.closest('#open-filters')) openDrawer();
+ if (e.target.closest('#close-filters')) closeDrawer();
+ if (e.target === document.getElementById('drawer-overlay')) closeDrawer();
+ if (e.target.closest('#apply-mobile')) closeDrawer();
+ });
+ document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !drawer.classList.contains('hidden')) closeDrawer(); });
+})();
 </script>
 {% endblock %}

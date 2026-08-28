@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Reject Purchase Order — {{ purchase_order.purchase_order_number }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+ <div class="bg-white border border-red-200 shadow-sm ">
+ <div class="px-6 py-4 bg-red-700 text-white ">
+ <h1 class="text-lg font-bold"><i class="fas fa-ban mr-2"></i>Reject Purchase Order</h1>
+ </div>
+ <div class="p-6 space-y-4">
+ <div class="text-sm text-gray-700 space-y-1">
+ <p><strong>PO:</strong> {{ purchase_order.purchase_order_number }}</p>
+ <p><strong>Vendor:</strong> {{ purchase_order.vendor.name }}</p>
+ <p><strong>Total Amount:</strong> {{ purchase_order.total_amount }}</p>
+ </div>
+ <form method="post">
+ {% csrf_token %}
+ <div class="mb-4">
+ <label class="block text-sm font-semibold text-gray-600 mb-1">Reason for rejection</label>
+ <input type="text" name="reason" required maxlength="500"
+ class="w-full border border-gray-300 px-3 py-2 text-sm"
+ placeholder="e.g. Over budget, wrong vendor...">
+ </div>
+ <div class="flex gap-3">
+ <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">
+ Reject Purchase Order
+ </button>
+ <a href="{% url 'purchasing:purchase_order_detail' purchase_order.pk %}"
+ class="px-5 py-2 border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">Cancel</a>
+ </div>
+ </form>
+ </div>
+ </div>
+</div>
+{% endblock %}

@@ -277,8 +277,12 @@ class Payslip(BaseModel):
     gross_pay = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     total_deductions = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     net_pay = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    income_tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     issue_date = models.DateField()
     is_finalized = models.BooleanField(default=False)
+    journal_entry = models.ForeignKey(
+        'bookkeeping.JournalEntry', on_delete=models.SET_NULL, null=True, blank=True, related_name='payslips'
+    )
 
     class Meta:
         unique_together = ('payroll_run', 'employee')
@@ -580,4 +584,54 @@ class Separation(BaseModel):
 
     def __str__(self):
         return f"{self.get_separation_type_display()}: {self.employee.full_name} on {self.effective_date}"
+
+
+# ── Nepal payroll tax & SSF ─────────────────────────────────────────────────
+
+MARITAL_STATUS_CHOICES = [
+    ('SINGLE',  'Single'),
+    ('MARRIED', 'Married'),
+]
+
+
+class IncomeTaxSlab(BaseModel):
+    """
+    NOTE: Nepal income tax slabs and rates are set by the annual Finance Act
+    and change every fiscal year. The seed data in
+    get_or_create_default_slabs() is an approximation of current published
+    rates and MUST be reviewed and updated by an accountant each fiscal year.
+    """
+    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, related_name='income_tax_slabs')
+    fiscal_year = models.ForeignKey('company.FiscalYear', on_delete=models.CASCADE, related_name='income_tax_slabs')
+    marital_status = models.CharField(max_length=10, choices=MARITAL_STATUS_CHOICES)
+    slab_order = models.PositiveSmallIntegerField()
+    upper_limit = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text='Annual taxable income upper bound for this slab. Null = no upper limit (top slab).'
+    )
+    rate = models.DecimalField(max_digits=5, decimal_places=2, help_text='Tax rate percentage for this slab.')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company', 'fiscal_year', 'marital_status', 'slab_order'],
+                name='unique_incometaxslab_company_fy_marital_order',
+            ),
+        ]
+        ordering = ['marital_status', 'slab_order']
+
+    def __str__(self):
+        return f"{self.get_marital_status_display()} slab {self.slab_order} @ {self.rate}%"
+
+
+class SSFContribution(BaseModel):
+    payslip = models.OneToOneField(Payslip, on_delete=models.CASCADE, related_name='ssf_contribution')
+    employee_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    employer_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    journal_entry = models.ForeignKey(
+        'bookkeeping.JournalEntry', on_delete=models.SET_NULL, null=True, blank=True, related_name='ssf_contributions'
+    )
+
+    def __str__(self):
+        return f"SSF for {self.payslip}"
 

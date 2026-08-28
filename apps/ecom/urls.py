@@ -9,7 +9,6 @@ urlpatterns = [
     path('shop/', storefront.product_list, name='product_list'),
     path('shop/image-search/', storefront.image_search, name='image_search'),
     path('product/<uuid:product_id>/', storefront.product_detail, name='product_detail'),
-    path('product/<uuid:product_id>/review/', storefront.submit_product_review, name='submit_product_review'),
     path('cart/', storefront.cart_view, name='cart'),
     path('cart/add/<uuid:product_id>/', storefront.add_to_cart, name='add_to_cart'),
     path('cart/remove/<uuid:product_id>/', storefront.remove_from_cart, name='remove_from_cart'),
@@ -55,6 +54,7 @@ urlpatterns = [
     path('manage/orders/<uuid:order_id>/slip/', ecom_admin.order_print_slip, name='admin_order_print_slip'),
     path('manage/orders/<uuid:order_id>/create-so/', ecom_admin.order_create_sales_order, name='admin_order_create_so'),
     path('manage/inventory/', ecom_admin.ecom_inventory, name='admin_ecom_inventory'),
+    path('manage/inventory/<uuid:product_id>/image/', ecom_admin.inventory_product_image, name='admin_inventory_product_image'),
     path('manage/categories/images/', ecom_admin.category_image_list, name='admin_category_images'),
     path('manage/categories/<uuid:category_id>/image/', ecom_admin.update_category_image, name='admin_update_category_image'),
 
@@ -118,7 +118,5 @@ urlpatterns = [
     # ── CMS: Product E-Commerce Content ───────────────────
     path('manage/cms/products/', cms_admin.product_content_list, name='cms_product_content_list'),
     path('manage/cms/products/<uuid:product_id>/content/', cms_admin.product_content_edit, name='cms_product_content_edit'),
-    path('manage/cms/reviews/', cms_admin.review_list, name='cms_review_list'),
-    path('manage/cms/reviews/<uuid:review_id>/toggle/', cms_admin.review_toggle, name='cms_review_toggle'),
     path('manage/cms/images/<uuid:image_id>/delete/', cms_admin.product_image_delete, name='cms_product_image_delete'),
 ]

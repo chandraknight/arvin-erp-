@@ -51,6 +51,24 @@ def is_fiscal_year_closed(request):
     return fy is not None and fy.is_closed
 
 
+def assert_fiscal_year_open(fiscal_year):
+    """
+    Model-level guard: raise ValidationError if fiscal_year is closed.
+
+    View-level guards (fiscal_year_open_required / FiscalYearOpenMixin) only
+    check the session's currently-active fiscal year, so they don't stop a
+    transaction being *backdated* into a different, already-closed year.
+    This is the model-level backstop — call it from save() on any model
+    carrying a fiscal_year FK (Invoice, Payment, JournalEntry, ...) so the
+    lock holds regardless of which view or service call created the record.
+    """
+    if fiscal_year is not None and fiscal_year.is_closed:
+        from django.core.exceptions import ValidationError
+        raise ValidationError(
+            f"Fiscal year {fiscal_year.name} is closed. No new transactions or edits are allowed."
+        )
+
+
 def fiscal_year_open_required(view_func):
     """
     Decorator for function-based views.

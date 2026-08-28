@@ -22,7 +22,7 @@ from django.db.models import Sum, Q
 from decimal import Decimal
 from apps.utils.htmx import is_htmx, toast_trigger
 
-from apps.utils.mixins import AuthMixin
+from apps.utils.mixins import AuthMixin, ModuleRequiredMixin, module_required
 from .models import (
     CostCentre, Project, ProjectTask, ProjectMilestone, ProjectTimeLog,
     ProjectRisk, ProjectDocument, ProjectExpense, ProjectRevenue,
@@ -67,6 +67,7 @@ def _get_active_fiscal_year(request, company):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_project_tracking')
 def project_dashboard(request):
     guard = _require_project_tracking(request)
     if guard:
@@ -86,8 +87,9 @@ def project_dashboard(request):
 # Cost Centre
 # ─────────────────────────────────────────────────────────────────────────────
 
-class CostCentreListView(AuthMixin, ListView):
+class CostCentreListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = CostCentre
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/costcentre_list.html'
     context_object_name = 'cost_centres'
     permission_required = ['projects.view_costcentre']
@@ -98,8 +100,9 @@ class CostCentreListView(AuthMixin, ListView):
         ).select_related('parent').order_by('name')
 
 
-class CostCentreCreateView(AuthMixin, CreateView):
+class CostCentreCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = CostCentre
+    module_flag = 'enable_project_tracking'
     form_class = CostCentreForm
     template_name = 'projects/costcentre_form.html'
     success_url = reverse_lazy('projects:costcentre_list')
@@ -117,8 +120,9 @@ class CostCentreCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class CostCentreUpdateView(AuthMixin, UpdateView):
+class CostCentreUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = CostCentre
+    module_flag = 'enable_project_tracking'
     form_class = CostCentreForm
     template_name = 'projects/costcentre_form.html'
     success_url = reverse_lazy('projects:costcentre_list')
@@ -138,8 +142,9 @@ class CostCentreUpdateView(AuthMixin, UpdateView):
         return super().form_valid(form)
 
 
-class CostCentreDeleteView(AuthMixin, DeleteView):
+class CostCentreDeleteView(AuthMixin, ModuleRequiredMixin, DeleteView):
     model = CostCentre
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/confirm_delete.html'
     success_url = reverse_lazy('projects:costcentre_list')
     permission_required = ['projects.delete_costcentre']
@@ -161,8 +166,9 @@ class CostCentreDeleteView(AuthMixin, DeleteView):
 # Project
 # ─────────────────────────────────────────────────────────────────────────────
 
-class ProjectListView(AuthMixin, ListView):
+class ProjectListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = Project
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/project_list.html'
     context_object_name = 'projects'
     permission_required = ['projects.view_project']
@@ -193,8 +199,9 @@ class ProjectListView(AuthMixin, ListView):
         return context
 
 
-class ProjectDetailView(AuthMixin, DetailView):
+class ProjectDetailView(AuthMixin, ModuleRequiredMixin, DetailView):
     model = Project
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/project_detail.html'
     context_object_name = 'project'
     permission_required = ['projects.view_project']
@@ -225,8 +232,9 @@ class ProjectDetailView(AuthMixin, DetailView):
         return context
 
 
-class ProjectCreateView(AuthMixin, CreateView):
+class ProjectCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = Project
+    module_flag = 'enable_project_tracking'
     form_class = ProjectForm
     template_name = 'projects/project_form.html'
     success_url = reverse_lazy('projects:project_list')
@@ -244,8 +252,9 @@ class ProjectCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class ProjectUpdateView(AuthMixin, UpdateView):
+class ProjectUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = Project
+    module_flag = 'enable_project_tracking'
     form_class = ProjectForm
     template_name = 'projects/project_form.html'
     permission_required = ['projects.change_project']
@@ -267,8 +276,9 @@ class ProjectUpdateView(AuthMixin, UpdateView):
         return super().form_valid(form)
 
 
-class ProjectDeleteView(AuthMixin, DeleteView):
+class ProjectDeleteView(AuthMixin, ModuleRequiredMixin, DeleteView):
     model = Project
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/confirm_delete.html'
     success_url = reverse_lazy('projects:project_list')
     permission_required = ['projects.delete_project']
@@ -296,8 +306,9 @@ class ProjectDeleteView(AuthMixin, DeleteView):
 # Project Expense
 # ─────────────────────────────────────────────────────────────────────────────
 
-class ProjectExpenseListView(AuthMixin, ListView):
+class ProjectExpenseListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = ProjectExpense
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/expense_list.html'
     context_object_name = 'expenses'
     permission_required = ['projects.view_projectexpense']
@@ -309,8 +320,9 @@ class ProjectExpenseListView(AuthMixin, ListView):
         ).select_related('project', 'ledger_account', 'cost_centre').order_by('-expense_date')
 
 
-class ProjectExpenseCreateView(AuthMixin, CreateView):
+class ProjectExpenseCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = ProjectExpense
+    module_flag = 'enable_project_tracking'
     form_class = ProjectExpenseForm
     template_name = 'projects/expense_form.html'
     success_url = reverse_lazy('projects:expense_list')
@@ -327,8 +339,9 @@ class ProjectExpenseCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class ProjectExpenseUpdateView(AuthMixin, UpdateView):
+class ProjectExpenseUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = ProjectExpense
+    module_flag = 'enable_project_tracking'
     form_class = ProjectExpenseForm
     template_name = 'projects/expense_form.html'
     success_url = reverse_lazy('projects:expense_list')
@@ -348,8 +361,9 @@ class ProjectExpenseUpdateView(AuthMixin, UpdateView):
         return super().form_valid(form)
 
 
-class ProjectExpenseDeleteView(AuthMixin, DeleteView):
+class ProjectExpenseDeleteView(AuthMixin, ModuleRequiredMixin, DeleteView):
     model = ProjectExpense
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/confirm_delete.html'
     success_url = reverse_lazy('projects:expense_list')
     permission_required = ['projects.delete_projectexpense']
@@ -371,8 +385,9 @@ class ProjectExpenseDeleteView(AuthMixin, DeleteView):
 # Project Revenue
 # ─────────────────────────────────────────────────────────────────────────────
 
-class ProjectRevenueCreateView(AuthMixin, CreateView):
+class ProjectRevenueCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = ProjectRevenue
+    module_flag = 'enable_project_tracking'
     form_class = ProjectRevenueForm
     template_name = 'projects/revenue_form.html'
     success_url = reverse_lazy('projects:project_list')
@@ -389,8 +404,9 @@ class ProjectRevenueCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class ProjectRevenueDeleteView(AuthMixin, DeleteView):
+class ProjectRevenueDeleteView(AuthMixin, ModuleRequiredMixin, DeleteView):
     model = ProjectRevenue
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/confirm_delete.html'
     success_url = reverse_lazy('projects:project_list')
     permission_required = ['projects.delete_projectrevenue']
@@ -408,8 +424,9 @@ class ProjectRevenueDeleteView(AuthMixin, DeleteView):
 # Budget
 # ─────────────────────────────────────────────────────────────────────────────
 
-class BudgetListView(AuthMixin, ListView):
+class BudgetListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = Budget
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/budget_list.html'
     context_object_name = 'budgets'
     permission_required = ['projects.view_budget']
@@ -423,8 +440,9 @@ class BudgetListView(AuthMixin, ListView):
         )
 
 
-class BudgetCreateView(AuthMixin, CreateView):
+class BudgetCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = Budget
+    module_flag = 'enable_project_tracking'
     form_class = BudgetForm
     template_name = 'projects/budget_form.html'
     success_url = reverse_lazy('projects:budget_list')
@@ -442,8 +460,9 @@ class BudgetCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class BudgetUpdateView(AuthMixin, UpdateView):
+class BudgetUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = Budget
+    module_flag = 'enable_project_tracking'
     form_class = BudgetForm
     template_name = 'projects/budget_form.html'
     success_url = reverse_lazy('projects:budget_list')
@@ -475,8 +494,9 @@ class BudgetUpdateView(AuthMixin, UpdateView):
         return response
 
 
-class BudgetDeleteView(AuthMixin, DeleteView):
+class BudgetDeleteView(AuthMixin, ModuleRequiredMixin, DeleteView):
     model = Budget
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/confirm_delete.html'
     success_url = reverse_lazy('projects:budget_list')
     permission_required = ['projects.delete_budget']
@@ -495,6 +515,7 @@ class BudgetDeleteView(AuthMixin, DeleteView):
 
 
 @login_required
+@module_required('enable_project_tracking')
 def budget_vs_actual_report(request):
     guard = _require_forecasting(request)
     if guard:
@@ -511,8 +532,9 @@ def budget_vs_actual_report(request):
 # Forecast
 # ─────────────────────────────────────────────────────────────────────────────
 
-class ForecastListView(AuthMixin, ListView):
+class ForecastListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = Forecast
+    module_flag = 'enable_forecasting'
     template_name = 'projects/forecast_list.html'
     context_object_name = 'forecasts'
     permission_required = ['projects.view_forecast']
@@ -526,8 +548,9 @@ class ForecastListView(AuthMixin, ListView):
         )
 
 
-class ForecastCreateView(AuthMixin, CreateView):
+class ForecastCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
     model = Forecast
+    module_flag = 'enable_forecasting'
     form_class = ForecastForm
     template_name = 'projects/forecast_form.html'
     success_url = reverse_lazy('projects:forecast_list')
@@ -545,8 +568,9 @@ class ForecastCreateView(AuthMixin, CreateView):
         return super().form_valid(form)
 
 
-class ForecastUpdateView(AuthMixin, UpdateView):
+class ForecastUpdateView(AuthMixin, ModuleRequiredMixin, UpdateView):
     model = Forecast
+    module_flag = 'enable_forecasting'
     form_class = ForecastForm
     template_name = 'projects/forecast_form.html'
     success_url = reverse_lazy('projects:forecast_list')
@@ -566,8 +590,9 @@ class ForecastUpdateView(AuthMixin, UpdateView):
         return super().form_valid(form)
 
 
-class ForecastDeleteView(AuthMixin, DeleteView):
+class ForecastDeleteView(AuthMixin, ModuleRequiredMixin, DeleteView):
     model = Forecast
+    module_flag = 'enable_forecasting'
     template_name = 'projects/confirm_delete.html'
     success_url = reverse_lazy('projects:forecast_list')
     permission_required = ['projects.delete_forecast']
@@ -586,6 +611,7 @@ class ForecastDeleteView(AuthMixin, DeleteView):
 
 
 @login_required
+@module_required('enable_forecasting')
 def forecast_vs_actual_report(request):
     guard = _require_forecasting(request)
     if guard:
@@ -604,6 +630,7 @@ def forecast_vs_actual_report(request):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_project_tracking')
 def task_create(request, project_pk):
     project = get_object_or_404(Project, pk=project_pk, company=request.user_company)
     if request.method == 'POST':
@@ -620,6 +647,7 @@ def task_create(request, project_pk):
 
 
 @login_required
+@module_required('enable_project_tracking')
 def task_update_status(request, pk):
     """HTMX quick-update for task status."""
     task = get_object_or_404(ProjectTask, pk=pk, project__company=request.user_company)
@@ -635,6 +663,7 @@ def task_update_status(request, pk):
 
 
 @login_required
+@module_required('enable_project_tracking')
 def task_delete(request, pk):
     task = get_object_or_404(ProjectTask, pk=pk, project__company=request.user_company)
     project_pk = task.project.pk
@@ -653,6 +682,7 @@ def task_delete(request, pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_project_tracking')
 def milestone_create(request, project_pk):
     project = get_object_or_404(Project, pk=project_pk, company=request.user_company)
     if request.method == 'POST':
@@ -669,6 +699,7 @@ def milestone_create(request, project_pk):
 
 
 @login_required
+@module_required('enable_project_tracking')
 def milestone_complete(request, pk):
     ms = get_object_or_404(ProjectMilestone, pk=pk, project__company=request.user_company)
     if request.method == 'POST':
@@ -682,6 +713,7 @@ def milestone_complete(request, pk):
 
 
 @login_required
+@module_required('enable_project_tracking')
 def milestone_delete(request, pk):
     ms = get_object_or_404(ProjectMilestone, pk=pk, project__company=request.user_company)
     project_pk = ms.project.pk
@@ -700,6 +732,7 @@ def milestone_delete(request, pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_project_tracking')
 def timelog_create(request, project_pk):
     project = get_object_or_404(Project, pk=project_pk, company=request.user_company)
     if request.method == 'POST':
@@ -716,6 +749,7 @@ def timelog_create(request, project_pk):
 
 
 @login_required
+@module_required('enable_project_tracking')
 def timelog_delete(request, pk):
     log = get_object_or_404(ProjectTimeLog, pk=pk, project__company=request.user_company)
     project_pk = log.project.pk
@@ -729,8 +763,9 @@ def timelog_delete(request, pk):
     return redirect('projects:project_detail', pk=project_pk)
 
 
-class TimeLogListView(AuthMixin, ListView):
+class TimeLogListView(AuthMixin, ModuleRequiredMixin, ListView):
     model = ProjectTimeLog
+    module_flag = 'enable_project_tracking'
     template_name = 'projects/timelog_list.html'
     context_object_name = 'logs'
     permission_required = ['projects.view_projecttimelog']
@@ -758,6 +793,7 @@ class TimeLogListView(AuthMixin, ListView):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_project_tracking')
 def risk_create(request, project_pk):
     project = get_object_or_404(Project, pk=project_pk, company=request.user_company)
     if request.method == 'POST':
@@ -774,6 +810,7 @@ def risk_create(request, project_pk):
 
 
 @login_required
+@module_required('enable_project_tracking')
 def risk_update(request, pk):
     risk = get_object_or_404(ProjectRisk, pk=pk, project__company=request.user_company)
     if request.method == 'POST':
@@ -786,6 +823,7 @@ def risk_update(request, pk):
 
 
 @login_required
+@module_required('enable_project_tracking')
 def risk_delete(request, pk):
     risk = get_object_or_404(ProjectRisk, pk=pk, project__company=request.user_company)
     project_pk = risk.project.pk
@@ -804,6 +842,7 @@ def risk_delete(request, pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_project_tracking')
 def document_upload(request, project_pk):
     project = get_object_or_404(Project, pk=project_pk, company=request.user_company)
     if request.method == 'POST':
@@ -820,6 +859,7 @@ def document_upload(request, project_pk):
 
 
 @login_required
+@module_required('enable_project_tracking')
 def document_delete(request, pk):
     doc = get_object_or_404(ProjectDocument, pk=pk, project__company=request.user_company)
     project_pk = doc.project.pk
@@ -838,6 +878,7 @@ def document_delete(request, pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_project_tracking')
 def budget_revise(request, pk):
     """Record a budget revision — saves original amount, updates budget.amount."""
     budget = get_object_or_404(Budget, pk=pk, company=request.user_company)
@@ -876,6 +917,7 @@ def budget_revise(request, pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
+@module_required('enable_project_tracking')
 def project_change_status(request, pk):
     project = get_object_or_404(Project, pk=pk, company=request.user_company)
     if request.method == 'POST':

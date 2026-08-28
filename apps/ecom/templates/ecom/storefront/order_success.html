@@ -4,52 +4,48 @@
 {% block page_title %}Order Confirmed{% endblock %}
 
 {% block content %}
-<section class="mb-60">
-  <div class="container">
-    <div class="text-center" style="max-width:600px;margin:0 auto;">
-      <div style="width:80px;height:80px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-        <span style="color:white;font-size:2rem;">✓</span>
-      </div>
-      <h3 class="color-brand-3 mb-10">Order Placed Successfully!</h3>
-      <p class="font-md color-gray-500 mb-20">Thank you for your order. We'll contact you shortly to confirm delivery.</p>
+<section class="max-w-[640px] mx-auto px-4 py-14 text-center">
+ <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 border border-green-400/40 grid place-items-center">
+ <i data-lucide="check" class="w-9 h-9 text-green-300"></i>
+ </div>
+ <h3 class="font-display text-2xl text-cream mb-2">Order Placed Successfully!</h3>
+ <p class="text-cream/60 text-sm mb-8">Thank you for your order. We'll contact you shortly to confirm delivery.</p>
 
-      <div class="border p-30 mb-30 text-start" style="border-radius:8px;">
-        <div class="row">
-          <div class="col-sm-6 mb-15">
-            <span class="font-sm color-gray-500">Order Number</span>
-            <h5 class="color-brand-3">{{ order.order_number }}</h5>
-          </div>
-          <div class="col-sm-6 mb-15">
-            <span class="font-sm color-gray-500">Status</span>
-            <h5 class="color-success">{{ order.get_status_display }}</h5>
-          </div>
-          <div class="col-sm-6 mb-15">
-            <span class="font-sm color-gray-500">Payment Method</span>
-            <h5 class="color-brand-3">{{ order.get_payment_method_display }}</h5>
-          </div>
-          <div class="col-sm-6 mb-15">
-            <span class="font-sm color-gray-500">Total Amount</span>
-            <h5 class="color-brand-3">Rs.{{ order.total|floatformat:"0" }}</h5>
-          </div>
-          <div class="col-12 mb-15">
-            <span class="font-sm color-gray-500">Delivery Address</span>
-            <h5 class="color-brand-3">{{ order.delivery_address }}</h5>
-          </div>
-        </div>
-        <div class="divider-2 mt-10 mb-20"></div>
-        {% for item in order.items.all %}
-        <div class="d-flex justify-content-between mb-10">
-          <span class="font-sm color-brand-3">{{ item.product.name }} × {{ item.quantity }}</span>
-          <span class="font-sm-bold color-brand-3">Rs.{{ item.total_price|floatformat:"0" }}</span>
-        </div>
-        {% endfor %}
-      </div>
+ <div class="rounded-2xl glass shadow-glow p-6 sm:p-8 mb-8 text-left">
+ <div class="grid sm:grid-cols-2 gap-5">
+ <div>
+ <span class="text-[12px] text-cream/50 uppercase tracking-wide">Order Number</span>
+ <h5 class="text-cream font-medium mt-1">{{ order.order_number }}</h5>
+ </div>
+ <div>
+ <span class="text-[12px] text-cream/50 uppercase tracking-wide">Status</span>
+ <h5 class="text-green-300 font-medium mt-1">{{ order.get_status_display }}</h5>
+ </div>
+ <div>
+ <span class="text-[12px] text-cream/50 uppercase tracking-wide">Payment Method</span>
+ <h5 class="text-cream font-medium mt-1">{{ order.get_payment_method_display }}</h5>
+ </div>
+ <div>
+ <span class="text-[12px] text-cream/50 uppercase tracking-wide">Total Amount</span>
+ <h5 class="text-cream font-medium mt-1">Rs.{{ order.total|floatformat:"0" }}</h5>
+ </div>
+ <div class="sm:col-span-2">
+ <span class="text-[12px] text-cream/50 uppercase tracking-wide">Delivery Address</span>
+ <h5 class="text-cream font-medium mt-1">{{ order.delivery_address }}</h5>
+ </div>
+ </div>
+ <div class="border-t hair my-5"></div>
+ {% for item in order.items.all %}
+ <div class="flex items-center justify-between mb-2.5 text-sm">
+ <span class="text-cream/80">{{ item.product.name }} &times; {{ item.quantity }}</span>
+ <span class="text-cream font-medium">Rs.{{ item.total_price|floatformat:"0" }}</span>
+ </div>
+ {% endfor %}
+ </div>
 
-      <div class="mt-20">
-        <a href="{% url 'ecom:track_order' %}?order_number={{ order.order_number }}&phone={{ order.customer_phone }}" class="btn btn-buy mr-10">Track Order</a>
-        <a href="{% url 'ecom:home' %}" class="btn btn-cart">Continue Shopping</a>
-      </div>
-    </div>
-  </div>
+ <div class="flex flex-wrap items-center justify-center gap-3">
+ <a href="{% url 'ecom:track_order' %}?order_number={{ order.order_number }}&phone={{ order.customer_phone }}" class="h-12 px-7 rounded-full bg-saffron text-white font-medium flex items-center gap-2 hover:brightness-110 shadow-glow transition">Track Order</a>
+ <a href="{% url 'ecom:home' %}" class="h-12 px-7 rounded-full glass text-cream/85 font-medium flex items-center hover:border-gold transition">Continue Shopping</a>
+ </div>
 </section>
 {% endblock %}

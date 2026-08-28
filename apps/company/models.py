@@ -51,6 +51,10 @@ class Company(BaseModel):
         max_digits=5, decimal_places=2, default=Decimal('25.00'),
         help_text='NFRS 12: Corporate Income Tax rate (%). Nepal standard = 25%. Special industries may use 15%.',
     )
+    po_approval_threshold = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text='POs at or above this amount require admin approval before being sent. Leave blank to skip PO approval entirely.',
+    )
     # Feature flags
     enable_branch_accounting = models.BooleanField(
         default=False,
@@ -99,6 +103,10 @@ class Company(BaseModel):
     enable_ecom = models.BooleanField(
         default=False,
         help_text='Enable E-Commerce storefront (/store/). Customers can browse products and place COD orders online.'
+    )
+    enable_ssf = models.BooleanField(
+        default=False,
+        help_text='Enable Social Security Fund (SSF) contributions on payroll. Explicit opt-in — not auto-enabled by organisation type.'
     )
 
     # CBMS / IRD e-Billing integration
@@ -183,6 +191,7 @@ class Company(BaseModel):
         self.enable_pos = False
         self.enable_tours = False
         self.enable_ecom = False
+        self.enable_ssf = False
 
         if self.organisation_type == 'TRADING':
             # Core trading modules; HR is optional — enable manually if needed
@@ -193,9 +202,9 @@ class Company(BaseModel):
             self.enable_hr_payroll = False
 
         elif self.organisation_type == 'SERVICE':
-            self.enable_order_management = True
-            self.enable_pos = True
             self.enable_hr_payroll = True
+            self.enable_inventory = True
+            self.enable_purchasing = True
 
         elif self.organisation_type == 'PROJECT':
             self.enable_project_tracking = True
@@ -594,6 +603,7 @@ class FiscalYear(BaseModel):
             is_deleted=False,
         )
 
+        carry_forward_lines = []
         for acc in bs_accounts:
             # After P&L closing, retained earnings balance has changed — recalculate
             if acc == retained_earnings:
@@ -617,6 +627,53 @@ class FiscalYear(BaseModel):
                 fiscal_year=next_fy,
                 defaults={'opening_type': ob_type, 'amount': amount},
             )
+            carry_forward_lines.append({'account': acc, 'entry_type': ob_type, 'amount': amount})
+
+        # Post the carried-forward balances to next_fy's GL too — writing only
+        # the LedgerOpeningBalance record (as above) leaves next year's ledger
+        # report showing the right number while the trial balance / GL sees
+        # nothing until someone re-enters every account by hand. One
+        # multi-line entry against a single Opening Balance Equity contra
+        # keeps the whole rollover balanced in a single posting.
+        if carry_forward_lines:
+            contra, _ = LedgerAccount.objects.get_or_create(
+                company=company,
+                name='Opening Balance Equity',
+                defaults={'account_type': 'EQUITY', 'system_created': True},
+            )
+            with db_transaction.atomic():
+                carry_entry = JournalEntry.objects.create(
+                    company=company,
+                    date=next_fy.start_date,
+                    description=f"Opening Balances Carried Forward — FY {next_fy.name}",
+                    created_by=closed_by_user,
+                )
+                contra_debit = Decimal('0')
+                contra_credit = Decimal('0')
+                for line in carry_forward_lines:
+                    JournalEntryLine.objects.create(
+                        journal_entry=carry_entry,
+                        account=line['account'],
+                        entry_type=line['entry_type'],
+                        amount=line['amount'],
+                        narration=f'Carried forward from FY {self.name}',
+                    )
+                    if line['entry_type'] == 'DEBIT':
+                        contra_credit += line['amount']
+                    else:
+                        contra_debit += line['amount']
+                net_contra = contra_debit - contra_credit
+                if net_contra > 0:
+                    JournalEntryLine.objects.create(
+                        journal_entry=carry_entry, account=contra, entry_type='DEBIT',
+                        amount=net_contra, narration='Opening balance rollover contra',
+                    )
+                elif net_contra < 0:
+                    JournalEntryLine.objects.create(
+                        journal_entry=carry_entry, account=contra, entry_type='CREDIT',
+                        amount=abs(net_contra), narration='Opening balance rollover contra',
+                    )
+                assert_balanced(carry_entry)
 
         # ── Mark closed ───────────────────────────────────────────────────
         self.is_closed = True

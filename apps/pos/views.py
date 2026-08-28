@@ -33,6 +33,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -48,8 +49,11 @@ from .cart import (
     remove_item, set_customer, set_delivery_charge, set_discount, set_referrer, set_tax, update_item_qty,
     update_item_price,
 )
-from .models import POS_PAYMENT_METHOD_CHOICES, POSSale, Referrer
+from apps.payments.models import BankAccount
+
+from .models import POS_PAYMENT_METHOD_CHOICES, POSSale, PosShift, Referrer
 from .services import checkout
+from .services.shift_services import close_shift, get_active_shift, open_shift, record_cash_movement
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +141,8 @@ def pos_terminal(request):
     if cart.get('referrer_id'):
         selected_referrer = Referrer.objects.filter(pk=cart['referrer_id'], company=company).first()
 
+    active_shift = get_active_shift(company, getattr(request, 'user_branch', None))
+
     context = {
         'category_types':      category_types,
         'selected_ct_id':      selected_ct_id,
@@ -148,8 +154,10 @@ def pos_terminal(request):
         'totals':              totals,
         'customers':           customers,
         'payment_methods':     POS_PAYMENT_METHOD_CHOICES,
+        'bank_accounts':       BankAccount.active_objects.filter(company=company, is_active=True),
         'company':             company,
         'selected_referrer':   selected_referrer,
+        'active_shift':        active_shift,
     }
 
     # HTMX partial refresh — return only the product grid
@@ -393,6 +401,11 @@ def pos_checkout(request):
     if guard:
         return guard
 
+    company = request.user_company
+    if not get_active_shift(company, getattr(request, 'user_branch', None)):
+        messages.error(request, "Open a till shift before taking sales.")
+        return redirect('pos:shift_open')
+
     cart = get_cart(request)
 
     if not cart.get('items'):
@@ -416,6 +429,14 @@ def pos_checkout(request):
 
     notes = request.POST.get('notes', '').strip()
 
+    bank_account = None
+    bank_account_id = request.POST.get('bank_account', '').strip()
+    if bank_account_id:
+        from apps.payments.models import BankAccount
+        bank_account = BankAccount.active_objects.filter(
+            pk=bank_account_id, company=company, is_active=True
+        ).first()
+
     try:
         pos_sale = checkout(
             request=request,
@@ -423,6 +444,7 @@ def pos_checkout(request):
             payment_method=payment_method,
             amount_tendered=amount_tendered,
             notes=notes,
+            bank_account=bank_account,
         )
         clear_cart(request)
         messages.success(
@@ -573,8 +595,159 @@ def _cart_partial(request, cart: dict, stock_warning: str = None) -> HttpRespons
         'totals':            totals,
         'customers':         customers,
         'payment_methods':   POS_PAYMENT_METHOD_CHOICES,
+        'bank_accounts':     BankAccount.active_objects.filter(company=request.user_company, is_active=True),
         'company':           request.user_company,
         'stock_warning':     stock_warning,
         'selected_referrer': selected_referrer,
     })
     return html
+
+
+# ── Till shifts ───────────────────────────────────────────────────────────────
+
+@auth_required('pos.add_possale')
+def pos_shift_open(request):
+    """GET renders the open-shift form. POST opens a shift for this branch/terminal."""
+    guard = _require_pos(request)
+    if guard:
+        return guard
+
+    company = request.user_company
+    branch = getattr(request, 'user_branch', None)
+
+    if request.method == 'POST':
+        terminal_name = request.POST.get('terminal_name', '').strip()
+        try:
+            opening_float = Decimal(request.POST.get('opening_float', '0') or '0')
+        except InvalidOperation:
+            opening_float = Decimal('0')
+
+        try:
+            open_shift(company, branch, request.user, opening_float, terminal_name=terminal_name)
+            messages.success(request, "Shift opened.")
+            return redirect('pos:terminal')
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return redirect('pos:shift_open')
+
+    active_shift = get_active_shift(company, branch)
+    return render(request, 'pos/pos_shift_open.html', {'active_shift': active_shift})
+
+
+@auth_required('pos.add_possale')
+def pos_shift_close(request):
+    """GET previews expected cash for the active shift. POST closes it with the counted total."""
+    guard = _require_pos(request)
+    if guard:
+        return guard
+
+    company = request.user_company
+    branch = getattr(request, 'user_branch', None)
+    shift = get_active_shift(company, branch)
+    if not shift:
+        messages.error(request, "No open shift to close.")
+        return redirect('pos:terminal')
+
+    cash_sales = POSSale.active_objects.filter(shift=shift, payment_method='CASH').aggregate(
+        total=Sum('total'))['total'] or Decimal('0.00')
+    cash_in = shift.cash_movements.filter(movement_type='CASH_IN').aggregate(
+        total=Sum('amount'))['total'] or Decimal('0.00')
+    cash_out = shift.cash_movements.filter(movement_type='CASH_OUT').aggregate(
+        total=Sum('amount'))['total'] or Decimal('0.00')
+    expected_cash = shift.opening_float + cash_sales + cash_in - cash_out
+
+    if request.method == 'POST':
+        try:
+            counted_cash = Decimal(request.POST.get('counted_cash', '0') or '0')
+        except InvalidOperation:
+            counted_cash = Decimal('0')
+        notes = request.POST.get('closing_notes', '').strip()
+
+        try:
+            shift = close_shift(shift, counted_cash, notes, request.user)
+            messages.success(request, f"Shift closed. Variance: {shift.variance}.")
+            return redirect('pos:shift_detail', pk=shift.pk)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return redirect('pos:shift_close')
+
+    return render(request, 'pos/pos_shift_close.html', {
+        'shift':          shift,
+        'cash_sales':     cash_sales,
+        'cash_in':        cash_in,
+        'cash_out':       cash_out,
+        'expected_cash':  expected_cash,
+    })
+
+
+@require_POST
+@auth_required('pos.add_possale')
+def pos_cash_movement(request):
+    """POST-only — record a CASH_IN/CASH_OUT movement against the active shift."""
+    guard = _require_pos(request)
+    if guard:
+        return guard
+
+    company = request.user_company
+    branch = getattr(request, 'user_branch', None)
+    shift = get_active_shift(company, branch)
+    if not shift:
+        messages.error(request, "No open shift.")
+        return redirect('pos:terminal')
+
+    movement_type = request.POST.get('movement_type', '').strip()
+    if movement_type not in ('CASH_IN', 'CASH_OUT'):
+        messages.error(request, "Invalid movement type.")
+        return redirect('pos:terminal')
+
+    try:
+        amount = Decimal(request.POST.get('amount', '0') or '0')
+    except InvalidOperation:
+        amount = Decimal('0')
+    reason = request.POST.get('reason', '').strip()
+
+    try:
+        record_cash_movement(shift, movement_type, amount, reason, request.user)
+        messages.success(request, "Cash movement recorded.")
+    except ValueError as exc:
+        messages.error(request, str(exc))
+
+    return redirect('pos:terminal')
+
+
+@auth_required('pos.view_possale')
+def pos_shift_list(request):
+    """List of past shifts for the company, for management review."""
+    guard = _require_pos(request)
+    if guard:
+        return guard
+
+    qs = PosShift.active_objects.filter(company=request.user_company).select_related(
+        'opened_by', 'closed_by'
+    ).order_by('-opened_at')
+
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    return render(request, 'pos/pos_shift_list.html', {'page_obj': page_obj})
+
+
+@auth_required('pos.view_possale')
+def pos_shift_detail(request, pk):
+    """Single shift's movements + sales + variance detail."""
+    guard = _require_pos(request)
+    if guard:
+        return guard
+
+    shift = get_object_or_404(
+        PosShift.active_objects.select_related('opened_by', 'closed_by'),
+        pk=pk, company=request.user_company,
+    )
+    movements = shift.cash_movements.select_related('recorded_by').order_by('-recorded_at')
+    sales = shift.sales.select_related('invoice', 'customer').order_by('-created_at')
+
+    return render(request, 'pos/pos_shift_detail.html', {
+        'shift':     shift,
+        'movements': movements,
+        'sales':     sales,
+    })

@@ -83,9 +83,6 @@ class BankReconciliation(BaseModel):
     statement_date = models.DateField()
     statement_balance = models.DecimalField(max_digits=14, decimal_places=2)
     book_balance = models.DecimalField(max_digits=14, decimal_places=2)
-    reconciled_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    notes = models.TextField(blank=True, default='')
 
     # Adjusting items — reconciling differences between book and statement
     deposits_in_transit = models.DecimalField(
@@ -103,6 +100,10 @@ class BankReconciliation(BaseModel):
     other_adjustments = models.DecimalField(
         max_digits=14, decimal_places=2, default=0,
         help_text='Any other net reconciling adjustment to the book balance (can be negative).')
+
+    reconciled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True, default='')
 
     class Meta:
         ordering = ['-statement_date']
@@ -203,23 +204,7 @@ class Payment(BaseModel):
             return f"Bill #{self.invoice.invoice_number}: {self.amount} on {self.date.strftime('%Y-%m-%d')}"
         else:
             return f"{self.get_payment_type_display()}: {self.amount} on {self.date.strftime('%Y-%m-%d')}"
-
-    def clean(self):
-        from django.core.exceptions import ValidationError
-        if self.invoice_id and self.amount is not None and not self.pk:
-            if self.amount > self.invoice.outstanding_balance:
-                raise ValidationError(
-                    f"Payment amount ({self.amount}) exceeds the invoice's outstanding "
-                    f"balance ({self.invoice.outstanding_balance})."
-                )
-        if self.fiscal_year_id and not self.pk:
-            from apps.company.fiscal_year_guard import assert_fiscal_year_open
-            assert_fiscal_year_open(self.fiscal_year)
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
-
+    
     @property
     def payment_number(self):
         """Returns the payment number to be used as bill/invoice number"""
@@ -257,6 +242,22 @@ class Payment(BaseModel):
     @property
     def is_cancelled(self):
         return self.is_deleted
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.invoice_id and self.amount is not None and not self.pk:
+            if self.amount > self.invoice.outstanding_balance:
+                raise ValidationError(
+                    f"Payment amount ({self.amount}) exceeds the invoice's outstanding "
+                    f"balance ({self.invoice.outstanding_balance})."
+                )
+        if self.fiscal_year_id and not self.pk:
+            from apps.company.fiscal_year_guard import assert_fiscal_year_open
+            assert_fiscal_year_open(self.fiscal_year)
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def cancel(self, cancelled_by, reason=''):
         """

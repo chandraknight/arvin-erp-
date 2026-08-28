@@ -121,6 +121,7 @@ class TDSRateUpdateView(AuthMixin, UpdateView):
         form.instance.updated_by = self.request.user
         return super().form_valid(form)
 
+
 # ─── NFRS 13 Fixed Asset views ────────────────────────────────────────────
 
 from django import forms as dj_forms
@@ -142,7 +143,7 @@ class FixedAssetForm(dj_forms.ModelForm):
             'name', 'asset_code', 'description', 'category',
             'cost', 'residual_value', 'useful_life_years',
             'depreciation_method', 'depreciation_rate',
-            'acquisition_date', 'status',
+            'acquisition_date', 'status', 'ird_pool',
             'asset_account', 'accumulated_dep_account', 'depreciation_expense_account',
         ]
         widgets = {

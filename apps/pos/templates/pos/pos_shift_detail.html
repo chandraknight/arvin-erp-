@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shift Detail{% endblock %}
+
+{% block content %}
+<div class="w-full mt-2">
+
+ <div class="flex items-center justify-between mb-6">
+ <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+ <i class="fas fa-cash-register text-green-600"></i> Shift — {{ shift.opened_at|date:"Y-m-d H:i" }}
+ </h2>
+ <a href="{% url 'pos:shift_list' %}"
+ class="inline-flex items-center gap-2 border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium px-4 py-2 transition duration-150">
+ <i class="fas fa-arrow-left"></i> All Shifts
+ </a>
+ </div>
+
+ <!-- Summary -->
+ <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+ <div class="bg-white border border-gray-200 shadow-sm p-4">
+ <p class="text-xs font-medium text-gray-500">Opening Float</p>
+ <p class="text-xl font-bold text-gray-800 mt-1">NPR {{ shift.opening_float|floatformat:2 }}</p>
+ </div>
+ <div class="bg-white border border-gray-200 shadow-sm p-4">
+ <p class="text-xs font-medium text-gray-500">Expected / Counted</p>
+ <p class="text-xl font-bold text-gray-800 mt-1">
+ {{ shift.expected_cash|default_if_none:"—" }} / {{ shift.counted_cash|default_if_none:"—" }}
+ </p>
+ </div>
+ <div class="bg-white border border-gray-200 shadow-sm p-4">
+ <p class="text-xs font-medium text-gray-500">Variance</p>
+ <p class="text-xl font-bold mt-1 {% if shift.variance and shift.variance < 0 %}text-red-600{% elif shift.variance and shift.variance > 0 %}text-green-600{% else %}text-gray-800{% endif %}">
+ {{ shift.variance|default_if_none:"—" }}
+ </p>
+ </div>
+ </div>
+
+ <p class="text-sm text-gray-600 mb-6">
+ Opened by {{ shift.opened_by.email|default:"—" }}
+ {% if shift.status == 'CLOSED' %} · Closed by {{ shift.closed_by.email|default:"—" }} at {{ shift.closed_at|date:"Y-m-d H:i" }}{% endif %}
+ {% if shift.closing_notes %} · Notes: {{ shift.closing_notes }}{% endif %}
+ </p>
+
+ <!-- Cash movements -->
+ <h3 class="text-sm font-semibold text-gray-700 mb-2">Cash Movements</h3>
+ <div class="bg-white border border-gray-200 shadow-sm overflow-hidden mb-6">
+ <div class="overflow-x-auto">
+ <table class="min-w-full text-sm text-gray-700">
+ <thead class="bg-gray-50 border-b border-gray-200">
+ <tr>
+ <th class="px-4 py-3 text-left font-semibold text-gray-600">Time</th>
+ <th class="px-4 py-3 text-left font-semibold text-gray-600">Type</th>
+ <th class="px-4 py-3 text-right font-semibold text-gray-600">Amount</th>
+ <th class="px-4 py-3 text-left font-semibold text-gray-600">Reason</th>
+ <th class="px-4 py-3 text-left font-semibold text-gray-600">Recorded By</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-100">
+ {% for m in movements %}
+ <tr class="hover:bg-gray-50 transition duration-100">
+ <td class="px-4 py-3 text-gray-500">{{ m.recorded_at|date:"Y-m-d H:i" }}</td>
+ <td class="px-4 py-3">{{ m.get_movement_type_display }}</td>
+ <td class="px-4 py-3 text-right">NPR {{ m.amount|floatformat:2 }}</td>
+ <td class="px-4 py-3">{{ m.reason }}</td>
+ <td class="px-4 py-3">{{ m.recorded_by.email|default:"—" }}</td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No cash movements.</td></tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+
+ <!-- Sales -->
+ <h3 class="text-sm font-semibold text-gray-700 mb-2">Sales</h3>
+ <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+ <div class="overflow-x-auto">
+ <table class="min-w-full text-sm text-gray-700">
+ <thead class="bg-gray-50 border-b border-gray-200">
+ <tr>
+ <th class="px-4 py-3 text-left font-semibold text-gray-600">Receipt No</th>
+ <th class="px-4 py-3 text-left font-semibold text-gray-600">Customer</th>
+ <th class="px-4 py-3 text-left font-semibold text-gray-600">Payment</th>
+ <th class="px-4 py-3 text-right font-semibold text-gray-600">Total</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-100">
+ {% for sale in sales %}
+ <tr class="hover:bg-gray-50 transition duration-100">
+ <td class="px-4 py-3 font-mono text-gray-800">{{ sale.invoice.invoice_number }}</td>
+ <td class="px-4 py-3">{{ sale.customer.name|default:"Walk-in" }}</td>
+ <td class="px-4 py-3">{{ sale.get_payment_method_display }}</td>
+ <td class="px-4 py-3 text-right font-semibold text-gray-800">NPR {{ sale.total|floatformat:2 }}</td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">No sales on this shift.</td></tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+
+</div>
+{% endblock %}

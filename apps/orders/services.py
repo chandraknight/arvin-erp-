@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import F, Max
 from django.utils import timezone
 
 import nepali_datetime
@@ -136,3 +136,106 @@ def create_invoice_from_sales_order(order, user):
     order.save(update_fields=['invoice'])
 
     return invoice
+
+
+def record_delivery_payment(delivery, amount, method, user, bank_account=None):
+    """
+    Create a Payment for cash/bank/online collected at the door and reduce
+    the linked Invoice's outstanding_balance. Supports partial payment —
+    amount may be less than outstanding_balance. Mirrors
+    apps.ecom.services.record_ecom_payment. Returns None if there's no
+    invoice or nothing left to collect.
+    """
+    from decimal import Decimal
+
+    from apps.payments.models import Payment
+    from apps.payments.services.payment_number_service import generate_payment_number
+
+    order = delivery.sales_order
+    invoice = order.invoice if order else None
+    if not invoice or invoice.outstanding_balance <= Decimal('0.00'):
+        return None
+
+    amount = min(Decimal(amount), invoice.outstanding_balance)
+    if amount <= Decimal('0.00'):
+        return None
+
+    try:
+        reference_number, _, pay_fy = generate_payment_number(delivery.company.id, 'CUSTOMER')
+    except Exception:
+        reference_number, pay_fy = None, None
+
+    with transaction.atomic():
+        payment = Payment.objects.create(
+            company=delivery.company,
+            branch=order.branch,
+            invoice=invoice,
+            date=timezone.now().date(),
+            amount=amount,
+            amount_applied=amount,
+            method=method,
+            payment_type='CUSTOMER',
+            bank_account=bank_account,
+            reference_number=reference_number,
+            fiscal_year=pay_fy,
+            description=f'Collected at delivery {delivery.delivery_number}',
+            created_by=user,
+        )
+
+        invoice.outstanding_balance -= amount
+        invoice.save(update_fields=['outstanding_balance'])
+
+    return payment
+
+
+def dispatch_stock_and_cogs(delivery_note, user):
+    """
+    Decrement inventory and post the COGS/Inventory journal entry for the
+    goods leaving the warehouse on this delivery note. Called at dispatch
+    (DeliveryNote creation) — the moment stock actually leaves, not at
+    later delivery confirmation. Mirrors apps.pos.services.checkout_services
+    .checkout()'s stock-decrement + FIFO cost + post_cogs_journal pattern.
+
+    Skips service items and companies with inventory tracking disabled.
+    Does not validate stock availability — a sales order can be dispatched
+    against negative stock the same way POS does not block a sale when no
+    ProductStock record exists (treated as unlimited).
+    """
+    from decimal import Decimal
+
+    from apps.products.models import Product, ProductStock, StockTransaction
+
+    company = delivery_note.company
+    if not getattr(company, 'enable_inventory', False):
+        return
+
+    total_cogs = Decimal('0.00')
+    for item in delivery_note.items.filter(is_deleted=False).select_related('order_item__product'):
+        product = item.order_item.product
+        qty = int(item.quantity_delivered)
+        if not product or product.is_service or qty <= 0:
+            continue
+
+        if product.cost_method == 'FIFO':
+            from apps.products.services.fifo_service import consume_fifo_lots
+            total_cogs += consume_fifo_lots(product, qty)
+        else:
+            total_cogs += Decimal(qty) * (product.cost_price or Decimal('0.00'))
+
+        ProductStock.objects.filter(product=product).update(stock=F('stock') - qty)
+        StockTransaction.objects.create(
+            product=product,
+            user=user,
+            transaction_type='REMOVE',
+            quantity=qty,
+            reason=f'Delivery {delivery_note.delivery_number}',
+        )
+
+    if total_cogs > Decimal('0.00'):
+        from apps.products.services.cogs_service import post_cogs_journal
+        post_cogs_journal(
+            company=company,
+            description=f'COGS — Delivery {delivery_note.delivery_number}',
+            total_cost=total_cogs,
+            posted_by=user,
+        )

@@ -49,6 +49,13 @@ def inventory_management(request):
             Q(productstock__ecom_stock__lte=F('productstock__ecom_minimum_stock'))
         ).prefetch_related('productstock')
         low_stock_products_count = low_stock_products.count()
+        stockout_products = Product.active_objects.filter(
+            company=request.user.company,
+            is_service=False
+        ).filter(
+            Q(productstock__stock__lte=0) | Q(productstock__ecom_stock__lte=0)
+        ).prefetch_related('productstock')
+        stockout_products_count = stockout_products.count()
         transactions = StockTransaction.objects.filter(
             product__company=request.user.company
         ).order_by('-created_at')[:10]
@@ -80,6 +87,10 @@ def inventory_management(request):
             Q(productstock__ecom_stock__lte=F('productstock__ecom_minimum_stock'))
         ).prefetch_related('productstock')
         low_stock_products_count = low_stock_products.count()
+        stockout_products = Product.active_objects.filter(is_service=False).filter(
+            Q(productstock__stock__lte=0) | Q(productstock__ecom_stock__lte=0)
+        ).prefetch_related('productstock')
+        stockout_products_count = stockout_products.count()
         transactions = StockTransaction.active_objects.all().order_by('-created_at')[:10]
 
         categories_queryset = Category.active_objects.all().select_related('type').order_by('type__name', 'name')
@@ -130,6 +141,8 @@ def inventory_management(request):
     return render(request, 'products/inventory_management.html', {
         'products_count': products_count,
         'low_stock_products_count': low_stock_products_count,
+        'stockout_products': stockout_products,
+        'stockout_products_count': stockout_products_count,
         'categories_count': categories_count,
         'packages_count': packages_count,
         'products': products,
@@ -638,6 +651,28 @@ def print_labels(request):
     })
 
 
+@login_required
+def write_off_selector(request):
+    company = getattr(request.user, 'company', None)
+    qs = Product.active_objects.filter(is_service=False).prefetch_related('productstock')
+    if company:
+        qs = qs.filter(company=company)
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) | Q(barcode__icontains=q) | Q(sku__icontains=q)
+        )
+    qs = qs.order_by('name')
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    return render(request, 'products/write_off_selector.html', {
+        'products': page_obj,
+        'page_obj': page_obj,
+        'q': q,
+    })
+
+
 # ── Unit of Measure ───────────────────────────────────────────────────────────
 
 @login_required
@@ -664,28 +699,6 @@ def print_labels_selector(request):
         'page_obj': page_obj,
         'q': q,
         'label_setting': label_setting,
-    })
-
-
-@login_required
-def write_off_selector(request):
-    company = getattr(request.user, 'company', None)
-    qs = Product.active_objects.filter(is_service=False).prefetch_related('productstock')
-    if company:
-        qs = qs.filter(company=company)
-    q = request.GET.get('q', '').strip()
-    if q:
-        qs = qs.filter(
-            Q(name__icontains=q) | Q(barcode__icontains=q) | Q(sku__icontains=q)
-        )
-    qs = qs.order_by('name')
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
-
-    return render(request, 'products/write_off_selector.html', {
-        'products': page_obj,
-        'page_obj': page_obj,
-        'q': q,
     })
 
 

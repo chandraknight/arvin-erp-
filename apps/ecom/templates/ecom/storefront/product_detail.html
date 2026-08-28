@@ -3,382 +3,366 @@
 
 {% block page_title %}{{ product.name }}{% endblock %}
 
-{% block extra_head %}{% endblock %}
+{% block extra_head %}
+<style>
+ #pd-zoom-wrap { position: relative; cursor: crosshair; }
+ #pd-zoom-lens { position: absolute; display: none; border: 1px solid rgba(196,151,47,.6); background: rgba(228,198,124,.18); pointer-events: none; }
+ #pd-zoom-panel { position: fixed; display: none; width: 420px; z-index: 50; background-repeat: no-repeat; border-radius: 1rem; box-shadow: 0 0 0 1px rgba(196,151,47,.4), 0 30px 70px -18px rgba(0,0,0,.6); }
+ @media (max-width: 1279px) { #pd-zoom-panel { display: none !important; } }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="max-w-[1280px] mx-auto px-4 lg:px-6 py-8">
 
-  {# Breadcrumb #}
-  <nav class="pd-breadcrumb">
-    <a href="{% url 'ecom:home' %}">Home</a>
-    {% if product.category %}
-    <span>›</span>
-    <a href="{% url 'ecom:product_list' %}?category={{ product.category.id }}">{{ product.category.name }}</a>
-    {% endif %}
-    <span>›</span>
-    <span class="pd-breadcrumb-current">{{ product.name }}</span>
-  </nav>
+ {# Breadcrumb #}
+ <nav class="flex items-center gap-2 text-[13px] text-cream/50 mb-6 font-eyebrow">
+ <a href="{% url 'ecom:home' %}" class="hover:text-goldlt transition">Home</a>
+ {% if product.category %}
+ <span class="opacity-50">&rsaquo;</span>
+ <a href="{% url 'ecom:product_list' %}?category={{ product.category.id }}" class="hover:text-goldlt transition">{{ product.category.name }}</a>
+ {% endif %}
+ <span class="opacity-50">&rsaquo;</span>
+ <span class="text-cream/75">{{ product.name }}</span>
+ </nav>
 
-  {# ── Main product row ── #}
-  <div class="row pd-product-row">
+ {# Main product row #}
+ <div class="grid lg:grid-cols-[5fr_7fr] gap-10">
 
-    {# LEFT — gallery #}
-    <div class="col-12 col-lg-5 mb-30">
-      <div class="pd-gallery">
+ {# LEFT — gallery #}
+ <div>
+ <div class="flex gap-4">
+ {% if product.images.all %}
+ <div class="pd-thumbs flex flex-col gap-2.5 shrink-0">
+ {% for img in product.images.all %}
+ <img src="{{ img.image.url }}" alt="{{ product.name }}" loading="lazy"
+ class="pd-thumb w-16 h-16 object-cover rounded-xl glass cursor-pointer transition {% if forloop.first %}active border-gold shadow-glow{% else %}opacity-70 hover:opacity-100{% endif %}"
+ onclick="swapMainImage('{{ img.image.url }}', this)">
+ {% endfor %}
+ </div>
+ {% endif %}
 
-        {# Thumbnails #}
-        {% if product.images.all %}
-        <div class="pd-thumbs">
-          {% for img in product.images.all %}
-          <img src="{{ img.image.url }}" alt="{{ product.name }}" loading="lazy"
-               class="pd-thumb {% if forloop.first %}active{% endif %}"
-               onclick="swapMainImage('{{ img.image.url }}', this)">
-          {% endfor %}
-        </div>
-        {% endif %}
+ <div class="pd-main-wrap rounded-2xl glass overflow-hidden flex-1 aspect-square" id="pd-zoom-wrap">
+ {% with product.images.first as first_img %}
+ {% if first_img %}
+ <img src="{{ first_img.image.url }}" alt="{{ product.name }}"
+ id="zoom-main" data-zoom-image="{{ first_img.image.url }}" class="w-full h-full object-cover">
+ {% else %}
+ <img src="{% static 'ecom/assets/imgs/template/devices.svg' %}" alt="{{ product.name }}"
+ id="zoom-main" class="pd-img-placeholder w-full h-full object-contain p-16 opacity-50">
+ {% endif %}
+ {% endwith %}
+ <div id="pd-zoom-lens"></div>
+ </div>
+ <div id="pd-zoom-panel"></div>
+ </div>
+ </div>
 
-        {# Main image #}
-        <div class="pd-main-wrap" id="pd-zoom-wrap">
-          {% with product.images.first as first_img %}
-          {% if first_img %}
-          <img src="{{ first_img.image.url }}" alt="{{ product.name }}"
-               id="zoom-main" data-zoom-image="{{ first_img.image.url }}">
-          {% elif cms.logo %}
-          <img src="{{ cms.logo.url }}" alt="{{ product.name }}"
-               id="zoom-main" class="pd-img-placeholder" style="object-fit:contain;padding:15%;">
-          {% else %}
-          <div id="zoom-main" class="pd-img-placeholder" style="width:100%;height:100%;min-height:280px;display:flex;align-items:center;justify-content:center;background:#800000;font-size:56px;border-radius:12px;">🙏</div>
-          {% endif %}
-          {% endwith %}
-          <div id="pd-zoom-lens"></div>
-        </div>
-        <div id="pd-zoom-panel"></div>
+ {# RIGHT — product info #}
+ <div>
 
-      </div>
+ <h1 class="font-display text-3xl md:text-[34px] text-cream leading-tight">{{ product.name }}</h1>
+ <div class="gold-underline mt-3 mb-2 w-16"></div>
 
-      {# Category and SKU tags hidden from storefront #}
-    </div>
+ {# Price #}
+ <div class="mt-5">
+ <span class="font-display text-3xl text-goldlt">Rs.{{ product.price|floatformat:"2" }}</span>
+ </div>
 
-    {# RIGHT — product info #}
-    <div class="col-12 col-lg-7">
+ {# Stock status #}
+ {% if not product.is_service %}
+ {% if product.productstock.ecom_stock > 0 %}
+ <p class="mt-3 flex items-center gap-2 text-sm text-green-300">
+ <i data-lucide="check-circle" class="w-4 h-4"></i> In Stock
+ <span class="text-cream/50">&nbsp;({{ product.productstock.ecom_stock }} available)</span>
+ </p>
+ {% else %}
+ <p class="mt-3 text-sm text-red-300 font-medium">Out of Stock</p>
+ {% endif %}
+ {% endif %}
 
-      <h1 class="pd-title">{{ product.name }}</h1>
-      <div class="pd-gold-bar"></div>
+ {# Delivery badges #}
+ <div class="mt-6 grid sm:grid-cols-2 gap-3">
+ <div class="flex items-center gap-3 rounded-xl glass px-4 py-3">
+ <i data-lucide="truck" class="w-6 h-6 text-gold shrink-0"></i>
+ <div>
+ <div class="text-sm text-cream font-medium">Free Delivery</div>
+ <div class="text-[12px] text-cream/50">Available nationwide</div>
+ </div>
+ </div>
+ <div class="flex items-center gap-3 rounded-xl glass px-4 py-3">
+ <i data-lucide="badge-check" class="w-6 h-6 text-gold shrink-0"></i>
+ <div>
+ <div class="text-sm text-cream font-medium">Return &amp; Refund</div>
+ <div class="text-[12px] text-cream/50">Free return over Rs.200</div>
+ </div>
+ </div>
+ </div>
 
-      {# Price #}
-      <div class="pd-price-row">
-        <span class="pd-price">Rs.{{ product.price|floatformat:"2" }}{% if product.default_unit %} <span class="pd-price-unit">/ {{ product.default_unit.symbol|default:product.default_unit.name }}</span>{% endif %}</span>
-      </div>
+ {# Cart or out-of-stock notice #}
+ {% if product.is_service or product.productstock.ecom_stock > 0 %}
+ <form method="post" action="{% url 'ecom:add_to_cart' product.id %}" class="mt-7">
+ {% csrf_token %}
+ <div class="flex flex-wrap items-center gap-3">
+ <div class="flex items-center rounded-full glass overflow-hidden h-12">
+ <button type="button" class="pd-qty-btn w-11 h-full grid place-items-center text-cream/80 hover:text-goldlt transition text-lg" id="qty-minus">&minus;</button>
+ <input class="pd-qty-input w-12 h-full bg-transparent text-center text-cream outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+ type="number" name="quantity" id="qty-input" value="1" min="1"
+ {% if not product.is_service %}max="{{ product.productstock.ecom_stock }}"{% endif %}>
+ <button type="button" class="pd-qty-btn w-11 h-full grid place-items-center text-cream/80 hover:text-goldlt transition text-lg" id="qty-plus">+</button>
+ </div>
+ <button type="submit" class="h-12 px-7 rounded-full bg-saffron text-white font-medium hover:brightness-110 shadow-glow transition flex items-center gap-2">
+ <i data-lucide="shopping-bag" class="w-4 h-4"></i> Add to cart
+ </button>
+ <a href="{% url 'ecom:checkout' %}" class="h-12 px-7 rounded-full glass text-goldlt font-medium hover:border-gold transition flex items-center gap-2">
+ Buy now
+ </a>
+ </div>
+ </form>
+ {% else %}
+ <div class="mt-7 flex items-start gap-3 rounded-xl glass px-4 py-3.5 border-red-500/30">
+ <span class="text-xl leading-none text-red-300">&#9432;</span>
+ <div class="text-sm text-cream/70">
+ <strong class="text-cream block">This product is currently out of stock.</strong>
+ Check back soon or contact us.
+ </div>
+ </div>
+ {% endif %}
 
-      {# Stock status #}
-      {% if not product.is_service %}
-        {% if product.productstock.ecom_stock > 0 %}
-        <p class="pd-in-stock">
-          <i class="fi-rs-check pd-check-icon"></i> In Stock
-          <span class="pd-stock-count">&nbsp;({{ product.productstock.ecom_stock }} available)</span>
-        </p>
-        {% else %}
-        <p class="pd-out-stock">Out of Stock</p>
-        {% endif %}
-      {% endif %}
+ {# Share #}
+ <div class="mt-7 flex items-center gap-3">
+ <span class="text-[13px] text-cream/50 font-eyebrow">Share:</span>
 
-      {# Delivery badges #}
-      <div class="pd-badges">
-        <div class="pd-badge">
-          <svg class="pd-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="48" height="48" rx="8" fill="#f0f4ff"/>
-            <path d="M8 17h22v16H8V17z" stroke="#0d1b3e" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
-            <path d="M30 21h4l6 6v6h-10V21z" stroke="#0d1b3e" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
-            <circle cx="14" cy="34" r="3" stroke="#0d1b3e" stroke-width="1.8" fill="none"/>
-            <circle cx="34" cy="34" r="3" stroke="#0d1b3e" stroke-width="1.8" fill="none"/>
-          </svg>
-          <div>
-            <div class="pd-badge-title">Free Delivery</div>
-            <div class="pd-badge-sub">Available nationwide</div>
-          </div>
-        </div>
-        <div class="pd-badge">
-          <svg class="pd-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="48" height="48" rx="8" fill="#f0f4ff"/>
-            <path d="M24 10a14 14 0 1 0 0 28A14 14 0 0 0 24 10z" stroke="#0d1b3e" stroke-width="1.8" fill="none"/>
-            <path d="M19 22l3 3 7-7" stroke="#0d1b3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <div>
-            <div class="pd-badge-title">Return &amp; Refund</div>
-            <div class="pd-badge-sub">Free return over Rs.200</div>
-          </div>
-        </div>
-      </div>
+ <a class="pd-share-icon w-9 h-9 grid place-items-center rounded-full glass text-cream/80 hover:text-goldlt hover:border-gold transition"
+ href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}"
+ target="_blank" rel="noopener" title="Share on Facebook"
+ aria-label="Share on Facebook">f</a>
 
-      {# Cart or out-of-stock notice #}
-      {% if product.is_service or product.productstock.ecom_stock > 0 %}
-      <form method="post" action="{% url 'ecom:add_to_cart' product.id %}">
-        {% csrf_token %}
-        <div class="pd-qty-row">
-          <div class="pd-qty-wrap">
-            {% if product.default_unit %}
-            <span class="pd-qty-unit-label" title="Quantity is in {{ product.default_unit.name }}">{{ product.default_unit.symbol|default:product.default_unit.name }}</span>
-            {% endif %}
-            <button type="button" class="pd-qty-btn" id="qty-minus">−</button>
-            <input class="pd-qty-input" type="number" name="quantity" id="qty-input" value="1" min="1"
-                   {% if not product.is_service %}max="{{ product.productstock.ecom_stock }}"{% endif %}>
-            <button type="button" class="pd-qty-btn" id="qty-plus">+</button>
-          </div>
-          <button type="submit" class="pd-btn-cart">Add to cart</button>
-          <a href="{% url 'ecom:checkout' %}" class="pd-btn-buy">Buy now</a>
-        </div>
-      </form>
-      {% else %}
-      <div class="pd-oos-notice">
-        <span class="pd-oos-icon">&#9432;</span>
-        <div class="pd-oos-text">
-          <strong>This product is currently out of stock.</strong>
-          Check back soon or contact us.
-        </div>
-      </div>
-      {% endif %}
+ <a class="pd-share-icon w-9 h-9 grid place-items-center rounded-full glass text-cream/80 hover:text-goldlt hover:border-gold transition"
+ href="https://api.whatsapp.com/send?text={{ product.name|urlencode }}%20{{ request.build_absolute_uri|urlencode }}"
+ target="_blank" rel="noopener" title="Share on WhatsApp"
+ aria-label="Share on WhatsApp">
+ <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+ </a>
 
-      {# Share #}
-      <div class="pd-share">
-        <span class="pd-share-label">Share:</span>
+ <a class="pd-share-icon w-9 h-9 grid place-items-center rounded-full glass text-cream/80 hover:text-goldlt hover:border-gold transition"
+ href="https://www.instagram.com/" target="_blank" rel="noopener"
+ title="Share on Instagram" aria-label="Share on Instagram"
+ onclick="copyProductLink(event, true)">
+ <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+ </a>
 
-        <a class="pd-share-icon pd-share-fb"
-           href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}"
-           target="_blank" rel="noopener" title="Share on Facebook"
-           aria-label="Share on Facebook">f</a>
+ <a class="pd-share-icon w-9 h-9 grid place-items-center rounded-full glass text-cream/80 hover:text-goldlt hover:border-gold transition"
+ href="https://www.tiktok.com/" target="_blank" rel="noopener"
+ title="Share on TikTok" aria-label="Share on TikTok"
+ onclick="copyProductLink(event, true)">
+ <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.16 8.16 0 004.77 1.52V6.75a4.85 4.85 0 01-1-.06z"/></svg>
+ </a>
 
-        <a class="pd-share-icon pd-share-wa"
-           href="https://api.whatsapp.com/send?text={{ product.name|urlencode }}%20{{ request.build_absolute_uri|urlencode }}"
-           target="_blank" rel="noopener" title="Share on WhatsApp"
-           aria-label="Share on WhatsApp">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        </a>
+ <button class="flex items-center gap-1.5 h-9 px-3 rounded-full glass text-cream/80 hover:text-goldlt hover:border-gold transition text-[12.5px]" onclick="copyProductLink(event, false)" id="copy-link-btn" type="button">
+ <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+ <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+ </svg>
+ <span id="copy-link-label">Copy link</span>
+ </button>
+ </div>
 
-        <a class="pd-share-icon pd-share-ig"
-           href="https://www.instagram.com/" target="_blank" rel="noopener"
-           title="Share on Instagram" aria-label="Share on Instagram"
-           onclick="copyProductLink(event, true)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-        </a>
+ </div>{# end right #}
+ </div>{# end row #}
 
-        <a class="pd-share-icon pd-share-tt"
-           href="https://www.tiktok.com/" target="_blank" rel="noopener"
-           title="Share on TikTok" aria-label="Share on TikTok"
-           onclick="copyProductLink(event, true)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.16 8.16 0 004.77 1.52V6.75a4.85 4.85 0 01-1-.06z"/></svg>
-        </a>
+ {# Tabs #}
+ <div class="mt-14 flex items-center gap-2 border-b hair" role="tablist">
+ <button class="pd-tab-btn active px-5 py-3 text-sm font-medium text-goldlt border-b-2 border-gold transition" role="tab" aria-selected="true"
+ onclick="switchTab('tab-description', this)">Description</button>
+ <button class="pd-tab-btn px-5 py-3 text-sm font-medium text-cream/50 border-b-2 border-transparent hover:text-cream/80 transition" role="tab" aria-selected="false"
+ onclick="switchTab('tab-additional', this)">Additional Information</button>
+ </div>
+ <div class="mt-6">
 
-        <button class="pd-copy-btn" onclick="copyProductLink(event, false)" id="copy-link-btn" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-          </svg>
-          <span id="copy-link-label">Copy link</span>
-        </button>
-      </div>
+ <div id="tab-description" class="pd-tab-panel active" role="tabpanel">
+ {% if product.ecom_description %}
+ <div class="text-cream/70 text-[15px] leading-relaxed">{{ product.ecom_description|linebreaks }}</div>
+ {% elif product.description %}
+ <div class="text-cream/70 text-[15px] leading-relaxed">{{ product.description|linebreaks }}</div>
+ {% else %}
+ <p class="flex items-center gap-2 text-cream/50 text-sm">
+ <i data-lucide="file-text" class="w-5 h-5"></i>
+ No description available for this product.
+ </p>
+ {% endif %}
+ </div>
 
-    </div>{# end right #}
-  </div>{# end row #}
+ <div id="tab-additional" class="pd-tab-panel hidden" role="tabpanel">
+ <table class="w-full text-sm">
+ <tbody class="divide-y divide-gold/10">
+ {% if product.barcode %}
+ <tr><td class="py-2.5 pr-4 text-cream/50">SKU / Barcode</td><td class="py-2.5 text-cream">{{ product.barcode }}</td></tr>
+ {% endif %}
+ {% if product.category %}
+ <tr>
+ <td class="py-2.5 pr-4 text-cream/50">Category</td>
+ <td class="py-2.5"><a href="{% url 'ecom:product_list' %}?category={{ product.category.id }}"
+ class="text-goldlt hover:text-gold transition">{{ product.category.name }}</a></td>
+ </tr>
+ {% endif %}
+ <tr>
+ <td class="py-2.5 pr-4 text-cream/50">Type</td>
+ <td class="py-2.5">
+ {% if product.is_service %}
+ <span class="text-[11px] px-2.5 py-1 rounded-full glass text-goldlt">Service</span>
+ {% else %}
+ <span class="text-[11px] px-2.5 py-1 rounded-full glass text-cream/70">Physical Product</span>
+ {% endif %}
+ </td>
+ </tr>
+ {% if product.hscode %}
+ <tr><td class="py-2.5 pr-4 text-cream/50">HS Code</td><td class="py-2.5 text-cream">{{ product.hscode }}</td></tr>
+ {% endif %}
+ </tbody>
+ </table>
+ </div>
 
-  {# ── Tabs ── #}
-  <div class="pd-tabs" role="tablist">
-    <button class="pd-tab-btn active" role="tab" aria-selected="true"
-            onclick="switchTab('tab-description', this)">Description</button>
-    <button class="pd-tab-btn" role="tab" aria-selected="false"
-            onclick="switchTab('tab-additional', this)">Additional Information</button>
-    <button class="pd-tab-btn" role="tab" aria-selected="false"
-            onclick="switchTab('tab-reviews', this)">Reviews{% if reviews %} ({{ reviews|length }}){% endif %}</button>
-  </div>
-  <div class="pd-tab-body">
+ </div>
 
-    <div id="tab-description" class="pd-tab-panel active" role="tabpanel">
-      {% if product.ecom_description %}
-      <div class="pd-desc-body">{{ product.ecom_description|linebreaks }}</div>
-      {% elif product.description %}
-      <div class="pd-desc-body">{{ product.description|linebreaks }}</div>
-      {% else %}
-      <p class="pd-no-desc">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
-        No description available for this product.
-      </p>
-      {% endif %}
-    </div>
-
-    <div id="tab-additional" class="pd-tab-panel" role="tabpanel">
-      <table class="pd-info-table">
-        {% if product.barcode %}
-        <tr><td>SKU / Barcode</td><td>{{ product.barcode }}</td></tr>
-        {% endif %}
-        {% if product.category %}
-        <tr>
-          <td>Category</td>
-          <td><a href="{% url 'ecom:product_list' %}?category={{ product.category.id }}"
-                 class="pd-table-link">{{ product.category.name }}</a></td>
-        </tr>
-        {% endif %}
-        <tr>
-          <td>Type</td>
-          <td>
-            {% if product.is_service %}
-            <span class="pd-badge-service">Service</span>
-            {% else %}
-            <span class="pd-badge-physical">Physical Product</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% if product.hscode %}
-        <tr><td>HS Code</td><td>{{ product.hscode }}</td></tr>
-        {% endif %}
-      </table>
-    </div>
-
-    <div id="tab-reviews" class="pd-tab-panel" role="tabpanel">
-      {% if review_average %}<p class="pd-desc-body">Customer rating: <strong>{{ review_average|floatformat:1 }}/5</strong></p>{% endif %}
-      {% for review in reviews %}<article class="pd-review"><strong>{{ review.reviewer_name }}</strong><span> · {{ review.rating }}/5</span>{% if review.title %}<h4>{{ review.title }}</h4>{% endif %}<p>{{ review.comment }}</p></article>{% empty %}<p class="pd-no-desc">No approved reviews yet.</p>{% endfor %}
-      <form method="post" action="{% url 'ecom:submit_product_review' product.id %}" class="pd-review-form">
-        {% csrf_token %}<h3>Share your experience</h3>
-        <input name="reviewer_name" required placeholder="Your name"><input name="title" placeholder="Review title"><select name="rating" required><option value="">Rating</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select><textarea name="comment" required rows="4" placeholder="Your review"></textarea><button type="submit">Submit review</button>
-      </form>
-    </div>
-
-  </div>
-
-  {# ── Related Products ── #}
-  {% if related_products %}
-  <h4 class="pd-related-title">Related Products</h4>
-  <div class="row row-tight mb-20">
-    {% for rp in related_products %}
-    <div class="col-xl-2 col-lg-3 col-md-4 col-6">
-      {% include "ecom/storefront/_product_card.html" with product=rp %}
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
+ {# Related Products #}
+ {% if related_products %}
+ <h4 class="font-display text-2xl text-cream mt-16 mb-6">Related <span class="italic text-goldlt">Products</span></h4>
+ <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+ {% for rp in related_products %}
+ {% include "ecom/storefront/_product_card.html" with product=rp %}
+ {% endfor %}
+ </div>
+ {% endif %}
 
 </div>{# end container #}
 {% endblock %}
 
 {% block extra_js %}
+<style>
+ .pd-tab-panel:not(.active) { display: none; }
+</style>
 <script>
 (function() {
-  var ZOOM = 2.5;
-  var wrap, img, lens, panel, active = false;
+ var ZOOM = 2.5;
+ var wrap, img, lens, panel, active = false;
 
-  function initZoom() {
-    wrap  = document.getElementById('pd-zoom-wrap');
-    img   = document.getElementById('zoom-main');
-    lens  = document.getElementById('pd-zoom-lens');
-    panel = document.getElementById('pd-zoom-panel');
-    if (!wrap || !img || !panel) return;
+ function initZoom() {
+ wrap = document.getElementById('pd-zoom-wrap');
+ img = document.getElementById('zoom-main');
+ lens = document.getElementById('pd-zoom-lens');
+ panel = document.getElementById('pd-zoom-panel');
+ if (!wrap || !img || !panel) return;
 
-    var src = img.dataset.zoomImage || img.src;
-    panel.style.backgroundImage = 'url(' + src + ')';
+ var src = img.dataset.zoomImage || img.src;
+ panel.style.backgroundImage = 'url(' + src + ')';
 
-    wrap.addEventListener('mouseenter', onEnter);
-    wrap.addEventListener('mouseleave', onLeave);
-    wrap.addEventListener('mousemove', onMove);
-  }
+ wrap.addEventListener('mouseenter', onEnter);
+ wrap.addEventListener('mouseleave', onLeave);
+ wrap.addEventListener('mousemove', onMove);
+ }
 
-  function onEnter() {
-    if (!img.dataset.zoomImage) return;
-    active = true;
-    lens.style.display  = 'block';
-    panel.style.display = 'block';
-    positionPanel();
-  }
+ function onEnter() {
+ if (!img.dataset.zoomImage) return;
+ active = true;
+ lens.style.display = 'block';
+ panel.style.display = 'block';
+ positionPanel();
+ }
 
-  function onLeave() {
-    active = false;
-    lens.style.display  = 'none';
-    panel.style.display = 'none';
-  }
+ function onLeave() {
+ active = false;
+ lens.style.display = 'none';
+ panel.style.display = 'none';
+ }
 
-  function onMove(e) {
-    if (!active) return;
-    var r   = wrap.getBoundingClientRect();
-    var rx  = Math.max(0, Math.min(1, (e.clientX - r.left)  / r.width));
-    var ry  = Math.max(0, Math.min(1, (e.clientY - r.top)   / r.height));
+ function onMove(e) {
+ if (!active) return;
+ var r = wrap.getBoundingClientRect();
+ var rx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+ var ry = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
 
-    // Lens size as fraction of image
-    var lw = r.width  / ZOOM;
-    var lh = r.height / ZOOM;
-    var lx = rx * r.width  - lw / 2;
-    var ly = ry * r.height - lh / 2;
-    lx = Math.max(0, Math.min(r.width  - lw, lx));
-    ly = Math.max(0, Math.min(r.height - lh, ly));
+ // Lens size as fraction of image
+ var lw = r.width / ZOOM;
+ var lh = r.height / ZOOM;
+ var lx = rx * r.width - lw / 2;
+ var ly = ry * r.height - lh / 2;
+ lx = Math.max(0, Math.min(r.width - lw, lx));
+ ly = Math.max(0, Math.min(r.height - lh, ly));
 
-    lens.style.width  = lw + 'px';
-    lens.style.height = lh + 'px';
-    lens.style.left   = lx + 'px';
-    lens.style.top    = ly + 'px';
+ lens.style.width = lw + 'px';
+ lens.style.height = lh + 'px';
+ lens.style.left = lx + 'px';
+ lens.style.top = ly + 'px';
 
-    // Background pan: offset = -(lx / (r.width - lw)) * (panelW * ZOOM - panelW)
-    var pw = panel.offsetWidth;
-    var ph = panel.offsetHeight;
-    var bx = -(lx / (r.width  - lw)) * (pw  * ZOOM - pw);
-    var by = -(ly / (r.height - lh)) * (ph * ZOOM - ph);
-    panel.style.backgroundSize     = (pw * ZOOM) + 'px ' + (ph * ZOOM) + 'px';
-    panel.style.backgroundPosition = bx + 'px ' + by + 'px';
-  }
+ // Background pan: offset = -(lx / (r.width - lw)) * (panelW * ZOOM - panelW)
+ var pw = panel.offsetWidth;
+ var ph = panel.offsetHeight;
+ var bx = -(lx / (r.width - lw)) * (pw * ZOOM - pw);
+ var by = -(ly / (r.height - lh)) * (ph * ZOOM - ph);
+ panel.style.backgroundSize = (pw * ZOOM) + 'px ' + (ph * ZOOM) + 'px';
+ panel.style.backgroundPosition = bx + 'px ' + by + 'px';
+ }
 
-  function positionPanel() {
-    var r  = wrap.getBoundingClientRect();
-    var pr = panel.getBoundingClientRect();
-    panel.style.top    = r.top  + window.scrollY + 'px';
-    panel.style.left   = r.left + r.width + 12 + 'px';
-    panel.style.height = r.height + 'px';
-  }
+ function positionPanel() {
+ var r = wrap.getBoundingClientRect();
+ var pr = panel.getBoundingClientRect();
+ panel.style.top = r.top + window.scrollY + 'px';
+ panel.style.left = r.left + r.width + 12 + 'px';
+ panel.style.height = r.height + 'px';
+ }
 
-  var _img = document.getElementById('zoom-main');
-  if (_img && _img.complete) {
-    initZoom();
-  } else if (_img) {
-    _img.addEventListener('load', initZoom);
-  }
+ var _img = document.getElementById('zoom-main');
+ if (_img && _img.complete) {
+ initZoom();
+ } else if (_img) {
+ _img.addEventListener('load', initZoom);
+ }
 })();
 
 function swapMainImage(url, thumb) {
-  document.querySelectorAll('.pd-thumb').forEach(function(t){ t.classList.remove('active'); });
-  if (thumb) thumb.classList.add('active');
-  var img = document.getElementById('zoom-main');
-  if (!img) return;
-  img.style.opacity = '0.4';
-  img.src = url;
-  img.dataset.zoomImage = url;
-  img.onload = function(){
-    img.style.opacity = '1';
-    var p = document.getElementById('pd-zoom-panel');
-    if (p) p.style.backgroundImage = 'url(' + url + ')';
-  };
+ document.querySelectorAll('.pd-thumb').forEach(function(t){ t.classList.remove('active'); });
+ if (thumb) thumb.classList.add('active');
+ var img = document.getElementById('zoom-main');
+ if (!img) return;
+ img.style.opacity = '0.4';
+ img.src = url;
+ img.dataset.zoomImage = url;
+ img.onload = function(){
+ img.style.opacity = '1';
+ var p = document.getElementById('pd-zoom-panel');
+ if (p) p.style.backgroundImage = 'url(' + url + ')';
+ };
 }
 
 // Qty buttons
 document.getElementById('qty-minus') && document.getElementById('qty-minus').addEventListener('click', function(){
-  var inp = document.getElementById('qty-input');
-  var v = parseInt(inp.value)||1; if(v>1) inp.value = v-1;
+ var inp = document.getElementById('qty-input');
+ var v = parseInt(inp.value)||1; if(v>1) inp.value = v-1;
 });
 document.getElementById('qty-plus') && document.getElementById('qty-plus').addEventListener('click', function(){
-  var inp = document.getElementById('qty-input');
-  var v = parseInt(inp.value)||1; var mx = parseInt(inp.max)||9999; if(v<mx) inp.value = v+1;
+ var inp = document.getElementById('qty-input');
+ var v = parseInt(inp.value)||1; var mx = parseInt(inp.max)||9999; if(v<mx) inp.value = v+1;
 });
 
 // Tabs
 function switchTab(id, btn) {
-  document.querySelectorAll('.pd-tab-panel').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.pd-tab-btn').forEach(function(b){ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
-  document.getElementById(id).classList.add('active');
-  btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+ document.querySelectorAll('.pd-tab-panel').forEach(function(p){ p.classList.remove('active'); });
+ document.querySelectorAll('.pd-tab-btn').forEach(function(b){ b.classList.remove('active'); b.setAttribute('aria-selected','false'); b.classList.remove('text-goldlt','border-gold'); b.classList.add('text-cream/50','border-transparent'); });
+ document.getElementById(id).classList.add('active');
+ btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+ btn.classList.remove('text-cream/50','border-transparent'); btn.classList.add('text-goldlt','border-gold');
 }
 
 // Copy link
 function copyProductLink(e, openTarget) {
-  var url = window.location.href;
-  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).catch(function(){
-    var el = document.createElement('textarea'); el.value = url;
-    document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
-  }).then(function(){}).catch(function(){});
-  var lbl = document.getElementById('copy-link-label');
-  if (lbl) { lbl.textContent = 'Copied!'; setTimeout(function(){ lbl.textContent = 'Copy link'; }, 2000); }
-  if (!openTarget) e.preventDefault();
+ var url = window.location.href;
+ (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).catch(function(){
+ var el = document.createElement('textarea'); el.value = url;
+ document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+ }).then(function(){}).catch(function(){});
+ var lbl = document.getElementById('copy-link-label');
+ if (lbl) { lbl.textContent = 'Copied!'; setTimeout(function(){ lbl.textContent = 'Copy link'; }, 2000); }
+ if (!openTarget) e.preventDefault();
 }
 </script>
 {% endblock %}

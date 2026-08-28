@@ -345,6 +345,24 @@ ASSET_STATUS_CHOICES = [
     ('IMPAIRED',  'Impaired'),
 ]
 
+# Nepal Income Tax Act 2058, Schedule 2 — depreciation pools (D1/D2/D3 for
+# electronic filing labels each pool letter differently by return form; the
+# pool letters below match Schedule 2's own A-E lettering).
+IRD_ASSET_POOL_CHOICES = [
+    ('A', 'Pool A — Buildings, structures (5%)'),
+    ('B', 'Pool B — Furniture, fixtures, office equipment (25%)'),
+    ('C', 'Pool C — Vehicles, construction/earthmoving equipment (20%)'),
+    ('D', 'Pool D — Computers, fittings, plant & machinery n.e.c. (15%)'),
+    ('E', 'Pool E — Intangible assets (per useful life; straight-line)'),
+]
+
+IRD_POOL_RATES = {
+    'A': Decimal('5.00'),
+    'B': Decimal('25.00'),
+    'C': Decimal('20.00'),
+    'D': Decimal('15.00'),
+}
+
 
 class FixedAsset(BaseModel):
     """
@@ -379,6 +397,10 @@ class FixedAsset(BaseModel):
     disposal_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=ASSET_STATUS_CHOICES, default='ACTIVE')
 
+    ird_pool = models.CharField(
+        max_length=1, choices=IRD_ASSET_POOL_CHOICES, blank=True, null=True,
+        help_text='Income Tax Act Schedule 2 depreciation pool — for the pooled tax depreciation schedule (D1/D2/D3), separate from NFRS book depreciation above.')
+
     # Accumulated depreciation — updated each time a depreciation journal is posted
     accumulated_depreciation = models.DecimalField(
         max_digits=14, decimal_places=2, default=0)
@@ -406,6 +428,62 @@ class FixedAsset(BaseModel):
     @property
     def net_book_value(self):
         return self.cost - self.accumulated_depreciation
+
+
+# ─── Nepal TDS (withholding tax) on vendor bills ─────────────────────────────
+
+TDS_CATEGORY_CHOICES = [
+    ('RENT',              'Rent'),
+    ('SERVICE_FEE',       'Service Fee'),
+    ('CONTRACT',          'Contract Payment'),
+    ('COMMISSION',        'Commission'),
+    ('PROFESSIONAL_FEE',  'Professional Fee'),
+    ('OTHER',              'Other'),
+]
+
+# Nepal-standard TDS rates by category, seeded as editable defaults —
+# actual rate is stored per-company on TDSRate and must be reviewed against
+# the current Finance Act, not read from this dict at runtime.
+TDS_CATEGORY_DEFAULT_RATES = {
+    'RENT': Decimal('10.00'),
+    'SERVICE_FEE': Decimal('15.00'),
+    'CONTRACT': Decimal('1.50'),
+    'COMMISSION': Decimal('15.00'),
+    'PROFESSIONAL_FEE': Decimal('15.00'),
+    'OTHER': Decimal('15.00'),
+}
+
+
+class TDSRate(BaseModel):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='tds_rates')
+    category = models.CharField(max_length=20, choices=TDS_CATEGORY_CHOICES)
+    rate = models.DecimalField(max_digits=5, decimal_places=2, help_text='Withholding tax percentage.')
+    effective_from = models.DateField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company', 'category', 'effective_from'],
+                name='unique_tdsrate_company_category_effective_from',
+            ),
+        ]
+        ordering = ['category', '-effective_from']
+
+    def __str__(self):
+        return f"{self.get_category_display()} @ {self.rate}% from {self.effective_from}"
+
+
+class TDSDeduction(BaseModel):
+    vendor_bill = models.ForeignKey('billing.VendorBill', on_delete=models.CASCADE, related_name='tds_deductions')
+    tds_rate = models.ForeignKey(TDSRate, on_delete=models.PROTECT, related_name='deductions')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name='tds_deductions')
+    certificate_number = models.CharField(max_length=50, blank=True)
+    certificate_issued_at = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"TDS {self.amount} on {self.vendor_bill.bill_number}"
 
     @property
     def depreciable_amount(self):
@@ -504,57 +582,42 @@ class PrepaidExpenseAmortizationLog(BaseModel):
     def __str__(self):
         return f"Amortization {self.amount} for {self.prepaid_expense.name} ({self.period_end})"
 
-# ─── Nepal TDS (withholding tax) on vendor bills ─────────────────────────────
 
-TDS_CATEGORY_CHOICES = [
-    ('RENT',              'Rent'),
-    ('SERVICE_FEE',       'Service Fee'),
-    ('CONTRACT',          'Contract Payment'),
-    ('COMMISSION',        'Commission'),
-    ('PROFESSIONAL_FEE',  'Professional Fee'),
-    ('OTHER',              'Other'),
+# ─── Audit — Balance Confirmation ────────────────────────────────────────────
+
+CONFIRMATION_STATUS_CHOICES = [
+    ('PENDING',   'Pending — not sent'),
+    ('SENT',      'Sent to party'),
+    ('CONFIRMED', 'Confirmed by party'),
+    ('DISPUTED',  'Disputed by party'),
 ]
 
-# Nepal-standard TDS rates by category, seeded as editable defaults —
-# actual rate is stored per-company on TDSRate and must be reviewed against
-# the current Finance Act, not read from this dict at runtime.
-TDS_CATEGORY_DEFAULT_RATES = {
-    'RENT': Decimal('10.00'),
-    'SERVICE_FEE': Decimal('15.00'),
-    'CONTRACT': Decimal('1.50'),
-    'COMMISSION': Decimal('15.00'),
-    'PROFESSIONAL_FEE': Decimal('15.00'),
-    'OTHER': Decimal('15.00'),
-}
 
-
-class TDSRate(BaseModel):
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='tds_rates')
-    category = models.CharField(max_length=20, choices=TDS_CATEGORY_CHOICES)
-    rate = models.DecimalField(max_digits=5, decimal_places=2, help_text='Withholding tax percentage.')
-    effective_from = models.DateField()
-    is_active = models.BooleanField(default=True)
+class BalanceConfirmationRequest(BaseModel):
+    """A snapshot of a party's ledger balance as of a date, used to request
+    written confirmation from customers/vendors for statutory audit."""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='balance_confirmations')
+    customer = models.ForeignKey(
+        'customers.Customer', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='balance_confirmations')
+    vendor = models.ForeignKey(
+        'vendors.Vendor', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='balance_confirmations')
+    as_of_date = models.DateField()
+    balance = models.DecimalField(max_digits=14, decimal_places=2,
+        help_text='Ledger balance as of as_of_date, positive = party owes company')
+    status = models.CharField(max_length=10, choices=CONFIRMATION_STATUS_CHOICES, default='PENDING')
+    sent_date = models.DateField(null=True, blank=True)
+    confirmed_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True, null=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['company', 'category', 'effective_from'],
-                name='unique_tdsrate_company_category_effective_from',
-            ),
-        ]
-        ordering = ['category', '-effective_from']
+        ordering = ['-as_of_date']
 
     def __str__(self):
-        return f"{self.get_category_display()} @ {self.rate}% from {self.effective_from}"
+        party = self.customer or self.vendor
+        return f"Balance confirmation — {party} @ {self.as_of_date}"
 
-
-class TDSDeduction(BaseModel):
-    vendor_bill = models.ForeignKey('billing.VendorBill', on_delete=models.CASCADE, related_name='tds_deductions')
-    tds_rate = models.ForeignKey(TDSRate, on_delete=models.PROTECT, related_name='deductions')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name='tds_deductions')
-    certificate_number = models.CharField(max_length=50, blank=True)
-    certificate_issued_at = models.DateField(null=True, blank=True)
-
-    def __str__(self):
-        return f"TDS {self.amount} on {self.vendor_bill.bill_number}"
+    @property
+    def party(self):
+        return self.customer or self.vendor

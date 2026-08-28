@@ -2,62 +2,49 @@
 {% load static %}
 
 {% block page_title %}Blog{% endblock %}
-{% block nav_active_blog %}class="active"{% endblock %}
 
 {% block content %}
 
-<section class="mb-60">
-  <div class="container">
-    <h2 class="mb-40 color-brand-3">Latest Articles</h2>
-    <div class="row">
-      {% for post in posts %}
-      <div class="col-lg-4 col-md-6 mb-40">
-        <div class="card-blog-grid hover-up">
-          {% if post.cover_image %}
-          <div class="card-image mb-20" style="overflow:hidden;border-radius:8px;height:200px;">
-            <a href="{% url 'ecom:blog_detail' post.slug %}">
-              <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
-            </a>
-          </div>
-          {% endif %}
-          <div class="card-info">
-            <span class="font-xs color-gray-500">{{ post.published_at|date:"M d, Y" }}{% if post.author_name %} · {{ post.author_name }}{% endif %}</span>
-            <h5 class="mt-10 mb-10"><a class="color-brand-3" href="{% url 'ecom:blog_detail' post.slug %}">{{ post.title }}</a></h5>
-            {% if post.excerpt %}
-            <p class="font-sm color-gray-500" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">{{ post.excerpt }}</p>
-            {% endif %}
-            <div class="mt-15">
-              <a class="btn btn-sm btn-cart" href="{% url 'ecom:blog_detail' post.slug %}">Read More →</a>
-            </div>
-          </div>
-        </div>
-      </div>
-      {% empty %}
-      <div class="col-12 text-center" style="padding:60px 0;">
-        <h4 class="color-gray-500">No articles yet. Check back soon!</h4>
-      </div>
-      {% endfor %}
-    </div>
+<section class="max-w-[1280px] mx-auto px-4 lg:px-6 py-10">
+ <h2 class="font-display text-3xl text-cream mb-10">Latest <span class="italic text-goldlt">Articles</span></h2>
+ <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+ {% for post in posts %}
+ <article class="rounded-2xl glass shadow-glow overflow-hidden flex flex-col hover:shadow-glowlg hover:border-gold/60 transition-all duration-300">
+ {% if post.cover_image %}
+ <a href="{% url 'ecom:blog_detail' post.slug %}" class="block h-48 overflow-hidden">
+ <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" class="w-full h-full object-cover" loading="lazy">
+ </a>
+ {% endif %}
+ <div class="p-5 flex flex-col flex-1">
+ <span class="text-[12px] text-cream/45 font-eyebrow">{{ post.published_at|date:"M d, Y" }}{% if post.author_name %} &middot; {{ post.author_name }}{% endif %}</span>
+ <h5 class="mt-2 mb-2 font-display text-lg"><a class="text-cream hover:text-goldlt transition" href="{% url 'ecom:blog_detail' post.slug %}">{{ post.title }}</a></h5>
+ {% if post.excerpt %}
+ <p class="text-[13.5px] text-cream/60 line-clamp-3">{{ post.excerpt }}</p>
+ {% endif %}
+ <div class="mt-4 pt-4 border-t hair mt-auto">
+ <a class="inline-flex items-center gap-1.5 text-[13px] text-goldlt hover:text-gold transition" href="{% url 'ecom:blog_detail' post.slug %}">Read More <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></a>
+ </div>
+ </div>
+ </article>
+ {% empty %}
+ <div class="col-span-full text-center py-16">
+ <h4 class="text-cream/50 font-display text-xl">No articles yet. Check back soon!</h4>
+ </div>
+ {% endfor %}
+ </div>
 
-    {% if is_paginated %}
-    <div class="pagination-area mt-20">
-      <nav>
-        <ul class="pagination justify-content-center">
-          {% if page_obj.has_previous %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">← Prev</a></li>
-          {% endif %}
-          {% for num in page_obj.paginator.page_range %}
-          <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-          </li>
-          {% endfor %}
-          {% if page_obj.has_next %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next →</a></li>
-          {% endif %}
-        </ul>
-      </nav>
-    </div>
-    {% endif %}
-  </div>
+ {% if is_paginated %}
+ <div class="mt-12 flex items-center justify-center gap-2">
+ {% if page_obj.has_previous %}
+ <a href="?page={{ page_obj.previous_page_number }}" class="h-10 px-4 rounded-full glass text-cream/80 text-sm flex items-center hover:border-gold transition">&larr; Prev</a>
+ {% endif %}
+ {% for num in page_obj.paginator.page_range %}
+ <a href="?page={{ num }}" class="w-10 h-10 rounded-full grid place-items-center text-sm transition {% if page_obj.number == num %}bg-saffron text-white{% else %}glass text-cream/70 hover:border-gold{% endif %}">{{ num }}</a>
+ {% endfor %}
+ {% if page_obj.has_next %}
+ <a href="?page={{ page_obj.next_page_number }}" class="h-10 px-4 rounded-full glass text-cream/80 text-sm flex items-center hover:border-gold transition">Next &rarr;</a>
+ {% endif %}
+ </div>
+ {% endif %}
 </section>
 {% endblock %}

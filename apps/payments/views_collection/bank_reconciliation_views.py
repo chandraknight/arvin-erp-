@@ -12,8 +12,8 @@ from apps.bookkeeping.models import JournalEntryLine
 def bank_reconciliation(request, pk):
     """
     NFRS bank reconciliation: mark ledger lines for this bank account as
-    reconciled/unreconciled against a bank statement, then record the
-    reconciled book vs statement balance as of a chosen date.
+    cleared/uncleared against a bank statement, then record the reconciled
+    book vs statement balance as of a chosen date.
     """
     company = getattr(request.user, 'company', None)
     bank_account = get_object_or_404(BankAccount, pk=pk, company=company)
@@ -35,22 +35,17 @@ def bank_reconciliation(request, pk):
 
         if request.POST.get('action') == 'save_reconciliation':
             statement_date_str = request.POST.get('statement_date')
-            statement_balance_str = request.POST.get('statement_balance', '0')
             try:
                 from datetime import date as _date
                 statement_date = _date.fromisoformat(statement_date_str) if statement_date_str else _date.today()
-                statement_balance = Decimal(statement_balance_str or '0')
-
-                def _dec(field_name):
-                    return Decimal(request.POST.get(field_name) or '0')
-
-                deposits_in_transit = _dec('deposits_in_transit')
-                unpresented_cheques = _dec('unpresented_cheques')
-                bank_charges_not_recorded = _dec('bank_charges_not_recorded')
-                interest_not_recorded = _dec('interest_not_recorded')
-                other_adjustments = _dec('other_adjustments')
+                statement_balance = Decimal(request.POST.get('statement_balance') or '0')
+                deposits_in_transit = Decimal(request.POST.get('deposits_in_transit') or '0')
+                unpresented_cheques = Decimal(request.POST.get('unpresented_cheques') or '0')
+                bank_charges_not_recorded = Decimal(request.POST.get('bank_charges_not_recorded') or '0')
+                interest_not_recorded = Decimal(request.POST.get('interest_not_recorded') or '0')
+                other_adjustments = Decimal(request.POST.get('other_adjustments') or '0')
             except (ValueError, TypeError):
-                messages.error(request, "Invalid statement date or balance.")
+                messages.error(request, "Invalid statement date or amount.")
                 return redirect('payments:bank_reconciliation', pk=pk)
 
             book_balance = _cleared_balance(bank_account.ledger_account)
@@ -59,13 +54,13 @@ def bank_reconciliation(request, pk):
                 statement_date=statement_date,
                 statement_balance=statement_balance,
                 book_balance=book_balance,
-                reconciled_by=request.user,
-                notes=request.POST.get('notes', ''),
                 deposits_in_transit=deposits_in_transit,
                 unpresented_cheques=unpresented_cheques,
                 bank_charges_not_recorded=bank_charges_not_recorded,
                 interest_not_recorded=interest_not_recorded,
                 other_adjustments=other_adjustments,
+                reconciled_by=request.user,
+                notes=request.POST.get('notes', ''),
             )
             messages.success(request, f"Reconciliation saved for {statement_date}.")
             return redirect('payments:bank_reconciliation', pk=pk)

@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
-from apps.products.models import Product, Category
+from apps.products.models import Product, Category, ProductImage
 from apps.ecom.models import EcomOrder, DiscountCoupon, SiteSettings
 from apps.ecom.services import create_sales_order_from_ecom
 from apps.company.models import Company
@@ -17,6 +17,14 @@ from apps.company.models import Company
 
 def _get_company(request):
     return request.user.profile.company if hasattr(request.user, 'profile') else Company.objects.first()
+
+
+def _resolve_bank_account(request, company):
+    from apps.payments.models import BankAccount
+    bank_account_id = request.POST.get('bank_account', '').strip()
+    if not bank_account_id:
+        return None
+    return BankAccount.active_objects.filter(pk=bank_account_id, company=company, is_active=True).first()
 
 
 @login_required
@@ -127,7 +135,9 @@ def order_detail(request, order_id):
         EcomOrder.objects.prefetch_related('items__product__images'),
         id=order_id, company=company,
     )
-    return render(request, 'ecom/admin/order_detail.html', {'order': order})
+    from apps.payments.models import BankAccount
+    bank_accounts = BankAccount.active_objects.filter(company=company, is_active=True)
+    return render(request, 'ecom/admin/order_detail.html', {'order': order, 'bank_accounts': bank_accounts})
 
 
 @login_required
@@ -221,7 +231,7 @@ def update_cod_status(request, order_id):
 
     if new_cod == 'COLLECTED':
         from apps.ecom.services import record_ecom_payment
-        record_ecom_payment(order, request.user)
+        record_ecom_payment(order, request.user, bank_account=_resolve_bank_account(request, company))
 
     messages.success(request, f'COD status updated to {order.get_cod_status_display()}.')
     return redirect('ecom:admin_order_detail', order_id=order_id)
@@ -243,7 +253,7 @@ def update_payment_status(request, order_id):
 
     if new_status == 'PAID':
         from apps.ecom.services import record_ecom_payment
-        record_ecom_payment(order, request.user)
+        record_ecom_payment(order, request.user, bank_account=_resolve_bank_account(request, company))
 
     messages.success(request, f'Payment status updated to {order.get_payment_status_display()}.')
     return redirect('ecom:admin_order_detail', order_id=order_id)
@@ -416,6 +426,7 @@ def ecom_inventory(request):
     qs = (
         base_qs
         .select_related('category', 'productstock')
+        .prefetch_related('images')
         .annotate(
             max_ecom=Coalesce(F('productstock__stock'), Value(0))
             + Coalesce(F('productstock__ecom_stock'), Value(0))
@@ -444,6 +455,23 @@ def ecom_inventory(request):
     if request.headers.get('HX-Request'):
         return render(request, 'ecom/admin/_inventory_panel.html', context)
     return render(request, 'ecom/admin/inventory_list.html', context)
+
+
+@login_required
+@require_POST
+def inventory_product_image(request, product_id):
+    company = _get_company(request)
+    product = get_object_or_404(Product, id=product_id, company=company)
+    uploaded = request.FILES.get('image')
+    if uploaded:
+        primary = product.images.filter(is_primary=True).first()
+        if primary:
+            primary.image.delete(save=False)
+            primary.image = uploaded
+            primary.save(update_fields=['image'])
+        else:
+            ProductImage.objects.create(product=product, image=uploaded, is_primary=True)
+    return render(request, 'ecom/admin/_inventory_thumb.html', {'product': product})
 
 
 # ── Package management (ecom admin) ──────────────────────────────────────────

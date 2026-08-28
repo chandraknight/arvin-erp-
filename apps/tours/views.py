@@ -202,6 +202,9 @@ def enquiry_edit(request, pk):
 @auth_required('tours.change_tourenquiry')
 def enquiry_update_status(request, pk):
     """Quick status update from the detail page."""
+    guard = _require_tours(request)
+    if guard:
+        return guard
     enq = get_object_or_404(TourEnquiry, pk=pk, company=request.user_company)
     new_status = request.POST.get('status')
     valid = [k for k, _ in TourEnquiry.ENQUIRY_STATUS_CHOICES]
@@ -376,6 +379,9 @@ def booking_edit(request, pk):
 
 @auth_required('tours.change_tourbooking')
 def booking_update_status(request, pk):
+    guard = _require_tours(request)
+    if guard:
+        return guard
     booking = get_object_or_404(TourBooking, pk=pk, company=request.user_company)
     new_status = request.POST.get('status')
     valid = [k for k, _ in TourBooking.BOOKING_STATUS_CHOICES]

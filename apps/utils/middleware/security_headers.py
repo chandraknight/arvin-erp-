@@ -46,14 +46,16 @@ class SecurityHeadersMiddleware:
         #   cdnjs.cloudflare.com — Font Awesome CSS
         #   fonts.cdnfonts.com — Ogirema web font (CSS + woff2)
         #   code.jquery.com    — jQuery
-        #   unpkg.com          — Alpine.js, HTMX
+        #   unpkg.com          — Alpine.js, HTMX, Lucide icons (storefront)
+        #   cdn.tailwindcss.com — Tailwind Play CDN (storefront theme)
+        #   fonts.googleapis.com / fonts.gstatic.com — Google Fonts (storefront theme)
         # img-src must include:
         #   plus.unsplash.com  — login page illustration
         #   upload.wikimedia.org — 500 error page SVGs
         #   data:              — base64 inline logo on login page
-        CDN_STYLE  = "cdn.jsdelivr.net cdnjs.cloudflare.com fonts.cdnfonts.com cdn.quilljs.com fonts.bunny.net fonts.googleapis.com"
+        CDN_STYLE  = "cdn.jsdelivr.net cdnjs.cloudflare.com fonts.cdnfonts.com cdn.quilljs.com fonts.bunny.net fonts.googleapis.com cdn.tailwindcss.com"
         CDN_FONT   = "cdn.jsdelivr.net cdnjs.cloudflare.com fonts.cdnfonts.com fonts.bunny.net fonts.gstatic.com data:"
-        CDN_SCRIPT = "cdn.jsdelivr.net cdnjs.cloudflare.com code.jquery.com unpkg.com cdn.quilljs.com"
+        CDN_SCRIPT = "cdn.jsdelivr.net cdnjs.cloudflare.com code.jquery.com unpkg.com cdn.quilljs.com cdn.tailwindcss.com"
         CDN_IMG    = "plus.unsplash.com upload.wikimedia.org data:"
 
         if not settings.DEBUG:

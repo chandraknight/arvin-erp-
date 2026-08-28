@@ -4,272 +4,342 @@
 {% block title %}POS Terminal{% endblock %}
 
 {% block content %}
-<div x-data="{ cartOpen: false }" class="flex gap-4 h-full min-h-screen bg-gray-50 p-4">
+<div x-data="{ cartOpen: false, cashModal: false }" class="flex gap-4 h-full min-h-screen bg-gray-50 p-4">
 
-  <!-- Left panel: Products -->
-  <div class="flex-1 min-w-0">
+ <!-- Shift indicator / cash in-out modal trigger -->
+ <div class="fixed top-3 right-4 z-40 flex items-center gap-2">
+ {% if active_shift %}
+ <div class="bg-white border border-gray-200 shadow-sm px-3 py-1.5 text-xs text-gray-600 flex items-center gap-2">
+ <i class="fas fa-circle text-green-500 text-[8px]"></i>
+ Shift open · {{ active_shift.opened_at|date:"H:i" }} · Float NPR {{ active_shift.opening_float|floatformat:2 }}
+ </div>
+ <button @click="cashModal = true"
+ class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-1.5 transition duration-150">
+ <i class="fas fa-money-bill-wave"></i> Cash In/Out
+ </button>
+ <a href="{% url 'pos:shift_close' %}"
+ class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-medium px-3 py-1.5 transition duration-150">
+ Close Shift
+ </a>
+ {% else %}
+ <a href="{% url 'pos:shift_open' %}"
+ class="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 transition duration-150">
+ <i class="fas fa-cash-register"></i> Open Shift to Begin
+ </a>
+ {% endif %}
+ </div>
 
-    <!-- Category type tabs -->
-    <div class="mb-3 border-b border-gray-200">
-      <div class="flex space-x-1 overflow-x-auto pb-2">
-        <a href="?ct=&cat="
-           class="px-4 py-2 text-sm font-medium whitespace-nowrap transition duration-150
-                  {% if not selected_ct_id %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
-          All
-        </a>
-        {% for ct in category_types %}
-          <a href="?ct={{ ct.id }}&cat="
-             class="px-4 py-2 text-sm font-medium whitespace-nowrap transition duration-150
-                    {% if selected_ct_id == ct.id|stringformat:'s' %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
-            {{ ct.name }}
-          </a>
-        {% endfor %}
-      </div>
-    </div>
+ <!-- Cash In/Out modal -->
+ <div x-show="cashModal" x-cloak style="display:none" class="fixed inset-0 z-50 flex items-center justify-center">
+ <div class="absolute inset-0 bg-black bg-opacity-40" @click="cashModal = false"></div>
+ <form method="post" action="{% url 'pos:cash_movement' %}"
+ class="relative bg-white border border-gray-200 shadow-lg p-6 w-full max-w-sm mx-4 space-y-4">
+ {% csrf_token %}
+ <div class="flex items-center justify-between">
+ <h3 class="text-sm font-semibold text-gray-800">Cash In / Out</h3>
+ <button type="button" @click="cashModal = false" class="text-gray-400 hover:text-gray-600 p-1"><i class="fas fa-times"></i></button>
+ </div>
+ <div class="flex flex-col gap-1">
+ <label class="text-sm font-medium text-gray-700">Type</label>
+ <select name="movement_type" class="border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+ <option value="CASH_IN">Cash In</option>
+ <option value="CASH_OUT">Cash Out</option>
+ </select>
+ </div>
+ <div class="flex flex-col gap-1">
+ <label class="text-sm font-medium text-gray-700">Amount (NPR)</label>
+ <input type="number" step="0.01" name="amount" required
+ class="border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+ </div>
+ <div class="flex flex-col gap-1">
+ <label class="text-sm font-medium text-gray-700">Reason</label>
+ <input type="text" name="reason" required
+ class="border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+ </div>
+ <button type="submit"
+ class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 transition duration-150">
+ Record
+ </button>
+ </form>
+ </div>
 
-    <!-- Sub-category filter -->
-    {% if categories %}
-      <div class="mb-3 flex space-x-1 overflow-x-auto pb-2">
-        <a href="?ct={{ selected_ct_id }}&cat="
-           class="px-3 py-1 text-xs font-medium whitespace-nowrap transition duration-150
-                  {% if not selected_category_id %}bg-gray-800 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
-          All
-        </a>
-        {% for cat in categories %}
-          <a href="?ct={{ selected_ct_id }}&cat={{ cat.id }}"
-             class="px-3 py-1 text-xs font-medium whitespace-nowrap transition duration-150
-                    {% if selected_category_id == cat.id|stringformat:'s' %}bg-gray-800 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
-            {{ cat.name }}
-          </a>
-        {% endfor %}
-      </div>
-    {% endif %}
+ <!-- Left panel: Products -->
+ <div class="flex-1 min-w-0">
 
-    <!-- Search bar -->
-    <form method="get" class="mb-4 flex gap-2">
-      {% if selected_ct_id %}<input type="hidden" name="ct" value="{{ selected_ct_id }}">{% endif %}
-      {% if selected_category_id %}<input type="hidden" name="cat" value="{{ selected_category_id }}">{% endif %}
-      <input type="text" name="q" value="{{ q }}" placeholder="Search products..."
-             class="flex-1 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
-      <button type="submit"
-              class="bg-gray-100 hover:bg-gray-200 border border-gray-300 px-3 py-2 text-gray-600 transition duration-150">
-        <i class="fas fa-search"></i>
-      </button>
-    </form>
+ <!-- Category type tabs -->
+ <div class="mb-3 border-b border-gray-200">
+ <div class="flex space-x-1 overflow-x-auto pb-2">
+ <a href="?ct=&cat="
+ class="px-4 py-2 text-sm font-medium whitespace-nowrap transition duration-150
+ {% if not selected_ct_id %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+ All
+ </a>
+ {% for ct in category_types %}
+ <a href="?ct={{ ct.id }}&cat="
+ class="px-4 py-2 text-sm font-medium whitespace-nowrap transition duration-150
+ {% if selected_ct_id == ct.id|stringformat:'s' %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+ {{ ct.name }}
+ </a>
+ {% endfor %}
+ </div>
+ </div>
 
-    <!-- Barcode scan bar -->
-    <form id="barcode-form" class="mb-4 flex gap-2" onsubmit="return false;">
-      <div class="relative flex-1">
-        <i class="fas fa-barcode absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        <input type="text" id="barcode-input" autocomplete="off" placeholder="Scan barcode and press Enter…"
-               class="w-full border border-gray-300 pl-9 pr-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
-      </div>
-      <span id="barcode-status" class="hidden self-center text-xs px-2 py-1"></span>
-    </form>
+ <!-- Sub-category filter -->
+ {% if categories %}
+ <div class="mb-3 flex space-x-1 overflow-x-auto pb-2">
+ <a href="?ct={{ selected_ct_id }}&cat="
+ class="px-3 py-1 text-xs font-medium whitespace-nowrap transition duration-150
+ {% if not selected_category_id %}bg-gray-800 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+ All
+ </a>
+ {% for cat in categories %}
+ <a href="?ct={{ selected_ct_id }}&cat={{ cat.id }}"
+ class="px-3 py-1 text-xs font-medium whitespace-nowrap transition duration-150
+ {% if selected_category_id == cat.id|stringformat:'s' %}bg-gray-800 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+ {{ cat.name }}
+ </a>
+ {% endfor %}
+ </div>
+ {% endif %}
 
-    <!-- Product grid -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="product-grid">
-      {% for product in page_obj.object_list %}
-        <button class="bg-white border border-gray-200 hover:border-green-500 hover:shadow-md p-3 text-left transition duration-150 add-product-btn{% if not product.is_service and product.current_stock|default:0 <= 0 %} opacity-50 cursor-not-allowed{% endif %}"
-                data-product-id="{{ product.id }}"
-                data-product-name="{{ product.name }}"
-                data-product-price="{{ product.price }}"
-                {% if not product.is_service and product.current_stock|default:0 <= 0 %}disabled{% endif %}>
-          <div class="w-full h-24 bg-gray-50 flex items-center justify-center mb-2 overflow-hidden">
-            {% if product.primary_image_url %}
-              <img src="{{ product.primary_image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
-            {% else %}
-              <i class="fas fa-box text-gray-300 text-2xl"></i>
-            {% endif %}
-          </div>
-          <div class="text-sm font-medium text-gray-800 truncate">{{ product.name }}</div>
-          <div class="text-base font-bold text-green-600 mt-1">NPR {{ product.price }}</div>
-          <div class="flex items-center justify-between mt-0.5">
-            {% if product.barcode %}
-              <span class="text-xs text-gray-400">{{ product.barcode }}</span>
-            {% else %}
-              <span></span>
-            {% endif %}
-            {% if not product.is_service %}
-              {% if product.current_stock|default:0 <= 0 %}
-                <span class="text-xs font-semibold text-red-600">Out of stock</span>
-              {% else %}
-                <span class="text-xs text-gray-500">Stock: {{ product.current_stock }}</span>
-              {% endif %}
-            {% endif %}
-          </div>
-        </button>
-      {% empty %}
-        <div class="col-span-4 text-center py-16 text-gray-400">
-          <i class="fas fa-search text-4xl mb-3 block"></i>
-          <p class="text-lg">No products found.</p>
-          <p class="text-sm mt-1">Add products from the Products module first.</p>
-        </div>
-      {% endfor %}
-    </div>
+ <!-- Search bar -->
+ <form method="get" class="mb-2 flex gap-2">
+ {% if selected_ct_id %}<input type="hidden" name="ct" value="{{ selected_ct_id }}">{% endif %}
+ {% if selected_category_id %}<input type="hidden" name="cat" value="{{ selected_category_id }}">{% endif %}
+ <input type="text" name="q" value="{{ q }}" placeholder="Search products..."
+ class="flex-1 border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition duration-150">
+ <button type="submit"
+ class="bg-gray-100 hover:bg-gray-200 border border-gray-300 px-3 py-2 text-gray-600 transition duration-150">
+ <i class="fas fa-search"></i>
+ </button>
+ </form>
 
-    <!-- Pagination -->
-    {% if page_obj.has_other_pages %}
-      <div class="mt-4 mb-20 md:mb-4 flex flex-wrap items-center justify-center gap-1">
+ <!-- Barcode scan bar — scanner input fires Enter; matched product is added to cart at qty 1 -->
+ <div class="mb-4 flex items-center border border-green-200 focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 bg-green-50">
+ <i class="fas fa-barcode text-green-700 text-sm pl-3"></i>
+ <input type="text"
+ id="pos-barcode-input"
+ placeholder="Scan barcode / SKU — adds to cart automatically"
+ autocomplete="off"
+ class="flex-1 min-w-0 px-3 py-2 text-sm text-gray-900 focus:outline-none bg-transparent placeholder-gray-500">
+ <span id="pos-barcode-status" class="text-xs pr-3 whitespace-nowrap"></span>
+ </div>
 
-        {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
-             class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">
-            <i class="fas fa-chevron-left"></i>
-          </a>
-        {% else %}
-          <span class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-200 text-gray-300 cursor-not-allowed"><i class="fas fa-chevron-left"></i></span>
-        {% endif %}
+ <!-- Product grid -->
+ <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="product-grid">
+ {% for product in page_obj.object_list %}
+ <button class="bg-white border border-gray-200 hover:border-green-500 hover:shadow-md p-3 text-left transition duration-150 add-product-btn{% if not product.is_service and product.current_stock|default:0 <= 0 %} opacity-50 cursor-not-allowed{% endif %}"
+ data-product-id="{{ product.id }}"
+ data-product-name="{{ product.name }}"
+ data-product-price="{{ product.price }}"
+ {% if not product.is_service and product.current_stock|default:0 <= 0 %}disabled{% endif %}>
+ <div class="w-full h-24 bg-gray-50 flex items-center justify-center mb-2 overflow-hidden">
+ {% if product.primary_image_url %}
+ <img src="{{ product.primary_image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+ {% else %}
+ <i class="fas fa-box text-gray-300 text-2xl"></i>
+ {% endif %}
+ </div>
+ <div class="text-sm font-medium text-gray-800 truncate">{{ product.name }}</div>
+ <div class="text-base font-bold text-green-600 mt-1">NPR {{ product.price }}</div>
+ <div class="flex items-center justify-between mt-0.5">
+ {% if product.barcode %}
+ <span class="text-xs text-gray-400">{{ product.barcode }}</span>
+ {% else %}
+ <span></span>
+ {% endif %}
+ {% if not product.is_service %}
+ {% if product.current_stock|default:0 <= 0 %}
+ <span class="text-xs font-semibold text-red-600">Out of stock</span>
+ {% else %}
+ <span class="text-xs text-gray-500">Stock: {{ product.current_stock }}</span>
+ {% endif %}
+ {% endif %}
+ </div>
+ </button>
+ {% empty %}
+ <div class="col-span-4 text-center py-16 text-gray-400">
+ <i class="fas fa-search text-4xl mb-3 block"></i>
+ <p class="text-lg">No products found.</p>
+ <p class="text-sm mt-1">Add products from the Products module first.</p>
+ </div>
+ {% endfor %}
+ </div>
 
-        {% if page_obj.number > 3 %}
-          <a href="?page=1{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
-             class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">1</a>
-          {% if page_obj.number > 4 %}<span class="text-xs text-gray-400">…</span>{% endif %}
-        {% endif %}
+ <!-- Pagination -->
+ {% if page_obj.has_other_pages %}
+ <div class="mt-4 mb-20 md:mb-4 flex flex-wrap items-center justify-center gap-1">
 
-        {% for num in page_obj.paginator.page_range %}
-          {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-            {% if page_obj.number == num %}
-              <span class="inline-flex items-center justify-center w-8 h-8 text-xs border bg-green-600 border-green-600 text-white font-semibold">{{ num }}</span>
-            {% else %}
-              <a href="?page={{ num }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
-                 class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">{{ num }}</a>
-            {% endif %}
-          {% endif %}
-        {% endfor %}
+ {% if page_obj.has_previous %}
+ <a href="?page={{ page_obj.previous_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+ class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">
+ <i class="fas fa-chevron-left"></i>
+ </a>
+ {% else %}
+ <span class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-200 text-gray-300 cursor-not-allowed"><i class="fas fa-chevron-left"></i></span>
+ {% endif %}
 
-        {% if page_obj.number < page_obj.paginator.num_pages|add:"-2" %}
-          {% if page_obj.number < page_obj.paginator.num_pages|add:"-3" %}<span class="text-xs text-gray-400">…</span>{% endif %}
-          <a href="?page={{ page_obj.paginator.num_pages }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
-             class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">{{ page_obj.paginator.num_pages }}</a>
-        {% endif %}
+ {% if page_obj.number > 3 %}
+ <a href="?page=1{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+ class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">1</a>
+ {% if page_obj.number > 4 %}<span class="text-xs text-gray-400">…</span>{% endif %}
+ {% endif %}
 
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
-             class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">
-            <i class="fas fa-chevron-right"></i>
-          </a>
-        {% else %}
-          <span class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-200 text-gray-300 cursor-not-allowed"><i class="fas fa-chevron-right"></i></span>
-        {% endif %}
+ {% for num in page_obj.paginator.page_range %}
+ {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+ {% if page_obj.number == num %}
+ <span class="inline-flex items-center justify-center w-8 h-8 text-xs border bg-green-600 border-green-600 text-white font-semibold">{{ num }}</span>
+ {% else %}
+ <a href="?page={{ num }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+ class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">{{ num }}</a>
+ {% endif %}
+ {% endif %}
+ {% endfor %}
 
-        <span class="ml-1 text-xs text-gray-400">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-      </div>
-    {% endif %}
+ {% if page_obj.number < page_obj.paginator.num_pages|add:"-2" %}
+ {% if page_obj.number < page_obj.paginator.num_pages|add:"-3" %}<span class="text-xs text-gray-400">…</span>{% endif %}
+ <a href="?page={{ page_obj.paginator.num_pages }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+ class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">{{ page_obj.paginator.num_pages }}</a>
+ {% endif %}
 
-  </div>
+ {% if page_obj.has_next %}
+ <a href="?page={{ page_obj.next_page_number }}{% if selected_ct_id %}&ct={{ selected_ct_id }}{% endif %}{% if selected_category_id %}&cat={{ selected_category_id }}{% endif %}{% if q %}&q={{ q }}{% endif %}"
+ class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">
+ <i class="fas fa-chevron-right"></i>
+ </a>
+ {% else %}
+ <span class="inline-flex items-center justify-center w-8 h-8 text-xs border border-gray-200 text-gray-300 cursor-not-allowed"><i class="fas fa-chevron-right"></i></span>
+ {% endif %}
 
-  <!-- Right panel: Cart (desktop) -->
-  <div class="hidden md:block w-80 flex-shrink-0">
-    <div id="cart-container">
-      {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods bank_accounts=bank_accounts selected_referrer=selected_referrer %}
-    </div>
-  </div>
+ <span class="ml-1 text-xs text-gray-400">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+ </div>
+ {% endif %}
 
-  <!-- Mobile cart drawer -->
-  <div x-show="cartOpen"
-       x-cloak
-       class="md:hidden fixed inset-0 z-40 flex flex-col justify-end"
-       style="display:none;">
-    <div class="absolute inset-0 bg-black bg-opacity-40" @click="cartOpen = false"></div>
-    <div class="relative bg-white z-10 max-h-[85vh] overflow-y-auto rounded-t-2xl shadow-2xl">
-      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white z-10">
-        <span class="font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-shopping-cart text-green-600"></i> Cart</span>
-        <button @click="cartOpen = false" class="text-gray-400 hover:text-gray-600 p-1"><i class="fas fa-times"></i></button>
-      </div>
-      <div id="cart-container-mobile" class="p-4">
-        {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods bank_accounts=bank_accounts selected_referrer=selected_referrer %}
-      </div>
-    </div>
-  </div>
+ </div>
 
-  <!-- Mobile floating cart button -->
-  <button @click="cartOpen = true"
-          class="md:hidden fixed bottom-5 right-5 z-30 bg-green-600 hover:bg-green-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition">
-    <i class="fas fa-shopping-cart text-xl"></i>
-    {% if cart.items %}
-      <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{{ cart.items|length }}</span>
-    {% endif %}
-  </button>
+ <!-- Right panel: Cart (desktop) -->
+ <div class="hidden md:block w-80 flex-shrink-0">
+ <div id="cart-container">
+ {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods selected_referrer=selected_referrer %}
+ </div>
+ </div>
+
+ <!-- Mobile cart drawer -->
+ <div x-show="cartOpen"
+ x-cloak
+ class="md:hidden fixed inset-0 z-40 flex flex-col justify-end"
+ style="display:none;">
+ <div class="absolute inset-0 bg-black bg-opacity-40" @click="cartOpen = false"></div>
+ <div class="relative bg-white z-10 max-h-[85vh] overflow-y-auto -2xl shadow-2xl">
+ <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white z-10">
+ <span class="font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-shopping-cart text-green-600"></i> Cart</span>
+ <button @click="cartOpen = false" class="text-gray-400 hover:text-gray-600 p-1"><i class="fas fa-times"></i></button>
+ </div>
+ <div id="cart-container-mobile" class="p-4">
+ {% include 'pos/partials/cart.html' with cart=cart totals=totals customers=customers company=company payment_methods=payment_methods selected_referrer=selected_referrer %}
+ </div>
+ </div>
+ </div>
+
+ <!-- Mobile floating cart button -->
+ <button @click="cartOpen = true"
+ class="md:hidden fixed bottom-5 right-5 z-30 bg-green-600 hover:bg-green-700 text-white w-14 h-14 shadow-lg flex items-center justify-center transition">
+ <i class="fas fa-shopping-cart text-xl"></i>
+ {% if cart.items %}
+ <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center">{{ cart.items|length }}</span>
+ {% endif %}
+ </button>
 
 </div>
 
 <script>
-  function refreshCart(url, values) {
-    // Both the desktop and mobile cart panels are present in the DOM at the
-    // same time (mobile is just hidden via x-show), so this must fire a
-    // single POST and mirror the response into both — issuing one POST per
-    // target would apply the cart mutation (e.g. "add 1") twice server-side.
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    const body = new URLSearchParams(values).toString();
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken': csrfToken,
-        'HX-Request': 'true',
-      },
-      body: body,
-    })
-      .then(function(res) { return res.text(); })
-      .then(function(html) {
-        ['#cart-container', '#cart-container-mobile'].forEach(function(t) {
-          const el = document.querySelector(t);
-          if (el) el.innerHTML = html;
-        });
-      });
-  }
+ function refreshCart(url, values) {
+ // Both the desktop and mobile cart panels are present in the DOM at the
+ // same time (mobile is just hidden via x-show), so this must fire a
+ // single POST and mirror the response into both — issuing one POST per
+ // target would apply the cart mutation (e.g. "add 1") twice server-side.
+ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+ const body = new URLSearchParams(values).toString();
+ fetch(url, {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/x-www-form-urlencoded',
+ 'X-CSRFToken': csrfToken,
+ 'HX-Request': 'true',
+ },
+ body: body,
+ })
+ .then(function(res) { return res.text(); })
+ .then(function(html) {
+ ['#cart-container', '#cart-container-mobile'].forEach(function(t) {
+ const el = document.querySelector(t);
+ if (el) {
+ el.innerHTML = html;
+ // Raw innerHTML assignment bypasses HTMX's swap pipeline, so hx-*
+ // attributes in the new markup (Remove, +/-, price override) are
+ // never bound — htmx.process() re-scans and wires them up.
+ if (window.htmx) htmx.process(el);
+ }
+ });
+ });
+ }
 
-  document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.add-product-btn');
-    if (!btn) return;
-    e.preventDefault();
-    refreshCart('{% url "pos:add_item" %}', { product_id: btn.dataset.productId, quantity: 1 });
-  });
+ document.addEventListener('click', function(e) {
+ const btn = e.target.closest('.add-product-btn');
+ if (!btn) return;
+ e.preventDefault();
+ refreshCart('{% url "pos:add_item" %}', { product_id: btn.dataset.productId, quantity: 1 });
+ });
 
-  (function() {
-    const input = document.getElementById('barcode-input');
-    const status = document.getElementById('barcode-status');
-    if (!input) return;
+ (function () {
+ const barcodeInput = document.getElementById('pos-barcode-input');
+ const statusEl = document.getElementById('pos-barcode-status');
+ if (!barcodeInput) return;
 
-    function showStatus(text, ok) {
-      status.textContent = text;
-      status.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
-      status.classList.add(ok ? 'bg-green-100' : 'bg-red-100', ok ? 'text-green-700' : 'text-red-700');
-      clearTimeout(showStatus._t);
-      showStatus._t = setTimeout(function() { status.classList.add('hidden'); }, 2000);
-    }
+ function showStatus(text, isError) {
+ statusEl.textContent = text;
+ statusEl.className = 'text-xs pr-3 whitespace-nowrap ' + (isError ? 'text-red-600' : 'text-green-700');
+ setTimeout(function () { statusEl.textContent = ''; }, 1800);
+ }
 
-    input.addEventListener('keydown', function(e) {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      const code = input.value.trim();
-      input.value = '';
-      if (!code) return;
+ function resolveAndAdd(rawValue) {
+ const term = (rawValue || '').trim();
+ if (!term) return;
+ barcodeInput.disabled = true;
+ fetch('{% url "products:search_products_api" %}?term=' + encodeURIComponent(term))
+ .then(function (res) { return res.json(); })
+ .then(function (data) {
+ const products = data.products || [];
+ const normalizedTerm = term.toLowerCase();
+ const exact = products.find(function (p) {
+ return [p.barcode, p.sku].filter(Boolean).some(function (v) {
+ return String(v).toLowerCase() === normalizedTerm;
+ });
+ });
+ const product = exact || (products.length === 1 ? products[0] : null);
+ if (!product) {
+ showStatus('No match for "' + term + '"', true);
+ return;
+ }
+ refreshCart('{% url "pos:add_item" %}', { product_id: product.id, quantity: 1 });
+ showStatus('Added: ' + product.name, false);
+ })
+ .catch(function () { showStatus('Lookup failed', true); })
+ .finally(function () {
+ barcodeInput.disabled = false;
+ barcodeInput.value = '';
+ barcodeInput.focus();
+ });
+ }
 
-      fetch('{% url "pos:product_search" %}?q=' + encodeURIComponent(code))
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          const products = data.products || [];
-          const exact = products.find(function(p) { return p.barcode === code || p.sku === code; });
-          const match = exact || (products.length === 1 ? products[0] : null);
-          if (!match) {
-            showStatus(products.length > 1 ? 'Multiple matches — refine scan.' : 'No product found for "' + code + '".', false);
-            return;
-          }
-          refreshCart('{% url "pos:add_item" %}', { product_id: match.id, quantity: 1 });
-          showStatus('Added: ' + match.name, true);
-        })
-        .catch(function() { showStatus('Scan lookup failed.', false); });
-    });
+ barcodeInput.addEventListener('keydown', function (event) {
+ if (event.key !== 'Enter') return;
+ event.preventDefault();
+ resolveAndAdd(this.value);
+ });
 
-    // Keep the scanner input focused so scans are captured without clicking in,
-    // but don't steal focus while the user is typing elsewhere (e.g. search, qty).
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('input, textarea, select, button, a')) return;
-      input.focus();
-    });
-    input.focus();
-  })();
+ // Keep the scanner ready for the next scan without requiring a click.
+ barcodeInput.focus();
+ })();
 </script>
 {% endblock %}
