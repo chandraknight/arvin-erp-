@@ -41,7 +41,7 @@ thead { display: table-header-group; }
  {% for vp in vendor_payments %}
  <tr>
  <td>{{ vp.payment_date|date:"Y-m-d" }}</td>
- <td>{{ vp.vendor.name|default:"N/A" }}</td>
+ <td>{{ vp.vendor_bill.vendor.name|default:"N/A" }}</td>
  <td>{{ vp.reference_number|default:"-" }}</td>
  <td class="tr">{{ vp.amount|floatformat:2 }}</td>
  </tr>

@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.contrib import messages
 from datetime import datetime, date
 import logging
+import re
 import csv
 import pandas as pd
 from django.http import HttpResponse
@@ -37,6 +38,42 @@ from decimal import Decimal
 from apps.utils.nepali_date import bs_str_to_ad, ad_date_to_bs_str
 
 logger = logging.getLogger(__name__)
+
+
+# xhtml2pdf's CSS parser predates CSS Paged Media and cannot parse nested
+# at-rules like `@bottom-center { ... }` inside `@page { ... }` — it raises
+# TypeError deep in its parser instead of just ignoring them. Our report
+# print templates use that syntax for page-number footers (which render
+# fine in a browser's own "Print" dialog), so strip those nested rules
+# before handing the HTML to xhtml2pdf rather than editing every template.
+_PDF_UNSUPPORTED_PAGE_RULE_RE = re.compile(
+    r"@(?:bottom|top|left|right)[a-z-]*\s*\{[^{}]*\}", re.DOTALL)
+
+
+def render_pdf_response(template_name, context, filename):
+    """Render a template to a PDF HttpResponse using xhtml2pdf.
+
+    Returns (response, error_message). On success error_message is None and
+    response is a ready-to-return HttpResponse. On failure response is None
+    and error_message describes what went wrong, for the caller to show via
+    messages.error() before redirecting back to the report page.
+    """
+    from xhtml2pdf import pisa
+
+    html_string = render_to_string(template_name, context)
+    html_string = _PDF_UNSUPPORTED_PAGE_RULE_RE.sub("", html_string)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    try:
+        pisa_status = pisa.CreatePDF(html_string, dest=response, encoding='UTF-8')
+    except Exception:
+        logger.exception("PDF generation failed for template %s", template_name)
+        return None, "Could not generate the PDF for this report. Please try again."
+    if pisa_status.err:
+        return None, "Could not generate the PDF for this report. Please try again."
+    return response, None
+
 
 # Helper function for fiscal year filtering
 
@@ -2132,11 +2169,12 @@ def export_detailed_sales_report_pdf(request):
         'company': user_company,
     }
 
-    html_string = render_to_string(
-        'reports/pdf/detailed_sales_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:detailed_sales_report')
+    response, error = render_pdf_response(
+        'reports/pdf/detailed_sales_report_pdf.html', context, 'detailed_sales_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:detailed_sales_report')
+    return response
 
 
 @login_required
@@ -2230,11 +2268,12 @@ def export_product_performance_report_pdf(request):
         'company': user_company,
     }
 
-    html_string = render_to_string(
-        'reports/pdf/product_performance_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:product_performance_report')
+    response, error = render_pdf_response(
+        'reports/pdf/product_performance_report_pdf.html', context, 'product_performance_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:product_performance_report')
+    return response
 
 
 @login_required
@@ -2313,11 +2352,12 @@ def export_sales_by_user_report_pdf(request):
         'company': user_company,
     }
 
-    html_string = render_to_string(
-        'reports/pdf/sales_by_user_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:sales_by_user_report')
+    response, error = render_pdf_response(
+        'reports/pdf/sales_by_user_report_pdf.html', context, 'sales_by_user_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:sales_by_user_report')
+    return response
 
 
 @login_required
@@ -2730,11 +2770,12 @@ def export_profit_and_loss_report_pdf(request):
         'company': user_company,
     }
 
-    html_string = render_to_string(
-        'reports/print_profit_and_loss_report.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:profit_and_loss_report')
+    response, error = render_pdf_response(
+        'reports/print_profit_and_loss_report.html', context, 'print_profit_and_loss_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:profit_and_loss_report')
+    return response
 
 
 @login_required
@@ -3280,11 +3321,12 @@ def export_balance_sheet_report_pdf(request):
         'company': user_company,
     }
 
-    html_string = render_to_string(
-        'reports/pdf/balance_sheet_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:balance_sheet_report')
+    response, error = render_pdf_response(
+        'reports/pdf/balance_sheet_report_pdf.html', context, 'balance_sheet_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:balance_sheet_report')
+    return response
 
 
 @login_required
@@ -3415,11 +3457,12 @@ def export_ledger_account_list_pdf(request):
         'ledger_accounts': ledger_accounts,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/ledger_account_list_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:ledger_account_list_report')
+    response, error = render_pdf_response(
+        'reports/pdf/ledger_account_list_pdf.html', context, 'ledger_account_list.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:ledger_account_list_report')
+    return response
 
 
 @login_required
@@ -3473,16 +3516,17 @@ def export_payment_list_pdf(request):
             request, "Your account is not associated with a company. Please contact an administrator.")
         return redirect('accounts:user_dashboard')
 
-    payments = Payment.objects.filter(company=user_company)
+    payments = Payment.objects.filter(company=user_company).order_by('-date')
     context = {
         'payments': payments,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/payment_history_report.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:payment_list_report')
+    response, error = render_pdf_response(
+        'reports/print/payment_history_report_print.html', context, 'payment_list_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:payment_list_report')
+    return response
 
 
 @login_required
@@ -3499,7 +3543,7 @@ def print_payment_list_report(request):
         'payments': payments,
         'company': user_company,
     }
-    return render(request, 'reports/payment_history_report.html', context)
+    return render(request, 'reports/print/payment_history_report_print.html', context)
 
 
 @login_required
@@ -3542,11 +3586,12 @@ def export_journal_entry_list_pdf(request):
         'journal_entries': journal_entries,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/journal_entry_list_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:journal_entry_list_report')
+    response, error = render_pdf_response(
+        'reports/pdf/journal_entry_list_pdf.html', context, 'journal_entry_list.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:journal_entry_list_report')
+    return response
 
 
 @login_required
@@ -3628,11 +3673,12 @@ def export_stock_movement_report_pdf(request):
         'transactions': transactions,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/stock_movement_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:stock_movement_report')
+    response, error = render_pdf_response(
+        'reports/pdf/stock_movement_report_pdf.html', context, 'stock_movement_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:stock_movement_report')
+    return response
 
 
 @login_required
@@ -3717,11 +3763,12 @@ def export_customer_acquisition_report_pdf(request):
         'customers': customers,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/customer_acquisition_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:customer_acquisition_report')
+    response, error = render_pdf_response(
+        'reports/pdf/customer_acquisition_report_pdf.html', context, 'customer_acquisition_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:customer_acquisition_report')
+    return response
 
 
 @login_required
@@ -3786,11 +3833,12 @@ def export_outstanding_invoices_report_pdf(request):
         'outstanding_invoices': outstanding_invoices,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/outstanding_invoices_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:outstanding_invoices_report')
+    response, error = render_pdf_response(
+        'reports/pdf/outstanding_invoices_report_pdf.html', context, 'outstanding_invoices_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:outstanding_invoices_report')
+    return response
 
 
 @login_required
@@ -3858,11 +3906,12 @@ def export_payment_history_report_pdf(request):
         'payments': payments,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/payment_history_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:payment_history_report')
+    response, error = render_pdf_response(
+        'reports/pdf/payment_history_report_pdf.html', context, 'payment_history_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:payment_history_report')
+    return response
 
 
 @login_required
@@ -3925,11 +3974,12 @@ def export_debit_note_report_pdf(request):
         'debit_notes': debit_notes,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/debit_note_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:debit_note_report')
+    response, error = render_pdf_response(
+        'reports/pdf/debit_note_report_pdf.html', context, 'debit_note_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:debit_note_report')
+    return response
 
 
 @login_required
@@ -4052,11 +4102,12 @@ def export_ar_aging_report_pdf(request):
         'company': user_company,
     }
 
-    html_string = render_to_string(
-        'reports/pdf/ar_aging_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:ar_aging_report')
+    response, error = render_pdf_response(
+        'reports/pdf/ar_aging_report_pdf.html', context, 'ar_aging_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:ar_aging_report')
+    return response
 
 
 @login_required
@@ -4155,11 +4206,12 @@ def export_sales_by_category_report_pdf(request):
         'sales_by_category': sales_by_category,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/sales_by_category_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:sales_by_category_report')
+    response, error = render_pdf_response(
+        'reports/pdf/sales_by_category_report_pdf.html', context, 'sales_by_category_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:sales_by_category_report')
+    return response
 
 
 @login_required
@@ -4243,30 +4295,26 @@ def export_cogs_report_pdf(request):
         invoice__outstanding_balance=0,
         product__isnull=False
     ).annotate(
-        cogs_per_item=F('product__cost_price'),
-        line_item_cogs=ExpressionWrapper(
+        item_cogs=ExpressionWrapper(
             F('quantity') * F('product__cost_price'),
             output_field=DecimalField()
         )
-    ).values(
-        'product__name',
-        'cogs_per_item',
-        'quantity',
-        'line_item_cogs'
-    ).order_by('product__name')
+    ).select_related('invoice', 'product', 'product__category').order_by('product__name')
 
-    total_cogs = sum(item['line_item_cogs'] for item in cogs_data)
+    total_cogs = cogs_data.aggregate(
+        total=Sum('item_cogs'))['total'] or Decimal('0.00')
 
     context = {
         'cogs_data': cogs_data,
         'total_cogs': total_cogs,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/cogs_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:cogs_report')
+    response, error = render_pdf_response(
+        'reports/pdf/cogs_report_pdf.html', context, 'cogs_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:cogs_report')
+    return response
 
 
 @login_required
@@ -4317,11 +4365,12 @@ def export_vendor_list_report_pdf(request):
         'vendors': vendors,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/vendor_list_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:vendor_list_report')
+    response, error = render_pdf_response(
+        'reports/pdf/vendor_list_report_pdf.html', context, 'vendor_list_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:vendor_list_report')
+    return response
 
 
 @login_required
@@ -4387,11 +4436,12 @@ def export_purchase_order_list_report_pdf(request):
         'purchase_orders': purchase_orders,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/purchase_order_list_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:purchase_order_list_report')
+    response, error = render_pdf_response(
+        'reports/pdf/purchase_order_list_report_pdf.html', context, 'purchase_order_list_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:purchase_order_list_report')
+    return response
 
 
 @login_required
@@ -4457,11 +4507,12 @@ def export_vendor_bill_list_report_pdf(request):
         'vendor_bills': vendor_bills,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/vendor_bill_list_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:vendor_bill_list_report')
+    response, error = render_pdf_response(
+        'reports/pdf/vendor_bill_list_report_pdf.html', context, 'vendor_bill_list_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:vendor_bill_list_report')
+    return response
 
 
 @login_required
@@ -4490,14 +4541,15 @@ def export_vendor_payment_list_report_excel(request):
         return redirect('accounts:user_dashboard')
 
     vendor_payments = VendorPayment.objects.filter(
-        company=user_company).order_by('-payment_date')
+        vendor_bill__vendor__company=user_company
+    ).select_related('vendor_bill__vendor').order_by('-payment_date')
 
     data = []
     data.append(['Payment Date', 'Vendor', 'Amount', 'Reference'])
     for payment in vendor_payments:
         data.append([
             payment.payment_date.strftime('%Y-%m-%d'),
-            payment.vendor.name if payment.vendor else 'N/A',
+            payment.vendor_bill.vendor.name if payment.vendor_bill and payment.vendor_bill.vendor else 'N/A',
             payment.amount,
             payment.reference_number
         ])
@@ -4520,16 +4572,18 @@ def export_vendor_payment_list_report_pdf(request):
         return redirect('accounts:user_dashboard')
 
     vendor_payments = VendorPayment.objects.filter(
-        company=user_company).order_by('-payment_date')
+        vendor_bill__vendor__company=user_company
+    ).select_related('vendor_bill__vendor').order_by('-payment_date')
     context = {
         'vendor_payments': vendor_payments,
         'company': user_company,
     }
-    html_string = render_to_string(
-        'reports/pdf/vendor_payment_list_report_pdf.html', context)
-    messages.error(
-        request, "PDF export is not fully configured. WeasyPrint is not installed or configured.")
-    return redirect('reports:vendor_payment_list_report')
+    response, error = render_pdf_response(
+        'reports/pdf/vendor_payment_list_report_pdf.html', context, 'vendor_payment_list_report.pdf')
+    if error:
+        messages.error(request, error)
+        return redirect('reports:vendor_payment_list_report')
+    return response
 
 
 @login_required
@@ -4541,7 +4595,8 @@ def print_vendor_payment_list_report(request):
         return redirect('accounts:user_dashboard')
 
     vendor_payments = VendorPayment.objects.filter(
-        company=user_company).order_by('-payment_date')
+        vendor_bill__vendor__company=user_company
+    ).select_related('vendor_bill__vendor').order_by('-payment_date')
     context = {
         'vendor_payments': vendor_payments,
         'company': user_company,

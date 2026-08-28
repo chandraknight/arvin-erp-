@@ -20,7 +20,7 @@ tr { page-break-inside: avoid; } thead { display: table-header-group; }
  <thead><tr><th>Payment Date</th><th>Vendor</th><th>Reference #</th><th class="tr">Amount (NPR)</th></tr></thead>
  <tbody>
  {% for vp in vendor_payments %}
- <tr><td>{{ vp.payment_date|date:"Y-m-d" }}</td><td>{{ vp.vendor.name|default:"N/A" }}</td><td>{{ vp.reference_number|default:"-" }}</td><td class="tr">{{ vp.amount|floatformat:2 }}</td></tr>
+ <tr><td>{{ vp.payment_date|date:"Y-m-d" }}</td><td>{{ vp.vendor_bill.vendor.name|default:"N/A" }}</td><td>{{ vp.reference_number|default:"-" }}</td><td class="tr">{{ vp.amount|floatformat:2 }}</td></tr>
  {% empty %}<tr><td colspan="4" class="tc">No vendor payments found.</td></tr>{% endfor %}
  </tbody>
 </table>

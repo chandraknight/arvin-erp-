@@ -44,7 +44,7 @@ thead { display: table-header-group; }
  <td>{{ p.date|date:"Y-m-d" }}</td>
  <td>{{ p.invoice.invoice_number|default:"-" }}</td>
  <td>{{ p.invoice.customer.name|default:"N/A" }}</td>
- <td>{{ p.get_payment_method_display|default:p.payment_method|default:"-" }}</td>
+ <td>{{ p.get_method_display|default:"-" }}</td>
  <td>{{ p.reference_number|default:"-" }}</td>
  <td class="tr">{{ p.amount|floatformat:2 }}</td>
  </tr>
