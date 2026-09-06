@@ -62,6 +62,9 @@ urlpatterns = [
     path('budgets/<uuid:pk>/delete/', views.BudgetDeleteView.as_view(), name='budget_delete'),
     path('budgets/<uuid:pk>/revise/', views.budget_revise, name='budget_revise'),
     path('budgets/vs-actual/', views.budget_vs_actual_report, name='budget_vs_actual'),
+    path('reports/project-pnl/', views.project_pnl_report, name='project_pnl'),
+    path('budgets/vs-actual/export/excel/', views.export_budget_vs_actual_excel, name='export_budget_vs_actual_excel'),
+    path('budgets/vs-actual/export/pdf/', views.export_budget_vs_actual_pdf, name='export_budget_vs_actual_pdf'),
 
     # Forecasts
     path('forecasts/', views.ForecastListView.as_view(), name='forecast_list'),
@@ -69,4 +72,7 @@ urlpatterns = [
     path('forecasts/<uuid:pk>/update/', views.ForecastUpdateView.as_view(), name='forecast_update'),
     path('forecasts/<uuid:pk>/delete/', views.ForecastDeleteView.as_view(), name='forecast_delete'),
     path('forecasts/vs-actual/', views.forecast_vs_actual_report, name='forecast_vs_actual'),
+    path('forecasts/vs-actual/export/excel/', views.export_forecast_vs_actual_excel, name='export_forecast_vs_actual_excel'),
+    path('forecasts/vs-actual/export/pdf/', views.export_forecast_vs_actual_pdf, name='export_forecast_vs_actual_pdf'),
+    path('forecasts/vs-actual/print/', views.print_forecast_vs_actual, name='print_forecast_vs_actual'),
 ]

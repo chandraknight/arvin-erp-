@@ -12,13 +12,13 @@ from django.utils.text import slugify
 
 from django.utils import timezone
 from apps.ecom.models import SiteSettings, HeroBanner, Page, Announcement, BlogPost, ContactMessage
-from apps.company.models import Company
+from apps.ecom.tenant import resolve_store_company
 from apps.products.models import Product, ProductImage
 from apps.products.forms import ProductImageFormSet
 
 
 def _get_company(request):
-    return request.user.profile.company if hasattr(request.user, 'profile') else Company.objects.first()
+    return resolve_store_company(request)
 
 
 def _get_or_create_settings(company):

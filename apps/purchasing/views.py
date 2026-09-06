@@ -374,6 +374,7 @@ def vendor_bill_create(request):
         'form': form,
         'formset': formset,
         'tax_rate': default_vendor_vat_rate,
+        'org_type': company.organisation_type if company else 'TRADING',
         'bank_accounts': (
             BankAccount.active_objects.filter(company=company, is_active=True)
             if company else BankAccount.objects.none()
@@ -488,7 +489,11 @@ def htmx_vendor_bill_item_form(request):
     form = VendorBillItemForm(prefix=f'items-{form_index}', company=company)
     html = render_to_string(
         'purchasing/partials/vendor_bill_item_row.html',
-        {'item_form': form, 'forloop': {'counter0': form_index}},
+        {
+            'item_form': form,
+            'forloop': {'counter0': form_index},
+            'org_type': company.organisation_type if company else 'TRADING',
+        },
         request=request,
     )
     return HttpResponse(html)

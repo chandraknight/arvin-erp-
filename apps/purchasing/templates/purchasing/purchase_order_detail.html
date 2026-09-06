@@ -41,7 +41,8 @@
  {% endif %}
  </div>
 
- {% if purchase_order.approval_status == 'PENDING' and (user.is_company_admin or user.is_superuser) %}
+ {% if purchase_order.approval_status == 'PENDING' %}
+ {% if user.is_company_admin or user.is_superuser %}
  <div class="mt-6 flex gap-2">
  <form method="post" action="{% url 'purchasing:purchase_order_approve' purchase_order.pk %}" class="inline-block">
  {% csrf_token %}
@@ -50,6 +51,7 @@
  <a href="{% url 'purchasing:purchase_order_reject' purchase_order.pk %}"
  class="bg-red-600 text-white px-4 py-2 hover:bg-red-700 transition duration-200 ease-in-out text-sm inline-block">Reject</a>
  </div>
+ {% endif %}
  {% endif %}
 
  {% if purchase_order.status == 'SUBMITTED' %}

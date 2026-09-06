@@ -14,7 +14,7 @@
     <!-- Toggle button -->
     <button type="button"
             @click="open = !open"
-            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition">
+            class="inline-flex min-h-[44px] items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition">
         <i class="fas fa-filter text-green-600 text-xs"></i>
         <span>Filters</span>
         <i class="fas text-xs text-gray-400 transition-transform duration-200"
@@ -36,19 +36,19 @@
               hx-target="{{ target|default:'#list-container' }}"
               hx-swap="innerHTML"
               hx-trigger="change"
-              class="flex flex-wrap gap-3 items-end">
+              class="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-3 items-end">
 
             {{ filters }}
 
             <button type="submit"
-                    class="px-4 py-3 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition">
+                    class="inline-flex min-h-[44px] items-center justify-center px-4 py-3 text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition">
                 Apply
             </button>
             <a href="{{ action|default:request.path }}"
                hx-get="{{ action|default:request.path }}"
                hx-target="{{ target|default:'#list-container' }}"
                hx-swap="innerHTML"
-               class="px-4 py-3 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition border border-gray-300">
+               class="inline-flex min-h-[44px] items-center justify-center px-4 py-3 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition border border-gray-300">
                 Clear
             </a>
         </form>

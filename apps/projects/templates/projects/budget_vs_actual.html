@@ -9,9 +9,13 @@
  <h1 class="text-2xl font-bold text-gray-800">Budget vs Actual</h1>
  <p class="text-sm text-gray-500">{% if fiscal_year %}FY {{ fiscal_year.name }}{% endif %}</p>
  </div>
+ <div class="flex gap-2">
+ <a href="{% url 'projects:export_budget_vs_actual_excel' %}" class="px-4 py-2 text-sm bg-green-600 text-white hover:bg-green-700 transition shadow">Export to Excel</a>
+ <a href="{% url 'projects:export_budget_vs_actual_pdf' %}" class="px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 transition shadow">Export to PDF</a>
  <button onclick="window.print()" class="px-4 py-2 text-sm bg-gray-600 text-white hover:bg-gray-700 transition shadow">
  <i class="fas fa-print mr-1"></i> Print
  </button>
+ </div>
  </div>
 
  <!-- Summary -->

@@ -552,7 +552,9 @@ document.addEventListener('DOMContentLoaded', function () {
  function initRowToggle(row) {
  const productBtn = row.querySelector('.product-btn');
  const serviceBtn = row.querySelector('.service-btn');
- if (!productBtn || !serviceBtn) return;
+ // Service-only rows (no inventory for this company) — no toggle needed,
+ // the row is already rendered with the service field visible.
+ if (!productBtn) return;
  function setType(type) {
  const pf = row.querySelector('.product-field');
  const sf = row.querySelector('.service-field');

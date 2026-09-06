@@ -8,7 +8,7 @@ class CompanyForm(forms.ModelForm):
     class Meta:
         model = Company
         fields = [
-            'name', 'address', 'phone', 'email', 'logo', 'tax_rate', 'cit_rate',
+            'name', 'store_domain', 'address', 'phone', 'email', 'logo', 'tax_rate', 'cit_rate',
             'po_approval_threshold',
             'organisation_type',
             'pan_number', 'vat_registered', 'vat_number', 'vat_inclusive',
@@ -297,5 +297,4 @@ class FiscalYearForm(forms.ModelForm):
         except (ValueError, TypeError):
             raise forms.ValidationError('Invalid BS date format. Use YYYY-MM-DD')
         return end_date_bs
-
 

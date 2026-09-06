@@ -20,8 +20,10 @@ from django.views.generic import (
 )
 from django.db.models import Sum, Q
 from decimal import Decimal
+import pandas as pd
 from apps.utils.htmx import is_htmx, toast_trigger
 
+from apps.reports.services.pdf_export import render_pdf_response
 from apps.utils.mixins import AuthMixin, ModuleRequiredMixin, module_required
 from .models import (
     CostCentre, Project, ProjectTask, ProjectMilestone, ProjectTimeLog,
@@ -34,7 +36,7 @@ from .forms import (
     ProjectExpenseForm, ProjectRevenueForm,
     BudgetForm, BudgetRevisionForm, ForecastForm,
 )
-from .services import get_dashboard_stats, get_budget_vs_actual, get_forecast_vs_actual
+from .services import get_dashboard_stats, get_budget_vs_actual, get_forecast_vs_actual, get_project_pnl
 
 
 def _require_project_tracking(request):
@@ -516,16 +518,78 @@ class BudgetDeleteView(AuthMixin, ModuleRequiredMixin, DeleteView):
 
 @login_required
 @module_required('enable_project_tracking')
-def budget_vs_actual_report(request):
-    guard = _require_forecasting(request)
+def project_pnl_report(request):
+    guard = _require_project_tracking(request)
     if guard:
         return guard
 
     company = request.user_company
+    projects = Project.active_objects.filter(company=company).order_by('name')
+
+    project = None
+    project_id = request.GET.get('project')
+    if project_id:
+        project = projects.filter(pk=project_id).first()
+
+    data = get_project_pnl(company, project=project)
+    context = {'company': company, 'projects': projects, **data}
+    return render(request, 'projects/project_pnl.html', context)
+
+
+@login_required
+@module_required('enable_project_tracking')
+def budget_vs_actual_report(request):
+    guard, context = _get_budget_vs_actual_context(request)
+    if guard:
+        return guard
+    return render(request, 'projects/budget_vs_actual.html', context)
+
+
+def _get_budget_vs_actual_context(request):
+    guard = _require_forecasting(request)
+    if guard:
+        return guard, None
+
+    company = request.user_company
     fiscal_year = _get_active_fiscal_year(request, company)
     data = get_budget_vs_actual(company, fiscal_year)
-    context = {'company': company, 'fiscal_year': fiscal_year, **data}
-    return render(request, 'projects/budget_vs_actual.html', context)
+    return None, {'company': company, 'fiscal_year': fiscal_year, **data}
+
+
+@login_required
+@module_required('enable_forecasting')
+def export_budget_vs_actual_excel(request):
+    guard, context = _get_budget_vs_actual_context(request)
+    if guard:
+        return guard
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="budget_vs_actual.xlsx"'
+
+    rows = [{
+        'Budget Line': d['budget'].name,
+        'Type': d['budget'].get_budget_type_display(),
+        'Period Start': d['budget'].period_start,
+        'Period End': d['budget'].period_end,
+        'Budget': d['budget'].amount,
+        'Actual': d['actual'],
+        'Variance': d['variance'],
+        'Utilisation %': d['utilisation'],
+    } for d in context['budget_data']]
+    df = pd.DataFrame(rows)
+    df.to_excel(response, index=False, sheet_name='Budget vs Actual')
+    return response
+
+
+@login_required
+@module_required('enable_forecasting')
+def export_budget_vs_actual_pdf(request):
+    guard, context = _get_budget_vs_actual_context(request)
+    if guard:
+        return guard
+    return render_pdf_response(
+        'projects/pdf/budget_vs_actual_pdf.html', context, 'budget_vs_actual.pdf')
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -613,16 +677,65 @@ class ForecastDeleteView(AuthMixin, ModuleRequiredMixin, DeleteView):
 @login_required
 @module_required('enable_forecasting')
 def forecast_vs_actual_report(request):
-    guard = _require_forecasting(request)
+    guard, context = _get_forecast_vs_actual_context(request)
     if guard:
         return guard
+    return render(request, 'projects/forecast_vs_actual.html', context)
+
+
+def _get_forecast_vs_actual_context(request):
+    guard = _require_forecasting(request)
+    if guard:
+        return guard, None
 
     company = request.user_company
     fiscal_year = _get_active_fiscal_year(request, company)
     forecast_type = request.GET.get('type', 'REVENUE')
     data = get_forecast_vs_actual(company, fiscal_year, forecast_type)
-    context = {'company': company, 'fiscal_year': fiscal_year, **data}
-    return render(request, 'projects/forecast_vs_actual.html', context)
+    return None, {'company': company, 'fiscal_year': fiscal_year, **data}
+
+
+@login_required
+@module_required('enable_forecasting')
+def export_forecast_vs_actual_excel(request):
+    guard, context = _get_forecast_vs_actual_context(request)
+    if guard:
+        return guard
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="forecast_vs_actual.xlsx"'
+
+    rows = [{
+        'Name': d['forecast'].name,
+        'Period': d['month_label'],
+        'Account': d['forecast'].ledger_account.name if d['forecast'].ledger_account else '',
+        'Forecast': d['forecast'].forecast_amount,
+        'Actual': d['actual'],
+        'Variance': d['variance'],
+    } for d in context['forecast_data']]
+    df = pd.DataFrame(rows)
+    df.to_excel(response, index=False, sheet_name='Forecast vs Actual')
+    return response
+
+
+@login_required
+@module_required('enable_forecasting')
+def export_forecast_vs_actual_pdf(request):
+    guard, context = _get_forecast_vs_actual_context(request)
+    if guard:
+        return guard
+    return render_pdf_response(
+        'projects/pdf/forecast_vs_actual_pdf.html', context, 'forecast_vs_actual.pdf')
+
+
+@login_required
+@module_required('enable_forecasting')
+def print_forecast_vs_actual(request):
+    guard, context = _get_forecast_vs_actual_context(request)
+    if guard:
+        return guard
+    return render(request, 'projects/print/forecast_vs_actual_print.html', context)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

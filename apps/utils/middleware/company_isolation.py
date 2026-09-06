@@ -25,6 +25,7 @@ _EXEMPT_PREFIXES = (
     '/media/',
     '/favicon',
     '/api/',  # API uses token-based auth — company is set from the token, not session
+    '/store/',  # Public storefront also supports company-less customer accounts
 )
 
 
@@ -41,6 +42,14 @@ class CompanyIsolationMiddleware:
 
         if user and user.is_authenticated and not user.is_superuser:
             path = request.path_info
+
+            # Storefront management is an ERP surface, not a customer surface.
+            # Keep this guard here so every CMS/media/order admin endpoint is
+            # protected consistently, including endpoints added later.
+            if path.startswith('/store/manage/') and not (
+                user.is_staff or user.is_company_admin
+            ):
+                raise PermissionDenied('Storefront management requires staff access.')
 
             # Skip exempt paths
             if not any(path.startswith(p) for p in _EXEMPT_PREFIXES):

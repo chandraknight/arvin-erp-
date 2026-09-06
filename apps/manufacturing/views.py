@@ -5,7 +5,11 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField
 from django.db import transaction
+from django.http import HttpResponse
 from decimal import Decimal
+import pandas as pd
+
+from apps.reports.services.pdf_export import render_pdf_response
 
 from apps.utils.mixins import AuthMixin, ModuleRequiredMixin, module_required
 from apps.utils.htmx import is_htmx
@@ -620,11 +624,10 @@ class MachineLogCreateView(AuthMixin, ModuleRequiredMixin, CreateView):
 
 # ── Reports ───────────────────────────────────────────────────────────────────
 
-@login_required
-def production_report(request):
+def _get_production_report_data(request):
     guard = _require_manufacturing(request)
     if guard:
-        return guard
+        return guard, None
 
     company = request.user_company
     fiscal_year_id = request.session.get('active_fiscal_year_id')
@@ -654,20 +657,65 @@ def production_report(request):
         total_rejected=Sum('rejected_quantity'),
     ).order_by('bom__finished_product__name')
 
-    return render(request, 'manufacturing/production_report.html', {
+    return None, {
         'company': company,
         'fiscal_year': fiscal_year,
         'work_orders': work_orders.select_related('bom__finished_product').order_by('-planned_start_date'),
         'stats': stats,
         'by_product': by_product,
-    })
+    }
 
 
 @login_required
-def material_consumption_report(request):
-    guard = _require_manufacturing(request)
+def production_report(request):
+    guard, context = _get_production_report_data(request)
     if guard:
         return guard
+    return render(request, 'manufacturing/production_report.html', context)
+
+
+@login_required
+def export_production_report_excel(request):
+    guard, context = _get_production_report_data(request)
+    if guard:
+        return guard
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="production_report.xlsx"'
+
+    df = pd.DataFrame(list(context['by_product']))
+    df.rename(columns={
+        'bom__finished_product__name': 'Product',
+        'total_planned': 'Planned Qty',
+        'total_produced': 'Produced Qty',
+        'total_rejected': 'Rejected Qty',
+    }, inplace=True)
+    df.to_excel(response, index=False, sheet_name='Production Report')
+    return response
+
+
+@login_required
+def export_production_report_pdf(request):
+    guard, context = _get_production_report_data(request)
+    if guard:
+        return guard
+    return render_pdf_response(
+        'manufacturing/pdf/production_report_pdf.html', context, 'production_report.pdf')
+
+
+@login_required
+def print_production_report(request):
+    guard, context = _get_production_report_data(request)
+    if guard:
+        return guard
+    return render(request, 'manufacturing/print/production_report_print.html', context)
+
+
+def _get_material_consumption_report_data(request):
+    guard = _require_manufacturing(request)
+    if guard:
+        return guard, None
 
     company = request.user_company
     consumption = WorkOrderMaterial.active_objects.filter(
@@ -685,10 +733,56 @@ def material_consumption_report(request):
         ),
     ).order_by('raw_material__name')
 
-    return render(request, 'manufacturing/material_report.html', {
+    return None, {
         'company': company,
         'consumption': consumption,
-    })
+    }
+
+
+@login_required
+def material_consumption_report(request):
+    guard, context = _get_material_consumption_report_data(request)
+    if guard:
+        return guard
+    return render(request, 'manufacturing/material_report.html', context)
+
+
+@login_required
+def export_material_consumption_report_excel(request):
+    guard, context = _get_material_consumption_report_data(request)
+    if guard:
+        return guard
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="material_consumption_report.xlsx"'
+
+    df = pd.DataFrame(list(context['consumption']))
+    df.rename(columns={
+        'raw_material__name': 'Material',
+        'total_planned': 'Planned Qty',
+        'total_used': 'Used Qty',
+        'total_cost': 'Cost',
+    }, inplace=True)
+    df.to_excel(response, index=False, sheet_name='Material Consumption')
+    return response
+
+
+@login_required
+def export_material_consumption_report_pdf(request):
+    guard, context = _get_material_consumption_report_data(request)
+    if guard:
+        return guard
+    return render_pdf_response(
+        'manufacturing/pdf/material_report_pdf.html', context, 'material_consumption_report.pdf')
+
+
+@login_required
+def print_material_consumption_report(request):
+    guard, context = _get_material_consumption_report_data(request)
+    if guard:
+        return guard
+    return render(request, 'manufacturing/print/material_report_print.html', context)
 
 
 # ── Cancel Work Order ─────────────────────────────────────────────────────────

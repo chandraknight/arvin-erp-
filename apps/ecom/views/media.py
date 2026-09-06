@@ -5,12 +5,12 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from apps.company.models import Company
 from apps.ecom import media_services
+from apps.ecom.tenant import resolve_store_company
 
 
 def _get_company(request):
-    return request.user.profile.company if hasattr(request.user, 'profile') else Company.objects.first()
+    return resolve_store_company(request)
 
 
 @login_required

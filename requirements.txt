@@ -45,6 +45,7 @@ PyYAML==6.0.3
 reportlab==4.5.1
 requests==2.34.2
 requests-oauthlib==2.0.0
+weasyprint==69.0
 rlPyCairo==0.4.0
 six==1.17.0
 social-auth-app-django==6.0.0

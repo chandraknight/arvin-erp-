@@ -285,8 +285,12 @@ class LedgerAccountListView(AuthMixin, ListView):
 class LedgerReportView(AuthMixin, View):
     template_name = 'bookkeeping/ledger_report.html'
     permission_required = ['bookkeeping.view_ledgeraccount']
-    
+
     def get(self, request, account_id):
+        context = self.build_context(request, account_id)
+        return render(request, self.template_name, context)
+
+    def build_context(self, request, account_id):
         account = get_object_or_404(LedgerAccount, id=account_id, company=request.user_company)
         
         # Get date filters from request
@@ -375,8 +379,8 @@ class LedgerReportView(AuthMixin, View):
             'is_print': request.GET.get('print', False),
             'existing_opening_balance': existing_opening_balance,
         }
-        
-        return render(request, self.template_name, context)
+
+        return context
 
     def post(self, request, account_id):
         """HTMX POST — set opening balance and create journal entry."""
@@ -550,6 +554,52 @@ class LedgerReportView(AuthMixin, View):
             })
         
         return transaction_data
+
+
+class LedgerReportExportExcelView(AuthMixin, View):
+    permission_required = ['bookkeeping.view_ledgeraccount']
+
+    def get(self, request, account_id):
+        import pandas as pd
+        from django.http import HttpResponse
+
+        context = LedgerReportView().build_context(request, account_id)
+
+        rows = [{
+            'Date (BS)': t['date_bs'],
+            'Date (AD)': t['date'],
+            'Description': t['description'],
+            'Narration': t['narration'],
+            'Reference': t['reference'],
+            'Debit': t['debit'],
+            'Credit': t['credit'],
+            'Balance': t['balance'],
+        } for t in context['transactions']]
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="ledger_report_{context["account"].name}.xlsx"'
+
+        df = pd.DataFrame(rows)
+        df.to_excel(response, index=False, sheet_name='Ledger Report')
+        return response
+
+
+class LedgerReportExportPdfView(AuthMixin, View):
+    permission_required = ['bookkeeping.view_ledgeraccount']
+
+    def get(self, request, account_id):
+        from django.http import HttpResponse
+        from django.template.loader import render_to_string
+        from xhtml2pdf import pisa
+
+        context = LedgerReportView().build_context(request, account_id)
+
+        html = render_to_string('bookkeeping/pdf/ledger_report_pdf.html', context)
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="ledger_report_{context["account"].name}.pdf"'
+        pisa.CreatePDF(html, dest=response, encoding='UTF-8')
+        return response
 
 
 # ─────────────────────────────────────────────────────────────────────────────

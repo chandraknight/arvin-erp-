@@ -191,10 +191,14 @@
  <input type="hidden" id="id_tax_amount" name="tax_amount" value="0">
  {% endif %}
 
+ {% if show_delivery_charge %}
  <div>
  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Delivery Charge (₹)</label>
  {{ form.delivery_charge|add_class:"delivery-charge w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600" }}
  </div>
+ {% else %}
+ {{ form.delivery_charge|add_class:"hidden delivery-charge" }}
+ {% endif %}
 
  <div class="md:col-span-2 pt-3 mt-1 border-t border-gray-200">
  <label class="block text-xs font-bold text-green-700 uppercase tracking-wide mb-1">Total (₹)</label>
@@ -773,6 +777,11 @@
  });
  const activeField = row.querySelector(TYPE_FIELD_MAP[type]);
  if (activeField) activeField.classList.remove('hidden');
+
+ // Description box duplicates the Service/Other name field (auto-synced
+ // on input below), so hide it for those types to avoid showing the
+ // same text twice.
+ row.querySelector('.description-field-wrap')?.classList.toggle('hidden', type === 'service' || type === 'other');
 
  if (clearValues) {
  const priceInput = row.querySelector('.price-input');

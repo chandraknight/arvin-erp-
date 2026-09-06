@@ -30,6 +30,12 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
         context['org_type'] = company.organisation_type if company else 'TRADING'
         context['vat_registered'] = company.vat_registered if company else False
         context['tax_rate'] = company.tax_rate if company else 0
+        context['show_delivery_charge'] = bool(
+            company
+            and company.organisation_type in ('TRADING', 'SMALL_ENTERPRISE')
+            and company.enable_order_management
+            and company.enable_ecom
+        )
         context['payment_method_choices'] = PAYMENT_METHOD_CHOICES
         context['bank_accounts'] = (
             BankAccount.active_objects.filter(company=company, is_active=True)
@@ -242,6 +248,7 @@ class VendorBillCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
         else:
             context['formset'] = VendorBillItemFormSet(request=self.request)
         company = getattr(self.request.user, 'company', None)
+        context['org_type'] = company.organisation_type if company else 'TRADING'
         context['bank_accounts'] = (
             BankAccount.active_objects.filter(company=company, is_active=True)
             if company else BankAccount.objects.none()

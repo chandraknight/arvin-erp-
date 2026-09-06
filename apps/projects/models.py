@@ -471,6 +471,43 @@ class Budget(BaseModel):
 
     @property
     def actual_amount(self):
+        from django.db.models import Sum
+
+        # A budget scoped to a project (or, for expenses, a cost centre) must
+        # be matched against that project's own ProjectExpense/ProjectRevenue
+        # records — JournalEntryLine carries no project/cost_centre link, so
+        # filtering the ledger by account alone would double-count spend from
+        # other projects sharing the same expense account.
+        if self.project or self.cost_centre:
+            return self._actual_amount_scoped()
+        return self._actual_amount_from_ledger()
+
+    def _actual_amount_scoped(self):
+        from django.db.models import Sum
+
+        if self.budget_type == 'EXPENSE':
+            qs = ProjectExpense.active_objects.filter(
+                expense_date__gte=self.period_start, expense_date__lte=self.period_end,
+            )
+            if self.project:
+                qs = qs.filter(project=self.project)
+            else:
+                qs = qs.filter(cost_centre=self.cost_centre)
+            if self.ledger_account:
+                qs = qs.filter(ledger_account=self.ledger_account)
+            return qs.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+
+        # REVENUE / CAPEX: ProjectRevenue has no cost_centre field, so a
+        # budget scoped only to a cost centre (no project) can't be matched
+        # this way — fall back to the company-wide ledger for that case.
+        if self.project:
+            return ProjectRevenue.active_objects.filter(
+                project=self.project,
+                revenue_date__gte=self.period_start, revenue_date__lte=self.period_end,
+            ).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+        return self._actual_amount_from_ledger()
+
+    def _actual_amount_from_ledger(self):
         from apps.bookkeeping.models import JournalEntryLine
         from django.db.models import Sum
         if not self.ledger_account:

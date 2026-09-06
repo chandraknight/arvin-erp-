@@ -9,23 +9,23 @@
                 <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">
                     Record #{{ forloop.counter0|add:page_obj.start_index }}
                 </span>
-                <div class="flex space-x-4">
-                    <a href="{% url view_url item.id %}" class="text-blue-600 hover:text-blue-800">
+                <div class="flex items-center gap-1">
+                    <a href="{% url view_url item.id %}" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-blue-600 hover:text-blue-800" aria-label="View">
                         <i class="fas fa-eye"></i>
                     </a>
-                    <a href="{% url edit_url item.id %}" class="text-amber-600 hover:text-amber-800">
+                    <a href="{% url edit_url item.id %}" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-amber-600 hover:text-amber-800" aria-label="Edit">
                         <i class="fas fa-edit"></i>
                     </a>
-                    <a href="{% url delete_url item.id %}" class="text-red-600 hover:text-red-800">
+                    <a href="{% url delete_url item.id %}" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-red-600 hover:text-red-800" aria-label="Delete">
                         <i class="fas fa-trash-alt"></i>
                     </a>
                 </div>
             </div>
             <div class="space-y-3">
                 {% for td in td_list %}
-                    <div class="flex justify-between items-start gap-4">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-4">
                         <span class="text-xs font-bold text-gray-500 uppercase tracking-tight">{{ td|title }}</span>
-                        <span class="text-sm text-gray-800 font-medium text-right">{{ item|get_value:td }}</span>
+                        <span class="text-sm text-gray-800 font-medium sm:text-right break-words">{{ item|get_value:td }}</span>
                     </div>
                 {% endfor %}
             </div>

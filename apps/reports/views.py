@@ -31,6 +31,7 @@ from apps.vendors.models import Vendor
 from apps.pos.models import POSSale
 from apps.utils.constant import PAYMENT_METHOD_CHOICES
 from apps.reports.models import Report, UserReportAccess
+from apps.reports.services.pdf_export import render_pdf_response
 from apps.reports.report_registry import (
     REPORT_REGISTRY, get_user_visible_reports, get_dashboard_sections,
 )
@@ -521,7 +522,9 @@ def product_sales_report(request):
     branch = get_report_branch(request, user_company)
     product_sales_qs = apply_branch_filters(product_sales_qs, branch, 'invoice__branch')
     if fiscal_year_id:
-        fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
+        fiscal_year = FiscalYear.objects.filter(
+            id=fiscal_year_id, company=user_company,
+        ).first()
     product_sales_qs = filter_by_fiscal_year(
         product_sales_qs, fiscal_year, date_field='invoice__created_at')
     product_sales = product_sales_qs.values('product__name').annotate(
@@ -2057,7 +2060,9 @@ def journal_entry_list_report(request):
     journal_entries = JournalEntry.objects.filter(
         company=user_company).order_by('-date')
     if fiscal_year_id:
-        fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
+        fiscal_year = FiscalYear.objects.filter(
+            id=fiscal_year_id, company=user_company,
+        ).first()
     journal_entries = filter_by_fiscal_year(
         journal_entries, fiscal_year, date_field='date')
     # Search/filtering
@@ -2568,7 +2573,9 @@ def export_report_pdf(request, report_id):
         # Use fiscal year if no date range is provided
         fiscal_year_id = request.session.get('active_fiscal_year_id')
         if fiscal_year_id:
-            fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
+            fiscal_year = FiscalYear.objects.filter(
+                id=fiscal_year_id, company=user_company,
+            ).first()
             if fiscal_year:
                 start_date = fiscal_year.start_date
                 end_date = fiscal_year.end_date
@@ -2887,7 +2894,9 @@ def trial_balance_report(request):
     report_date = timezone.now().date()  # Default to today
     
     if fiscal_year_id:
-        fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
+        fiscal_year = FiscalYear.objects.filter(
+            id=fiscal_year_id, company=user_company,
+        ).first()
         if fiscal_year:
             report_date = fiscal_year.end_date
 
@@ -3007,7 +3016,9 @@ def balance_sheet_report(request):
     fiscal_year = None
     report_date = timezone.now().date()  # Default to today
     if fiscal_year_id:
-        fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
+        fiscal_year = FiscalYear.objects.filter(
+            id=fiscal_year_id, company=user_company,
+        ).first()
         if fiscal_year:
             report_date = fiscal_year.end_date
 
@@ -4620,7 +4631,9 @@ def fiscal_year_dashboard(request):
     ar_aging = {}
     vendor_stats = []
     if fiscal_year_id:
-        fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
+        fiscal_year = FiscalYear.objects.filter(
+            id=fiscal_year_id, company=user_company,
+        ).first()
         if fiscal_year:
             labels, sales_data, expenses_data, profit_data = get_fiscal_year_trends(
                 user_company, fiscal_year)
@@ -4652,12 +4665,15 @@ def fiscal_year_dashboard(request):
     return render(request, 'reports/fiscal_year_dashboard.html', context)
 
 
+@login_required
 def export_fiscal_year_dashboard_csv(request):
     user_company = request.user_company
     fiscal_year_id = request.session.get('active_fiscal_year_id')
     if not user_company or not fiscal_year_id:
         return HttpResponse('No company or fiscal year selected.', status=400)
-    fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
+    fiscal_year = FiscalYear.objects.filter(
+        id=fiscal_year_id, company=user_company,
+    ).first()
     if not fiscal_year:
         return HttpResponse('Fiscal year not found.', status=404)
     # Gather analytics data
@@ -4725,12 +4741,15 @@ def export_fiscal_year_dashboard_csv(request):
     return response
 
 
+@login_required
 def export_fiscal_year_dashboard_excel(request):
     user_company = request.user_company
     fiscal_year_id = request.session.get('active_fiscal_year_id')
     if not user_company or not fiscal_year_id:
         return HttpResponse('No company or fiscal year selected.', status=400)
-    fiscal_year = FiscalYear.objects.filter(id=fiscal_year_id).first()
+    fiscal_year = FiscalYear.objects.filter(
+        id=fiscal_year_id, company=user_company,
+    ).first()
     if not fiscal_year:
         return HttpResponse('Fiscal year not found.', status=404)
     # Gather analytics data
@@ -5340,70 +5359,123 @@ def print_ratio_analysis_report(request):
 # AP AGING REPORT
 # ═══════════════════════════════════════════════════════════════════════════
 
+def _ap_aging_rows(user_company):
+    """Shared aging computation for AP aging report/export/print views."""
+    today = date.today()
+    bills = VendorBill.active_objects.filter(
+        vendor__company=user_company, status__in=('UNPAID', 'PARTIAL'),
+    ).select_related('vendor')
+
+    rows = []
+    total_outstanding = Decimal('0.00')
+    for bill in bills:
+        paid = bill.payments.aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
+        balance = bill.total_amount - paid
+        if balance <= 0:
+            continue
+        aging_date = bill.due_date or bill.bill_date
+        days_past_due = (today - aging_date).days
+        buckets = {
+            'current': balance if days_past_due < 0 else Decimal('0'),
+            'days_1_30': balance if 0 <= days_past_due <= 30 else Decimal('0'),
+            'days_31_60': balance if 31 <= days_past_due <= 60 else Decimal('0'),
+            'days_61_90': balance if 61 <= days_past_due <= 90 else Decimal('0'),
+            'days_over_90': balance if days_past_due > 90 else Decimal('0'),
+        }
+        rows.append({
+            'bill_id': bill.pk,
+            'bill_number': bill.bill_number,
+            'vendor_name': bill.vendor.name if bill.vendor else '',
+            'due_date': bill.due_date,
+            'total_amount': bill.total_amount,
+            'outstanding_balance': balance,
+            **buckets,
+        })
+        total_outstanding += balance
+    return rows, total_outstanding
+
+
 @login_required
 def ap_aging_report(request):
-    """Accounts Payable aging — mirrors AR aging but for vendor bills."""
     user_company = request.user_company
     if not user_company:
-        messages.warning(request, "Your account is not associated with a company.")
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
         return redirect('accounts:user_dashboard')
 
-    as_of_date_str = request.GET.get('as_of_date')
-    as_of_date = bs_str_to_ad(as_of_date_str) if as_of_date_str else date.today()
-
-    # Unpaid vendor bills
-    bills = VendorBill.objects.filter(
-        vendor__company=user_company,
-        status='UNPAID',
-    ).select_related('vendor').order_by('due_date')
-
-    aging_data = []
-    totals = {'current': Decimal('0'), 'days_1_30': Decimal('0'),
-              'days_31_60': Decimal('0'), 'days_61_90': Decimal('0'),
-              'days_90_plus': Decimal('0'), 'total': Decimal('0')}
-
-    for bill in bills:
-        paid = bill.payments.aggregate(
-            t=Coalesce(Sum('amount'), Decimal('0'))
-        )['t']
-        outstanding = bill.total_amount - paid
-        if outstanding <= 0:
-            continue
-
-        days_overdue = (as_of_date - bill.due_date).days if bill.due_date else 0
-
-        row = {
-            'bill': bill,
-            'outstanding': outstanding,
-            'days_overdue': days_overdue,
-            'current':    outstanding if days_overdue <= 0 else Decimal('0'),
-            'days_1_30':  outstanding if 1  <= days_overdue <= 30  else Decimal('0'),
-            'days_31_60': outstanding if 31 <= days_overdue <= 60  else Decimal('0'),
-            'days_61_90': outstanding if 61 <= days_overdue <= 90  else Decimal('0'),
-            'days_90_plus': outstanding if days_overdue > 90 else Decimal('0'),
-        }
-        aging_data.append(row)
-        for k in totals:
-            if k != 'total':
-                totals[k] += row[k]
-        totals['total'] += outstanding
+    ap_aging_data, total_outstanding = _ap_aging_rows(user_company)
 
     context = {
+        'ap_aging_data': ap_aging_data,
+        'total_outstanding': total_outstanding,
         'company': user_company,
-        'as_of_date': as_of_date,
-        'aging_data': aging_data,
-        'totals': totals,
     }
     return render(request, 'reports/ap_aging_report.html', context)
 
 
 @login_required
-def export_ap_aging_excel(request):
-    from openpyxl import Workbook
+def export_ap_aging_report_excel(request):
     user_company = request.user_company
     if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
         return redirect('accounts:user_dashboard')
-    return redirect('reports:ap_aging_report')
+
+    ap_aging_data, _total = _ap_aging_rows(user_company)
+
+    df = pd.DataFrame([{
+        'Vendor': row['vendor_name'],
+        'Bill #': row['bill_number'],
+        'Due Date': row['due_date'],
+        'Total Amount': float(row['total_amount']),
+        'Outstanding': float(row['outstanding_balance']),
+        'Current': float(row['current']),
+        '1-30 Days': float(row['days_1_30']),
+        '31-60 Days': float(row['days_31_60']),
+        '61-90 Days': float(row['days_61_90']),
+        'Over 90 Days': float(row['days_over_90']),
+    } for row in ap_aging_data])
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="ap_aging_report.xlsx"'
+    df.to_excel(response, index=False, sheet_name='AP Aging Report')
+    return response
+
+
+@login_required
+def export_ap_aging_report_pdf(request):
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    ap_aging_data, total_outstanding = _ap_aging_rows(user_company)
+    context = {
+        'ap_aging_data': ap_aging_data,
+        'total_outstanding': total_outstanding,
+        'company': user_company,
+    }
+    return render_pdf_response(
+        'reports/pdf/ap_aging_report_pdf.html', context, 'ap_aging_report.pdf')
+
+
+@login_required
+def print_ap_aging_report(request):
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    ap_aging_data, total_outstanding = _ap_aging_rows(user_company)
+    context = {
+        'ap_aging_data': ap_aging_data,
+        'total_outstanding': total_outstanding,
+        'company': user_company,
+    }
+    return render(request, 'reports/print/ap_aging_report_print.html', context)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -7609,21 +7681,59 @@ def nfris_tax_report(request):
     start_date = bs_str_to_ad(start_str) if start_str else (fiscal_year.start_date if fiscal_year else date(date.today().year, 1, 1))
     end_date = bs_str_to_ad(end_str) if end_str else date.today()
 
-    sales_agg = Invoice.active_objects.filter(
-        company=user_company, transaction_date__gte=start_date, transaction_date__lte=end_date,
-    ).aggregate(
-        taxable_sales=Coalesce(Sum('subtotal'), Decimal('0')),
-        output_vat=Coalesce(Sum('tax_amount'), Decimal('0')),
-        gross_sales=Coalesce(Sum('total'), Decimal('0')),
-    )
+    # Ledger-derived, same basis as the Balance Sheet and P&L reports —
+    # net movement on the "Tax Payable" (output VAT) / "Input VAT" accounts
+    # within the period, rather than re-summing Invoice/VendorBill totals.
+    def _line_filter(qs):
+        return qs.filter(
+            journal_entry__company=user_company,
+            journal_entry__date__gte=start_date,
+            journal_entry__date__lte=end_date,
+        )
 
-    purchase_agg = VendorBill.objects.filter(
-        vendor__company=user_company, bill_date__gte=start_date, bill_date__lte=end_date,
-    ).aggregate(
-        total_purchases=Coalesce(Sum('total_amount'), Decimal('0')),
-        input_vat=Coalesce(Sum('tax_amount'), Decimal('0')),
-    )
-    purchase_agg['taxable_purchases'] = purchase_agg['total_purchases'] - purchase_agg['input_vat']
+    def _net_credit(account_name):
+        account = LedgerAccount.objects.filter(
+            company=user_company, name=account_name, is_deleted=False
+        ).first()
+        if not account:
+            return Decimal('0.00')
+        cr = _line_filter(JournalEntryLine.objects.filter(
+            account=account, entry_type='CREDIT'
+        )).aggregate(s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        dr = _line_filter(JournalEntryLine.objects.filter(
+            account=account, entry_type='DEBIT'
+        )).aggregate(s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        return cr - dr
+
+    output_vat = _net_credit('Tax Payable')
+    input_vat = _net_credit('Input VAT')
+
+    revenue_total = Decimal('0.00')
+    for acc in LedgerAccount.objects.filter(company=user_company, account_type='REVENUE', is_deleted=False):
+        cr = _line_filter(JournalEntryLine.objects.filter(account=acc, entry_type='CREDIT')).aggregate(
+            s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        dr = _line_filter(JournalEntryLine.objects.filter(account=acc, entry_type='DEBIT')).aggregate(
+            s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        revenue_total += cr - dr
+
+    expense_total = Decimal('0.00')
+    for acc in LedgerAccount.objects.filter(company=user_company, account_type='EXPENSE', is_deleted=False):
+        dr = _line_filter(JournalEntryLine.objects.filter(account=acc, entry_type='DEBIT')).aggregate(
+            s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        cr = _line_filter(JournalEntryLine.objects.filter(account=acc, entry_type='CREDIT')).aggregate(
+            s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
+        expense_total += dr - cr
+
+    sales_agg = {
+        'taxable_sales': revenue_total,
+        'output_vat': output_vat,
+        'gross_sales': revenue_total + output_vat,
+    }
+    purchase_agg = {
+        'total_purchases': expense_total + input_vat,
+        'input_vat': input_vat,
+        'taxable_purchases': expense_total,
+    }
 
     tds_total = TDSDeduction.objects.filter(
         vendor_bill__vendor__company=user_company,
@@ -7631,9 +7741,9 @@ def nfris_tax_report(request):
         vendor_bill__bill_date__lte=end_date,
     ).aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
 
-    net_vat_payable = sales_agg['output_vat'] - purchase_agg['input_vat']
+    net_vat_payable = output_vat - input_vat
 
-    net_income = (sales_agg['taxable_sales'] - purchase_agg['taxable_purchases'])
+    net_income = revenue_total - expense_total
     estimated_cit = max(
         (net_income * user_company.cit_rate / Decimal('100')).quantize(Decimal('0.01')),
         Decimal('0.00'),

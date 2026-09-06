@@ -41,6 +41,12 @@
  {% if form.name.errors %}<p class="text-red-600 text-xs mt-1">{{ form.name.errors|striptags }}</p>{% endif %}
 
  <div class="sm:flex">
+ <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-48 w-full">Store Domain</span>
+ {{ form.store_domain|add_class:"w-full border border-gray-300 px-4 py-2 text-gray-900 focus:ring-2 focus:ring-green-600" }}
+ </div>
+ <p class="text-xs text-gray-500 -mt-2">Optional for local use. Required before exposing this storefront alongside other companies.</p>
+
+ <div class="sm:flex">
  <span class="flex items-center px-4 py-2 bg-gray-50 text-green-800 font-semibold border border-gray-300 sm:border-r-0 sm:w-48 w-full">Organisation Type *</span>
  {{ form.organisation_type|add_class:"w-full border border-gray-300 px-4 py-2 bg-white focus:ring-2 focus:ring-green-600"|attr:"id:id_organisation_type" }}
  </div>
@@ -305,7 +311,7 @@
 <script>
 const FIELD_MAP = {
  TRADING: {inventory:1, purchasing:1, hr_payroll:0, order_management:1, pos:1, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
- SERVICE: {inventory:1, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
+ SERVICE: {inventory:0, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:0, forecasting:0, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
  PROJECT: {inventory:0, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:1, forecasting:1, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
  NGO: {inventory:0, purchasing:1, hr_payroll:1, order_management:0, pos:0, project_tracking:1, forecasting:1, manufacturing:0, branch_accounting:0, restaurant:0, tours:0, ecom:0},
  MANUFACTURING: {inventory:1, purchasing:1, hr_payroll:1, order_management:1, pos:0, project_tracking:0, forecasting:0, manufacturing:1, branch_accounting:0, restaurant:0, tours:0, ecom:0},

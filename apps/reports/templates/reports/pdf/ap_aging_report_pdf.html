@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AP Aging Report</title>
+<style>
+* { box-sizing: border-box; }
+@page { size: A4 landscape; margin: 2cm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #777; } }
+html { width: 297mm; }
+body { font-family: Arial, sans-serif; font-size: 8.5pt; color: #000; margin: 0; }
+.rh { text-align: center; margin-bottom: 14px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+.rh h1 { font-size: 14pt; margin: 0 0 2px; }
+.rh .co { font-size: 11pt; font-weight: bold; }
+.rh .sub { font-size: 8pt; color: #666; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #bbb; padding: 3px 6px; font-size: 8pt; }
+th { background: #ddd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+tfoot td { font-weight: bold; background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+</style>
+</head>
+<body>
+<div class="rh">
+ {% if company %}<div class="co">{{ company.name }}</div>{% endif %}
+ <h1>AP Aging Report</h1>
+ <div class="sub">As of: {% now "Y-m-d" %}</div>
+</div>
+<table>
+ <thead>
+ <tr>
+ <th>Vendor</th><th>Bill #</th><th>Due Date</th><th class="tr">Total</th><th class="tr">Outstanding</th>
+ <th class="tr">Current</th><th class="tr">1-30</th><th class="tr">31-60</th><th class="tr">61-90</th><th class="tr">Over 90</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for row in ap_aging_data %}
+ <tr>
+ <td>{{ row.vendor_name|default:"N/A" }}</td>
+ <td>{{ row.bill_number|default:"N/A" }}</td>
+ <td>{{ row.due_date|date:"Y-m-d" }}</td>
+ <td class="tr">{{ row.total_amount|floatformat:2 }}</td>
+ <td class="tr">{{ row.outstanding_balance|floatformat:2 }}</td>
+ <td class="tr">{{ row.current|floatformat:2 }}</td>
+ <td class="tr">{{ row.days_1_30|floatformat:2 }}</td>
+ <td class="tr">{{ row.days_31_60|floatformat:2 }}</td>
+ <td class="tr">{{ row.days_61_90|floatformat:2 }}</td>
+ <td class="tr">{{ row.days_over_90|floatformat:2 }}</td>
+ </tr>
+ {% empty %}<tr><td colspan="10" class="tc">No outstanding vendor bills found.</td></tr>{% endfor %}
+ </tbody>
+ {% if ap_aging_data %}
+ <tfoot>
+ <tr><td colspan="4" class="tr">Total</td><td class="tr">{{ total_outstanding|floatformat:2 }}</td><td colspan="5"></td></tr>
+ </tfoot>
+ {% endif %}
+</table>
+</body>
+</html>

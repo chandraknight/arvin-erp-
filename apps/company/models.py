@@ -17,6 +17,10 @@ ORGANISATION_TYPE_CHOICES = [
 
 class Company(BaseModel):
     name = models.CharField(max_length=255, unique=True)
+    store_domain = models.CharField(
+        max_length=255, unique=True, null=True, blank=True,
+        help_text='Verified hostname for this company\'s storefront, e.g. shop.example.com.',
+    )
     address = models.TextField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
@@ -203,7 +207,7 @@ class Company(BaseModel):
 
         elif self.organisation_type == 'SERVICE':
             self.enable_hr_payroll = True
-            self.enable_inventory = True
+            self.enable_inventory = False
             self.enable_purchasing = True
 
         elif self.organisation_type == 'PROJECT':

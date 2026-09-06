@@ -86,6 +86,44 @@ def get_dashboard_stats(company):
     }
 
 
+def get_project_pnl(company, project=None, start_date=None, end_date=None):
+    """
+    Project-wise Profit & Loss — built from ProjectExpense/ProjectRevenue,
+    since the core ledger (JournalEntry/JournalEntryLine) carries no project
+    link. Expenses are grouped by ledger_account (nature) like the company
+    P&L; revenue has no per-account breakdown on ProjectRevenue, so it's a
+    single total line.
+    """
+    expenses = ProjectExpense.active_objects.filter(project__company=company).select_related(
+        'ledger_account', 'project'
+    )
+    revenues = ProjectRevenue.active_objects.filter(project__company=company).select_related('project')
+
+    if project:
+        expenses = expenses.filter(project=project)
+        revenues = revenues.filter(project=project)
+    if start_date:
+        expenses = expenses.filter(expense_date__gte=start_date)
+        revenues = revenues.filter(revenue_date__gte=start_date)
+    if end_date:
+        expenses = expenses.filter(expense_date__lte=end_date)
+        revenues = revenues.filter(revenue_date__lte=end_date)
+
+    expense_lines = list(
+        expenses.values('ledger_account__name').annotate(amount=Sum('amount')).order_by('ledger_account__name')
+    )
+    total_expense = sum((line['amount'] for line in expense_lines), _ZERO)
+    total_revenue = revenues.aggregate(t=Coalesce(Sum('amount'), _ZERO))['t']
+
+    return {
+        'project': project,
+        'expense_lines': expense_lines,
+        'total_expense': total_expense,
+        'total_revenue': total_revenue,
+        'net_profit': total_revenue - total_expense,
+    }
+
+
 def get_budget_vs_actual(company, fiscal_year=None):
     budgets = Budget.active_objects.filter(company=company)
     if fiscal_year:

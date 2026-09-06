@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../erp_billing_engine"
+		},
+		{
+			"path": "../dpsdabu_erp"
 		}
 	]
 }

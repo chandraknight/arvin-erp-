@@ -17,6 +17,8 @@ urlpatterns = [
     path('htmx/ledger-account/quick-create/', views.ledger_account_quick_create, name='ledger_account_quick_create'),
     path('ledger-report/<uuid:account_id>/', views.LedgerReportView.as_view(), name='ledger_report'),
     path('ledger-report/<uuid:account_id>/set-opening-balance/', views.LedgerReportView.as_view(), name='set_opening_balance'),
+    path('ledger-report/<uuid:account_id>/export/excel/', views.LedgerReportExportExcelView.as_view(), name='export_ledger_report_excel'),
+    path('ledger-report/<uuid:account_id>/export/pdf/', views.LedgerReportExportPdfView.as_view(), name='export_ledger_report_pdf'),
 
     # Journal entries
     path('journal-entries/', views.JournalEntryListView.as_view(), name='journal_entry_list'),

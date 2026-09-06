@@ -12,11 +12,11 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from apps.products.models import Product, Category, ProductImage
 from apps.ecom.models import EcomOrder, DiscountCoupon, SiteSettings
 from apps.ecom.services import create_sales_order_from_ecom
-from apps.company.models import Company
+from apps.ecom.tenant import resolve_store_company
 
 
 def _get_company(request):
-    return request.user.profile.company if hasattr(request.user, 'profile') else Company.objects.first()
+    return resolve_store_company(request)
 
 
 def _resolve_bank_account(request, company):

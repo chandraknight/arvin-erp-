@@ -39,5 +39,12 @@ urlpatterns = [
 
     # Reports
     path('reports/production/', views.production_report, name='production_report'),
+    path('reports/production/export/excel/', views.export_production_report_excel, name='export_production_report_excel'),
+    path('reports/production/export/pdf/', views.export_production_report_pdf, name='export_production_report_pdf'),
+    path('reports/production/print/', views.print_production_report, name='print_production_report'),
+
     path('reports/material-consumption/', views.material_consumption_report, name='material_report'),
+    path('reports/material-consumption/export/excel/', views.export_material_consumption_report_excel, name='export_material_report_excel'),
+    path('reports/material-consumption/export/pdf/', views.export_material_consumption_report_pdf, name='export_material_report_pdf'),
+    path('reports/material-consumption/print/', views.print_material_consumption_report, name='print_material_report'),
 ]

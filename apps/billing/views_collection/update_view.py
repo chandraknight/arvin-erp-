@@ -50,6 +50,12 @@ class InvoiceUpdateView(AuthMixin, FiscalYearOpenMixin, UpdateView):
         context['vat_registered'] = company.vat_registered if company else False
         context['tax_rate'] = company.tax_rate if company else 0
         context['org_type'] = company.organisation_type if company else 'TRADING'
+        context['show_delivery_charge'] = bool(
+            company
+            and company.organisation_type in ('TRADING', 'SMALL_ENTERPRISE')
+            and company.enable_order_management
+            and company.enable_ecom
+        )
         return context
 
     def form_valid(self, form):
@@ -103,6 +109,8 @@ class VendorBillUpdateView(AuthMixin, FiscalYearOpenMixin, UpdateView):
             context['formset'] = VendorBillItemFormSet(self.request.POST, instance=self.object)
         else:
             context['formset'] = VendorBillItemFormSet(instance=self.object)
+        company = getattr(self.request.user, 'company', None)
+        context['org_type'] = company.organisation_type if company else 'TRADING'
         return context
 
     def form_valid(self, form):

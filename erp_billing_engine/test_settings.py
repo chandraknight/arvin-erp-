@@ -10,6 +10,6 @@ Changes:
 """
 from erp_billing_engine.settings import *  # noqa: F401, F403
 
-DATABASES['default']['TEST'] = {
+DATABASES['default'].setdefault('TEST', {}).update({
     'NAME': 'test_erp_db_qa',
-}
+})

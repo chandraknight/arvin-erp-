@@ -9,6 +9,11 @@
  <h1 class="text-2xl font-bold text-gray-800">Production Report</h1>
  <p class="text-sm text-gray-500 mt-1">Summary of planned and produced work orders.</p>
  </div>
+ <div class="flex gap-2">
+ <a href="{% url 'manufacturing:export_production_report_excel' %}" class="px-4 py-2 text-sm bg-green-600 text-white hover:bg-green-700 transition shadow">Export to Excel</a>
+ <a href="{% url 'manufacturing:export_production_report_pdf' %}" class="px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 transition shadow">Export to PDF</a>
+ <a href="{% url 'manufacturing:print_production_report' %}" target="_blank" class="px-4 py-2 text-sm bg-purple-600 text-white hover:bg-purple-700 transition shadow">Print</a>
+ </div>
  </div>
 
  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

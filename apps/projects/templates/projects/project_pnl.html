@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Project P&amp;L{% endblock %}
+{% block content %}
+{% include 'includes/toast.html' %}
+<div class="w-full mt-2">
+ <div class="flex justify-between items-center mb-6 border-b pb-4">
+ <div>
+ <h1 class="text-2xl font-bold text-gray-800">Project Profit &amp; Loss</h1>
+ <p class="text-sm text-gray-500">{% if project %}{{ project.name }}{% else %}All Projects{% endif %}</p>
+ </div>
+ <form method="get" class="flex gap-2">
+ <select name="project" onchange="this.form.submit()" class="border border-gray-300 px-3 py-2 text-sm text-gray-700">
+ <option value="">All Projects</option>
+ {% for p in projects %}
+ <option value="{{ p.pk }}" {% if project and project.pk == p.pk %}selected{% endif %}>{{ p.name }}</option>
+ {% endfor %}
+ </select>
+ </form>
+ </div>
+
+ <!-- Summary -->
+ <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+ <div class="bg-white border border-gray-200 shadow-sm p-4">
+ <p class="text-xs text-gray-500 uppercase">Total Revenue</p>
+ <p class="text-2xl font-bold text-green-700">{{ total_revenue|floatformat:2|intcomma }}</p>
+ </div>
+ <div class="bg-white border border-gray-200 shadow-sm p-4">
+ <p class="text-xs text-gray-500 uppercase">Total Expense</p>
+ <p class="text-2xl font-bold text-gray-800">{{ total_expense|floatformat:2|intcomma }}</p>
+ </div>
+ <div class="bg-white border border-gray-200 shadow-sm p-4">
+ <p class="text-xs text-gray-500 uppercase">Net Profit</p>
+ <p class="text-2xl font-bold {% if net_profit < 0 %}text-red-600{% else %}text-green-700{% endif %}">
+ {{ net_profit|floatformat:2|intcomma }}
+ </p>
+ </div>
+ </div>
+
+ <div class="bg-white border border-gray-200 shadow-sm overflow-x-auto">
+ <table class="min-w-full text-sm">
+ <thead class="bg-green-600 text-white text-xs uppercase">
+ <tr>
+ <th class="px-4 py-3 text-left border border-green-700">Expense Account</th>
+ <th class="px-4 py-3 text-right border border-green-700">Amount</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for line in expense_lines %}
+ <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+ <td class="px-4 py-2 border border-gray-200">{{ line.ledger_account__name|default:"Unclassified" }}</td>
+ <td class="px-4 py-2 border border-gray-200 text-right font-mono">{{ line.amount|floatformat:2|intcomma }}</td>
+ </tr>
+ {% empty %}
+ <tr>
+ <td colspan="2" class="px-4 py-12 text-center text-gray-400">
+ No project expenses recorded{% if project %} for {{ project.name }}{% endif %}.
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+</div>
+{% endblock %}
