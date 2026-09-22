@@ -20,6 +20,7 @@ from apps.products.models import Product, Category, ProductStock, StockTransacti
 from apps.company.models import Company
 from apps.ecom.models import EcomOrder, EcomOrderItem, SiteSettings, HeroBanner, Page, Announcement, BlogPost, ContactMessage, DiscountCoupon
 from apps.ecom.services import create_sales_order_from_ecom, validate_coupon, apply_coupon_to_order, notify_admin_new_order
+from apps.billing.services.invoice_service import vat_invoice_fields, calculate_discount_amount, calculate_tax_amount
 
 
 def _get_company(request):
@@ -429,19 +430,21 @@ def place_order(request):
         if customer:
             ecom_order.customer = customer
 
-    # Compute totals before save
-    subtotal = sum(float(products_map[pid].price) * qty for pid, qty in cart.items() if pid in products_map)
+    # Compute totals before save — subtotal/discount/tax use the same shared
+    # helpers as POS/Invoice (apps/billing/services/invoice_service.py) so
+    # all sale channels apply identical VAT and discount math.
+    subtotal = Decimal(str(sum(float(products_map[pid].price) * qty for pid, qty in cart.items() if pid in products_map)))
     ecom_order.subtotal = subtotal
 
     coupon_code = request.POST.get('coupon_code', '').strip()
     applied_coupon = None
-    discount_amount = 0
+    discount_amount = Decimal('0.00')
     if coupon_code:
         result = validate_coupon(coupon_code, company, subtotal)
         if result['ok']:
             try:
                 applied_coupon = DiscountCoupon.objects.get(code__iexact=coupon_code, company=company)
-                discount_amount = result['discount']
+                discount_amount = Decimal(str(result['discount']))
             except DiscountCoupon.DoesNotExist:
                 pass
 
@@ -453,10 +456,16 @@ def place_order(request):
         if subtotal < threshold:
             delivery_charge = site.delivery_charge
 
+    vat_fields = vat_invoice_fields(company)
+    tax_percent = vat_fields['tax_percent']
+    tax_amount = calculate_tax_amount(subtotal, discount_amount, tax_percent)
+
     ecom_order.coupon = applied_coupon
     ecom_order.discount_amount = discount_amount
+    ecom_order.tax_percent = tax_percent
+    ecom_order.tax_amount = tax_amount
     ecom_order.delivery_charge = delivery_charge
-    ecom_order.total = max(0, Decimal(str(subtotal)) - Decimal(str(discount_amount)) + delivery_charge)
+    ecom_order.total = max(Decimal('0.00'), subtotal - discount_amount + tax_amount + delivery_charge)
     ecom_order.save()
 
     for pid, qty in cart.items():

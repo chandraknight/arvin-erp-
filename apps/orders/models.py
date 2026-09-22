@@ -76,9 +76,9 @@ class SalesOrder(BaseModel):
         related_name='sales_orders',
         db_constraint=False,
     )
-    order_date = models.DateField(default=timezone.now)
+    order_date = models.DateField(default=timezone.now, db_index=True)
     expected_delivery_date = models.DateField(null=True, blank=True)
-    status = models.CharField(max_length=15, choices=ORDER_STATUS_CHOICES, default='CONFIRMED')
+    status = models.CharField(max_length=15, choices=ORDER_STATUS_CHOICES, default='CONFIRMED', db_index=True)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='NORMAL')
 
     # Financials (computed from items)
@@ -103,6 +103,9 @@ class SalesOrder(BaseModel):
 
     class Meta:
         ordering = ['-order_date', '-created_at']
+        indexes = [
+            models.Index(fields=['company', 'status', 'order_date'], name='orders_so_co_status_date_idx'),
+        ]
 
     def __str__(self):
         return f"SO-{self.order_number or self.id}"

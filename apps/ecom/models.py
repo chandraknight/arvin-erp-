@@ -254,6 +254,8 @@ class EcomOrder(BaseModel):
 
     subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
     discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
+    tax_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    tax_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
     delivery_charge = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     coupon = models.ForeignKey(
         'ecom.DiscountCoupon', on_delete=models.SET_NULL,

@@ -77,6 +77,16 @@ JOURNAL_TYPE_CHOICES = [
 
 class JournalEntry(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='journal_entries', null=True, blank=True)
+    fiscal_year = models.ForeignKey(
+        FiscalYear, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='journal_entries',
+        help_text='Auto-resolved from date on first save. Scopes voucher_no numbering.',
+    )
+    voucher_no = models.CharField(
+        max_length=60, blank=True, null=True, unique=True,
+        help_text='Sequential Journal Voucher number for statutory audit trail. '
+                   'Format: {COMPANY}-JV-{FY}-{NNNN}, resets per fiscal year.',
+    )
     date = models.DateField(default=timezone.now)
     description = models.CharField(max_length=700, blank=True, null=True)
     journal_type = models.CharField(
@@ -102,12 +112,17 @@ class JournalEntry(BaseModel):
         return f"Entry on {self.date.strftime('%Y-%m-%d')}: {self.description[:50]}..."
 
     def save(self, *args, **kwargs):
-        if self.company_id and self.date and not self.pk:
+        if self.company_id and self.date and self._state.adding:
             from apps.company.fiscal_year_guard import assert_fiscal_year_open
             fy = FiscalYear.objects.filter(
                 company_id=self.company_id, start_date__lte=self.date, end_date__gte=self.date,
             ).first()
             assert_fiscal_year_open(fy)
+            if fy and not self.fiscal_year_id:
+                self.fiscal_year = fy
+            if not self.voucher_no:
+                from .voucher_service import generate_voucher_no
+                self.voucher_no = generate_voucher_no(self.company_id, fy)
         super().save(*args, **kwargs)
 
     @property
@@ -145,7 +160,7 @@ class JournalEntryLine(BaseModel):
     account = models.ForeignKey(LedgerAccount, on_delete=models.CASCADE)
     entry_type = models.CharField(max_length=10, choices=JOURNAL_ENTRY_TYPES)
     narration = models.CharField(max_length=250, blank=True, null=True)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
     # Bank reconciliation: whether this line has been matched against a bank
     # statement. Meaningful only for lines posted to a Bank/Cash ledger account.
     is_cleared = models.BooleanField(default=False)
@@ -199,6 +214,13 @@ def get_or_create_system_account(company, name, account_type, code=None, is_curr
     Lazily create a company-scoped system LedgerAccount (e.g. "Accrued Expenses",
     "Provision for Doubtful Debts"). Shared helper for ad-hoc NFRS postings.
     """
+    # LedgerAccount enforces uniqueness on (company, code), not (company, name) —
+    # check by code first so an existing account under a different name is reused
+    # instead of get_or_create() attempting a duplicate-code INSERT.
+    if code:
+        acc = LedgerAccount.objects.filter(company=company, code=code).first()
+        if acc:
+            return acc
     acc, _ = LedgerAccount.objects.get_or_create(
         company=company,
         name=name,
@@ -326,7 +348,7 @@ class LedgerOpeningBalance(models.Model):
     account = models.ForeignKey(LedgerAccount, on_delete=models.CASCADE, related_name='opening_balances')
     fiscal_year = models.ForeignKey(FiscalYear, on_delete=models.CASCADE)
     opening_type = models.CharField(max_length=10, choices=JOURNAL_ENTRY_TYPES)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
 
     class Meta:
         unique_together = ('account', 'fiscal_year')
@@ -477,7 +499,7 @@ class TDSRate(BaseModel):
 class TDSDeduction(BaseModel):
     vendor_bill = models.ForeignKey('billing.VendorBill', on_delete=models.CASCADE, related_name='tds_deductions')
     tds_rate = models.ForeignKey(TDSRate, on_delete=models.PROTECT, related_name='deductions')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
     journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name='tds_deductions')
     certificate_number = models.CharField(max_length=50, blank=True)
     certificate_issued_at = models.DateField(null=True, blank=True)

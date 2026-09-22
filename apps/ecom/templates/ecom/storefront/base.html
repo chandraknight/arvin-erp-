@@ -125,7 +125,7 @@
 
  <a href="{% url 'ecom:home' %}" class="flex items-center gap-2.5 shrink-0" aria-label="{{ company.name }} home">
  {% if cms and cms.logo %}
- <img alt="{{ company.name }}" src="{{ cms.logo.url }}" class="h-10 w-auto rounded-full">
+ <img alt="{{ company.name }}" src="{{ cms.logo.url }}" class="h-14 w-auto object-contain rounded-xl">
  {% else %}
  <span class="grid place-items-center w-10 h-10 rounded-full border border-gold/50 bg-ink/60 shadow-glow">
  <span class="font-deva text-gold text-xl leading-none">&#2384;</span>
@@ -256,7 +256,7 @@
  <div>
  <a href="{% url 'ecom:home' %}" class="flex items-center gap-2.5 mb-4" aria-label="{{ company.name }} home">
  {% if cms and cms.logo %}
- <img alt="{{ company.name }}" src="{{ cms.logo.url }}" class="h-10 w-auto rounded-full">
+ <img alt="{{ company.name }}" src="{{ cms.logo.url }}" class="h-14 w-auto object-contain rounded-xl">
  {% else %}
  <span class="grid place-items-center w-10 h-10 rounded-full border border-gold/50 bg-ink/60">
  <span class="font-deva text-gold text-xl leading-none">&#2384;</span>

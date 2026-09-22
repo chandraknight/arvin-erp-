@@ -131,37 +131,23 @@ def get_closing_stock_valuation(company):
     """
     NFRS 2 (IAS 2): item-wise closing stock at lower of cost or net realisable value.
     No ledger 'Inventory' account is posted on purchase/sale, so this is a computed
-    snapshot from Product.cost_price and current stock on hand — same basis as
-    the standalone stock_valuation_report. NRV is computed live from cost_price
-    (see valuation_service.compute_stock_valuation for the rationale).
+    snapshot from current stock on hand — same basis, same lot-aware valuation
+    (FIFO products valued by summing remaining lots, WA by cost_price) as the
+    standalone stock_valuation_report. See apps.products.services.valuation_service.
     """
-    products = Product.objects.filter(
-        company=company, is_service=False
-    ).select_related('productstock', 'category')
+    from apps.products.services.valuation_service import compute_stock_valuation
 
-    rows = []
-    total_carrying_value = Decimal('0.00')
-    for product in products:
-        stock = getattr(product, 'productstock', None)
-        qty = Decimal(stock.stock + stock.ecom_stock) if stock else Decimal('0')
-        if qty == 0:
-            continue
-
-        cost_price = product.cost_price or Decimal('0')
-        value_at_cost = qty * cost_price
-        nrv = cost_price
-        value_at_nrv = qty * nrv
-        carrying_value = min(value_at_cost, value_at_nrv)
-
-        rows.append({
-            'product': product,
-            'qty': qty,
-            'unit_cost': cost_price,
-            'carrying_value': carrying_value,
-        })
-        total_carrying_value += carrying_value
-
-    return rows, total_carrying_value
+    valuation_rows, totals = compute_stock_valuation(company)
+    rows = [
+        {
+            'product': row['product'],
+            'qty': row['qty'],
+            'unit_cost': row['unit_cost'],
+            'carrying_value': row['carrying_value'],
+        }
+        for row in valuation_rows
+    ]
+    return rows, totals['total_carrying_value']
 
 
 def get_cogs_by_product(company, start_date=None, end_date=None):
@@ -179,21 +165,26 @@ def get_cogs_by_product(company, start_date=None, end_date=None):
     if end_date:
         items = items.filter(invoice__created_at__date__lte=end_date)
 
-    items = items.annotate(
-        item_cogs=ExpressionWrapper(
-            F('quantity') * F('product__cost_price'), output_field=DecimalField()
-        )
-    ).select_related('product')
+    items = items.select_related('product')
 
+    # Prefer the actual per-unit cost recorded at sale time (unit_cost — the real
+    # FIFO lot cost, or WA cost_price, set by apps.pos.services.checkout_services)
+    # over the product's current blended cost_price, so COGS reflects what was
+    # actually consumed rather than a point-in-time re-derivation. Falls back to
+    # cost_price for rows predating unit_cost (e.g. sales-order-delivery COGS,
+    # which does not yet populate it — see apps.orders.services.dispatch_stock_and_cogs).
     rows = {}
     total_cogs = Decimal('0.00')
     for item in items:
+        unit_cost = item.unit_cost if item.unit_cost is not None else (item.product.cost_price or Decimal('0.00'))
+        item_cogs = (Decimal(item.quantity) * unit_cost).quantize(Decimal('0.01'))
+
         key = item.product_id
         if key not in rows:
             rows[key] = {'product': item.product, 'qty': Decimal('0'), 'cogs': Decimal('0.00')}
         rows[key]['qty'] += Decimal(item.quantity)
-        rows[key]['cogs'] += item.item_cogs
-        total_cogs += item.item_cogs
+        rows[key]['cogs'] += item_cogs
+        total_cogs += item_cogs
 
     cogs_rows = sorted(rows.values(), key=lambda r: r['product'].name)
     return cogs_rows, total_cogs
@@ -4973,6 +4964,13 @@ def post_income_tax_provision(request):
     from apps.bookkeeping.models import LedgerAccount as _LedgerAccount
 
     def _get_or_create_account(company, name, account_type, code=None):
+        # LedgerAccount enforces uniqueness on (company, code), not (company, name) —
+        # look up by code first so an existing account under a different name is
+        # reused instead of get_or_create() raising IntegrityError on a duplicate code.
+        if code:
+            acc = _LedgerAccount.objects.filter(company=company, code=code).first()
+            if acc:
+                return acc
         acc, _ = _LedgerAccount.objects.get_or_create(
             company=company,
             name=name,

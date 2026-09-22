@@ -111,7 +111,6 @@ def create_sales_order_from_ecom(ecom_order):
     )
     sales_order.save()
 
-    subtotal = Decimal('0.00')
     for item in ecom_order.items.select_related('product'):
         SalesOrderItem.objects.create(
             order=sales_order,
@@ -120,12 +119,16 @@ def create_sales_order_from_ecom(ecom_order):
             quantity=item.quantity,
             unit_price=item.unit_price,
         )
-        subtotal += item.total_price
 
-    delivery_charge = ecom_order.delivery_charge or Decimal('0.00')
-    sales_order.subtotal = subtotal
-    sales_order.total = subtotal + delivery_charge - (ecom_order.discount_amount or Decimal('0.00'))
-    sales_order.save(update_fields=['subtotal', 'total'])
+    # Totals are already computed once, at checkout (apps/ecom/views/storefront.py
+    # place_order), using the same shared VAT/discount helpers POS uses — copy
+    # them across instead of re-deriving a third independent total here.
+    sales_order.subtotal = ecom_order.subtotal
+    sales_order.discount_amount = ecom_order.discount_amount
+    sales_order.tax_amount = ecom_order.tax_amount
+    sales_order.delivery_charge = ecom_order.delivery_charge
+    sales_order.total = ecom_order.total
+    sales_order.save(update_fields=['subtotal', 'discount_amount', 'tax_amount', 'delivery_charge', 'total'])
 
     ecom_order.sales_order = sales_order
     ecom_order.save(update_fields=['sales_order', 'customer'])

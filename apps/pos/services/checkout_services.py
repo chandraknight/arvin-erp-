@@ -18,6 +18,8 @@ from django.utils import timezone
 from apps.billing.models import Invoice, InvoiceItem
 from apps.billing.services.invoice_service import generate_invoice_number, vat_invoice_fields
 from apps.customers.models import Customer
+from apps.orders.models import SalesOrder, SalesOrderItem
+from apps.orders.services import generate_sales_order_number
 from apps.payments.models import Payment
 from apps.payments.services.payment_number_service import generate_payment_number
 from apps.pos.cart import get_totals
@@ -113,6 +115,7 @@ def checkout(
 
     # ── 4. Create InvoiceItems ────────────────────────────────────────────────
     products_to_destock = []
+    invoice_items_by_product = {}
     tracks_inventory = getattr(company, 'enable_inventory', False)
 
     for item_data in cart['items'].values():
@@ -139,7 +142,7 @@ def checkout(
                 # No stock record — allow sale (treat as unlimited)
                 pass
 
-        InvoiceItem.objects.create(
+        invoice_items_by_product[product.id] = InvoiceItem.objects.create(
             invoice=invoice,
             product=product,
             quantity=qty,
@@ -228,9 +231,19 @@ def checkout(
     for product, qty in products_to_destock:
         if product.cost_method == 'FIFO':
             from apps.products.services.fifo_service import consume_fifo_lots
-            total_cogs += consume_fifo_lots(product, qty)
+            product_cogs = consume_fifo_lots(product, qty)
         else:
-            total_cogs += Decimal(qty) * (product.cost_price or Decimal('0.00'))
+            product_cogs = Decimal(qty) * (product.cost_price or Decimal('0.00'))
+        total_cogs += product_cogs
+
+        # Record the actual per-unit cost consumed on this line, so COGS/margin
+        # reports (apps.reports.views.get_cogs_by_product) can use the real FIFO
+        # cost at sale time instead of the product's current blended cost_price.
+        invoice_item = invoice_items_by_product.get(product.id)
+        if invoice_item and qty:
+            invoice_item.unit_cost = (product_cogs / Decimal(qty)).quantize(Decimal('0.0001'))
+            invoice_item.save(update_fields=['unit_cost'])
+
         ProductStock.objects.filter(product=product).update(
             stock=F('stock') - qty
         )
@@ -249,6 +262,38 @@ def checkout(
             description=f'COGS — POS sale {invoice.invoice_number}',
             total_cost=total_cogs,
             posted_by=user,
+        )
+
+    # ── 9. Create a SalesOrder so POS routes through the same "one door" order
+    #        record as ecom (apps/ecom/services.py:create_sales_order_from_ecom).
+    #        A POS sale is fulfilled and paid at the counter, so it's recorded
+    #        already DELIVERED rather than starting the usual fulfillment flow.
+    order_number, seq, order_fy = generate_sales_order_number(company.id)
+    sales_order = SalesOrder.objects.create(
+        company=company,
+        branch=branch,
+        customer=customer,
+        order_number=order_number,
+        sequence_number=seq,
+        fiscal_year=order_fy,
+        order_date=today,
+        status='DELIVERED',
+        invoice=invoice,
+        subtotal=invoice.subtotal,
+        discount_amount=invoice.discount_amount,
+        tax_amount=invoice.tax_amount,
+        delivery_charge=delivery_charge,
+        total=invoice.total,
+        notes=f"[POS #{invoice.invoice_number}] {notes or ''}".strip(),
+    )
+    for invoice_item in invoice.items.select_related('product'):
+        SalesOrderItem.objects.create(
+            order=sales_order,
+            product=invoice_item.product,
+            description=invoice_item.product.name if invoice_item.product else invoice_item.description,
+            quantity=invoice_item.quantity,
+            unit_price=invoice_item.price,
+            discount_percent=invoice_item.discount_percent,
         )
 
     audit.info(

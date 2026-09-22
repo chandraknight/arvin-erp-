@@ -146,6 +146,13 @@ class InvoiceItem(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), help_text='Item discount percentage')
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text='Item discount amount')
+    unit_cost = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True,
+        help_text='NFRS 2: actual per-unit cost consumed at sale time (FIFO lot '
+                   'cost, or weighted-average cost_price). Null on rows created '
+                   'before this field existed, or where cost was not tracked at '
+                   'sale time — COGS reports fall back to product.cost_price for those.',
+    )
 
     @property
     def total_price(self):

@@ -28,6 +28,14 @@ _INVENTORY_ACCOUNT = 'Inventory'
 
 def _get_or_create_account(company, name, account_type, code=None):
     from apps.bookkeeping.models import LedgerAccount
+    # LedgerAccount enforces uniqueness on (company, code), not (company, name) —
+    # look up by code first so an existing account under a different name (e.g.
+    # a company that already has "Closing Stock" at code 1400) is reused instead
+    # of get_or_create() trying to INSERT a duplicate code and raising IntegrityError.
+    if code:
+        acc = LedgerAccount.objects.filter(company=company, code=code).first()
+        if acc:
+            return acc
     acc, _ = LedgerAccount.objects.get_or_create(
         company=company,
         name=name,

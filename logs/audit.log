@@ -646,3 +646,6 @@
 2026-08-25 09:24:58,859 AUDIT WARNING {"event": "auth_session_anonymous_dashboard", "path": "/accounts/dashboard/", "session_key": null, "session_auth_user_id": null, "session_auth_backend": null, "session_auth_hash_present": false}
 2026-08-28 14:52:18,344 AUDIT WARNING {"event": "auth_session_anonymous_dashboard", "path": "/accounts/dashboard/", "session_key": null, "session_auth_user_id": null, "session_auth_backend": null, "session_auth_hash_present": false}
 2026-08-28 15:14:52,443 AUDIT WARNING {"event": "http_mutation", "method": "POST", "path": "/store/contact/", "user_id": null, "user_email": "anonymous", "ip": "127.0.0.1", "status": 403, "elapsed_ms": 3.0, "user_agent": "curl/8.7.1", "post_data": {"name": ["Test User"], "message": ["Hello"]}}
+2026-09-22 13:19:25,903 AUDIT INFO PAYMENT_JOURNALISED payment=e2e29360-14cb-4a14-b430-f1d01016cb99 type=CUSTOMER amount=0.72 journal_entry=0265a8c2-0bf1-4941-a1d9-a5a6d5135887 company=81595908-b139-4943-9d21-9f2db1ed6872
+2026-09-22 13:28:56,672 AUDIT INFO PAYMENT_JOURNALISED payment=7a692184-e8c3-412e-bb1f-86771b8a83dd type=CUSTOMER amount=0.72 journal_entry=35718fcd-7e6e-4478-9108-075b63fa9c9e company=81595908-b139-4943-9d21-9f2db1ed6872
+2026-09-22 13:28:56,746 AUDIT INFO POS_CHECKOUT actor=admin@test.com company=PUJA sardam invoice=PUJ-ORD-83/06/06-0002 total=0.72 method=CASH
