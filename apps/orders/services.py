@@ -203,7 +203,8 @@ def dispatch_stock_and_cogs(delivery_note, user):
     """
     from decimal import Decimal
 
-    from apps.products.models import Product, ProductStock, StockTransaction
+    from apps.products.models import Product, ProductStock
+    from apps.products.services.stock_ledger_service import log_movement
 
     company = delivery_note.company
     if not getattr(company, 'enable_inventory', False):
@@ -218,17 +219,16 @@ def dispatch_stock_and_cogs(delivery_note, user):
 
         if product.cost_method == 'FIFO':
             from apps.products.services.fifo_service import consume_fifo_lots
-            total_cogs += consume_fifo_lots(product, qty)
+            line_cogs = consume_fifo_lots(product, qty)
         else:
-            total_cogs += Decimal(qty) * (product.cost_price or Decimal('0.00'))
+            line_cogs = Decimal(qty) * (product.cost_price or Decimal('0.00'))
+        total_cogs += line_cogs
 
         ProductStock.objects.filter(product=product).update(stock=F('stock') - qty)
-        StockTransaction.objects.create(
-            product=product,
-            user=user,
-            transaction_type='REMOVE',
-            quantity=qty,
-            reason=f'Delivery {delivery_note.delivery_number}',
+        log_movement(
+            product, transaction_type='REMOVE', quantity=qty, qty_change=-qty, user=user,
+            reason=f'Delivery {delivery_note.delivery_number}', reference=delivery_note.delivery_number or '',
+            unit_cost=line_cogs / Decimal(qty),
         )
 
     if total_cogs > Decimal('0.00'):

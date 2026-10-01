@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load global_filter %}
+{% block title %}Stock Register{% endblock %}
+{% block content %}
+<div class="p-6">
+
+ <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+ <div>
+ <h1 class="text-2xl font-bold text-gray-800">Stock Register</h1>
+ <p class="text-sm text-gray-500 mt-0.5">NFRS 2 (IAS 2) — {{ date_from|bs_date }} BS to {{ date_to|bs_date }} BS. Opening + Receipts − Issues = Closing.</p>
+ </div>
+ <button onclick="window.print()" class="print:hidden inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition">
+ <i class="fas fa-print"></i> Print
+ </button>
+ </div>
+
+ <form method="get" class="print:hidden bg-white border border-gray-100 shadow-sm p-4 mb-6 flex flex-wrap items-end gap-3">
+ <div>
+ <label class="block text-xs font-medium text-gray-600 mb-1">From</label>
+ <input type="text" name="date_from" value="{{ date_from|bs_date }}" autocomplete="off" class="nepali-datepicker border border-gray-300 text-sm px-3 py-2">
+ </div>
+ <div>
+ <label class="block text-xs font-medium text-gray-600 mb-1">To</label>
+ <input type="text" name="date_to" value="{{ date_to|bs_date }}" autocomplete="off" class="nepali-datepicker border border-gray-300 text-sm px-3 py-2">
+ </div>
+ <div>
+ <label class="block text-xs font-medium text-gray-600 mb-1">Category</label>
+ <select name="category" class="border border-gray-300 text-sm px-3 py-2">
+ <option value="">All Categories</option>
+ {% for cat in categories %}
+ <option value="{{ cat.id }}" {% if category_q == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+ {% endfor %}
+ </select>
+ </div>
+ <div>
+ <label class="block text-xs font-medium text-gray-600 mb-1">Product (stock card)</label>
+ <select name="product" class="border border-gray-300 text-sm px-3 py-2">
+ <option value="">All Products (summary)</option>
+ {% for p in products %}
+ <option value="{{ p.id }}" {% if product_q == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+ {% endfor %}
+ </select>
+ </div>
+ <button type="submit" class="bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700 transition text-sm">Apply</button>
+ <a href="{% url 'reports:stock_register_report' %}" class="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">Clear</a>
+ </form>
+
+ <div class="bg-white shadow-md overflow-x-auto mb-6">
+ <table class="min-w-full divide-y divide-gray-200 text-sm">
+ <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+ <tr>
+ <th rowspan="2" class="px-4 py-2 text-left">Product</th>
+ <th rowspan="2" class="px-4 py-2 text-left">Category</th>
+ <th colspan="2" class="px-4 py-2 text-center border-l">Opening</th>
+ <th colspan="2" class="px-4 py-2 text-center border-l">Receipts</th>
+ <th colspan="2" class="px-4 py-2 text-center border-l">Issues</th>
+ <th colspan="2" class="px-4 py-2 text-center border-l">Closing</th>
+ </tr>
+ <tr>
+ <th class="px-4 py-2 text-right border-l">Qty</th><th class="px-4 py-2 text-right">Value</th>
+ <th class="px-4 py-2 text-right border-l">Qty</th><th class="px-4 py-2 text-right">Value</th>
+ <th class="px-4 py-2 text-right border-l">Qty</th><th class="px-4 py-2 text-right">Value</th>
+ <th class="px-4 py-2 text-right border-l">Qty</th><th class="px-4 py-2 text-right">Value</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-200">
+ {% for r in rows %}
+ <tr>
+ <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">
+ {% if not selected_product %}<a href="?date_from={{ date_from|bs_date }}&date_to={{ date_to|bs_date }}&product={{ r.product.id }}" class="text-indigo-600 hover:underline">{{ r.product.name }}</a>{% else %}{{ r.product.name }}{% endif %}
+ </td>
+ <td class="px-4 py-2 text-gray-500">{{ r.category|default:"—" }}</td>
+ <td class="px-4 py-2 text-right border-l">{{ r.opening_qty }}</td>
+ <td class="px-4 py-2 text-right">{{ r.opening_value|floatformat:"2" }}</td>
+ <td class="px-4 py-2 text-right border-l">{{ r.in_qty }}</td>
+ <td class="px-4 py-2 text-right">{{ r.in_value|floatformat:"2" }}</td>
+ <td class="px-4 py-2 text-right border-l">{{ r.out_qty }}</td>
+ <td class="px-4 py-2 text-right">{{ r.out_value|floatformat:"2" }}</td>
+ <td class="px-4 py-2 text-right border-l font-semibold">{{ r.closing_qty }}</td>
+ <td class="px-4 py-2 text-right font-semibold">{{ r.closing_value|floatformat:"2" }}</td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="10" class="px-4 py-4 text-center text-gray-500">No stock or movements in this period.</td></tr>
+ {% endfor %}
+ </tbody>
+ {% if rows %}
+ <tfoot class="bg-gray-50 font-semibold">
+ <tr>
+ <td colspan="2" class="px-4 py-2 text-right">Total</td>
+ <td class="px-4 py-2 text-right border-l">{{ totals.opening_qty }}</td>
+ <td class="px-4 py-2 text-right">{{ totals.opening_value|floatformat:"2" }}</td>
+ <td class="px-4 py-2 text-right border-l">{{ totals.in_qty }}</td>
+ <td class="px-4 py-2 text-right">{{ totals.in_value|floatformat:"2" }}</td>
+ <td class="px-4 py-2 text-right border-l">{{ totals.out_qty }}</td>
+ <td class="px-4 py-2 text-right">{{ totals.out_value|floatformat:"2" }}</td>
+ <td class="px-4 py-2 text-right border-l">{{ totals.closing_qty }}</td>
+ <td class="px-4 py-2 text-right text-indigo-700">{{ totals.closing_value|floatformat:"2" }}</td>
+ </tr>
+ </tfoot>
+ {% endif %}
+ </table>
+ </div>
+
+ {% if selected_product %}
+ <h2 class="text-lg font-semibold text-gray-800 mb-2">Stock Card — {{ selected_product.name }}</h2>
+ <div class="bg-white shadow-md overflow-x-auto">
+ <table class="min-w-full divide-y divide-gray-200 text-sm">
+ <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
+ <tr>
+ <th class="px-4 py-2 text-left">Date</th>
+ <th class="px-4 py-2 text-left">Type</th>
+ <th class="px-4 py-2 text-left">Reference / Reason</th>
+ <th class="px-4 py-2 text-right">Unit Cost</th>
+ <th class="px-4 py-2 text-right">In Qty</th>
+ <th class="px-4 py-2 text-right">In Value</th>
+ <th class="px-4 py-2 text-right">Out Qty</th>
+ <th class="px-4 py-2 text-right">Out Value</th>
+ <th class="px-4 py-2 text-right">Balance Qty</th>
+ <th class="px-4 py-2 text-right">Balance Value</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-gray-200">
+ <tr class="bg-gray-50 italic">
+ <td colspan="8" class="px-4 py-2 text-right">Opening balance</td>
+ <td class="px-4 py-2 text-right">{{ rows.0.opening_qty }}</td>
+ <td class="px-4 py-2 text-right">{{ rows.0.opening_value|floatformat:"2" }}</td>
+ </tr>
+ {% for l in lines %}
+ <tr>
+ <td class="px-4 py-2 whitespace-nowrap">{{ l.date|date:"Y-m-d H:i" }}</td>
+ <td class="px-4 py-2">{{ l.txn.get_transaction_type_display }}</td>
+ <td class="px-4 py-2 text-gray-600">{{ l.reference }}</td>
+ <td class="px-4 py-2 text-right">{{ l.unit_cost|floatformat:"2" }}</td>
+ <td class="px-4 py-2 text-right">{{ l.in_qty|default_if_none:"" }}</td>
+ <td class="px-4 py-2 text-right">{% if l.in_value is not None %}{{ l.in_value|floatformat:"2" }}{% endif %}</td>
+ <td class="px-4 py-2 text-right">{{ l.out_qty|default_if_none:"" }}</td>
+ <td class="px-4 py-2 text-right">{% if l.out_value is not None %}{{ l.out_value|floatformat:"2" }}{% endif %}</td>
+ <td class="px-4 py-2 text-right font-medium">{{ l.bal_qty }}</td>
+ <td class="px-4 py-2 text-right font-medium">{{ l.bal_value|floatformat:"2" }}</td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="10" class="px-4 py-4 text-center text-gray-500">No movements in this period.</td></tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% endif %}
+
+ <p class="text-xs text-gray-400 mt-3">Values use the actual unit cost recorded at each movement (current cost price for older entries). Manual adjustments made before the register was introduced are not included.</p>
+</div>
+{% endblock %}

@@ -404,6 +404,8 @@
                 <p class="section-sublabel">Inventory</p>
                 <a href="{% url 'reports:inventory_report' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-boxes nav-icon"></i>Inventory</a>
+                <a href="{% url 'reports:stock_register_report' %}" class="nav-link" @click="sidebarOpen = false"
+                    ><i class="fas fa-book nav-icon"></i>Stock Register</a>
                 <a href="{% url 'reports:stock_movement_report' %}" class="nav-link" @click="sidebarOpen = false"
                     ><i class="fas fa-exchange-alt nav-icon"></i>Stock Movement</a>
                 <a href="{% url 'reports:product_sales_report' %}" class="nav-link" @click="sidebarOpen = false"

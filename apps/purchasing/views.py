@@ -154,6 +154,7 @@ def receive_purchase_order(request, pk):
                 company = purchase_order.company or purchase_order.vendor.company
                 if company and company.enable_inventory:
                     from decimal import Decimal
+                    from apps.products.services.stock_ledger_service import log_movement
                     for item in purchase_order.items.filter(item_type='STOCK'):
                         if item.product:
                             factor = (
@@ -171,12 +172,12 @@ def receive_purchase_order(request, pk):
                             existing_stock.stock = F('stock') + sale_qty
                             existing_stock.save(update_fields=['stock'])
 
-                            StockTransaction.objects.create(
-                                product=item.product,
+                            log_movement(
+                                item.product, transaction_type='ADD', quantity=sale_qty, qty_change=sale_qty,
                                 user=request.user,
-                                transaction_type='ADD',
-                                quantity=sale_qty,
                                 reason=f'PO received: {purchase_order.purchase_order_number}',
+                                reference=purchase_order.purchase_order_number or '',
+                                unit_cost=(Decimal(str(item.price)) / factor) if item.price and item.price > 0 else item.product.cost_price,
                             )
 
                             if item.price and item.price > 0:

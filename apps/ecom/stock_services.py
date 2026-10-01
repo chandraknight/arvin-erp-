@@ -7,7 +7,8 @@ from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
 
-from apps.products.models import Product, ProductStock, StockTransaction
+from apps.products.models import Product, ProductStock
+from apps.products.services.stock_ledger_service import log_movement
 
 
 @transaction.atomic
@@ -31,13 +32,9 @@ def bulk_set_ecom_stock(company, user, quantities):
         stock.stock -= diff
         stock.ecom_stock = new_qty
         stock.save(update_fields=['stock', 'ecom_stock', 'updated_at'])
-        StockTransaction.objects.create(
-            product=product,
-            user=user,
-            transaction_type='ADJUST',
-            stock_type='ECOM',
-            quantity=new_qty,
-            reason='Bulk ecom inventory update',
+        log_movement(
+            product, transaction_type='ADJUST', stock_type='ECOM', quantity=new_qty,
+            qty_change=0, user=user, reason='Bulk ecom inventory update (POS/E-commerce transfer)',
         )
         updated += 1
     return updated, skipped

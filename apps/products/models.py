@@ -198,6 +198,17 @@ class StockTransaction(BaseModel):
         'bookkeeping.JournalEntry', on_delete=models.SET_NULL, null=True, blank=True,
         help_text='The write-off journal entry posted for a DISPOSAL transaction.',
     )
+    # Stock register (NFRS 2): `quantity` is the entered figure (absolute for ADJUST,
+    # and POS<->ECOM transfers are not stock movements), so the register reads these.
+    qty_change = models.IntegerField(
+        null=True, blank=True,
+        help_text='Signed net change in total on-hand (POS + E-commerce). 0 for internal POS/E-commerce transfers.',
+    )
+    unit_cost = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True,
+        help_text='Cost per unit at the time of the movement (actual FIFO/WA cost consumed or received).',
+    )
+    reference = models.CharField(max_length=100, blank=True, default='', help_text='Source document number.')
 
     def __str__(self):
         return f"{self.transaction_type} {self.quantity} x {self.product.name}"

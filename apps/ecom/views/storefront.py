@@ -16,7 +16,8 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.db.models import F, Q
 
-from apps.products.models import Product, Category, ProductStock, StockTransaction
+from apps.products.models import Product, Category, ProductStock
+from apps.products.services.stock_ledger_service import log_movement
 from apps.company.models import Company
 from apps.ecom.models import EcomOrder, EcomOrderItem, SiteSettings, HeroBanner, Page, Announcement, BlogPost, ContactMessage, DiscountCoupon
 from apps.ecom.services import create_sales_order_from_ecom, validate_coupon, apply_coupon_to_order, notify_admin_new_order
@@ -482,13 +483,11 @@ def place_order(request):
                 ProductStock.objects.filter(product=product).update(
                     ecom_stock=F('ecom_stock') - qty
                 )
-                StockTransaction.objects.create(
-                    product=product,
+                log_movement(
+                    product, transaction_type='REMOVE', stock_type='ECOM', quantity=qty, qty_change=-qty,
                     user=request.user if request.user.is_authenticated else None,
-                    transaction_type='REMOVE',
-                    stock_type='ECOM',
-                    quantity=qty,
-                    reason=f'Ecom order {ecom_order.order_number}',
+                    reason=f'Ecom order {ecom_order.order_number}', reference=ecom_order.order_number or '',
+                    unit_cost=product.cost_price,
                 )
 
     if applied_coupon:

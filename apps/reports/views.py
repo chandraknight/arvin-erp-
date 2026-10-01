@@ -1174,8 +1174,8 @@ def stock_movement_report(request):
         product__company=user_company
     ).select_related('product', 'user').order_by('-created_at')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(request.GET.get('date_from', ''))
+    date_to = bs_str_to_ad(request.GET.get('date_to', ''))
     product_q = request.GET.get('product', '').strip()
     txn_type = request.GET.get('txn_type', '')
     stock_type = request.GET.get('stock_type', '')
@@ -1208,6 +1208,46 @@ def stock_movement_report(request):
 
 
 @login_required
+def stock_register_report(request):
+    """NFRS 2 (IAS 2) Stock Register — opening, receipts, issues and closing, in qty and value."""
+    user_company = request.user_company
+    if not user_company:
+        messages.warning(
+            request, "Your account is not associated with a company. Please contact an administrator.")
+        return redirect('accounts:user_dashboard')
+
+    from apps.products.services.stock_register_service import build_stock_register
+
+    today = date.today()
+    fy = FiscalYear.objects.filter(
+        company=user_company, start_date__lte=today, end_date__gte=today, is_deleted=False,
+    ).first()
+    # Dates arrive as Bikram Sambat (Nepali picker); everything below works in AD.
+    date_from = bs_str_to_ad(request.GET.get('date_from')) or (fy.start_date if fy else today.replace(month=1, day=1))
+    date_to = bs_str_to_ad(request.GET.get('date_to')) or today
+    category_q = request.GET.get('category', '').strip()
+    product_q = request.GET.get('product', '').strip()
+
+    rows, totals, lines = build_stock_register(
+        user_company, date_from, date_to,
+        category_id=category_q or None, product_id=product_q or None,
+    )
+
+    context = {
+        'rows': rows, 'totals': totals, 'lines': lines,
+        'selected_product': rows[0]['product'] if product_q and rows else None,
+        'date_from': date_from, 'date_to': date_to,
+        'category_q': category_q, 'product_q': product_q,
+        'categories': Category.objects.filter(company=user_company).order_by('name'),
+        'products': Product.objects.filter(company=user_company, is_service=False).order_by('name'),
+        'company': user_company,
+        'report_title': 'Stock Register',
+        'is_print': request.GET.get('print') == '1',
+    }
+    return render(request, 'reports/products/stock_register_report.html', context)
+
+
+@login_required
 def stock_disposal_report(request):
     """NFRS 2 (IAS 2) — inventory write-offs. Item-wise disposal detail with journal linkage."""
     user_company = request.user_company
@@ -1220,8 +1260,8 @@ def stock_disposal_report(request):
         product__company=user_company, transaction_type='DISPOSAL',
     ).select_related('product', 'product__category', 'user', 'journal_entry').order_by('-created_at')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(request.GET.get('date_from', ''))
+    date_to = bs_str_to_ad(request.GET.get('date_to', ''))
     product_q = request.GET.get('product', '').strip()
     disposal_reason = request.GET.get('disposal_reason', '')
 
@@ -1877,8 +1917,8 @@ def purchase_order_list_report(request):
         company=user_company
     ).select_related('vendor').order_by('-date')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(request.GET.get('date_from', ''))
+    date_to = bs_str_to_ad(request.GET.get('date_to', ''))
     status = request.GET.get('status', '')
     vendor_q = request.GET.get('vendor', '').strip()
 
@@ -1923,8 +1963,8 @@ def vendor_bill_list_report(request):
 
     qs = qs.select_related('vendor', 'purchase_order').prefetch_related('payments').order_by('-bill_date')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(request.GET.get('date_from', ''))
+    date_to = bs_str_to_ad(request.GET.get('date_to', ''))
     status = request.GET.get('status', '')
     vendor_q = request.GET.get('vendor', '').strip()
 
@@ -1972,8 +2012,8 @@ def vendor_payment_list_report(request):
         vendor_bill__vendor__company=user_company
     ).select_related('vendor_bill__vendor', 'bank_account').order_by('-payment_date')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(request.GET.get('date_from', ''))
+    date_to = bs_str_to_ad(request.GET.get('date_to', ''))
     vendor_q = request.GET.get('vendor', '').strip()
     method = request.GET.get('method', '')
 
@@ -2058,8 +2098,8 @@ def journal_entry_list_report(request):
         journal_entries, fiscal_year, date_field='date')
     # Search/filtering
     description = request.GET.get('description', '').strip()
-    date_from = request.GET.get('date_from', '').strip()
-    date_to = request.GET.get('date_to', '').strip()
+    date_from = bs_str_to_ad(request.GET.get('date_from', ''))
+    date_to = bs_str_to_ad(request.GET.get('date_to', ''))
     if description:
         journal_entries = journal_entries.filter(
             description__icontains=description)
@@ -3624,8 +3664,8 @@ def export_stock_movement_report_excel(request):
     qs = StockTransaction.objects.filter(
         product__company=user_company).select_related('product', 'user').order_by('-created_at')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(request.GET.get('date_from', ''))
+    date_to = bs_str_to_ad(request.GET.get('date_to', ''))
     product_q = request.GET.get('product', '').strip()
     txn_type = request.GET.get('txn_type', '')
     stock_type = request.GET.get('stock_type', '')
@@ -3694,8 +3734,8 @@ def print_stock_movement_report(request):
     qs = StockTransaction.objects.filter(
         product__company=user_company).select_related('product', 'user').order_by('-created_at')
 
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    date_from = bs_str_to_ad(request.GET.get('date_from', ''))
+    date_to = bs_str_to_ad(request.GET.get('date_to', ''))
     product_q = request.GET.get('product', '').strip()
     txn_type = request.GET.get('txn_type', '')
     stock_type_filter = request.GET.get('stock_type', '')

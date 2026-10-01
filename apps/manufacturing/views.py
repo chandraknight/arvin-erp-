@@ -376,6 +376,7 @@ def complete_work_order(request, pk):
     wo = get_object_or_404(WorkOrder, pk=pk, company=request.user_company, status='IN_PROGRESS')
     from django.utils import timezone
     from apps.products.models import ProductStock
+    from apps.products.services.stock_ledger_service import log_movement
 
     total_produced = wo.production_runs.filter(is_deleted=False).aggregate(
         t=Sum('quantity_produced')
@@ -399,14 +400,21 @@ def complete_work_order(request, pk):
             ProductStock.objects.get_or_create(product=mat.raw_material)
             if mat.raw_material.cost_method == 'FIFO':
                 from apps.products.services.fifo_service import consume_fifo_lots
-                total_material_cost += consume_fifo_lots(mat.raw_material, used)
+                material_cost = consume_fifo_lots(mat.raw_material, used)
             else:
-                total_material_cost += Decimal(used) * (mat.raw_material.cost_price or Decimal('0'))
-            ProductStock.objects.select_for_update().filter(
-                product=mat.raw_material
-            ).update(stock=F('stock') - used)
+                material_cost = Decimal(used) * (mat.raw_material.cost_price or Decimal('0'))
+            total_material_cost += material_cost
+            stock_before = ProductStock.objects.select_for_update().get(product=mat.raw_material).stock
+            ProductStock.objects.filter(product=mat.raw_material).update(stock=F('stock') - used)
             # Clamp to zero — F() can go negative on concurrent deductions
             ProductStock.objects.filter(product=mat.raw_material, stock__lt=0).update(stock=0)
+            consumed = min(int(used), stock_before)
+            if consumed > 0:
+                log_movement(
+                    mat.raw_material, transaction_type='REMOVE', quantity=consumed, qty_change=-consumed,
+                    user=request.user, reason=f'Production consumption {wo.work_order_number}',
+                    reference=wo.work_order_number or '', unit_cost=material_cost / Decimal(used),
+                )
 
         # Add finished goods to inventory
         if total_produced > 0:
@@ -417,6 +425,12 @@ def complete_work_order(request, pk):
             ).update(stock=F('stock') + total_produced)
 
             unit_cost = (total_material_cost / total_produced) if total_material_cost > 0 else Decimal('0')
+            log_movement(
+                finished_product, transaction_type='ADD', quantity=int(total_produced),
+                qty_change=int(total_produced), user=request.user,
+                reason=f'Production output {wo.work_order_number}',
+                reference=wo.work_order_number or '', unit_cost=unit_cost,
+            )
             if finished_product.cost_method == 'FIFO':
                 from apps.products.services.fifo_service import create_lot
                 create_lot(finished_product, int(total_produced), unit_cost, source_reference=wo.work_order_number)

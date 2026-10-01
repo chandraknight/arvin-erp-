@@ -204,6 +204,15 @@ REPORT_REGISTRY = {
         'color': 'purple',
         'module_flag': 'enable_inventory',
     },
+    'stock_register_report': {
+        'label': 'Stock Register (NFRS 2)',
+        'description': 'Opening, receipts, issues and closing stock in quantity and value',
+        'url_name': 'reports:stock_register_report',
+        'section': 'Inventory & Products',
+        'icon': 'fas fa-book',
+        'color': 'indigo',
+        'module_flag': 'enable_inventory',
+    },
     'stock_valuation_report': {
         'label': 'Stock Valuation (NFRS 2)',
         'description': 'Inventory valued at lower of cost or net realisable value',

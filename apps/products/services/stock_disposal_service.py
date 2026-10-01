@@ -112,15 +112,12 @@ def post_stock_disposal(
         ])
         assert_balanced(entry)
 
-    stock_txn = StockTransaction.objects.create(
-        product=product,
-        user=posted_by,
-        transaction_type='DISPOSAL',
-        stock_type=stock_type,
-        quantity=quantity,
-        reason=reason,
-        disposal_reason=disposal_reason,
-        journal_entry=entry,
+    from .stock_ledger_service import log_movement
+    stock_txn = log_movement(
+        product, transaction_type='DISPOSAL', stock_type=stock_type, quantity=quantity,
+        qty_change=-quantity, user=posted_by, reason=reason,
+        unit_cost=write_off_value / Decimal(quantity),
+        disposal_reason=disposal_reason, journal_entry=entry,
     )
 
     logger.info(

@@ -25,7 +25,8 @@ from apps.payments.services.payment_number_service import generate_payment_numbe
 from apps.pos.cart import get_totals
 from apps.pos.models import POSSale, Referrer
 from apps.pos.services.shift_services import get_active_shift
-from apps.products.models import Product, ProductStock, StockTransaction
+from apps.products.models import Product, ProductStock
+from apps.products.services.stock_ledger_service import log_movement
 
 logger = logging.getLogger(__name__)
 audit = logging.getLogger('audit')
@@ -247,12 +248,10 @@ def checkout(
         ProductStock.objects.filter(product=product).update(
             stock=F('stock') - qty
         )
-        StockTransaction.objects.create(
-            product=product,
-            user=user,
-            transaction_type='REMOVE',
-            quantity=qty,
-            reason=f'POS sale {invoice.invoice_number}',
+        log_movement(
+            product, transaction_type='REMOVE', quantity=qty, qty_change=-qty, user=user,
+            reason=f'POS sale {invoice.invoice_number}', reference=invoice.invoice_number or '',
+            unit_cost=(product_cogs / Decimal(qty)) if qty else None,
         )
 
     if total_cogs > Decimal('0.00'):

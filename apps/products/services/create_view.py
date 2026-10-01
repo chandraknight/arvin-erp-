@@ -126,13 +126,12 @@ def add_item(request):
                 minimum_stock=0
             )
             if opening_qty > 0:
-                StockTransaction.objects.create(
-                    product=product,
-                    user=request.user,
-                    transaction_type='ADD',
-                    stock_type='POS',
-                    quantity=opening_qty,
-                    reason='Opening stock (set on item creation)',
+                from .stock_ledger_service import log_movement, apply_fifo_delta
+                log_movement(
+                    product, transaction_type='ADD', stock_type='POS', quantity=opening_qty,
+                    qty_change=opening_qty, user=request.user,
+                    reason='Opening stock (set on item creation)', reference='OPENING',
+                    unit_cost=apply_fifo_delta(product, opening_qty),
                 )
             messages.success(request, f"Added '{product.name}' to inventory.")
             return redirect('products:add_item')

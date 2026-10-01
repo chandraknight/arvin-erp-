@@ -113,6 +113,8 @@ urlpatterns = [
          views.export_stock_movement_report_pdf, name='export_stock_movement_report_pdf'),
     path('products/stock-movement/print/',
          views.print_stock_movement_report, name='print_stock_movement_report'),
+    path('products/stock-register/', views.stock_register_report,
+         name='stock_register_report'),
     path('products/stock-valuation/', views.stock_valuation_report,
          name='stock_valuation_report'),
     path('products/stock-disposal/', views.stock_disposal_report,

@@ -6,6 +6,7 @@ from django.db.models.functions import Coalesce
 from ...utils.decorator import auth_required
 from django.db import transaction
 from .stock_disposal_service import post_stock_disposal
+from .stock_ledger_service import log_movement, apply_fifo_delta
 
 
 
@@ -57,56 +58,63 @@ def update_stock(request, item_id):
     if request.method == 'POST':
         form = StockTransactionForm(request.POST ,initial={'product': product})
         if form.is_valid():
-            stock_transaction_log = form.save(commit=False)
-            stock_transaction_log.product = product  # assign from URL
-            stock_transaction_log.user = request.user
-            stock_transaction_log.save()
+            txn_type = form.cleaned_data['transaction_type']
+            stock_type = form.cleaned_data['stock_type']
+            qty = form.cleaned_data['quantity']
+            reason = form.cleaned_data['reason']
+            fail = None
+            qty_change = 0  # net change in total on-hand; POS<->ECOM transfers are 0
 
-            # Logic for POS Stock (Master Pool)
-            if stock_transaction_log.stock_type == 'POS':
-                if stock_transaction_log.transaction_type == 'ADD':
-                    stock_instance.stock += stock_transaction_log.quantity
-                elif stock_transaction_log.transaction_type == 'REMOVE':
-                    if stock_instance.stock < stock_transaction_log.quantity:
-                        messages.error(request, f"Insufficient POS stock to remove {stock_transaction_log.quantity}.")
-                        return redirect('products:update_stock', item_id=product.id)
-                    stock_instance.stock -= stock_transaction_log.quantity
-                elif stock_transaction_log.transaction_type == 'ADJUST':
-                    stock_instance.stock = stock_transaction_log.quantity
+            with transaction.atomic():
+                stock_instance = ProductStock.objects.select_for_update().get(pk=stock_instance.pk)
 
-            # Logic for E-commerce Stock (Transfer from/to POS Pool)
-            elif stock_transaction_log.stock_type == 'ECOM':
-                qty = stock_transaction_log.quantity
-                
-                if stock_transaction_log.transaction_type == 'ADD':
-                    # Moving from POS to ECOM
-                    if stock_instance.stock < qty:
-                        messages.error(request, f"Insufficient POS stock ({stock_instance.stock}) to transfer {qty} to E-commerce.")
-                        return redirect('products:update_stock', item_id=product.id)
-                    stock_instance.stock -= qty
-                    stock_instance.ecom_stock += qty
+                if stock_type == 'POS':
+                    if txn_type == 'ADD':
+                        qty_change = qty
+                        stock_instance.stock += qty
+                    elif txn_type == 'REMOVE':
+                        if stock_instance.stock < qty:
+                            fail = f"Insufficient POS stock to remove {qty}."
+                        else:
+                            qty_change = -qty
+                            stock_instance.stock -= qty
+                    elif txn_type == 'ADJUST':
+                        qty_change = qty - stock_instance.stock
+                        stock_instance.stock = qty
+                else:
+                    # E-commerce stock is a pool carved out of POS stock (transfer).
+                    if txn_type == 'ADD':
+                        if stock_instance.stock < qty:
+                            fail = f"Insufficient POS stock ({stock_instance.stock}) to transfer {qty} to E-commerce."
+                        else:
+                            stock_instance.stock -= qty
+                            stock_instance.ecom_stock += qty
+                    elif txn_type == 'REMOVE':
+                        if stock_instance.ecom_stock < qty:
+                            fail = f"Insufficient E-commerce stock ({stock_instance.ecom_stock}) to return {qty} to POS."
+                        else:
+                            stock_instance.ecom_stock -= qty
+                            stock_instance.stock += qty
+                    elif txn_type == 'ADJUST':
+                        diff = qty - stock_instance.ecom_stock
+                        if diff > 0 and stock_instance.stock < diff:
+                            fail = f"Insufficient POS stock to adjust E-commerce to {qty}."
+                        else:
+                            stock_instance.stock -= diff
+                            stock_instance.ecom_stock = qty
 
-                elif stock_transaction_log.transaction_type == 'REMOVE':
-                    # Moving from ECOM back to POS
-                    if stock_instance.ecom_stock < qty:
-                        messages.error(request, f"Insufficient E-commerce stock ({stock_instance.ecom_stock}) to return {qty} to POS.")
-                        return redirect('products:update_stock', item_id=product.id)
-                    stock_instance.ecom_stock -= qty
-                    stock_instance.stock += qty
+                if not fail:
+                    stock_instance.save()
+                    transfer = stock_type == 'ECOM'
+                    log_movement(
+                        product, transaction_type=txn_type, stock_type=stock_type, quantity=qty,
+                        qty_change=qty_change, user=request.user, reason=reason,
+                        unit_cost=product.cost_price if transfer else apply_fifo_delta(product, qty_change),
+                    )
 
-                elif stock_transaction_log.transaction_type == 'ADJUST':
-                    # Adjusting ECOM specifically, balancing with POS
-                    diff = qty - stock_instance.ecom_stock
-                    if diff > 0: # Need more for ECOM
-                        if stock_instance.stock < diff:
-                            messages.error(request, f"Insufficient POS stock to adjust E-commerce to {qty}.")
-                            return redirect('products:update_stock', item_id=product.id)
-                        stock_instance.stock -= diff
-                    else: # Returning surplus to POS
-                        stock_instance.stock += abs(diff)
-                    stock_instance.ecom_stock = qty
-            
-            stock_instance.save()
+            if fail:
+                messages.error(request, fail)
+                return redirect('products:update_stock', item_id=product.id)
 
             messages.success(request, f"Stock updated for {product.name}.")
             return redirect('products:update_stock', item_id=product.id)
@@ -296,13 +304,11 @@ def edit_item(request, id):
                     stock_instance, _ = ProductStock.objects.get_or_create(product=product)
                     diff = new_qty - stock_instance.stock
                     if diff != 0:
-                        StockTransaction.objects.create(
-                            product=product,
-                            user=request.user,
-                            transaction_type='ADJUST',
-                            stock_type='POS',
-                            quantity=new_qty,
+                        log_movement(
+                            product, transaction_type='ADJUST', stock_type='POS', quantity=new_qty,
+                            qty_change=diff, user=request.user,
                             reason='Stock quantity adjusted from item edit form',
+                            unit_cost=apply_fifo_delta(product, diff),
                         )
                         stock_instance.stock = new_qty
                         stock_instance.save(update_fields=['stock', 'updated_at'])

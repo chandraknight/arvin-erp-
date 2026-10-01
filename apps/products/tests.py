@@ -76,3 +76,51 @@ class StockDisposalFifoTests(TestCase):
         stock_txn = post_stock_disposal(self.product, quantity=4, disposal_reason='DAMAGED')
 
         self.assertEqual(stock_txn.journal_entry.lines.get(entry_type='DEBIT').amount, Decimal('30.00'))
+
+
+class StockRegisterTests(TestCase):
+    def setUp(self):
+        from apps.products.services.stock_ledger_service import log_movement
+        from datetime import date
+        self.log = log_movement
+        self.company = Company.objects.create(name="Register Co")
+        cat = Category.objects.create(company=self.company, name="Cat")
+        self.product = Product.objects.create(
+            company=self.company, name="Widget", category=cat,
+            price=Decimal('100.00'), cost_price=Decimal('10.00'), cost_method='WA',
+        )
+        self.stock = ProductStock.objects.create(product=self.product, stock=0)
+        self.today = date.today()
+
+    def _move(self, txn_type, qty, change, cost='10.00'):
+        self.stock.stock += change
+        self.stock.save()
+        return self.log(self.product, transaction_type=txn_type, quantity=qty,
+                        qty_change=change, unit_cost=Decimal(cost))
+
+    def test_register_reconciles_opening_receipts_issues_closing(self):
+        from apps.products.services.stock_register_service import build_stock_register
+        self._move('ADD', 100, 100)
+        self._move('REMOVE', 30, -30)
+        rows, totals, lines = build_stock_register(
+            self.company, self.today, self.today, product_id=self.product.pk)
+        r = rows[0]
+        self.assertEqual((r['opening_qty'], r['in_qty'], r['out_qty'], r['closing_qty']), (0, 100, 30, 70))
+        self.assertEqual(r['closing_value'], Decimal('700'))
+        self.assertEqual([l['bal_qty'] for l in lines], [100, 70])
+
+    def test_transfers_are_not_movements(self):
+        from apps.products.services.stock_register_service import build_stock_register
+        self._move('ADD', 50, 50)
+        self.log(self.product, transaction_type='ADD', stock_type='ECOM', quantity=20, qty_change=0)
+        rows, _, lines = build_stock_register(self.company, self.today, self.today, product_id=self.product.pk)
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(rows[0]['in_qty'], 50)
+
+    def test_opening_balance_excludes_later_movements(self):
+        from datetime import timedelta
+        from apps.products.services.stock_register_service import build_stock_register
+        self._move('ADD', 40, 40)
+        rows, _, _ = build_stock_register(
+            self.company, self.today + timedelta(days=1), self.today + timedelta(days=2))
+        self.assertEqual((rows[0]['opening_qty'], rows[0]['closing_qty']), (40, 40))
