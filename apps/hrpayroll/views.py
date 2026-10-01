@@ -608,59 +608,6 @@ class AttendanceDeleteView(LoginRequiredMixin, HRPayrollPermissionMixin, DeleteV
         messages.success(self.request, "Attendance record deleted successfully.")
         return result
 
-def _post_payroll_journal(payroll_run, user):
-    """
-    Payroll accounting entry when a run is processed:
-      DR Salary Expense     (gross payroll cost)
-      CR Salary Payable     (liability until disbursed)
-    When salaries are actually paid via Payment(payment_type='SALARY'),
-    post_payment_journal (apps/bookkeeping/db_functions.py) posts:
-      DR Salary Payable / CR Cash/Bank (clearing the liability).
-    """
-    if not payroll_run.total_gross_pay or payroll_run.total_gross_pay <= 0:
-        return
-    from apps.bookkeeping.models import JournalEntry, JournalEntryLine, assert_balanced
-    from apps.company.services.company_services import setup_default_ledger_accounts
-    from apps.bookkeeping.models import LedgerAccount
-
-    company = payroll_run.company
-    setup_default_ledger_accounts(company)
-
-    salary_expense = LedgerAccount.objects.filter(company=company, name='Salary Expense').first()
-    salary_payable = LedgerAccount.objects.filter(company=company, name='Salary Payable').first()
-
-    if not salary_expense or not salary_payable:
-        import logging
-        logging.getLogger(__name__).error(
-            "Missing 'Salary Expense' or 'Salary Payable' ledger for company %s — payroll journal skipped",
-            company,
-        )
-        return
-
-    entry = JournalEntry.objects.create(
-        company=company,
-        date=payroll_run.payroll_date,
-        description=f"Payroll: {payroll_run.period_start_date} – {payroll_run.period_end_date}",
-        created_by=user,
-    )
-    JournalEntryLine.objects.bulk_create([
-        JournalEntryLine(journal_entry=entry, account=salary_expense, entry_type='DEBIT',
-                         amount=payroll_run.total_gross_pay, narration='Gross payroll cost'),
-        JournalEntryLine(journal_entry=entry, account=salary_payable, entry_type='CREDIT',
-                         amount=payroll_run.total_gross_pay, narration='Salary payable to employees'),
-    ])
-    assert_balanced(entry)
-
-    from apps.activity_log.models import ActivityLog
-    ActivityLog.log(
-        user=user,
-        action=ActivityLog.ACTION_CREATE,
-        instance=entry,
-        object_repr=str(entry),
-        changes={'payroll_run_id': str(payroll_run.pk), 'amount': str(payroll_run.total_gross_pay)},
-    )
-
-
 @login_required
 @module_required('enable_hr_payroll')
 @transaction.atomic
@@ -760,8 +707,8 @@ def generate_payslips(request, pk):
     payroll_run.status = 'Processed'
     payroll_run.save(update_fields=['total_gross_pay', 'total_net_pay', 'status'])
 
-    # Post payroll journal: DR Salary Expense / CR Salary Payable
-    _post_payroll_journal(payroll_run, request.user)
+    # No journal here: expense is posted per payslip on finalization
+    # (apps.hrpayroll.services.payroll_posting_service) — one posting path only.
 
     messages.success(request, f"Payslips generated successfully for Payroll Run: {payroll_run}.")
     return redirect('hrpayroll:payslip_list')

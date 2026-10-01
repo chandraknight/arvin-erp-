@@ -97,7 +97,7 @@ def post_depreciation(asset, period_start: date, period_end: date, posted_by=Non
 
     # Resolve ledger accounts
     dep_expense_acc = asset.depreciation_expense_account or _get_or_create_account(
-        company, _DEP_EXPENSE_DEFAULT_NAME, 'EXPENSE', code='5200'
+        company, _DEP_EXPENSE_DEFAULT_NAME, 'EXPENSE', code='5920'
     )
     accum_dep_acc = asset.accumulated_dep_account or _get_or_create_account(
         company, _ACCUM_DEP_DEFAULT_NAME, 'ASSET', code='1510'
@@ -198,7 +198,7 @@ def post_disposal(asset, disposal_date: date, sale_proceeds: Decimal = Decimal('
             amount=sale_proceeds, narration='Sale proceeds on disposal',
         ))
     if loss > Decimal('0.00'):
-        loss_acc = _get_or_create_account(company, 'Loss on Disposal of Asset', 'EXPENSE', code='5900')
+        loss_acc = _get_or_create_account(company, 'Loss on Disposal of Asset', 'EXPENSE', code='5960')
         lines.append(JournalEntryLine(
             journal_entry=entry, account=loss_acc, entry_type='DEBIT',
             amount=loss, narration=f'Loss on disposal of {asset.name}',

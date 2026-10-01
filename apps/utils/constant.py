@@ -135,6 +135,8 @@ JOURNAL_SOURCE_TYPES = [
     ('FX_ADJUSTMENT', 'Foreign Exchange Gain/Loss'),
     ('TAX_PROVISION', 'Income Tax Provision'),
     ('CLOSING_STOCK', 'Closing Stock Adjustment'),
+    ('COGS', 'Cost of Goods Sold'),
+    ('GRN', 'Goods Received (GRNI)'),
     ('OTHER', 'Other'),
 ]
 

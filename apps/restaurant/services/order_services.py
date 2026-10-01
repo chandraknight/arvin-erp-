@@ -358,6 +358,10 @@ def _create_invoice_for_items(order: DiningOrder, items, discount_percent: Decim
 
     DiningOrderItem.objects.filter(pk__in=[i.pk for i in items]).update(invoice=invoice)
 
+    # NFRS 2: stock-tracked menu products relieve Inventory and post COGS
+    from apps.billing.services.invoice_stock_service import issue_invoice_stock
+    issue_invoice_stock(invoice, user=request.user)
+
     printer = PrinterStation.active_objects.filter(
         company=order.company, printer_type='BILL', is_active=True, is_default=True
     ).first() or PrinterStation.active_objects.filter(

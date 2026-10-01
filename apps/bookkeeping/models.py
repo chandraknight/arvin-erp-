@@ -234,17 +234,43 @@ def get_or_create_system_account(company, name, account_type, code=None, is_curr
     return acc
 
 
-def post_journal_entry(company, date, description, lines, created_by=None, source_type='OTHER', journal_type='GENERAL'):
+INVENTORY_ACCOUNT_NAME, INVENTORY_ACCOUNT_CODE = 'Inventory', '1400'
+COGS_ACCOUNT_NAME, COGS_ACCOUNT_CODE = 'Cost of Goods Sold', '5900'
+
+
+def get_inventory_account(company):
+    """NFRS 2 perpetual inventory control account (single definition for every flow)."""
+    return get_or_create_system_account(company, INVENTORY_ACCOUNT_NAME, 'ASSET', code=INVENTORY_ACCOUNT_CODE)
+
+
+def get_cogs_account(company):
+    return get_or_create_system_account(company, COGS_ACCOUNT_NAME, 'EXPENSE', code=COGS_ACCOUNT_CODE)
+
+
+def post_journal_entry(company, date, description, lines, created_by=None,
+                       source_type='OTHER', journal_type='GENERAL', **entry_fields):
     """
     Single, safe entry point for posting a balanced double-entry transaction.
+    Every module should post through this function instead of creating
+    JournalEntry / JournalEntryLine rows directly.
 
     `lines` is a list of dicts: {'account': LedgerAccount, 'entry_type': 'DEBIT'|'CREDIT', 'amount': Decimal, 'narration': str (optional)}.
+    `entry_fields` are extra JournalEntry columns (e.g. credit_note=..., reversal_of=...).
 
     Guarantees, so callers don't have to re-implement double-entry safety themselves:
       - the whole operation (entry + all lines) is atomic — no half-posted entries on failure
-      - an explicit pre-flight balance check gives a clear error before touching the DB
+      - amounts are positive and rounded to 2dp; a pre-flight balance check gives a clear error
+      - date may be omitted (defaults to today); the fiscal-year lock and voucher numbering
+        are applied by JournalEntry.save()
       - assert_balanced() double-checks after all lines are created
     """
+    lines = [
+        {**l, 'amount': Decimal(l['amount']).quantize(Decimal('0.01'))}
+        for l in lines
+    ]
+    lines = [l for l in lines if l['amount'] != 0]
+    if any(l['amount'] < 0 for l in lines):
+        raise ValidationError("Journal line amounts must be positive; use the opposite side instead.")
     debit = sum((l['amount'] for l in lines if l['entry_type'] == 'DEBIT'), Decimal('0'))
     credit = sum((l['amount'] for l in lines if l['entry_type'] == 'CREDIT'), Decimal('0'))
     if len(lines) < 2:
@@ -257,17 +283,17 @@ def post_journal_entry(company, date, description, lines, created_by=None, sourc
 
     with transaction.atomic():
         entry = JournalEntry.objects.create(
-            company=company, date=date, description=description, created_by=created_by,
-            source_type=source_type, journal_type=journal_type,
+            company=company, date=date or timezone.now().date(), description=description,
+            created_by=created_by, source_type=source_type, journal_type=journal_type,
+            **entry_fields,
         )
-        for line in lines:
-            JournalEntryLine.objects.create(
-                journal_entry=entry,
-                account=line['account'],
-                entry_type=line['entry_type'],
-                amount=line['amount'],
-                narration=line.get('narration', ''),
+        JournalEntryLine.objects.bulk_create([
+            JournalEntryLine(
+                journal_entry=entry, account=l['account'], entry_type=l['entry_type'],
+                amount=l['amount'], narration=l.get('narration', ''),
             )
+            for l in lines
+        ])
         assert_balanced(entry)
     return entry
 

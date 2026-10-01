@@ -199,6 +199,10 @@ def receive_purchase_order(request, pk):
                                     item.product.cost_price = new_unit_cost
                                     item.product.save(update_fields=['cost_price'])
 
+                    # Ledger side of the receipt: DR Inventory / CR GRNI (same transaction)
+                    from apps.purchasing.services.grn_service import post_goods_received_journal
+                    post_goods_received_journal(purchase_order, user=request.user)
+
                 messages.success(request, f"Purchase Order {purchase_order.purchase_order_number} marked as received and inventory updated.")
                 return redirect('purchasing:purchase_order_detail', pk=pk)
 

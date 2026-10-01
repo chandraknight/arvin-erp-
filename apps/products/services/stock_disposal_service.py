@@ -64,7 +64,7 @@ def post_stock_disposal(
     Returns the created StockTransaction (with .journal_entry set).
     """
     from apps.products.models import ProductStock, StockTransaction
-    from apps.bookkeeping.models import JournalEntry, JournalEntryLine, assert_balanced
+    from apps.bookkeeping.models import post_journal_entry
 
     if quantity <= 0:
         raise ValueError("Disposal quantity must be greater than zero.")
@@ -91,26 +91,18 @@ def post_stock_disposal(
 
     entry = None
     if write_off_value > Decimal('0.00'):
+        from apps.bookkeeping.models import get_inventory_account
         expense_acc = _get_or_create_account(company, _INVENTORY_WRITE_OFF_EXPENSE, 'EXPENSE', code='5910')
-        inventory_acc = _get_or_create_account(company, _INVENTORY_ACCOUNT, 'ASSET', code='1400')
-
-        entry = JournalEntry.objects.create(
-            company=company,
+        entry = post_journal_entry(
+            company=company, date=None,
             description=f'Inventory write-off — {product.name} ({quantity} units, {disposal_reason})',
-            journal_type='PROVISION',
-            created_by=posted_by,
+            journal_type='PROVISION', source_type='STOCK_DISPOSAL', created_by=posted_by,
+            lines=[
+                {'account': expense_acc, 'entry_type': 'DEBIT', 'amount': write_off_value, 'narration': reason or disposal_reason},
+                {'account': get_inventory_account(company), 'entry_type': 'CREDIT', 'amount': write_off_value,
+                 'narration': f'Write-off of {product.name}'},
+            ],
         )
-        JournalEntryLine.objects.bulk_create([
-            JournalEntryLine(
-                journal_entry=entry, account=expense_acc, entry_type='DEBIT',
-                amount=write_off_value, narration=reason or disposal_reason,
-            ),
-            JournalEntryLine(
-                journal_entry=entry, account=inventory_acc, entry_type='CREDIT',
-                amount=write_off_value, narration=f'Write-off of {product.name}',
-            ),
-        ])
-        assert_balanced(entry)
 
     from .stock_ledger_service import log_movement
     stock_txn = log_movement(

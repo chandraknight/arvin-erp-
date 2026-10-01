@@ -1,7 +1,7 @@
 """
 NFRS 2 (IAS 2) — Cost of Goods Sold posting at time of sale.
 
-post_cogs_journal(company, invoice, cost_lines, posted_by)
+post_cogs_journal(company, description, total_cost, posted_by)
   → posts DR Cost of Goods Sold / CR Inventory for the actual cost consumed
     by a sale, so the GL (not just the reporting overlay in
     apps/reports/views.py get_cogs_by_product) reflects real inventory
@@ -22,34 +22,9 @@ from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
-_COGS_ACCOUNT = 'Cost of Goods Sold'
-_INVENTORY_ACCOUNT = 'Inventory'
-
-
-def _get_or_create_account(company, name, account_type, code=None):
-    from apps.bookkeeping.models import LedgerAccount
-    # LedgerAccount enforces uniqueness on (company, code), not (company, name) —
-    # look up by code first so an existing account under a different name (e.g.
-    # a company that already has "Closing Stock" at code 1400) is reused instead
-    # of get_or_create() trying to INSERT a duplicate code and raising IntegrityError.
-    if code:
-        acc = LedgerAccount.objects.filter(company=company, code=code).first()
-        if acc:
-            return acc
-    acc, _ = LedgerAccount.objects.get_or_create(
-        company=company,
-        name=name,
-        defaults={
-            'account_type': account_type,
-            'code': code,
-            'system_created': True,
-        },
-    )
-    return acc
-
 
 @transaction.atomic
-def post_cogs_journal(company, description: str, total_cost: Decimal, posted_by=None):
+def post_cogs_journal(company, description: str, total_cost: Decimal, posted_by=None, date=None):
     """
     Post the COGS/Inventory journal entry for a sale.
 
@@ -60,32 +35,19 @@ def post_cogs_journal(company, description: str, total_cost: Decimal, posted_by=
 
     Returns the created JournalEntry, or None if total_cost is zero.
     """
-    from apps.bookkeeping.models import JournalEntry, JournalEntryLine, assert_balanced
+    from apps.bookkeeping.models import post_journal_entry, get_cogs_account, get_inventory_account
 
     total_cost = Decimal(total_cost).quantize(Decimal('0.01'))
     if total_cost <= Decimal('0.00'):
         return None
 
-    cogs_acc = _get_or_create_account(company, _COGS_ACCOUNT, 'EXPENSE', code='5900')
-    inventory_acc = _get_or_create_account(company, _INVENTORY_ACCOUNT, 'ASSET', code='1400')
-
-    entry = JournalEntry.objects.create(
-        company=company,
-        description=description,
-        journal_type='GENERAL',
-        created_by=posted_by,
+    entry = post_journal_entry(
+        company=company, date=date, description=description, created_by=posted_by,
+        source_type='COGS',
+        lines=[
+            {'account': get_cogs_account(company), 'entry_type': 'DEBIT', 'amount': total_cost, 'narration': description},
+            {'account': get_inventory_account(company), 'entry_type': 'CREDIT', 'amount': total_cost, 'narration': description},
+        ],
     )
-    JournalEntryLine.objects.bulk_create([
-        JournalEntryLine(
-            journal_entry=entry, account=cogs_acc, entry_type='DEBIT',
-            amount=total_cost, narration=description,
-        ),
-        JournalEntryLine(
-            journal_entry=entry, account=inventory_acc, entry_type='CREDIT',
-            amount=total_cost, narration=description,
-        ),
-    ])
-    assert_balanced(entry)
-
     logger.info('cogs_posted company=%s value=%s journal=%s', company.id, total_cost, entry.id)
     return entry

@@ -1,10 +1,10 @@
 """
 Posts the payroll journal entry for a single finalized Payslip.
 
-Complements the existing run-level _post_payroll_journal() in
-apps/hrpayroll/views.py (DR Salary Expense / CR Salary Payable, posted when
-a run's payslips are generated). This posts the detailed per-payslip
-breakdown — income tax, SSF, and net pay — once a payslip is finalized.
+This is the single payroll posting: DR Salary Expense (gross + employer SSF) /
+CR income tax, SSF, other deductions and net salary payable, once a payslip is
+finalized. Generating a run posts nothing (the former run-level gross entry
+double-counted Salary Expense).
 """
 import logging
 from decimal import Decimal
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 @transaction.atomic
 def post_payslip_journal(payslip):
     from apps.bookkeeping.models import (
-        JournalEntry, JournalEntryLine, assert_balanced,
+        JournalEntry, post_journal_entry,
         get_or_create_system_account, reverse_journal,
     )
     from apps.company.services.company_services import setup_default_ledger_accounts
@@ -47,33 +47,33 @@ def post_payslip_journal(payslip):
     income_tax_amount = payslip.income_tax_amount or Decimal('0.00')
     net_pay = payslip.gross_pay - income_tax_amount - employee_ssf - (payslip.total_deductions or Decimal('0.00'))
 
-    salary_expense = get_or_create_system_account(company, "Salary Expense", "EXPENSE", code="5300")
-    income_tax_payable = get_or_create_system_account(company, "Income Tax Payable", "LIABILITY", code="2160")
+    salary_expense = get_or_create_system_account(company, "Salary Expense", "EXPENSE", code="5400")
+    salary_tax_payable = get_or_create_system_account(company, "Salary Income Tax Payable", "LIABILITY", code="2160")
     ssf_payable = get_or_create_system_account(company, "SSF Payable", "LIABILITY", code="2170")
     net_salary_payable = get_or_create_system_account(company, "Net Salary Payable", "LIABILITY", code="2180")
 
-    entry = JournalEntry.objects.create(
-        company=company,
-        date=payslip.issue_date,
-        description=f"Payslip {payslip.pk}",
-        source_type='PAYROLL',
-    )
-
-    lines = []
     debit_expense = payslip.gross_pay + (employer_ssf if company.enable_ssf else Decimal('0.00'))
-    lines.append(JournalEntryLine(journal_entry=entry, account=salary_expense, entry_type='DEBIT', amount=debit_expense))
-
-    if income_tax_amount > Decimal('0.00'):
-        lines.append(JournalEntryLine(journal_entry=entry, account=income_tax_payable, entry_type='CREDIT', amount=income_tax_amount))
-
+    other_deductions = payslip.total_deductions or Decimal('0.00')
     total_ssf = employee_ssf + employer_ssf
+
+    lines = [{'account': salary_expense, 'entry_type': 'DEBIT', 'amount': debit_expense}]
+    if income_tax_amount > Decimal('0.00'):
+        lines.append({'account': salary_tax_payable, 'entry_type': 'CREDIT', 'amount': income_tax_amount})
     if company.enable_ssf and total_ssf > Decimal('0.00'):
-        lines.append(JournalEntryLine(journal_entry=entry, account=ssf_payable, entry_type='CREDIT', amount=total_ssf))
+        lines.append({'account': ssf_payable, 'entry_type': 'CREDIT', 'amount': total_ssf})
+    if other_deductions > Decimal('0.00'):
+        # Withheld from the employee (advances, loans, etc.) — without this leg the
+        # entry is out of balance by exactly the deductions amount.
+        deductions_payable = get_or_create_system_account(
+            company, "Payroll Deductions Payable", "LIABILITY", code="2190",
+        )
+        lines.append({'account': deductions_payable, 'entry_type': 'CREDIT', 'amount': other_deductions})
+    lines.append({'account': net_salary_payable, 'entry_type': 'CREDIT', 'amount': net_pay})
 
-    lines.append(JournalEntryLine(journal_entry=entry, account=net_salary_payable, entry_type='CREDIT', amount=net_pay))
-
-    JournalEntryLine.objects.bulk_create(lines)
-    assert_balanced(entry)
+    entry = post_journal_entry(
+        company=company, date=payslip.issue_date, description=f"Payslip {payslip.pk}",
+        source_type='PAYROLL', lines=lines,
+    )
 
     if company.enable_ssf and total_ssf > Decimal('0.00'):
         SSFContribution.objects.update_or_create(

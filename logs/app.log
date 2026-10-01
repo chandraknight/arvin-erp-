@@ -18251,3 +18251,11 @@ WARNING 2026-08-28 15:13:55,110 log 61774 6202535936 "GET /store/nonexistent-xyz
 WARNING 2026-08-28 15:14:52,442 log 64779 6123810816 Forbidden (CSRF token from POST has incorrect length.): /store/contact/
 WARNING 2026-08-28 15:14:52,443 log 64779 6123810816 "POST /store/contact/ HTTP/1.1" 403 2514
 WARNING 2026-10-01 13:58:52,135 fifo_service 37422 8207875968 fifo_lot_shortfall product=25246131-b276-408c-91b8-192fb6a9ea49 requested=8 covered_by_lots=5 falling_back_to_cost_price=12.00
+WARNING 2026-10-01 14:40:40,887 fifo_service 70663 8207875968 fifo_lot_shortfall product=49ea989d-17eb-4c1c-b282-c2afd110862f requested=8 covered_by_lots=5 falling_back_to_cost_price=12.00
+WARNING 2026-10-01 14:40:41,794 payroll_tax_service 70663 8207875968 No IncomeTaxSlab configured for company=Tax Co fiscal_year=Tax Co (2024-2025) marital_status=MARRIED — income tax not calculated.
+WARNING 2026-10-01 14:41:39,765 fifo_service 72347 8207875968 fifo_lot_shortfall product=705228c9-cf4b-41a3-96e7-2717b0e3d6c1 requested=8 covered_by_lots=5 falling_back_to_cost_price=12.00
+WARNING 2026-10-01 14:41:40,477 payroll_tax_service 72347 8207875968 No IncomeTaxSlab configured for company=Tax Co fiscal_year=Tax Co (2024-2025) marital_status=MARRIED — income tax not calculated.
+WARNING 2026-10-01 14:43:38,166 fifo_service 74911 8207875968 fifo_lot_shortfall product=5c3c802e-18c8-443a-9c2e-fca812837b61 requested=8 covered_by_lots=5 falling_back_to_cost_price=12.00
+WARNING 2026-10-01 14:43:39,143 payroll_tax_service 74911 8207875968 No IncomeTaxSlab configured for company=Tax Co fiscal_year=Tax Co (2024-2025) marital_status=MARRIED — income tax not calculated.
+WARNING 2026-10-01 14:47:21,447 fifo_service 79056 8207875968 fifo_lot_shortfall product=78dd9554-0987-4991-a48f-7719792ffbfb requested=8 covered_by_lots=5 falling_back_to_cost_price=12.00
+WARNING 2026-10-01 14:47:22,174 payroll_tax_service 79056 8207875968 No IncomeTaxSlab configured for company=Tax Co fiscal_year=Tax Co (2024-2025) marital_status=MARRIED — income tax not calculated.

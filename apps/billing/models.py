@@ -52,6 +52,10 @@ class Invoice(BaseModel):
         related_name='invoices',
         db_constraint=False,
     )
+    stock_issued_at = models.DateTimeField(
+        null=True, blank=True, editable=False,
+        help_text='Set once stock was deducted and COGS posted for this invoice (idempotency marker).',
+    )
     status = models.CharField(
         max_length=11,
         choices=INVOICE_STATUS_CHOICES,

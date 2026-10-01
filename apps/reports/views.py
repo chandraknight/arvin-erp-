@@ -130,8 +130,8 @@ def report_branch_context(company, branch):
 def get_closing_stock_valuation(company):
     """
     NFRS 2 (IAS 2): item-wise closing stock at lower of cost or net realisable value.
-    No ledger 'Inventory' account is posted on purchase/sale, so this is a computed
-    snapshot from current stock on hand — same basis, same lot-aware valuation
+    A computed snapshot from current stock on hand (the ledger Inventory account is
+    reconciled against it by post_closing_stock) — same basis, same lot-aware valuation
     (FIFO products valued by summing remaining lots, WA by cost_price) as the
     standalone stock_valuation_report. See apps.products.services.valuation_service.
     """
@@ -150,10 +150,53 @@ def get_closing_stock_valuation(company):
     return rows, totals['total_carrying_value']
 
 
+def get_inventory_ledger_balance(company, as_of=None):
+    """Net debit balance of the ledger Inventory control account (perpetual method)."""
+    from apps.bookkeeping.models import LedgerAccount, INVENTORY_ACCOUNT_NAME, INVENTORY_ACCOUNT_CODE
+    acc = LedgerAccount.objects.filter(
+        Q(code=INVENTORY_ACCOUNT_CODE) | Q(name=INVENTORY_ACCOUNT_NAME), company=company, is_deleted=False,
+    ).first()
+    if not acc:
+        return Decimal('0.00')
+    qs = JournalEntryLine.objects.filter(account=acc, journal_entry__is_deleted=False)
+    if as_of:
+        qs = qs.filter(journal_entry__date__lte=as_of)
+    t = qs.aggregate(
+        d=Coalesce(Sum('amount', filter=Q(entry_type='DEBIT')), Decimal('0')),
+        c=Coalesce(Sum('amount', filter=Q(entry_type='CREDIT')), Decimal('0')),
+    )
+    return t['d'] - t['c']
+
+
+def get_posted_cogs(company, start_date=None, end_date=None):
+    """
+    NFRS 2 COGS as posted to the ledger (perpetual method): net debits on the
+    Cost of Goods Sold account — sale-time COGS less closing-stock true-ups.
+    This is the figure every report must use; get_cogs_by_product below is only
+    an item-wise breakdown overlay.
+    """
+    from apps.bookkeeping.models import LedgerAccount, COGS_ACCOUNT_NAME, COGS_ACCOUNT_CODE
+    acc = LedgerAccount.objects.filter(
+        Q(code=COGS_ACCOUNT_CODE) | Q(name=COGS_ACCOUNT_NAME), company=company, is_deleted=False,
+    ).first()
+    if not acc:
+        return Decimal('0.00')
+    qs = JournalEntryLine.objects.filter(account=acc, journal_entry__is_deleted=False)
+    if start_date:
+        qs = qs.filter(journal_entry__date__gte=start_date)
+    if end_date:
+        qs = qs.filter(journal_entry__date__lte=end_date)
+    t = qs.aggregate(
+        d=Coalesce(Sum('amount', filter=Q(entry_type='DEBIT')), Decimal('0')),
+        c=Coalesce(Sum('amount', filter=Q(entry_type='CREDIT')), Decimal('0')),
+    )
+    return t['d'] - t['c']
+
+
 def get_cogs_by_product(company, start_date=None, end_date=None):
     """
-    NFRS-basis COGS: qty sold (paid invoices) x product.cost_price, item-wise.
-    Same basis as cogs_report — no ledger 'COGS' account is posted on sale.
+    Item-wise COGS breakdown overlay: qty sold (paid invoices) x unit cost.
+    Informational only — the authoritative COGS figure is get_posted_cogs().
     """
     items = InvoiceItem.objects.filter(
         invoice__company=company,
@@ -3013,8 +3056,8 @@ def trial_balance_report(request):
     is_balanced = abs(total_debits - total_credits) < Decimal('0.01')
     difference = total_debits - total_credits
 
-    # NFRS 2: no ledger 'Inventory' account is posted on purchase/sale, so closing
-    # stock is shown as a computed memo line — it does not participate in is_balanced.
+    # Computed stock valuation is a memo line (the ledger Inventory account is already in
+    # the trial balance) — it does not participate in is_balanced.
     closing_stock_rows, closing_stock_total = get_closing_stock_valuation(user_company)
 
     context = {
@@ -3138,10 +3181,10 @@ def balance_sheet_report(request):
     noncurrent_liabilities  = [l for l in liabilities if not l['account'].is_current]
     total_equity_all = total_equity + net_income_up_to_date
 
-    # NFRS 2: no ledger 'Inventory' account is posted on purchase/sale, so closing
-    # stock (lower of cost or NRV) is added here as a computed current asset.
+    # NFRS 2 perpetual method: Inventory is a ledger asset and already inside
+    # total_assets. The computed valuation is a memo for reconciliation only.
     closing_stock_rows, closing_stock_total = get_closing_stock_valuation(user_company)
-    total_assets_with_stock = total_assets + closing_stock_total
+    total_assets_with_stock = total_assets
 
     context = {
         'report_date': report_date,
@@ -4942,7 +4985,7 @@ def profit_and_loss_report(request):
     # Expense lines — account-level for NFRS disclosure by nature
     expense_accounts = LedgerAccount.objects.filter(
         company=user_company, account_type='EXPENSE', is_deleted=False
-    ).order_by('code', 'name')
+    ).exclude(name='Cost of Goods Sold').order_by('code', 'name')
     expense_lines = []
     total_expenses = Decimal('0.00')
     for acc in expense_accounts:
@@ -4959,7 +5002,8 @@ def profit_and_loss_report(request):
 
     # NFRS 2 (IAS 2): COGS must be matched against revenue in the same period —
     # separated from the "by nature" expense accounts above so Gross Profit is visible.
-    cogs_rows, total_cogs = get_cogs_by_product(user_company, start_date, end_date)
+    cogs_rows, _ = get_cogs_by_product(user_company, start_date, end_date)
+    total_cogs = get_posted_cogs(user_company, start_date, end_date)
     gross_profit = total_revenue - total_cogs
     profit_before_tax = gross_profit - total_expenses
 
@@ -5073,12 +5117,9 @@ def post_income_tax_provision(request):
         )).aggregate(s=Coalesce(Sum('amount'), Decimal('0.00')))['s']
         total_expenses += (dr - cr)
 
-    # NFRS 2: COGS is a computed overlay (never posted to the ledger — see
-    # get_cogs_by_product), so it must be subtracted here too or the posted
-    # tax provision would overstate profit relative to what the P&L report shows.
-    _, total_cogs = get_cogs_by_product(user_company, start_date, end_date)
-
-    profit_before_tax = total_revenue - total_cogs - total_expenses
+    # COGS is posted to the ledger (perpetual method), so it is already inside
+    # total_expenses (the Cost of Goods Sold expense account).
+    profit_before_tax = total_revenue - total_expenses
     cit_rate = Decimal(str(getattr(user_company, 'cit_rate', 25) or 25))
     tax_expense = Decimal('0.00')
     if profit_before_tax > Decimal('0.00'):
@@ -5122,19 +5163,15 @@ def post_income_tax_provision(request):
 @login_required
 def post_closing_stock(request):
     """
-    Post the NFRS 2 period-end closing stock adjustment: DR Closing Stock (asset)
-    / CR Cost of Goods Sold (expense), valued at the lower of cost or NRV.
+    Post the NFRS 2 period-end closing stock adjustment: inventory true-up, valued at the lower of cost or NRV.
 
-    This ledger posting is independent of get_cogs_by_product/get_closing_stock_valuation
-    (this project's existing computed-only NFRS overlay used directly by the P&L
-    report) — posting here does not feed into or double-count against that
-    computation. Use one approach or the other per company to avoid confusion.
+    Perpetual method: trues the ledger Inventory account up to the computed stock
+    valuation (DR COGS / CR Inventory for a write-down, reverse for a surplus).
 
     Valuation is against LIVE current stock (see compute_stock_valuation) —
     accurate only if posted at period-end before further stock movement.
     """
-    from apps.bookkeeping.models import post_journal_entry, get_or_create_system_account
-    from apps.products.services.valuation_service import compute_stock_valuation
+    from apps.products.services.inventory_reconciliation_service import reconcile_inventory
 
     user_company = request.user_company
     if not user_company:
@@ -5147,43 +5184,18 @@ def post_closing_stock(request):
     start_date_str = request.POST.get('start_date')
     end_date_str = request.POST.get('end_date')
     end_date = bs_str_to_ad(end_date_str) if end_date_str else date.today()
+    back = redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
 
-    _, totals = compute_stock_valuation(user_company)
-    closing_stock_value = totals['total_carrying_value']
-
-    if closing_stock_value <= Decimal('0.00'):
-        messages.error(request, "No stock on hand to value — nothing to post.")
-        return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
-
-    already_posted = JournalEntry.objects.filter(
-        company=user_company, source_type='CLOSING_STOCK', date=end_date, is_deleted=False,
-    ).exists()
-    if already_posted:
-        messages.error(request, f"Closing stock has already been posted for period ending {end_date}.")
-        return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
-
-    # No hardcoded `code=` here — a fixed code can collide with an unrelated
-    # account that already occupies it in a given company's chart of accounts
-    # (the (company, code) DB constraint is separate from (company, name), so
-    # get_or_create's company+name lookup can't protect against that). The
-    # account name is what every other query in this feature actually matches
-    # on, so leaving code unset (NULL, not unique-constrained) is the safe choice.
-    closing_stock_acc = get_or_create_system_account(user_company, 'Closing Stock', 'ASSET', is_current=True)
-    cogs_acc = get_or_create_system_account(user_company, 'Cost of Goods Sold', 'EXPENSE')
-
-    post_journal_entry(
-        company=user_company,
-        date=end_date,
-        description=f"Closing stock adjustment — period ending {end_date} (lower of cost or NRV)",
-        lines=[
-            {'account': closing_stock_acc, 'entry_type': 'DEBIT', 'amount': closing_stock_value, 'narration': 'Closing stock'},
-            {'account': cogs_acc, 'entry_type': 'CREDIT', 'amount': closing_stock_value, 'narration': 'Closing stock'},
-        ],
-        created_by=request.user,
-        source_type='CLOSING_STOCK',
-    )
-    messages.success(request, f"Closing stock of {closing_stock_value} posted for period ending {end_date}.")
-    return redirect(f"{reverse('reports:profit_and_loss_report')}?start_date={start_date_str or ''}&end_date={end_date_str or ''}")
+    try:
+        entry = reconcile_inventory(user_company, end_date, user=request.user)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return back
+    if entry is None:
+        messages.info(request, "Ledger Inventory already agrees with the stock valuation — no adjustment needed.")
+    else:
+        messages.success(request, f"Inventory adjusted to closing stock value for period ending {end_date} ({entry.voucher_no}).")
+    return back
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -5257,9 +5269,9 @@ def ratio_analysis_report(request, template='reports/ratio_analysis_report.html'
     )
     cash_and_bank = cash_balance['debits'] - cash_balance['credits']
 
-    # NFRS 2: closing stock is a current asset but excluded from the Quick Ratio
+    # NFRS 2: inventory (ledger balance) is a current asset but excluded from the Quick Ratio
     # (inventory isn't "quick" — it must be sold first to become cash).
-    _, closing_stock_total = get_closing_stock_valuation(user_company)
+    closing_stock_total = get_inventory_ledger_balance(user_company)
     current_assets_total = cash_and_bank + ar_balance + closing_stock_total
 
     # Current liabilities = AP
@@ -5305,11 +5317,10 @@ def ratio_analysis_report(request, template='reports/ratio_analysis_report.html'
     total_expenses = expense_qs.aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
     net_income     = total_revenue - total_expenses
 
-    # NFRS 2: COGS is never posted to the ledger (see get_cogs_by_product docstring) —
-    # computed from qty sold x cost_price, same basis as the P&L's Gross Profit line.
+    # COGS is a posted expense account (perpetual method) — already inside total_expenses.
     period_start = fiscal_year.start_date if fiscal_year else None
     period_end   = fiscal_year.end_date if fiscal_year else None
-    _, cogs = get_cogs_by_product(user_company, period_start, period_end)
+    cogs = get_posted_cogs(user_company, period_start, period_end)
     gross_profit = total_revenue - cogs
 
     # ── Turnover helpers ─────────────────────────────────────────────────
@@ -6605,10 +6616,8 @@ def changes_in_equity_report(request):
             journal_entry__date__gte=fiscal_year.start_date,
             journal_entry__date__lte=fiscal_year.end_date,
         ).aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
-        # NFRS 2: COGS is a computed overlay (see get_cogs_by_product) — must be
-        # subtracted here too, or closing Retained Earnings disagrees with the P&L.
-        _, cogs = get_cogs_by_product(user_company, fiscal_year.start_date, fiscal_year.end_date)
-        net_income = rev - cogs - exp
+        # COGS is a posted EXPENSE account (perpetual method) — already inside exp.
+        net_income = rev - exp
     else:
         net_income = Decimal('0.00')
 

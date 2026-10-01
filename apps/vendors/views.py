@@ -21,7 +21,7 @@ def _post_opening_balance_journal(vendor, amount, opening_type):
         DR  Accounts Payable – {Vendor}
         CR  Opening Balance Equity
     """
-    from apps.bookkeeping.models import LedgerAccount, JournalEntry, JournalEntryLine, assert_balanced
+    from apps.bookkeeping.models import LedgerAccount
     from apps.company.services.company_services import setup_default_ledger_accounts
     from django.db import transaction
     from decimal import Decimal
@@ -49,17 +49,19 @@ def _post_opening_balance_journal(vendor, amount, opening_type):
         # Vendor owes us → reverse
         debit_account, credit_account = vendor_account, equity_account
 
-    with transaction.atomic():
-        entry = JournalEntry.objects.create(
-            company=company,
-            date=__import__('django.utils.timezone', fromlist=['timezone']).now().date(),
-            description=f'Opening Balance – {vendor.name}',
-        )
-        JournalEntryLine.objects.bulk_create([
-            JournalEntryLine(journal_entry=entry, account=debit_account, entry_type='DEBIT', amount=amount),
-            JournalEntryLine(journal_entry=entry, account=credit_account, entry_type='CREDIT', amount=amount),
-        ])
-        assert_balanced(entry)
+    from apps.company.models import FiscalYear
+    from apps.bookkeeping.models import post_journal_entry
+    # Opening balances belong at the start of the active fiscal year, not "today".
+    fy = FiscalYear.objects.filter(company=company, is_active=True).first()
+    post_journal_entry(
+        company=company, date=fy.start_date if fy else None,
+        description=f'Opening Balance – {vendor.name}',
+        source_type='OPENING_BALANCE', journal_type='OPENING',
+        lines=[
+            {'account': debit_account, 'entry_type': 'DEBIT', 'amount': amount},
+            {'account': credit_account, 'entry_type': 'CREDIT', 'amount': amount},
+        ],
+    )
 
 @auth_required('vendors.add_vendor')
 def vendor_create(request):

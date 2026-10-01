@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.db import DatabaseError, transaction
 import logging
 
-from apps.bookkeeping.models import LedgerAccount, JournalEntry, JournalEntryLine, assert_balanced
+from apps.bookkeeping.models import LedgerAccount, post_journal_entry
 from apps.company.services.company_services import setup_default_ledger_accounts
 from apps.payments.models import Payment, VendorPayment
 
@@ -109,23 +109,22 @@ def create_journal_entry_for_vendor_payment(sender, instance, created, **kwargs)
             ).first()
 
     if not ap_account or not cash_bank:
-        logger.error(
-            "Missing AP or Cash/Bank account for company %s — vendor payment %s not journalised",
-            company, instance.id,
+        # A payment without its ledger entry would silently desync AP/Cash from the
+        # sub-ledger — fail loudly so the surrounding transaction rolls back.
+        raise ValueError(
+            f"Missing Accounts Payable or Cash/Bank ledger for company {company} — "
+            f"vendor payment {instance.id} cannot be journalised."
         )
-        return
 
-    with transaction.atomic():
-        entry = JournalEntry.objects.create(
-            company=company,
-            date=instance.payment_date,
-            description=f"Vendor Payment {instance.reference_number or ''} for Bill {instance.vendor_bill.bill_number}".strip(),
-        )
-        JournalEntryLine.objects.bulk_create([
-            JournalEntryLine(journal_entry=entry, account=ap_account, entry_type="DEBIT",  amount=instance.amount),
-            JournalEntryLine(journal_entry=entry, account=cash_bank,  entry_type="CREDIT", amount=instance.amount),
-        ])
-        assert_balanced(entry)
+    entry = post_journal_entry(
+        company=company, date=instance.payment_date,
+        description=f"Vendor Payment {instance.reference_number or ''} for Bill {instance.vendor_bill.bill_number}".strip(),
+        source_type='PAYMENT', created_by=getattr(instance, 'created_by', None),
+        lines=[
+            {'account': ap_account, 'entry_type': 'DEBIT', 'amount': instance.amount},
+            {'account': cash_bank, 'entry_type': 'CREDIT', 'amount': instance.amount},
+        ],
+    )
 
     audit_logger.info(
         "VENDOR_PAYMENT_JOURNALISED vendor_payment=%s bill=%s journal_entry=%s company=%s",

@@ -104,3 +104,70 @@ class CalculateTdsTests(TestCase):
     def test_calculate_tds_returns_zero_without_category(self):
         self.bill.tds_category = None
         self.assertEqual(calculate_tds(self.bill), Decimal("0.00"))
+
+
+class SingleDoorPostingTests(TestCase):
+    def setUp(self):
+        from apps.bookkeeping.models import get_or_create_system_account
+        self.company = Company.objects.create(name="Door Co")
+        self.cash = get_or_create_system_account(self.company, "Cash", "ASSET", code="1000")
+        self.sales = get_or_create_system_account(self.company, "Sales Revenue", "REVENUE", code="4000")
+
+    def test_post_journal_entry_rejects_unbalanced(self):
+        from django.core.exceptions import ValidationError
+        from apps.bookkeeping.models import post_journal_entry
+        with self.assertRaises(ValidationError):
+            post_journal_entry(
+                self.company, date(2026, 1, 1), "bad",
+                [{'account': self.cash, 'entry_type': 'DEBIT', 'amount': Decimal('100')},
+                 {'account': self.sales, 'entry_type': 'CREDIT', 'amount': Decimal('90')}],
+            )
+        self.assertFalse(JournalEntry.objects.filter(description="bad").exists())
+
+    def test_post_journal_entry_sets_source_and_balances(self):
+        from apps.bookkeeping.models import post_journal_entry
+        entry = post_journal_entry(
+            self.company, None, "ok",
+            [{'account': self.cash, 'entry_type': 'DEBIT', 'amount': Decimal('10.005')},
+             {'account': self.sales, 'entry_type': 'CREDIT', 'amount': Decimal('10.005')}],
+            source_type='COGS',
+        )
+        self.assertEqual(entry.source_type, 'COGS')
+        self.assertTrue(entry.is_balanced)
+
+    def test_cogs_posts_dr_cogs_cr_inventory(self):
+        from apps.products.services.cogs_service import post_cogs_journal
+        entry = post_cogs_journal(self.company, "COGS test", Decimal('250.00'))
+        by_side = {(l.account.name, l.entry_type): l.amount for l in entry.lines.all()}
+        self.assertEqual(by_side[("Cost of Goods Sold", "DEBIT")], Decimal('250.00'))
+        self.assertEqual(by_side[("Inventory", "CREDIT")], Decimal('250.00'))
+        self.assertEqual(entry.source_type, 'COGS')
+
+    def test_inventory_ledger_balance_and_posted_cogs(self):
+        from apps.bookkeeping.models import post_journal_entry, get_inventory_account, get_cogs_account
+        from apps.products.services.cogs_service import post_cogs_journal
+        from apps.reports.views import get_inventory_ledger_balance, get_posted_cogs
+        inv = get_inventory_account(self.company)
+        post_journal_entry(self.company, None, "purchase", [
+            {'account': inv, 'entry_type': 'DEBIT', 'amount': Decimal('1000')},
+            {'account': self.cash, 'entry_type': 'CREDIT', 'amount': Decimal('1000')}])
+        post_cogs_journal(self.company, "sale", Decimal('300'))
+        self.assertEqual(get_inventory_ledger_balance(self.company), Decimal('700.00'))
+        self.assertEqual(get_posted_cogs(self.company), Decimal('300.00'))
+
+
+class AccountCodeCollisionTests(TestCase):
+    def test_service_accounts_do_not_reuse_default_account_codes(self):
+        """Salary / depreciation / disposal / COGS accounts must not resolve to a default account by code."""
+        from apps.bookkeeping.models import get_or_create_system_account, get_cogs_account
+        from apps.company.services.company_services import setup_default_ledger_accounts
+        company = Company.objects.create(name="Code Co")
+        setup_default_ledger_accounts(company)
+        salary = get_or_create_system_account(company, "Salary Expense", "EXPENSE", code="5400")
+        dep = get_or_create_system_account(company, "Depreciation Expense", "EXPENSE", code="5920")
+        loss = get_or_create_system_account(company, "Loss on Disposal of Asset", "EXPENSE", code="5960")
+        cogs = get_cogs_account(company)
+        names = {a.name for a in (salary, dep, loss, cogs)}
+        self.assertEqual(names, {"Salary Expense", "Depreciation Expense", "Loss on Disposal of Asset", "Cost of Goods Sold"})
+        self.assertEqual(LedgerAccount.objects.get(company=company, code="5300").name, "Staff Meal Expense")
+        self.assertEqual(LedgerAccount.objects.get(company=company, code="5200").name, "Purchase Returns")

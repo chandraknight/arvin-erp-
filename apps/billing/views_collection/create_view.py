@@ -121,6 +121,10 @@ class InvoiceCreateView(AuthMixin, FiscalYearOpenMixin, CreateView):
                         from apps.bookkeeping.db_functions import post_invoice_journal
                         post_invoice_journal(self.object.id)
 
+                        # NFRS 2: sale of stock items relieves Inventory and posts COGS
+                        from apps.billing.services.invoice_stock_service import issue_invoice_stock
+                        issue_invoice_stock(self.object, user=self.request.user)
+
                     # Submit to IRD CBMS if e-billing is enabled for this company
                     if action == 'issue' and not is_estimate and self.object.invoice_number:
                         company = getattr(self.request.user, 'company', None)

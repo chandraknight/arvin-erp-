@@ -6,8 +6,9 @@ import logging
 from django.db import transaction
 
 from apps.billing.models import Invoice, CreditNote, DebitNote, VendorBill
-from apps.bookkeeping.models import JournalEntry, JournalEntryLine, LedgerAccount, reverse_journal, assert_balanced
+from apps.bookkeeping.models import JournalEntry, JournalEntryLine, LedgerAccount, reverse_journal, assert_balanced, get_inventory_account
 from apps.company.services.company_services import setup_default_ledger_accounts
+from apps.purchasing.services.grn_service import has_live_grn, get_grni_account
 from apps.utils.constant import StatusChoicesEnum
 
 logger = logging.getLogger(__name__)
@@ -251,6 +252,19 @@ def create_journal_entry_for_vendor_bill(sender, instance, created, **kwargs):
         items_subtotal = Decimal("0.00")
         for item in instance.items.all():
             debit_account = item.debit_account or _get_ledger(company, "Purchase Expense")
+            # NFRS 2 (perpetual inventory): stock purchases are capitalised to
+            # Inventory, not expensed — COGS is recognised later, on sale.
+            if (
+                company.enable_inventory and item.product_id
+                and not item.product.is_service
+                and (debit_account is None or debit_account.name == "Purchase Expense")
+            ):
+                # Goods already received on this PO were capitalised to Inventory against
+                # GRNI at receipt — the bill clears GRNI instead of capitalising again.
+                if instance.purchase_order and has_live_grn(instance.purchase_order):
+                    debit_account = get_grni_account(company)
+                else:
+                    debit_account = get_inventory_account(company)
             if not debit_account:
                 continue
             lines.append(JournalEntryLine(

@@ -96,50 +96,31 @@ def _post_invoice_journal_orm(invoice_id: UUID | str) -> UUID | None:
 
         description = f'Invoice {inv.invoice_number}'
 
-        # Soft-delete prior draft entries not linked to a confirmed payment
-        from django.db.models import Subquery
-        from apps.payments.models import Payment
-        linked_je_ids = Payment.objects.filter(
-            journal_entry_id__isnull=False
-        ).values('journal_entry_id')
-
-        JournalEntry.objects.filter(
-            company=company,
-            description=description,
-            is_deleted=False,
-        ).exclude(id__in=Subquery(linked_je_ids)).update(
-            is_deleted=True,
-            is_reversed=True,
-            reversed_reason=f'Replaced by re-post of invoice {inv.invoice_number}',
-        )
-
-        from django.utils.timezone import now as _now
-        from datetime import date as _date
-        entry = JournalEntry.objects.create(
-            company=company,
-            date=inv.transaction_date or _date.today(),
-            description=description,
-        )
+        # Re-posting reverses the previous entry (accounting records are immutable);
+        # it is never soft-deleted, so closed periods and the audit trail stay intact.
+        from apps.bookkeeping.models import reverse_journal
+        for old_entry in JournalEntry.objects.filter(
+            company=company, description=description, source_type='SALES_INVOICE',
+            is_reversed=False, is_deleted=False,
+        ):
+            reverse_journal(old_entry, reason=f'Replaced by re-post of invoice {inv.invoice_number}')
 
         discount = inv.discount_amount or Decimal('0.00')
         tax      = inv.tax_amount      or Decimal('0.00')
         calc_sales = inv.total + discount - tax
 
         lines = [
-            JournalEntryLine(journal_entry=entry, account=debit_account, entry_type='DEBIT',  amount=inv.total),
-            JournalEntryLine(journal_entry=entry, account=sales_account, entry_type='CREDIT', amount=calc_sales),
+            {'account': debit_account, 'entry_type': 'DEBIT',  'amount': inv.total},
+            {'account': sales_account, 'entry_type': 'CREDIT', 'amount': calc_sales},
         ]
         if tax > 0:
-            lines.append(JournalEntryLine(
-                journal_entry=entry, account=tax_account, entry_type='CREDIT', amount=tax,
-            ))
+            lines.append({'account': tax_account, 'entry_type': 'CREDIT', 'amount': tax})
         if discount > 0:
-            lines.append(JournalEntryLine(
-                journal_entry=entry, account=disc_account, entry_type='DEBIT', amount=discount,
-            ))
-        JournalEntryLine.objects.bulk_create(lines)
-        from apps.bookkeeping.models import assert_balanced
-        assert_balanced(entry)
+            lines.append({'account': disc_account, 'entry_type': 'DEBIT', 'amount': discount})
+        entry = post_journal_entry(
+            company=company, date=inv.transaction_date, description=description,
+            lines=lines, source_type='SALES_INVOICE', created_by=inv.created_by,
+        )
 
         logger.info("post_invoice_journal (ORM) invoice=%s journal_entry=%s", invoice_id, entry.id)
         return entry.id
@@ -156,7 +137,7 @@ def _post_payment_journal_orm(payment_id: UUID | str) -> UUID:
     """
     from django.db import transaction as db_transaction
     from apps.payments.models import Payment
-    from apps.bookkeeping.models import JournalEntry, JournalEntryLine, LedgerAccount
+    from apps.bookkeeping.models import LedgerAccount, post_journal_entry
 
     def _ledger(company, name):
         return LedgerAccount.objects.filter(company=company, name=name, is_deleted=False).first()
@@ -206,17 +187,17 @@ def _post_payment_journal_orm(payment_id: UUID | str) -> UUID:
                 f"Destination ledger account not found for payment {payment_id} type={pay.payment_type}"
             )
 
-        entry = JournalEntry.objects.create(
-            company=company,
-            date=pay.date,
-            description=description,
+        # CUSTOMER receipts: DR Cash/Bank, CR receivable. Every other type is money
+        # going OUT: DR the payable/expense, CR Cash/Bank.
+        receipt = pay.payment_type == 'CUSTOMER'
+        entry = post_journal_entry(
+            company=company, date=pay.date, description=description,
+            source_type='PAYMENT', created_by=pay.created_by,
+            lines=[
+                {'account': cash_bank if receipt else dest, 'entry_type': 'DEBIT',  'amount': pay.amount},
+                {'account': dest if receipt else cash_bank, 'entry_type': 'CREDIT', 'amount': pay.amount},
+            ],
         )
-        JournalEntryLine.objects.bulk_create([
-            JournalEntryLine(journal_entry=entry, account=cash_bank, entry_type='DEBIT',  amount=pay.amount),
-            JournalEntryLine(journal_entry=entry, account=dest,      entry_type='CREDIT', amount=pay.amount),
-        ])
-        from apps.bookkeeping.models import assert_balanced
-        assert_balanced(entry)
 
         Payment.objects.filter(pk=payment_id).update(
             journal_entry=entry,
@@ -233,33 +214,15 @@ def _post_payment_journal_orm(payment_id: UUID | str) -> UUID:
 
 def post_invoice_journal(invoice_id: UUID | str) -> UUID | None:
     """
-    Atomically create/replace the double-entry journal for an invoice.
-    Uses fn_post_invoice_journal on PostgreSQL; pure ORM on all other backends.
+    Atomically create (or reverse-and-replace) the double-entry journal for an
+    invoice. Always uses the ORM path on every backend, so it goes through
+    post_journal_entry / reverse_journal like every other posting.
     """
-    if _is_postgres():
-        with connection.cursor() as cur:
-            cur.execute("SELECT fn_post_invoice_journal(%s)", [str(invoice_id)])
-            row = cur.fetchone()
-            result = row[0] if row else None
-            logger.info("post_invoice_journal (PG) invoice=%s journal_entry=%s", invoice_id, result)
-            return UUID(str(result)) if result else None
     return _post_invoice_journal_orm(invoice_id)
 
 
 def post_payment_journal(payment_id: UUID | str) -> UUID:
-    """
-    Atomically create the double-entry journal for a payment and link it back.
-    Uses fn_post_payment_journal on PostgreSQL; pure ORM on all other backends.
-    """
-    if _is_postgres():
-        with connection.cursor() as cur:
-            cur.execute("SELECT fn_post_payment_journal(%s)", [str(payment_id)])
-            row = cur.fetchone()
-            result = row[0] if row else None
-            if result is None:
-                raise ValueError(f"fn_post_payment_journal returned NULL for payment {payment_id}")
-            logger.info("post_payment_journal (PG) payment=%s journal_entry=%s", payment_id, result)
-            return UUID(str(result))
+    """Atomically create the double-entry journal for a payment and link it back."""
     return _post_payment_journal_orm(payment_id)
 
 
