@@ -18250,3 +18250,4 @@ WARNING 2026-08-28 15:13:55,109 log 61774 6202535936 Not Found: /store/nonexiste
 WARNING 2026-08-28 15:13:55,110 log 61774 6202535936 "GET /store/nonexistent-xyz/ HTTP/1.1" 404 32448
 WARNING 2026-08-28 15:14:52,442 log 64779 6123810816 Forbidden (CSRF token from POST has incorrect length.): /store/contact/
 WARNING 2026-08-28 15:14:52,443 log 64779 6123810816 "POST /store/contact/ HTTP/1.1" 403 2514
+WARNING 2026-10-01 13:58:52,135 fifo_service 37422 8207875968 fifo_lot_shortfall product=25246131-b276-408c-91b8-192fb6a9ea49 requested=8 covered_by_lots=5 falling_back_to_cost_price=12.00
