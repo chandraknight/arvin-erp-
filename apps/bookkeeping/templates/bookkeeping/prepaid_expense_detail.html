@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load global_filter %}
 {% block title %}{{ prepaid.name }}{% endblock %}
 {% block content %}
 <div class="w-full mt-2 max-w-3xl">
@@ -26,7 +27,7 @@
  </div>
 
  <div class="bg-white border border-gray-200 p-4 mb-6 text-sm text-gray-600">
- <p><strong>Period:</strong> {{ prepaid.start_date|date:"Y-m-d" }} – {{ prepaid.end_date|date:"Y-m-d" }}</p>
+ <p><strong>Period:</strong> {{ prepaid.start_date|bs_date }} – {{ prepaid.end_date|bs_date }}</p>
  <p><strong>Status:</strong> {{ prepaid.get_status_display }}</p>
  {% if prepaid.description %}<p><strong>Description:</strong> {{ prepaid.description }}</p>{% endif %}
  </div>
@@ -39,11 +40,11 @@
  <div class="grid grid-cols-2 gap-4 mb-4">
  <div>
  <label class="block text-sm font-semibold text-gray-600 mb-1">Period Start</label>
- <input type="date" name="period_start" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+ <input type="text" name="period_start" required autocomplete="off" placeholder="YYYY-MM-DD" class="nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm">
  </div>
  <div>
  <label class="block text-sm font-semibold text-gray-600 mb-1">Period End</label>
- <input type="date" name="period_end" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+ <input type="text" name="period_end" required autocomplete="off" placeholder="YYYY-MM-DD" class="nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm">
  </div>
  </div>
  <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold">
@@ -65,7 +66,7 @@
  <tbody class="bg-white divide-y divide-gray-200">
  {% for log in amortization_logs %}
  <tr>
- <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ log.period_start|date:"Y-m-d" }} – {{ log.period_end|date:"Y-m-d" }}</td>
+ <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ log.period_start|bs_date }} – {{ log.period_end|bs_date }}</td>
  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">{{ currency_symbol }} {{ log.amount|floatformat:2 }}</td>
  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
  {% if log.journal_entry %}

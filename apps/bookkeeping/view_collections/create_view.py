@@ -293,12 +293,9 @@ from ...utils.constant import RUPEE
 
 
 def _parse_ad_date(value):
-    if not value:
-        return None
-    try:
-        return datetime.strptime(value, '%Y-%m-%d').date()
-    except ValueError:
-        return None
+    """Parse a Bikram Sambat (Nepali picker) form value into an AD date; None if blank/invalid."""
+    from apps.utils.nepali_date import bs_str_to_ad
+    return bs_str_to_ad(value)
 
 
 @_login_required

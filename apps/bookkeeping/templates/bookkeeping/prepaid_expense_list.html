@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load global_filter %}
 {% block title %}Prepaid Expenses{% endblock %}
 {% block content %}
 <div class="w-full mt-2">
@@ -26,7 +27,7 @@
  {% for p in prepaid_expenses %}
  <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{% url 'bookkeeping:prepaid_expense_detail' p.pk %}'">
  <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ p.name }}</td>
- <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ p.start_date|date:"Y-m-d" }} – {{ p.end_date|date:"Y-m-d" }}</td>
+ <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ p.start_date|bs_date }} – {{ p.end_date|bs_date }}</td>
  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">{{ currency_symbol }} {{ p.total_amount|floatformat:2 }}</td>
  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">{{ currency_symbol }} {{ p.accumulated_amortization|floatformat:2 }}</td>
  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">{{ currency_symbol }} {{ p.remaining_amount|floatformat:2 }}</td>

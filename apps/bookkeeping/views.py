@@ -74,7 +74,10 @@ def contra_entry_create(request):
             from_account = get_object_or_404(accounts, pk=request.POST.get('from_account'))
             to_account = get_object_or_404(accounts, pk=request.POST.get('to_account'))
             amount = Decimal(request.POST.get('amount') or '0')
-            entry_date = request.POST.get('date') or timezone.now().date()
+            date_str = (request.POST.get('date') or '').strip()
+            entry_date = bs_str_to_ad(date_str) if date_str else timezone.now().date()
+            if entry_date is None:
+                raise ValueError('Invalid date.')
             description = request.POST.get('description', '').strip() or (
                 f"Transfer: {from_account.name} to {to_account.name}"
             )

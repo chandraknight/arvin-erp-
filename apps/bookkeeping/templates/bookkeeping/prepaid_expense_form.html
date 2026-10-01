@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load global_filter %}
 {% block title %}New Prepaid Expense{% endblock %}
 {% block content %}
 <div class="max-w-lg mx-auto mt-6">
@@ -31,11 +32,11 @@
  <div class="grid grid-cols-2 gap-4 mb-4">
  <div>
  <label class="block text-sm font-semibold text-gray-600 mb-1">Period Start</label>
- <input type="date" name="start_date" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+ <input type="text" name="start_date" required autocomplete="off" placeholder="YYYY-MM-DD" class="nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm">
  </div>
  <div>
  <label class="block text-sm font-semibold text-gray-600 mb-1">Period End</label>
- <input type="date" name="end_date" required class="w-full border border-gray-300 px-3 py-2 text-sm">
+ <input type="text" name="end_date" required autocomplete="off" placeholder="YYYY-MM-DD" class="nepali-datepicker w-full border border-gray-300 px-3 py-2 text-sm">
  </div>
  </div>
  <div class="mb-4">
