@@ -7,6 +7,7 @@ from django.conf import settings
 from .services.all_services import *
 from ..utils.global_models import *
 from .utils import get_latest_tag
+from .services.branding import get_login_logo_url
 from ..payments.models import Payment
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,11 @@ def login_view(request):
             return redirect('home')
     else:
         form = LoginForm()
-    return render(request, 'accounts/login.html', {'form': form,'current_tag': tag})
+    return render(request, 'accounts/login.html', {
+        'form': form,
+        'current_tag': tag,
+        'client_logo_url': get_login_logo_url(request),
+    })
 
 
 @login_required

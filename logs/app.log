@@ -18259,3 +18259,15 @@ WARNING 2026-10-01 14:43:38,166 fifo_service 74911 8207875968 fifo_lot_shortfall
 WARNING 2026-10-01 14:43:39,143 payroll_tax_service 74911 8207875968 No IncomeTaxSlab configured for company=Tax Co fiscal_year=Tax Co (2024-2025) marital_status=MARRIED — income tax not calculated.
 WARNING 2026-10-01 14:47:21,447 fifo_service 79056 8207875968 fifo_lot_shortfall product=78dd9554-0987-4991-a48f-7719792ffbfb requested=8 covered_by_lots=5 falling_back_to_cost_price=12.00
 WARNING 2026-10-01 14:47:22,174 payroll_tax_service 79056 8207875968 No IncomeTaxSlab configured for company=Tax Co fiscal_year=Tax Co (2024-2025) marital_status=MARRIED — income tax not calculated.
+WARNING 2026-10-05 08:27:22,283 log 52708 6203895808 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-10-05 08:27:22,287 log 52708 6220722176 Not Found: /apple-touch-icon.png
+WARNING 2026-10-05 08:27:22,291 log 52708 6237548544 Not Found: /favicon.ico
+WARNING 2026-10-05 08:27:22,291 log 52708 6237548544 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-10-05 08:27:22,292 log 52708 6203895808 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-10-05 08:27:22,292 log 52708 6220722176 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
+WARNING 2026-10-05 08:27:29,777 log 52708 6203895808 Not Found: /favicon.ico
+WARNING 2026-10-05 08:27:29,779 log 52708 6220722176 Not Found: /apple-touch-icon-precomposed.png
+WARNING 2026-10-05 08:27:29,779 log 52708 6203895808 "GET /favicon.ico HTTP/1.1" 404 7431
+WARNING 2026-10-05 08:27:29,781 log 52708 6237548544 Not Found: /apple-touch-icon.png
+WARNING 2026-10-05 08:27:29,781 log 52708 6220722176 "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 7494
+WARNING 2026-10-05 08:27:29,782 log 52708 6237548544 "GET /apple-touch-icon.png HTTP/1.1" 404 7458
